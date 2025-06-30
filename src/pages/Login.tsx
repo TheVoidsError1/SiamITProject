@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -29,11 +28,16 @@ const Login = () => {
 
     try {
       await login(email, password);
+      const userInfo = JSON.parse(localStorage.getItem('currentUser') || '{}');
       toast({
         title: "เข้าสู่ระบบสำเร็จ",
         description: "ยินดีต้อนรับเข้าสู่ระบบลาออนไลน์",
       });
-      navigate(from, { replace: true });
+      if (userInfo.role === 'admin') {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/', { replace: true });
+      }
     } catch (error: any) {
       toast({
         title: "เข้าสู่ระบบไม่สำเร็จ",

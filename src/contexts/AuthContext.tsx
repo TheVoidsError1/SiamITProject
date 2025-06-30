@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from 'react';
 
 interface User {
@@ -78,47 +77,51 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string) => {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const foundUser = MOCK_USERS.find(u => u.email === email && u.password === password);
-    
-    if (!foundUser) {
-      throw new Error('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+    const response = await fetch('http://localhost:3001/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ Email: email, Password: password }),
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
     }
 
-    const { password: _, ...userWithoutPassword } = foundUser;
-    setUser(userWithoutPassword);
-    localStorage.setItem('currentUser', JSON.stringify(userWithoutPassword));
+    // บันทึก user info ที่ได้จาก backend
+    const userInfo = {
+      id: data.userId || '',
+      email: email,
+      full_name: data.full_name,
+      role: data.role,
+      department: data.department,
+      position: data.position,
+    };
+    setUser(userInfo);
+    localStorage.setItem('currentUser', JSON.stringify(userInfo));
+    localStorage.setItem('token', data.token);
   };
 
   const signup = async (email: string, password: string, userData: Partial<User>) => {
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Check if user already exists
-    const existingUser = MOCK_USERS.find(u => u.email === email);
-    if (existingUser) {
-      throw new Error('อีเมลนี้ถูกใช้งานแล้ว');
+    // เรียก API backend
+    const response = await fetch('http://localhost:3001/api/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        User_name: userData.full_name,
+        position: userData.position,
+        department: userData.department,
+        Email: email,
+        Password: password,
+        Role: userData.role || 'employee',
+      }),
+    });
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || 'สมัครสมาชิกไม่สำเร็จ');
     }
-
-    const newUser = {
-      id: Date.now().toString(),
-      email,
-      role: 'employee' as const,
-      full_name: userData.full_name || '',
-      department: userData.department || '',
-      position: userData.position || '',
-      ...userData
-    };
-
-    // In a real app, this would be saved to database
-    // For now, we'll just add to our mock data temporarily
-    MOCK_USERS.push({ ...newUser, password });
-    
-    const { ...userWithoutPassword } = newUser;
-    setUser(userWithoutPassword);
-    localStorage.setItem('currentUser', JSON.stringify(userWithoutPassword));
+    // สมัครสมาชิกสำเร็จ ไม่ต้อง login อัตโนมัติ ให้ user ไป login เอง
   };
 
   const logout = async () => {

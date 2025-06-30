@@ -42,6 +42,40 @@ module.exports = (AppDataSource) => {
     }
   });
 
+  router.post('/login', async (req, res) => {
+    try {
+      const { Email, Password } = req.body;
+      const processRepo = AppDataSource.getRepository('ProcessCheck');
+      const userRepo = AppDataSource.getRepository('User');
+      const processUser = await processRepo.findOneBy({ Email });
+      if (!processUser) return res.status(401).json({ error: 'ไม่พบผู้ใช้งาน' });
+
+      // ตรวจสอบรหัสผ่าน
+      const valid = await bcrypt.compare(Password, processUser.Password);
+      if (!valid) return res.status(401).json({ error: 'รหัสผ่านไม่ถูกต้อง' });
+
+      // ดึง role (หรือกำหนด default)
+      const role = processUser.Role || 'employee';
+
+      // ดึงข้อมูล user เพิ่มเติม
+      const userProfile = await userRepo.findOneBy({ User_name: processUser.User_name });
+
+      // สร้าง JWT
+      const token = jwt.sign({ userId: processUser.id, email: processUser.Email, role }, 'your_secret_key', { expiresIn: '1h' });
+
+      res.json({
+        token,
+        role,
+        userId: processUser.id,
+        full_name: userProfile ? userProfile.User_name : '',
+        department: userProfile ? userProfile.department : '',
+        position: userProfile ? userProfile.position : '',
+      });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
 /**
  * @swagger
  * /api/register:
