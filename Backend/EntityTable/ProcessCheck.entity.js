@@ -17,6 +17,7 @@ module.exports = new EntitySchema({
     },
     Token: {
         type: 'varchar',
+        nullable: true,
     },
 
 },
