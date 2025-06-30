@@ -127,6 +127,9 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 const authRoutes = require('./api/auth')(AppDataSource);
 app.use('/api', authRoutes);
 
+const adminController = require('./api/adminController')(AppDataSource);
+app.use('/api', adminController);
+
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 }); 
