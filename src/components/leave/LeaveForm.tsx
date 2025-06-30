@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 import { DateRangePicker } from "./DateRangePicker";
 import { FileUpload } from "./FileUpload";
 import { leaveTypes, employeeTypes, personalLeaveOptions, timeSlots } from "@/constants/leaveTypes";
+import { useNavigate } from 'react-router-dom';
 
 export const LeaveForm = () => {
   const [startDate, setStartDate] = useState<Date>();
@@ -23,6 +23,7 @@ export const LeaveForm = () => {
   const [employeeType, setEmployeeType] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
   const { toast } = useToast();
+  const navigate = useNavigate();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -326,7 +327,11 @@ export const LeaveForm = () => {
         <Button 
           type="button" 
           variant="outline" 
-          onClick={() => window.history.back()}
+          onClick={() => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('currentUser');
+            window.location.reload();
+          }}
           size="lg"
         >
           ยกเลิก

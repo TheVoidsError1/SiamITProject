@@ -9,7 +9,7 @@ module.exports = (AppDataSource) => {
   // สมัครสมาชิก
   router.post('/register', async (req, res) => {
     try {
-      const { User_name, position, department, Email, Password } = req.body;
+      const { User_name, position, department, Email, Password, Role } = req.body;
       const userRepo = AppDataSource.getRepository('User');
       const processRepo = AppDataSource.getRepository('ProcessCheck');
 
@@ -26,12 +26,12 @@ module.exports = (AppDataSource) => {
       // 2. hash password
       const hashedPassword = await bcrypt.hash(Password, 10);
 
-      // 3. สร้าง ProcessCheck โดยเก็บ Email, Password, และ User_id
-      const processCheck = processRepo.create({ Email, Password: hashedPassword, User_id: user.User_id });
+      // 3. สร้าง ProcessCheck โดยเก็บ Email, Password, Role, และ User_id
+      const processCheck = processRepo.create({ Email, Password: hashedPassword, Role: Role || 'user', User_id: user.User_id });
       await processRepo.save(processCheck);
 
       // 4. สร้าง JWT
-      const token = jwt.sign({ userId: user.User_id, email: Email }, 'your_secret_key', { expiresIn: '1h' });
+      const token = jwt.sign({ userId: user.User_id, email: Email, role: Role || 'user' }, 'your_secret_key', { expiresIn: '1h' });
 
       // 5. อัปเดต token ใน ProcessCheck (optional)
       processCheck.Token = token;

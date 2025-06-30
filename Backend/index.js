@@ -24,7 +24,8 @@ const AppDataSource = new DataSource({
   entities: [
     require('./EnityTable/user.entity.js'),
     require('./EnityTable/ProcessCheck.entity.js'),
-    require('./EnityTable/admin.entity.js')
+    require('./EnityTable/admin.entity.js'),
+    require('./EnityTable/leaveRequest.entity.js')
 ],
 });
 
@@ -129,6 +130,9 @@ app.use('/api', authRoutes);
 
 const adminController = require('./api/adminController')(AppDataSource);
 app.use('/api', adminController);
+
+const leaveRequestController = require('./api/RequsestLeaveController')(AppDataSource);
+app.use('/api', leaveRequestController);
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);

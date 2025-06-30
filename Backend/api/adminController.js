@@ -134,5 +134,61 @@ module.exports = (AppDataSource) => {
     }
   });
 
+  /**
+   * @swagger
+   * /api/admin/login:
+   *   post:
+   *     summary: Admin login
+   *     tags:
+   *       - Admin
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               Email:
+   *                 type: string
+   *               Password:
+   *                 type: string
+   *     responses:
+   *       200:
+   *         description: Login success
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 token:
+   *                   type: string
+   *                 role:
+   *                   type: string
+   *                 admin_name:
+   *                   type: string
+   */
+  router.post('/admin/login', async (req, res) => {
+    try {
+      const { Email, Password } = req.body;
+      const processRepo = AppDataSource.getRepository('ProcessCheck');
+      const adminRepo = AppDataSource.getRepository('admin');
+      const processUser = await processRepo.findOneBy({ Email });
+      if (!processUser || processUser.Role !== 'admin') {
+        return res.status(401).json({ error: 'ไม่พบผู้ใช้งานหรือไม่ใช่แอดมิน' });
+      }
+      const valid = await bcrypt.compare(Password, processUser.Password);
+      if (!valid) return res.status(401).json({ error: 'รหัสผ่านไม่ถูกต้อง' });
+      const adminProfile = await adminRepo.findOneBy({ Email });
+      const token = crypto.randomBytes(32).toString('hex');
+      res.json({
+        token,
+        role: 'admin',
+        admin_name: adminProfile ? adminProfile.admin_name : '',
+      });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   return router;
 };
