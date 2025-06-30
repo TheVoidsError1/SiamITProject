@@ -18,6 +18,5 @@ module.exports = new EntitySchema({
     department: {
       type: 'varchar',
      },
-  
 },
 }); 

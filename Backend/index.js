@@ -22,9 +22,9 @@ const AppDataSource = new DataSource({
   synchronize: true, // dev only! จะสร้าง/อัปเดต table อัตโนมัติ
   logging: false,
   entities: [
-    require('./EntityTable/user.entity'),
-    require('./EntityTable/ProcessCheck.entity.js'),
-    require('./EntityTable/admin.entity.js')
+    require('./EnityTable/user.entity.js'),
+    require('./EnityTable/ProcessCheck.entity.js'),
+    require('./EnityTable/admin.entity.js')
 ],
 });
 
@@ -40,7 +40,8 @@ app.use(bodyParser.json());
 
 const allowedOrigins = [
   'http://localhost:8081',
-  'http://192.168.50.64:8081'
+  'http://192.168.50.64:8081',
+  'http://localhost:3001'
 ];
 
 app.use(cors({
