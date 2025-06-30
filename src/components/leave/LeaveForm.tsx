@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Send } from "lucide-react";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { DateRangePicker } from "./DateRangePicker";
 import { FileUpload } from "./FileUpload";
@@ -22,10 +22,12 @@ export const LeaveForm = () => {
   const [supervisor, setSupervisor] = useState("");
   const [employeeType, setEmployeeType] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
+  const [contact, setContact] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
+  const formRef = useRef<HTMLFormElement>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!startDate || !leaveType || !reason || !employeeType) {
@@ -75,8 +77,8 @@ export const LeaveForm = () => {
     }
 
     // Check if attachment is required for certain leave types
-    const requiresAttachment = ["sick", "maternity", "emergency"].includes(leaveType);
-    if (requiresAttachment && attachments.length === 0) {
+    const requiresAttachmentField = ["sick", "maternity", "emergency"].includes(leaveType);
+    if (requiresAttachmentField && attachments.length === 0) {
       toast({
         title: "กรุณาแนบหลักฐาน",
         description: "การลาประเภทนี้จำเป็นต้องแนบหลักฐาน",
@@ -85,22 +87,56 @@ export const LeaveForm = () => {
       return;
     }
 
-    toast({
-      title: "ส่งคำขอลาเรียบร้อย! ✅",
-      description: "คำขอลาของคุณถูกส่งไปยังผู้บริหารเพื่อพิจารณาแล้ว",
-    });
-
-    // Reset form
-    setStartDate(undefined);
-    setEndDate(undefined);
-    setLeaveType("");
-    setPersonalLeaveType("");
-    setStartTime("");
-    setEndTime("");
-    setReason("");
-    setSupervisor("");
-    setEmployeeType("");
-    setAttachments([]);
+    // --- API Integration ---
+    try {
+      const formData = new FormData();
+      formData.append("employeeType", employeeType);
+      formData.append("leaveType", leaveType);
+      if (personalLeaveType) formData.append("personalLeaveType", personalLeaveType);
+      if (startDate) formData.append("startDate", startDate.toISOString().split("T")[0]);
+      if (endDate) formData.append("endDate", endDate.toISOString().split("T")[0]);
+      if (startTime) formData.append("startTime", startTime);
+      if (endTime) formData.append("endTime", endTime);
+      formData.append("reason", reason);
+      formData.append("supervisor", supervisor);
+      formData.append("contact", contact);
+      // แนบไฟล์ imgLeave (เอาไฟล์แรก)
+      if (attachments.length > 0) {
+        formData.append("imgLeave", attachments[0]);
+      }
+      // ส่ง API
+      const response = await fetch("http://localhost:3001/api/leave-request", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || "เกิดข้อผิดพลาดในการส่งคำขอลา");
+      }
+      toast({
+        title: "ส่งคำขอลาเรียบร้อย! ✅",
+        description: "คำขอลาของคุณถูกส่งไปยังผู้บริหารเพื่อพิจารณาแล้ว",
+      });
+      // Reset form
+      setStartDate(undefined);
+      setEndDate(undefined);
+      setLeaveType("");
+      setPersonalLeaveType("");
+      setStartTime("");
+      setEndTime("");
+      setReason("");
+      setSupervisor("");
+      setEmployeeType("");
+      setAttachments([]);
+      setContact("");
+      if (formRef.current) formRef.current.reset();
+    } catch (err: any) {
+      toast({
+        title: "เกิดข้อผิดพลาด",
+        description: err.message || "ไม่สามารถส่งคำขอลาได้",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -115,7 +151,7 @@ export const LeaveForm = () => {
   };
 
   const selectedLeaveType = leaveTypes.find(type => type.value === leaveType);
-  const requiresAttachment = selectedLeaveType?.requiresAttachment || false;
+  const requiresAttachmentField = selectedLeaveType?.requiresAttachment || false;
   const hasTimeOption = selectedLeaveType?.hasTimeOption || false;
   const isPersonalLeave = leaveType === "personal";
   const isHourlyLeave = personalLeaveType === "hour";
@@ -134,7 +170,7 @@ export const LeaveForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
       {/* Employee Type */}
       <div className="space-y-2">
         <Label htmlFor="employee-type" className="text-sm font-medium">
@@ -146,7 +182,7 @@ export const LeaveForm = () => {
           </SelectTrigger>
           <SelectContent>
             {employeeTypes.map((type) => (
-              <SelectItem key={type.value} value={type.value}>
+              <SelectItem key={type.label} value={type.label}>
                 {type.label}
               </SelectItem>
             ))}
@@ -174,7 +210,7 @@ export const LeaveForm = () => {
             ))}
           </SelectContent>
         </Select>
-        {requiresAttachment && (
+        {requiresAttachmentField && (
           <p className="text-xs text-red-600">
             * ประเภทการลานี้จำเป็นต้องแนบหลักฐาน
           </p>
@@ -193,7 +229,7 @@ export const LeaveForm = () => {
             </SelectTrigger>
             <SelectContent>
               {personalLeaveOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
+                <SelectItem key={option.label} value={option.label}>
                   {option.label}
                 </SelectItem>
               ))}
@@ -294,7 +330,7 @@ export const LeaveForm = () => {
       </div>
 
       {/* File Upload - Show only for certain leave types */}
-      {requiresAttachment && (
+      {requiresAttachmentField && (
         <FileUpload
           attachments={attachments}
           onFileUpload={handleFileUpload}
@@ -311,6 +347,8 @@ export const LeaveForm = () => {
           id="contact"
           placeholder="เบอร์โทรศัพท์หรืออีเมล"
           className="w-full"
+          value={contact}
+          onChange={e => setContact(e.target.value)}
         />
       </div>
 

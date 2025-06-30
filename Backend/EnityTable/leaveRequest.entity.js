@@ -14,7 +14,6 @@ module.exports = new EntitySchema({
     endTime: { type: 'varchar', nullable: true },
     reason: { type: 'text' },
     supervisor: { type: 'varchar', nullable: true },
-    attachments: { type: 'text', nullable: true }, // เก็บชื่อไฟล์หรือ path
     contact: { type: 'varchar', nullable: true },
     createdAt: { type: 'timestamp', createDate: true },
     imgLeave: { type: 'varchar', nullable: true },

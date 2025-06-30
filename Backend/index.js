@@ -131,8 +131,9 @@ app.use('/api', authRoutes);
 const adminController = require('./api/adminController')(AppDataSource);
 app.use('/api', adminController);
 
-const leaveRequestController = require('./api/RequsestLeaveController')(AppDataSource);
+const leaveRequestController = require('./api/leaveRequestController')(AppDataSource);
 app.use('/api', leaveRequestController);
+app.use('/leave-uploads', express.static('public/leave-uploads'));
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
