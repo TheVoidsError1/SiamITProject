@@ -9,12 +9,8 @@ module.exports = new EntitySchema({
       type: 'int',
       generated: true,
     },
-    firstname: {
+    User_name: {
       type: 'varchar',
-    },
-    lastname: {
-      type: 'varchar',
-      unique: true,
     },
     position: {
       type: 'varchar',
