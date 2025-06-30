@@ -18,21 +18,21 @@ module.exports = (AppDataSource) => {
         return res.status(400).json({ error: 'Email นี้ถูกใช้ไปแล้ว' });
       }
 
-      // hash password
-      const hashedPassword = await bcrypt.hash(Password, 10);
-
-      // สร้าง ProcessCheck
-      const processCheck = processRepo.create({ Email, Password: hashedPassword });
-      await processRepo.save(processCheck);
-
-      // สร้าง User
+      // 1. สร้าง User ก่อน เพื่อให้ได้ User_id
       const user = userRepo.create({ User_name, position, department });
       await userRepo.save(user);
 
-      // สร้าง JWT
+      // 2. hash password
+      const hashedPassword = await bcrypt.hash(Password, 10);
+
+      // 3. สร้าง ProcessCheck โดยเก็บ Email, Password, และ User_id
+      const processCheck = processRepo.create({ Email, Password: hashedPassword, User_id: user.User_id });
+      await processRepo.save(processCheck);
+
+      // 4. สร้าง JWT
       const token = jwt.sign({ userId: user.User_id, email: Email }, 'your_secret_key', { expiresIn: '1h' });
 
-      // อัปเดต token ใน ProcessCheck (optional)
+      // 5. อัปเดต token ใน ProcessCheck (optional)
       processCheck.Token = token;
       await processRepo.save(processCheck);
 
