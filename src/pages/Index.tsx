@@ -4,9 +4,23 @@ import { Button } from "@/components/ui/button";
 import { Calendar, Clock, Users, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from '@/contexts/AuthContext';
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 const Index = () => {
   const { user } = useAuth();
+  const [dbUser, setDbUser] = useState<{ name: string } | null>(null);
+
+  useEffect(() => {
+    if (user?.id) {
+      axios.get(`/api/users/${user.id}`)
+        .then(res => {
+          setDbUser({ name: res.data.data.name });
+        })
+        .catch(() => setDbUser(null));
+    }
+  }, [user]);
+
   const stats = [
     {
       title: "วันลาคงเหลือ",
@@ -63,7 +77,7 @@ const Index = () => {
         <div className="gradient-bg rounded-2xl p-8 text-white relative overflow-hidden">
           <div className="relative z-10">
             <h2 className="text-3xl font-bold mb-2">
-              สวัสดี {user?.full_name || 'ผู้ใช้'}! 👋
+              สวัสดี {dbUser?.name || 'ผู้ใช้'}! 👋
             </h2>
             <p className="text-blue-100 mb-6">
               วันนี้เป็นวันที่ {new Date().toLocaleDateString('th-TH', {

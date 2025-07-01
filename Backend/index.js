@@ -130,11 +130,14 @@ app.use('/api', authRoutes);
 
 const adminController = require('./api/adminController')(AppDataSource);
 app.use('/api', adminController);
+
+const leaveRequestController = require('./api/leaveRequestController')(AppDataSource);
+app.use('/api', leaveRequestController);
 app.use('/leave-uploads', express.static('public/leave-uploads'));
+
 const { router: userRoutes, setController: setUserController } = require('./api/userRoutes');
 setUserController(AppDataSource);
 app.use('/api/users', userRoutes);
-
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
