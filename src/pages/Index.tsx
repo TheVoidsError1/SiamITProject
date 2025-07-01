@@ -83,7 +83,11 @@ const Index = () => {
         <div className="gradient-bg rounded-2xl p-8 text-white relative overflow-hidden">
           <div className="relative z-10">
             <h2 className="text-3xl font-bold mb-2">
-              สวัสดี {dbUser?.name || user?.full_name || 'ผู้ใช้'}! 👋
+              สวัสดี {
+                user?.role === 'admin'
+                  ? (dbUser?.name || user?.full_name || 'แอดมิน')
+                  : (dbUser?.name || user?.full_name || 'ผู้ใช้')
+              }! 👋
             </h2>
             <p className="text-blue-100 mb-6">
               วันนี้เป็นวันที่ {new Date().toLocaleDateString('th-TH', {
