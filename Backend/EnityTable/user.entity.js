@@ -20,6 +20,6 @@ module.exports = new EntitySchema({
      },
      role:{
       type: 'varchar'
-     }
+     },
 },
 }); 
