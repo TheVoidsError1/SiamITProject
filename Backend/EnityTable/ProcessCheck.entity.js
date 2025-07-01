@@ -7,7 +7,7 @@ module.exports = new EntitySchema({
     id: { primary: true, type: 'int', generated: true },
     Email: { type: 'varchar' },
     Password: { type: 'varchar' },
-    Token: { type: 'varchar' },
+    Token: { type: 'varchar', default: null },
     Role: { type: 'varchar', default: 'user' },
     Repid: { type: 'int', nullable: true },
   },
