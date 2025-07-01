@@ -70,11 +70,18 @@ module.exports = (AppDataSource) => {
       if (!valid) return res.status(401).json({ error: 'รหัสผ่านไม่ถูกต้อง' });
 
       // ดึงข้อมูล user เพิ่มเติม โดยใช้ Repid เป็นตัวเชื่อม
-      const userProfile = await userRepo.findOneBy({ User_id: processUser.Repid });
+      const userProfile = await userRepo.findOneBy({ User_name: processUser.name });
       if (!userProfile) return res.status(401).json({ error: 'ไม่พบข้อมูลผู้ใช้งาน' });
 
-      // ดึง role จากตาราง users (หรือใช้จาก process_check เป็น fallback)
-      const role = userProfile.role || processUser.Role || 'user';
+      // Debug log
+      console.log('userProfile:', userProfile);
+      console.log('processUser:', processUser);
+
+      // กำหนด role ให้ admin/admin, user/user
+      let role = 'user';
+      if (userProfile.role === 'admin' || processUser.Role === 'admin') {
+        role = 'admin';
+      }
 
       // สร้าง JWT
       const token = jwt.sign({ userId: processUser.Repid, email: processUser.Email, role }, 'your_secret_key', { expiresIn: '1h' });

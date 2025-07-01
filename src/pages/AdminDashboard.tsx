@@ -1,4 +1,4 @@
-
+import React, { useEffect, useState } from "react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,18 @@ import { useToast } from "@/hooks/use-toast";
 
 const AdminDashboard = () => {
   const { toast } = useToast();
+
+  const [adminName, setAdminName] = useState<string>("");
+
+  useEffect(() => {
+    fetch("/api/admin/list")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && data.data.length > 0) {
+          setAdminName(data.data[0].admin_name);
+        }
+      });
+  }, []);
 
   const pendingRequests = [
     {
@@ -112,7 +124,9 @@ const AdminDashboard = () => {
         <div className="flex h-16 items-center px-4 gap-4">
           <SidebarTrigger />
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">จัดการระบบ</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              จัดการระบบ {adminName && `- ผู้ดูแล: ${adminName}`}
+            </h1>
             <p className="text-sm text-gray-600">
               แดชบอร์ดสำหรับผู้บริหาร
             </p>
