@@ -10,6 +10,6 @@ module.exports = new EntitySchema({
     Token: { type: 'varchar', default: null },
     Role: { type: 'varchar', default: 'user' },
     Repid: { type: 'int', nullable: true },
-    avatar_url: { type: 'varchar' }
+    avatar_url: { type: 'varchar', default: null }
   },
 });

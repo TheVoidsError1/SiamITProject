@@ -31,20 +31,17 @@ module.exports = (AppDataSource) => {
       // 2. hash password
       const hashedPassword = await bcrypt.hash(Password, 10);
 
-      // 3. สร้าง ProcessCheck โดยเก็บ Email, Password, Role, และ Repid (User_id)
+      // 3. สร้าง JWT
+      const token = jwt.sign({ userId: user.User_id, email: Email, role: Role || 'user' }, 'your_secret_key', { expiresIn: '1h' });
+
+      // 4. สร้าง ProcessCheck โดยเก็บ Email, Password, Role, Repid, Token (save only once)
       const processCheck = processRepo.create({ 
         Email, 
         Password: hashedPassword, 
         Role: Role || 'user', 
-        Repid: user.User_id  // ใช้ Repid เป็นตัวเชื่อมกับ User_id
+        Repid: user.User_id,  // ใช้ Repid เป็นตัวเชื่อมกับ User_id
+        Token: token
       });
-      await processRepo.save(processCheck);
-
-      // 4. สร้าง JWT
-      const token = jwt.sign({ userId: user.User_id, email: Email, role: Role || 'user' }, 'your_secret_key', { expiresIn: '1h' });
-
-      // 5. อัปเดต token ใน ProcessCheck
-      processCheck.Token = token;
       await processRepo.save(processCheck);
 
       res.json({ 
@@ -69,23 +66,22 @@ module.exports = (AppDataSource) => {
       const valid = await bcrypt.compare(Password, processUser.Password);
       if (!valid) return res.status(401).json({ error: 'รหัสผ่านไม่ถูกต้อง' });
 
-      // ดึงข้อมูล user เพิ่มเติม โดยใช้ Repid เป็นตัวเชื่อม
-      const userProfile = await userRepo.findOneBy({ User_id: processUser.Repid });
-      if (!userProfile) return res.status(401).json({ error: 'ไม่พบข้อมูลผู้ใช้งาน' });
+      // ดึง role (หรือกำหนด default)
+      const role = processUser.Role || 'employee';
 
-      // ดึง role จากตาราง users (หรือใช้จาก process_check เป็น fallback)
-      const role = userProfile.role || processUser.Role || 'user';
+      // ดึงข้อมูล user เพิ่มเติม
+      const userProfile = await userRepo.findOneBy({ User_name: processUser.User_name });
 
       // สร้าง JWT
-      const token = jwt.sign({ userId: processUser.Repid, email: processUser.Email, role }, 'your_secret_key', { expiresIn: '1h' });
+      const token = jwt.sign({ userId: processUser.id, email: processUser.Email, role }, 'your_secret_key', { expiresIn: '1h' });
 
       res.json({
         token,
         role,
-        userId: processUser.Repid,
-        full_name: userProfile.User_name,
-        department: userProfile.department,
-        position: userProfile.position,
+        userId: processUser.id,
+        full_name: userProfile ? userProfile.User_name : '',
+        department: userProfile ? userProfile.department : '',
+        position: userProfile ? userProfile.position : '',
       });
     } catch (err) {
       res.status(500).json({ error: err.message });
