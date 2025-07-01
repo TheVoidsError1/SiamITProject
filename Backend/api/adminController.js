@@ -26,14 +26,23 @@ module.exports = (AppDataSource) => {
    *               Password:
    *                 type: string
    *     responses:
-   *       200:
-   *         description: สมัครแอดมินสำเร็จ
+   *       201:
+   *         description: admin created
    *         content:
    *           application/json:
    *             schema:
    *               type: object
    *               properties:
    *                 message:
+   *                   type: string
+   *       400:
+   *         description: Invalid input
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 error:
    *                   type: string
    */
   router.post('/admin/register', async (req, res) => {
@@ -45,7 +54,7 @@ module.exports = (AppDataSource) => {
       // ตรวจสอบ email ซ้ำ
       const exist = await processRepo.findOneBy({ Email });
       if (exist) {
-        return res.status(400).json({ error: 'Email นี้ถูกใช้ไปแล้ว' });
+        return res.status(400).json({ success: false, data: null, message: 'Email นี้ถูกใช้ไปแล้ว' });
       }
 
       // เพิ่ม admin
@@ -67,9 +76,13 @@ module.exports = (AppDataSource) => {
       });
       await processRepo.save(processCheck);
 
-      res.json({ message: 'สมัครแอดมินสำเร็จ' });
+      res.status(201).json({
+        success: true,
+        data: { admin_id: admin.admin_id, admin_name: admin.admin_name, Email: admin.Email },
+        message: 'สมัครแอดมินสำเร็จ'
+      });
     } catch (err) {
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ success: false, data: null, message: err.message });
     }
   });
 
@@ -101,9 +114,13 @@ module.exports = (AppDataSource) => {
     try {
       const adminRepo = AppDataSource.getRepository('admin');
       const admins = await adminRepo.find();
-      res.json(admins);
+      res.json({
+        success: true,
+        data: admins,
+        message: 'รายชื่อแอดมิน'
+      });
     } catch (err) {
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ success: false, data: null, message: err.message });
     }
   });
 
@@ -127,10 +144,23 @@ module.exports = (AppDataSource) => {
   router.delete('/admin/:id', async (req, res) => {
     try {
       const adminRepo = AppDataSource.getRepository('admin');
+      const processRepo = AppDataSource.getRepository('ProcessCheck');
+      
+      // หา admin จาก admin_id
+      const admin = await adminRepo.findOneBy({ admin_id: parseInt(req.params.id) });
+      if (!admin) {
+        return res.status(404).json({ success: false, data: null, message: 'ไม่พบแอดมินที่ต้องการลบ' });
+      }
+      
+      // ลบข้อมูลในตาราง process_check ตาม Email
+      await processRepo.delete({ Email: admin.Email });
+      
+      // ลบ admin จากตาราง admin
       await adminRepo.delete(req.params.id);
-      res.json({ message: 'ลบแอดมินสำเร็จ' });
+      
+      res.json({ success: true, data: null, message: 'ลบแอดมินสำเร็จ' });
     } catch (err) {
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ success: false, data: null, message: err.message });
     }
   });
 
@@ -174,19 +204,23 @@ module.exports = (AppDataSource) => {
       const adminRepo = AppDataSource.getRepository('admin');
       const processUser = await processRepo.findOneBy({ Email });
       if (!processUser || processUser.Role !== 'admin') {
-        return res.status(401).json({ error: 'ไม่พบผู้ใช้งานหรือไม่ใช่แอดมิน' });
+        return res.status(401).json({ success: false, data: null, message: 'ไม่พบผู้ใช้งานหรือไม่ใช่แอดมิน' });
       }
       const valid = await bcrypt.compare(Password, processUser.Password);
-      if (!valid) return res.status(401).json({ error: 'รหัสผ่านไม่ถูกต้อง' });
+      if (!valid) return res.status(401).json({ success: false, data: null, message: 'รหัสผ่านไม่ถูกต้อง' });
       const adminProfile = await adminRepo.findOneBy({ Email });
       const token = crypto.randomBytes(32).toString('hex');
       res.json({
-        token,
-        role: 'admin',
-        admin_name: adminProfile ? adminProfile.admin_name : '',
+        success: true,
+        data: {
+          token,
+          role: 'admin',
+          admin_name: adminProfile ? adminProfile.admin_name : ''
+        },
+        message: 'เข้าสู่ระบบสำเร็จ'
       });
     } catch (err) {
-      res.status(500).json({ error: err.message });
+      res.status(500).json({ success: false, data: null, message: err.message });
     }
   });
 

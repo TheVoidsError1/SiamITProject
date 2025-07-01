@@ -18,5 +18,8 @@ module.exports = new EntitySchema({
     department: {
       type: 'varchar',
      },
+     role:{
+      type: 'varchar'
+     }
 },
 }); 

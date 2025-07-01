@@ -9,5 +9,6 @@ module.exports = new EntitySchema({
     Password: { type: 'varchar' },
     Token: { type: 'varchar' },
     Role: { type: 'varchar', default: 'user' },
+    Repid: { type: 'int', nullable: true },
   },
 });

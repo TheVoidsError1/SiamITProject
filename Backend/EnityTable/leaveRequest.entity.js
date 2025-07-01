@@ -17,5 +17,6 @@ module.exports = new EntitySchema({
     contact: { type: 'varchar', nullable: true },
     createdAt: { type: 'timestamp', createDate: true },
     imgLeave: { type: 'varchar', nullable: true },
+    status: { type: 'varchar', nullable: true}
   }
 });

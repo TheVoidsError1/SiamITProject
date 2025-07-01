@@ -17,7 +17,13 @@ const Index = () => {
         .then(res => {
           setDbUser({ name: res.data.data.name });
         })
-        .catch(() => setDbUser(null));
+        .catch(() => {
+          // ถ้าไม่สามารถดึงข้อมูลจาก API ได้ ให้ใช้ข้อมูลจาก AuthContext
+          setDbUser({ name: user.full_name || 'ผู้ใช้' });
+        });
+    } else if (user?.full_name) {
+      // ถ้ามีข้อมูลชื่อผู้ใช้ใน AuthContext แล้ว ให้ใช้เลย
+      setDbUser({ name: user.full_name });
     }
   }, [user]);
 
@@ -77,7 +83,7 @@ const Index = () => {
         <div className="gradient-bg rounded-2xl p-8 text-white relative overflow-hidden">
           <div className="relative z-10">
             <h2 className="text-3xl font-bold mb-2">
-              สวัสดี {dbUser?.name || 'ผู้ใช้'}! 👋
+              สวัสดี {dbUser?.name || user?.full_name || 'ผู้ใช้'}! 👋
             </h2>
             <p className="text-blue-100 mb-6">
               วันนี้เป็นวันที่ {new Date().toLocaleDateString('th-TH', {

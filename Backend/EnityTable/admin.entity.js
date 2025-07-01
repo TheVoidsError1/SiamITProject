@@ -12,5 +12,8 @@ module.exports = new EntitySchema({
       admin_name: {
         type: 'varchar',
       },
+      admin_role:{
+        type: 'varchar', default: 'admin'
+      }
     },
   }); 
