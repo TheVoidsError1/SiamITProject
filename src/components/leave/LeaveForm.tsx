@@ -182,7 +182,7 @@ export const LeaveForm = () => {
           </SelectTrigger>
           <SelectContent>
             {employeeTypes.map((type) => (
-              <SelectItem key={type.label} value={type.label}>
+              <SelectItem key={type.value} value={type.value}>
                 {type.label}
               </SelectItem>
             ))}
@@ -229,7 +229,7 @@ export const LeaveForm = () => {
             </SelectTrigger>
             <SelectContent>
               {personalLeaveOptions.map((option) => (
-                <SelectItem key={option.label} value={option.label}>
+                <SelectItem key={option.value} value={option.value}>
                   {option.label}
                 </SelectItem>
               ))}
