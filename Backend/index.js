@@ -133,7 +133,9 @@ app.use('/api', adminController);
 
 const leaveRequestController = require('./api/leaveRequestController')(AppDataSource);
 app.use('/api', leaveRequestController);
-app.use('/leave-uploads', express.static('public/leave-uploads'));
+
+const adminDashboardController = require('./api/AdminDashboardController')(AppDataSource);
+app.use('/api', adminDashboardController);
 
 const { router: userRoutes, setController: setUserController } = require('./api/userRoutes');
 setUserController(AppDataSource);
