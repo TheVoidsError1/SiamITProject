@@ -86,7 +86,7 @@ class UserController {
       if (isNaN(parseInt(id))) {
         return res.status(400).json({ success: false, message: 'Invalid user id' });
       }
-      const { User_name, position, department } = req.body;
+      const { User_name, position, department, email } = req.body;
       const user = await this.userRepository.findOne({ where: { User_id: parseInt(id) } });
       if (!user) {
         return res.status(404).json({ success: false, message: 'User not found' });
@@ -95,7 +95,12 @@ class UserController {
       if (position) user.position = position;
       if (department) user.department = department;
       const updatedUser = await this.userRepository.save(user);
-      const processCheck = await this.dataSource.getRepository('ProcessCheck').findOne({ where: { id: updatedUser.User_id } });
+      // Update email in ProcessCheck if provided
+      let processCheck = await this.dataSource.getRepository('ProcessCheck').findOne({ where: { id: updatedUser.User_id } });
+      if (processCheck && email) {
+        processCheck.Email = email;
+        await this.dataSource.getRepository('ProcessCheck').save(processCheck);
+      }
       res.json({
         success: true,
         data: {

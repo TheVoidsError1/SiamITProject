@@ -83,6 +83,8 @@ router.get('/', (req, res) => {
  *                 type: string
  *               department:
  *                 type: string
+ *               email:
+ *                  type: string
  *     responses:
  *       200:
  *         description: User updated

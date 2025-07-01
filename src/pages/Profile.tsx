@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { User, Mail, Building, Briefcase, Shield, Calendar, Camera, Save } from 'lucide-react';
+import axios from 'axios';
 
 const Profile = () => {
   const { user } = useAuth();
@@ -24,18 +24,37 @@ const Profile = () => {
   });
 
   const handleSave = async () => {
+    if (!user) return;
     setLoading(true);
     try {
-      // Mock save - would update Supabase in real implementation
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast({
-        title: "บันทึกข้อมูลสำเร็จ",
-        description: "ข้อมูลโปรไฟล์ของคุณได้รับการอัปเดตแล้ว",
+      const response = await axios.put(`http://localhost:3001/api/users/${user.id}`, {
+        User_name: formData.full_name,
+        position: formData.position,
+        department: formData.department,
+        email: formData.email,
       });
-    } catch (error) {
+      if (response.data.success) {
+        toast({
+          title: "บันทึกข้อมูลสำเร็จ",
+          description: "ข้อมูลโปรไฟล์ของคุณได้รับการอัปเดตแล้ว",
+        });
+        // Update local user state in localStorage and context
+        const updatedUser = {
+          ...user,
+          full_name: formData.full_name,
+          position: formData.position,
+          department: formData.department,
+          email: formData.email,
+        };
+        localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+        // Optionally, trigger a context update if needed
+      } else {
+        throw new Error(response.data.message || 'ไม่สามารถบันทึกข้อมูลได้');
+      }
+    } catch (error: any) {
       toast({
         title: "เกิดข้อผิดพลาด",
-        description: "ไม่สามารถบันทึกข้อมูลได้ กรุณาลองใหม่อีกครั้ง",
+        description: error.response?.data?.message || error.message || "ไม่สามารถบันทึกข้อมูลได้ กรุณาลองใหม่อีกครั้ง",
         variant: "destructive",
       });
     } finally {

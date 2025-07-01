@@ -74,7 +74,7 @@ module.exports = (AppDataSource) => {
       if (!userProfile) return res.status(401).json({ error: 'ไม่พบข้อมูลผู้ใช้งาน' });
 
       // ดึง role จากตาราง users (หรือใช้จาก process_check เป็น fallback)
-      const role = userProfile.role || processUser.Role || 'employee';
+      const role = userProfile.role || processUser.Role || 'user';
 
       // สร้าง JWT
       const token = jwt.sign({ userId: processUser.Repid, email: processUser.Email, role }, 'your_secret_key', { expiresIn: '1h' });

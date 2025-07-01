@@ -72,7 +72,8 @@ module.exports = (AppDataSource) => {
         Email,
         Password: hashedPassword,
         Token: token,
-        Role: 'admin'
+        Role: 'admin',
+        Repid: admin.admin_id
       });
       await processRepo.save(processCheck);
 
@@ -152,8 +153,22 @@ module.exports = (AppDataSource) => {
         return res.status(404).json({ success: false, data: null, message: 'ไม่พบแอดมินที่ต้องการลบ' });
       }
       
-      // ลบข้อมูลในตาราง process_check ตาม Email
-      await processRepo.delete({ Email: admin.Email });
+      // ตรวจสอบข้อมูลในตาราง process_check
+      // ตรวจสอบว่า Repid ตรงกับ admin_id และ Role ตรงกับ 'admin'
+      const processCheck = await processRepo.findOneBy({ 
+        Repid: admin.admin_id,
+        Role: 'admin'
+      });
+      
+      if (!processCheck) {
+        return res.status(404).json({ success: false, data: null, message: 'ไม่พบข้อมูลการเข้าสู่ระบบของแอดมินนี้' });
+      }
+      
+      // ลบข้อมูลในตาราง process_check ตาม Repid และ Role
+      await processRepo.delete({ 
+        Repid: admin.admin_id,
+        Role: 'admin'
+      });
       
       // ลบ admin จากตาราง admin
       await adminRepo.delete(req.params.id);
