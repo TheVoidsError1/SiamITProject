@@ -6,34 +6,40 @@ class UserController {
     this.userRepository = dataSource.getRepository('User');
   }
 
-  // GET /users - Get all users
+  // GET /users - Get all users (from process_check as source of truth)
   async getAllUsers(req, res) {
     try {
-      // Get all users
-      const users = await this.userRepository.find();
-      // Get all process checks
-      const processChecks = await this.dataSource.getRepository('ProcessCheck').find();
-      // Map by Repid for quick lookup
-      const processCheckMap = {};
+      const processRepo = this.dataSource.getRepository('ProcessCheck');
+      const userRepo = this.dataSource.getRepository('User');
+      const adminRepo = this.dataSource.getRepository('admin');
+      const processChecks = await processRepo.find();
+      const result = [];
       for (const pc of processChecks) {
-        if (pc.Repid !== null && pc.Repid !== undefined) {
-          processCheckMap[pc.Repid] = pc;
+        let name = '-';
+        let position = '-';
+        let department = '-';
+        if (pc.Role === 'admin') {
+          const admin = await adminRepo.findOneBy({ admin_id: pc.Repid });
+          name = admin ? admin.admin_name : '-';
+        } else if (pc.Role === 'employee' || pc.Role === 'user' || pc.Role === 'intern') {
+          const user = await userRepo.findOneBy({ User_id: pc.Repid });
+          name = user ? user.User_name : '-';
+          position = user ? user.position : '-';
+          department = user ? user.department : '-';
         }
+        result.push({
+          id: pc.id,
+          name,
+          email: pc.Email,
+          role: pc.Role,
+          position,
+          department
+        });
       }
-      // Combine data
-      const result = users.map(user => {
-        const pc = processCheckMap[user.User_id];
-        return {
-          name: user.User_name,
-          position: user.position,
-          department: user.department,
-          email: pc ? pc.Email : null
-        };
-      });
       res.json({
         success: true,
         data: result,
-        message: 'Users with emails retrieved successfully'
+        message: 'All users (from process_check) retrieved successfully'
       });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
