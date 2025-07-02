@@ -18,36 +18,7 @@ interface AuthContextType {
   loading: boolean;
 }
 
-// Mock users data
-const MOCK_USERS = [
-  {
-    id: '1',
-    email: 'admin@siamit.com',
-    password: 'admin123',
-    full_name: 'ผู้ดูแลระบบ',
-    role: 'admin' as const,
-    department: 'IT Department',
-    position: 'System Administrator'
-  },
-  {
-    id: '2',
-    email: 'user@siamit.com',
-    password: 'user123',
-    full_name: 'พนักงานทั่วไป',
-    role: 'employee' as const,
-    department: 'Marketing',
-    position: 'Marketing Executive'
-  },
-  {
-    id: '3',
-    email: 'john@siamit.com',
-    password: 'john123',
-    full_name: 'John Smith',
-    role: 'employee' as const,
-    department: 'Sales',
-    position: 'Sales Manager'
-  }
-];
+
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 

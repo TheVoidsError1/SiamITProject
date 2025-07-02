@@ -1,32 +1,11 @@
+
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, Users, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
-import { useAuth } from '@/contexts/AuthContext';
-import { useEffect, useState } from "react";
-import axios from "axios";
 
 const Index = () => {
-  const { user } = useAuth();
-  const [dbUser, setDbUser] = useState<{ name: string } | null>(null);
-
-  useEffect(() => {
-    if (user?.id) {
-      axios.get(`/api/users/${user.id}`)
-        .then(res => {
-          setDbUser({ name: res.data.data.name });
-        })
-        .catch(() => {
-          // ถ้าไม่สามารถดึงข้อมูลจาก API ได้ ให้ใช้ข้อมูลจาก AuthContext
-          setDbUser({ name: user.full_name || 'ผู้ใช้' });
-        });
-    } else if (user?.full_name) {
-      // ถ้ามีข้อมูลชื่อผู้ใช้ใน AuthContext แล้ว ให้ใช้เลย
-      setDbUser({ name: user.full_name });
-    }
-  }, [user]);
-
   const stats = [
     {
       title: "วันลาคงเหลือ",
@@ -82,13 +61,7 @@ const Index = () => {
         {/* Welcome Section */}
         <div className="gradient-bg rounded-2xl p-8 text-white relative overflow-hidden">
           <div className="relative z-10">
-            <h2 className="text-3xl font-bold mb-2">
-              สวัสดี {
-                user?.role === 'admin'
-                  ? (dbUser?.name || user?.full_name || 'แอดมิน')
-                  : (dbUser?.name || user?.full_name || 'ผู้ใช้')
-              }! 👋
-            </h2>
+            <h2 className="text-3xl font-bold mb-2">สวัสดี สมชาย ใจดี! 👋</h2>
             <p className="text-blue-100 mb-6">
               วันนี้เป็นวันที่ {new Date().toLocaleDateString('th-TH', {
                 year: 'numeric',

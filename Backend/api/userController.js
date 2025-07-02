@@ -13,10 +13,12 @@ class UserController {
       const users = await this.userRepository.find();
       // Get all process checks
       const processChecks = await this.dataSource.getRepository('ProcessCheck').find();
-      // Map by id for quick lookup
+      // Map by Repid for quick lookup
       const processCheckMap = {};
       for (const pc of processChecks) {
-        processCheckMap[pc.id] = pc;
+        if (pc.Repid !== null && pc.Repid !== undefined) {
+          processCheckMap[pc.Repid] = pc;
+        }
       }
       // Combine data
       const result = users.map(user => {
@@ -49,7 +51,7 @@ class UserController {
       if (!user) {
         return res.status(404).json({ success: false, message: 'User not found' });
       }
-      const processCheck = await this.dataSource.getRepository('ProcessCheck').findOne({ where: { id: user.User_id } });
+      const processCheck = await this.dataSource.getRepository('ProcessCheck').findOne({ where: { Repid: user.User_id } });
       res.json({
         success: true,
         data: {
@@ -96,7 +98,7 @@ class UserController {
       if (department) user.department = department;
       const updatedUser = await this.userRepository.save(user);
       // Update email in ProcessCheck if provided
-      let processCheck = await this.dataSource.getRepository('ProcessCheck').findOne({ where: { id: updatedUser.User_id } });
+      let processCheck = await this.dataSource.getRepository('ProcessCheck').findOne({ where: { Repid: updatedUser.User_id } });
       if (processCheck && email) {
         processCheck.Email = email;
         await this.dataSource.getRepository('ProcessCheck').save(processCheck);
@@ -126,7 +128,7 @@ class UserController {
       }
       // Delete matching process check
       const processCheckRepo = this.dataSource.getRepository('ProcessCheck');
-      const processCheck = await processCheckRepo.findOne({ where: { id: user.User_id } });
+      const processCheck = await processCheckRepo.findOne({ where: { Repid: user.User_id } });
       if (processCheck) {
         await processCheckRepo.remove(processCheck);
       }

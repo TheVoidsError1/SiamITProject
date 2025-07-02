@@ -14,14 +14,24 @@ module.exports = (AppDataSource) => {
   router.post('/leave-request', upload.single('imgLeave'), async (req, res) => {
     try {
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
+      const processRepo = AppDataSource.getRepository('ProcessCheck');
       const data = req.body;
       let imgLeave = null;
       if (req.file) {
         imgLeave = `/leave-uploads/${req.file.filename}`;
       }
+
+      // สมมติรับ email จาก body หรือ token
+      const { Email } = data;
+      const processUser = await processRepo.findOneBy({ Email });
+      if (!processUser) {
+        return res.status(400).json({ error: "ไม่พบผู้ใช้ในระบบ" });
+      }
+
       const leave = leaveRepo.create({
         ...data,
         imgLeave,
+        Repid: processUser.Repid, // เพิ่ม Repid
       });
       await leaveRepo.save(leave);
       res.json({ message: 'บันทึกคำขอลาสำเร็จ', leave });
@@ -85,6 +95,22 @@ module.exports = (AppDataSource) => {
       });
     } catch (err) {
       console.error('Get leave requests error:', err);
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
+  router.get('/leave-request/full', async (req, res) => {
+    try {
+      const data = await AppDataSource
+        .getRepository('LeaveRequest')
+        .createQueryBuilder('leave')
+        .leftJoinAndMapOne('leave.process', 'ProcessCheck', 'process', 'leave.Repid = process.Repid')
+        .leftJoinAndMapOne('leave.user', 'User', 'user', 'process.Repid = user.User_id')
+        .orderBy('leave.createdAt', 'DESC')
+        .getMany();
+
+      res.json({ success: true, data });
+    } catch (err) {
       res.status(500).json({ success: false, error: err.message });
     }
   });

@@ -141,6 +141,9 @@ const { router: userRoutes, setController: setUserController } = require('./api/
 setUserController(AppDataSource);
 app.use('/api/users', userRoutes);
 
+const midController = require('./api/MidController')(AppDataSource);
+app.use('/api', midController);
+
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 }); 
