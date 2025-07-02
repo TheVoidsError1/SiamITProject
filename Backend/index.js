@@ -17,7 +17,7 @@ const AppDataSource = new DataSource({
   host: 'localhost',
   port: 3306,
   username: 'root',
-  password: '', // ใส่รหัสผ่านของคุณ
+  password: 'password', // ใส่รหัสผ่านของคุณ
   database: 'siamitleave',
   synchronize: true, // dev only! จะสร้าง/อัปเดต table อัตโนมัติ
   logging: false,
@@ -40,8 +40,8 @@ AppDataSource.initialize()
 app.use(bodyParser.json());
 
 const allowedOrigins = [
-  'http://localhost:8081',
-  'http://192.168.50.64:8081',
+  'http://localhost:8080',
+  'http://192.168.50.64:8080',
   'http://localhost:3001'
 ];
 
