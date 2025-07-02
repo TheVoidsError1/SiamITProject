@@ -1,27 +1,65 @@
-import React, { useState } from 'react';
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { User, Mail, Building, Briefcase, Shield, Calendar, Camera, Save } from 'lucide-react';
 import axios from 'axios';
+import { Building, Calendar, Camera, Save, Shield, User } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 const Profile = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
     full_name: user?.full_name || '',
     email: user?.email || '',
     department: user?.department || '',
     position: user?.position || '',
   });
+
+  useEffect(() => {
+    if (!user?.id) return;
+    axios.get(`http://localhost:3001/api/profile/${user.id}/image`)
+      .then(res => {
+        if (res.data.avatar_url) {
+          setAvatarUrl(`http://localhost:3001${res.data.avatar_url}`);
+        } else {
+          setAvatarUrl(null);
+        }
+      })
+      .catch(() => setAvatarUrl(null));
+  }, [user?.id]);
+
+  const handleCameraClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || !user?.id) return;
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append('profileImg', file);
+    formData.append('userId', user.id);
+    try {
+      await axios.post('http://localhost:3001/api/profile/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      // หลังอัปโหลดเสร็จ reload avatar ใหม่
+      const res = await axios.get(`http://localhost:3001/api/profile/${user.id}/image`);
+      setAvatarUrl(`http://localhost:3001${res.data.avatar_url}`);
+      toast({ title: 'อัปโหลดรูปสำเร็จ' });
+    } catch (err) {
+      toast({ title: 'อัปโหลดรูปไม่สำเร็จ', variant: 'destructive' });
+    }
+  };
 
   const handleSave = async () => {
     if (!user) return;
@@ -88,14 +126,25 @@ const Profile = () => {
             <div className="flex items-center space-x-6">
               <div className="relative">
                 <Avatar className="h-24 w-24">
-                  <AvatarImage src={user?.avatar_url} />
+                  <AvatarImage src={avatarUrl || undefined} />
                   <AvatarFallback className="text-lg font-semibold bg-primary text-primary-foreground">
                     {user?.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
                   </AvatarFallback>
                 </Avatar>
-                <button className="absolute bottom-0 right-0 p-2 bg-primary rounded-full text-white hover:bg-primary/90 transition-colors">
+                <button
+                  type="button"
+                  className="absolute bottom-0 right-0 p-2 bg-primary rounded-full text-white hover:bg-primary/90 transition-colors"
+                  onClick={handleCameraClick}
+                >
                   <Camera className="h-4 w-4" />
                 </button>
+                <input
+                  type="file"
+                  accept="image/*"
+                  ref={fileInputRef}
+                  style={{ display: 'none' }}
+                  onChange={handleFileChange}
+                />
               </div>
               
               <div className="flex-1">

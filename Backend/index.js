@@ -7,6 +7,7 @@ const bcrypt = require('bcryptjs');
 const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
 const port = 3001;
@@ -17,7 +18,7 @@ const AppDataSource = new DataSource({
   host: 'localhost',
   port: 3306,
   username: 'root',
-  password: 'password', // ใส่รหัสผ่านของคุณ
+  password: '', // ใส่รหัสผ่านของคุณ
   database: 'siamitleave',
   synchronize: true, // dev only! จะสร้าง/อัปเดต table อัตโนมัติ
   logging: false,
@@ -109,6 +110,9 @@ app.post('/register', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+const profileUpload = require('./api/profileUpload')(AppDataSource);
+app.use('/api', profileUpload);
+app.use('/profile-uploads', express.static(path.join(__dirname, '../public/profile-uploads')));
 
 // Swagger config
 const swaggerOptions = {
