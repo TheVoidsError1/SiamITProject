@@ -69,19 +69,53 @@ module.exports = (AppDataSource) => {
       // ดึง role (หรือกำหนด default)
       const role = processUser.Role || 'employee';
 
-      // ดึงข้อมูล user เพิ่มเติม
-      const userProfile = await userRepo.findOneBy({ User_name: processUser.User_name });
+      let full_name = '';
+      let department = '';
+      let position = '';
+
+      if (role === 'admin') {
+        // สำหรับ admin ให้ดึงข้อมูลจากตาราง admin
+        const adminRepo = AppDataSource.getRepository('admin');
+        const adminProfile = await adminRepo.findOneBy({ admin_id: processUser.Repid });
+        console.log('Admin Profile Found:', adminProfile);
+        full_name = adminProfile ? adminProfile.admin_name : '';
+        department = '-';
+        position = '-';
+      } else {
+        // สำหรับ employee/user ให้ดึงข้อมูลจากตาราง users
+        const userProfile = await userRepo.findOneBy({ User_id: processUser.Repid });
+        console.log('User Profile Found:', userProfile);
+        full_name = userProfile ? userProfile.User_name : '';
+        department = userProfile ? userProfile.department : '';
+        position = userProfile ? userProfile.position : '';
+      }
 
       // สร้าง JWT
       const token = jwt.sign({ userId: processUser.id, email: processUser.Email, role }, 'your_secret_key', { expiresIn: '1h' });
+
+      // Debug logging
+      console.log('Login Debug Info:', {
+        email: processUser.Email,
+        role: role,
+        repid: processUser.Repid,
+        full_name,
+        department,
+        position,
+        processUser: {
+          id: processUser.id,
+          Email: processUser.Email,
+          Role: processUser.Role,
+          Repid: processUser.Repid
+        }
+      });
 
       res.json({
         token,
         role,
         userId: processUser.id,
-        full_name: userProfile ? userProfile.User_name : '',
-        department: userProfile ? userProfile.department : '',
-        position: userProfile ? userProfile.position : '',
+        full_name,
+        department,
+        position,
       });
     } catch (err) {
       res.status(500).json({ error: err.message });

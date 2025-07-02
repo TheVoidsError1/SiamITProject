@@ -105,9 +105,13 @@ export const LeaveForm = () => {
         formData.append("imgLeave", attachments[0]);
       }
       // ส่ง API
+      const token = localStorage.getItem('token');
       const response = await fetch("http://localhost:3001/api/leave-request", {
         method: "POST",
         body: formData,
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
       const data = await response.json();
       if (!response.ok) {

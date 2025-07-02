@@ -1,6 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
+const authMiddleware = require('../middleware/authMiddleware');
 
 const upload = multer({
   dest: path.join(__dirname, '../../public/leave-uploads'),
@@ -11,7 +12,7 @@ module.exports = (AppDataSource) => {
   const router = express.Router();
 
   // POST /api/leave-request (รองรับอัปโหลดไฟล์)
-  router.post('/leave-request', upload.single('imgLeave'), async (req, res) => {
+  router.post('/leave-request', authMiddleware, upload.single('imgLeave'), async (req, res) => {
     try {
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
       const processRepo = AppDataSource.getRepository('ProcessCheck');
@@ -21,8 +22,8 @@ module.exports = (AppDataSource) => {
         imgLeave = `/leave-uploads/${req.file.filename}`;
       }
 
-      // สมมติรับ email จาก body หรือ token
-      const { Email } = data;
+      // ใช้ email จาก token (req.user)
+      const Email = req.user.email;
       const processUser = await processRepo.findOneBy({ Email });
       if (!processUser) {
         return res.status(400).json({ error: "ไม่พบผู้ใช้ในระบบ" });

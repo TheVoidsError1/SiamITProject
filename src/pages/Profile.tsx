@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import axios from 'axios';
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,7 @@ import { useToast } from '@/hooks/use-toast';
 import { User, Mail, Building, Briefcase, Shield, Calendar, Camera, Save } from 'lucide-react';
 
 const Profile = () => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
@@ -26,13 +27,34 @@ const Profile = () => {
   const handleSave = async () => {
     setLoading(true);
     try {
-      // Mock save - would update Supabase in real implementation
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast({
-        title: "บันทึกข้อมูลสำเร็จ",
-        description: "ข้อมูลโปรไฟล์ของคุณได้รับการอัปเดตแล้ว",
-      });
-    } catch (error) {
+      const requestData: any = {
+        User_name: formData.full_name,
+        email: formData.email,
+      };
+
+      // Only include position and department for non-admin users
+      if (user.role !== 'admin') {
+        requestData.position = formData.position;
+        requestData.department = formData.department;
+      }
+
+      const response = await axios.put(`http://localhost:3001/api/users/${user.id}`, requestData);
+      if (response.data.success) {
+        toast({
+          title: "บันทึกข้อมูลสำเร็จ",
+          description: "ข้อมูลโปรไฟล์ของคุณได้รับการอัปเดตแล้ว",
+        });
+        // Update user data in context and localStorage
+        updateUser({
+          full_name: formData.full_name,
+          position: formData.position,
+          department: formData.department,
+          email: formData.email,
+        });
+      } else {
+        throw new Error(response.data.message || 'ไม่สามารถบันทึกข้อมูลได้');
+      }
+    } catch (error: any) {
       toast({
         title: "เกิดข้อผิดพลาด",
         description: "ไม่สามารถบันทึกข้อมูลได้ กรุณาลองใหม่อีกครั้ง",
@@ -81,7 +103,7 @@ const Profile = () => {
               
               <div className="flex-1">
                 <h2 className="text-2xl font-bold text-gray-900">{user?.full_name}</h2>
-                <p className="text-gray-600 mb-2">{user?.position}</p>
+                <p className="text-gray-600 mb-2">{user?.position || '-'}</p>
                 <div className="flex items-center gap-4">
                   <Badge variant={user?.role === 'admin' ? 'default' : 'secondary'} className="flex items-center gap-1">
                     <Shield className="h-3 w-3" />
@@ -89,7 +111,7 @@ const Profile = () => {
                   </Badge>
                   <Badge variant="outline" className="flex items-center gap-1">
                     <Building className="h-3 w-3" />
-                    {user?.department}
+                    {user?.department || '-'}
                   </Badge>
                 </div>
               </div>
@@ -140,6 +162,8 @@ const Profile = () => {
                       id="position"
                       value={formData.position}
                       onChange={(e) => setFormData(prev => ({ ...prev, position: e.target.value }))}
+                      disabled={user?.role === 'admin'}
+                      className={user?.role === 'admin' ? 'bg-gray-100 cursor-not-allowed' : ''}
                     />
                   </div>
                   
@@ -149,6 +173,8 @@ const Profile = () => {
                       id="department"
                       value={formData.department}
                       onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
+                      disabled={user?.role === 'admin'}
+                      className={user?.role === 'admin' ? 'bg-gray-100 cursor-not-allowed' : ''}
                     />
                   </div>
                 </div>

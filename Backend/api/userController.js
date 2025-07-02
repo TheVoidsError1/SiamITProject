@@ -81,37 +81,102 @@ class UserController {
   //   }
   // }
 
-  // PUT /users/:id - Update user
+  /**
+   * @swagger
+   * /api/users/{id}:
+   *   put:
+   *     summary: Update user or admin profile and process_check info by process_check id
+   *     tags: [Users]
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         schema:
+   *           type: integer
+   *         required: true
+   *         description: The id from process_check table
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               User_name:
+   *                 type: string
+   *               position:
+   *                 type: string
+   *               department:
+   *                 type: string
+   *               email:
+   *                 type: string
+   *               password:
+   *                 type: string
+   *     responses:
+   *       200:
+   *         description: Profile updated successfully
+   *       404:
+   *         description: Not found
+   *       500:
+   *         description: Server error
+   */
+  // PUT /users/:id - Update user based on process_check id, using Role and Repid
   async updateUser(req, res) {
     try {
-      const { id } = req.params;
-      if (isNaN(parseInt(id))) {
-        return res.status(400).json({ success: false, message: 'Invalid user id' });
+      const { id } = req.params; // id from process_check
+      const processRepo = this.dataSource.getRepository('ProcessCheck');
+      const userRepo = this.dataSource.getRepository('User');
+      const adminRepo = this.dataSource.getRepository('admin');
+      const { User_name, position, department, email, password } = req.body;
+
+      // Find process_check record
+      const processUser = await processRepo.findOneBy({ id: parseInt(id) });
+      if (!processUser) {
+        return res.status(404).json({ success: false, message: 'ProcessCheck record not found' });
       }
-      const { User_name, position, department, email } = req.body;
-      const user = await this.userRepository.findOne({ where: { User_id: parseInt(id) } });
-      if (!user) {
-        return res.status(404).json({ success: false, message: 'User not found' });
+
+      let updatedProfile = null;
+      if (processUser.Role === 'employee' || processUser.Role === 'user') {
+        // Update users table
+        const user = await userRepo.findOneBy({ User_id: processUser.Repid });
+        if (!user) {
+          return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        if (User_name) user.User_name = User_name;
+        if (position) user.position = position;
+        if (department) user.department = department;
+        updatedProfile = await userRepo.save(user);
+      } else if (processUser.Role === 'admin') {
+        // Update admin table
+        const admin = await adminRepo.findOneBy({ admin_id: processUser.Repid });
+        if (!admin) {
+          return res.status(404).json({ success: false, message: 'Admin not found' });
+        }
+        if (User_name) admin.admin_name = User_name;
+        // Admin table doesn't have position and department fields, so skip them
+        updatedProfile = await adminRepo.save(admin);
+      } else {
+        return res.status(400).json({ success: false, message: 'Unknown role' });
       }
-      if (User_name) user.User_name = User_name;
-      if (position) user.position = position;
-      if (department) user.department = department;
-      const updatedUser = await this.userRepository.save(user);
-      // Update email in ProcessCheck if provided
-      let processCheck = await this.dataSource.getRepository('ProcessCheck').findOne({ where: { Repid: updatedUser.User_id } });
-      if (processCheck && email) {
-        processCheck.Email = email;
-        await this.dataSource.getRepository('ProcessCheck').save(processCheck);
+
+      // Update email and password in process_check if provided
+      let changed = false;
+      if (email) {
+        processUser.Email = email;
+        changed = true;
       }
+      if (password) {
+        const bcrypt = require('bcryptjs');
+        processUser.Password = await bcrypt.hash(password, 10);
+        changed = true;
+      }
+      if (changed) {
+        await processRepo.save(processUser);
+      }
+
       res.json({
         success: true,
-        data: {
-          name: updatedUser.User_name,
-          position: updatedUser.position,
-          department: updatedUser.department,
-          email: processCheck ? processCheck.Email : null
-        },
-        message: 'User updated successfully'
+        data: updatedProfile,
+        message: 'Profile updated successfully'
       });
     } catch (error) {
       res.status(500).json({ success: false, message: error.message });
