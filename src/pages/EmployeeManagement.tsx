@@ -1,55 +1,57 @@
-
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Users, Mail, User, Eye } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Eye, User, Users } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
+
+// เพิ่ม type สำหรับข้อมูลพนักงาน
+type Employee = {
+  id: string;
+  full_name: string;
+  email: string;
+  position: string;
+  department: string;
+  role: string;
+  usedLeaveDays: number;
+  totalLeaveDays: number;
+};
 
 const EmployeeManagement = () => {
-  const employees = [
-    {
-      id: '1',
-      full_name: 'ผู้ดูแลระบบ',
-      email: 'admin@siamit.com',
-      role: 'admin',
-      department: 'IT Department',
-      position: 'System Administrator',
-      usedLeaveDays: 5,
-      totalLeaveDays: 20
-    },
-    {
-      id: '2',
-      full_name: 'พนักงานทั่วไป',
-      email: 'user@siamit.com',
-      role: 'employee',
-      department: 'Marketing',
-      position: 'Marketing Executive',
-      usedLeaveDays: 12,
-      totalLeaveDays: 18
-    },
-    {
-      id: '3',
-      full_name: 'John Smith',
-      email: 'john@siamit.com',
-      role: 'employee',
-      department: 'Sales',
-      position: 'Sales Manager',
-      usedLeaveDays: 8,
-      totalLeaveDays: 20
-    },
-    {
-      id: '4',
-      full_name: 'สมชาย ใจดี',
-      email: 'somchai@siamit.com',
-      role: 'intern',
-      department: 'IT Department',
-      position: 'Intern Developer',
-      usedLeaveDays: 3,
-      totalLeaveDays: 10
-    }
-  ];
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 4;
+
+  useEffect(() => {
+    fetch("http://localhost:3001/api/users")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.data)) {
+          // map field ให้ตรงกับ type Employee
+          const employees = data.data.map((item, idx) => ({
+            id: idx + 1 + '', // สร้าง id ชั่วคราว (ถ้าไม่มี id จริง)
+            full_name: item.name,
+            email: item.email,
+            position: item.position,
+            department: item.department,
+            role: item.role || 'employee', // ถ้าไม่มี role ให้ default เป็น employee
+            usedLeaveDays: item.usedLeaveDays || 0,
+            totalLeaveDays: item.totalLeaveDays || 20 // กำหนดค่า default
+          }));
+          setEmployees(employees);
+        } else {
+          setEmployees([]);
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const totalPages = Math.ceil(employees.length / itemsPerPage);
+  const paginatedEmployees = employees.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const stats = [
     {
@@ -119,65 +121,81 @@ const EmployeeManagement = () => {
 
           {/* Employee List */}
           <Card className="border-0 shadow-lg">
-            <CardHeader className="gradient-bg text-white rounded-t-lg">
-              <CardTitle className="flex items-center gap-2">
-                <Users className="w-5 h-5" />
+            <CardHeader className="gradient-bg text-white rounded-t-lg p-3">
+              <CardTitle className="flex items-center gap-2 text-lg">
+                <Users className="w-4 h-4" />
                 รายชื่อบุคลากร
               </CardTitle>
-              <CardDescription className="text-blue-100">
+              <CardDescription className="text-blue-100 text-xs">
                 รายการพนักงานและเด็กฝึกงานทั้งหมด
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-6">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>ชื่อ-นามสกุล</TableHead>
-                    <TableHead>อีเมล</TableHead>
-                    <TableHead>ตำแหน่ง</TableHead>
-                    <TableHead>แผนก</TableHead>
-                    <TableHead>สถานะ</TableHead>
-                    <TableHead>วันลาใช้แล้ว/ทั้งหมด</TableHead>
-                    <TableHead className="text-center">การจัดการ</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {employees.map((employee) => (
-                    <TableRow key={employee.id}>
-                      <TableCell className="font-medium">{employee.full_name}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Mail className="w-4 h-4 text-gray-400" />
-                          {employee.email}
-                        </div>
-                      </TableCell>
-                      <TableCell>{employee.position}</TableCell>
-                      <TableCell>{employee.department}</TableCell>
-                      <TableCell>
-                        <Badge 
-                          variant={employee.role === 'admin' ? 'default' : employee.role === 'employee' ? 'secondary' : 'outline'}
+            <CardContent className="p-3">
+              {loading ? (
+                <div className="text-sm">กำลังโหลดข้อมูล...</div>
+              ) : (
+                <>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="text-sm">ชื่อ-นามสกุล</TableHead>
+                        <TableHead className="text-sm">อีเมล</TableHead>
+                        <TableHead className="text-sm">ตำแหน่ง</TableHead>
+                        <TableHead className="text-sm">แผนก</TableHead>
+                        <TableHead className="text-sm">สถานะ</TableHead>
+                        <TableHead className="text-sm">วันลาใช้แล้ว/ทั้งหมด</TableHead>
+                        <TableHead className="text-center text-sm">การจัดการ</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {paginatedEmployees.map((employee) => (
+                        <TableRow key={employee.id}>
+                          <TableCell className="font-medium text-sm">{employee.full_name}</TableCell>
+                          <TableCell className="text-sm">{employee.email}</TableCell>
+                          <TableCell className="text-sm">{employee.position}</TableCell>
+                          <TableCell className="text-sm">{employee.department}</TableCell>
+                          <TableCell>
+                            <Badge 
+                              variant={employee.role === 'admin' ? 'default' : employee.role === 'employee' ? 'secondary' : 'outline'}
+                              className="text-xs px-2 py-0.5"
+                            >
+                              {employee.role === 'admin' ? 'ผู้ดูแลระบบ' : 
+                                employee.role === 'employee' ? 'พนักงาน' : 'เด็กฝึกงาน'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <span className={`font-medium text-sm ${employee.usedLeaveDays > employee.totalLeaveDays * 0.8 ? 'text-red-600' : 'text-green-600'}`}>
+                              {employee.usedLeaveDays}/{employee.totalLeaveDays} วัน
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <Button asChild size="sm" variant="outline" className="text-xs px-2 py-1">
+                              <Link to={`/admin/employees/${employee.id}`}>
+                                <Eye className="w-3 h-3 mr-1" />
+                                ดูรายละเอียด
+                              </Link>
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  {/* Pagination */}
+                  {totalPages > 1 && (
+                    <div className="flex justify-center mt-4 gap-1">
+                      {Array.from({ length: totalPages }, (_, idx) => idx + 1).map((page) => (
+                        <button
+                          key={page}
+                          onClick={() => setCurrentPage(page)}
+                          className={`px-2 py-1 rounded border text-sm ${currentPage === page ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-300'} transition`}
                         >
-                          {employee.role === 'admin' ? 'ผู้ดูแลระบบ' : 
-                           employee.role === 'employee' ? 'พนักงาน' : 'เด็กฝึกงาน'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <span className={`font-medium ${employee.usedLeaveDays > employee.totalLeaveDays * 0.8 ? 'text-red-600' : 'text-green-600'}`}>
-                          {employee.usedLeaveDays}/{employee.totalLeaveDays} วัน
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Button asChild size="sm" variant="outline">
-                          <Link to={`/admin/employees/${employee.id}`}>
-                            <Eye className="w-4 h-4 mr-2" />
-                            ดูรายละเอียด
-                          </Link>
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                          {page}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
             </CardContent>
           </Card>
         </div>
