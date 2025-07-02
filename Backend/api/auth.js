@@ -35,6 +35,10 @@ module.exports = (AppDataSource) => {
       const token = jwt.sign({ userId: user.User_id, email: Email, role: Role || 'user' }, 'your_secret_key', { expiresIn: '1h' });
 
       // 4. สร้าง ProcessCheck โดยเก็บ Email, Password, Role, Repid, Token (save only once)
+      // 3. สร้าง JWT
+      const token = jwt.sign({ userId: user.User_id, email: Email, role: Role || 'user' }, 'your_secret_key', { expiresIn: '1h' });
+
+      // 4. สร้าง ProcessCheck โดยเก็บ Email, Password, Role, Repid, Token (save only once)
       const processCheck = processRepo.create({ 
         Email, 
         Password: hashedPassword, 
@@ -92,22 +96,6 @@ module.exports = (AppDataSource) => {
 
       // สร้าง JWT
       const token = jwt.sign({ userId: processUser.id, email: processUser.Email, role }, 'your_secret_key', { expiresIn: '1h' });
-
-      // Debug logging
-      console.log('Login Debug Info:', {
-        email: processUser.Email,
-        role: role,
-        repid: processUser.Repid,
-        full_name,
-        department,
-        position,
-        processUser: {
-          id: processUser.id,
-          Email: processUser.Email,
-          Role: processUser.Role,
-          Repid: processUser.Repid
-        }
-      });
 
       res.json({
         token,
