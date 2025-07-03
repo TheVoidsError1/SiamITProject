@@ -1,13 +1,11 @@
-import { Button } from "@/components/ui/button";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth } from "@/contexts/AuthContext";
-import { Calendar, Clock, TrendingUp, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Calendar, Clock, Users, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 
 const Index = () => {
-  const { user } = useAuth();
   const stats = [
     {
       title: "วันลาคงเหลือ",
@@ -87,9 +85,7 @@ const Index = () => {
         {/* Welcome Section */}
         <div className="gradient-bg rounded-2xl p-8 text-white relative overflow-hidden">
           <div className="relative z-10">
-            <h2 className="text-3xl font-bold mb-2">
-              สวัสดี {user?.full_name || "ผู้ใช้งาน"}! 👋
-            </h2>
+            <h2 className="text-3xl font-bold mb-2">สวัสดี สมชาย ใจดี! 👋</h2>
             <p className="text-blue-100 mb-6">
               วันนี้เป็นวันที่ {new Date().toLocaleDateString('th-TH', {
                 year: 'numeric',
