@@ -46,18 +46,54 @@ const AdminDashboard = () => {
   }, []);
 
   const handleApprove = (id: number, employeeName: string) => {
-    toast({
-      title: "อนุมัติเรียบร้อย! ✅",
-      description: `อนุมัติคำขอลาของ ${employeeName} แล้ว`,
-    });
+    fetch(`/api/leave-request/${id}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'approved' }),
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          toast({ title: "อนุมัติเรียบร้อย! ✅", description: `อนุมัติคำขอลาของ ${employeeName} แล้ว` });
+          // รีเฟรชข้อมูล
+          refreshLeaveRequests();
+        }
+      });
   };
 
   const handleReject = (id: number, employeeName: string) => {
-    toast({
-      title: "ไม่อนุมัติคำขอ ❌",
-      description: `ไม่อนุมัติคำขอลาของ ${employeeName}`,
-      variant: "destructive",
-    });
+    fetch(`/api/leave-request/${id}/status`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: 'rejected' }),
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          toast({ title: "ไม่อนุมัติคำขอ ❌", description: `ไม่อนุมัติคำขอลาของ ${employeeName}`, variant: "destructive" });
+          // รีเฟรชข้อมูล
+          refreshLeaveRequests();
+        }
+      });
+  };
+
+  // เพิ่มฟังก์ชันสำหรับรีเฟรชข้อมูล
+  const refreshLeaveRequests = () => {
+    setLoading(true);
+    fetch("/api/leave-request/full")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          const pending = data.data.filter((item: any) => !item.status || item.status === "pending");
+          const recent = data.data.filter((item: any) => item.status === "approved");
+          setPendingRequests(pending);
+          setRecentRequests(recent);
+        } else {
+          setError("ไม่สามารถโหลดข้อมูลคำขอลาได้");
+        }
+      })
+      .catch(() => setError("เกิดข้อผิดพลาดในการเชื่อมต่อ API"))
+      .finally(() => setLoading(false));
   };
 
   const stats = [
@@ -265,7 +301,7 @@ const AdminDashboard = () => {
                             <div>
                               <p className="text-sm font-medium text-gray-700">อนุมัติเมื่อ:</p>
                               <p className="text-sm text-gray-600">
-                                {request.updatedAt ? format(new Date(request.updatedAt), "dd MMMM yyyy", { locale: th }) : "-"}
+                                {request.approvedTime ? format(new Date(request.approvedTime), "dd MMMM yyyy HH:mm", { locale: th }) : "-"}
                               </p>
                             </div>
                           </div>

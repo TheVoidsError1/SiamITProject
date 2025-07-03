@@ -41,7 +41,31 @@ module.exports = (AppDataSource) => {
     }
   });
 
+  // PUT /api/leave-request/:id/status
+  router.put('/leave-request/:id/status', async (req, res) => {
+    try {
+      const leaveRepo = AppDataSource.getRepository('LeaveRequest');
+      const { id } = req.params;
+      const { status } = req.body; // status: 'approved' หรือ 'rejected'
 
+      const leave = await leaveRepo.findOneBy({ id: parseInt(id) });
+      if (!leave) {
+        return res.status(404).json({ success: false, message: 'ไม่พบคำขอลา' });
+      }
+
+      leave.status = status;
+      if (status === 'approved') {
+        leave.approvedTime = new Date();
+      } else if (status === 'rejected') {
+        leave.approvedTime = null;
+      }
+      await leaveRepo.save(leave);
+
+      res.json({ success: true, message: 'อัปเดตสถานะสำเร็จ', data: leave });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
 
   /**
    * @swagger
