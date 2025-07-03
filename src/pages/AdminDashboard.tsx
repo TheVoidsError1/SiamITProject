@@ -1,18 +1,22 @@
-import React, { useEffect, useState } from "react";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Clock, TrendingUp, AlertCircle, CheckCircle, XCircle, Eye } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
-import { useToast } from "@/hooks/use-toast";
+import { AlertCircle, CheckCircle, Clock, Eye, TrendingUp, Users, XCircle } from "lucide-react";
+import { useEffect, useState } from "react";
 
 const AdminDashboard = () => {
   const { toast } = useToast();
 
   const [adminName, setAdminName] = useState<string>("");
+  const [userCount, setUserCount] = useState<number>(0);
+  const [approvedThisMonth, setApprovedThisMonth] = useState<number>(0);
+  const [pendingCount, setPendingCount] = useState<number>(0);
+  const [averageDayOff, setAverageDayOff] = useState<number>(0);
 
   useEffect(() => {
     fetch("/api/admin/list")
@@ -21,6 +25,38 @@ const AdminDashboard = () => {
         if (data.success && data.data.length > 0) {
           setAdminName(data.data[0].admin_name);
         }
+      });
+  }, []);
+
+  useEffect(() => {
+    fetch('http://localhost:3001/api/dashboard/user-count')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) setUserCount(data.data);
+      });
+  }, []);
+
+  useEffect(() => {
+    fetch('http://localhost:3001/api/dashboard/approved-this-month')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) setApprovedThisMonth(data.data);
+      });
+  }, []);
+
+  useEffect(() => {
+    fetch('http://localhost:3001/api/dashboard/leave-status-count')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) setPendingCount(data.data.pending);
+      });
+  }, []);
+
+  useEffect(() => {
+    fetch('http://localhost:3001/api/dashboard/average-day-off')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) setAverageDayOff(data.data);
       });
   }, []);
 
@@ -90,28 +126,28 @@ const AdminDashboard = () => {
   const stats = [
     {
       title: "คำขอรออนุมัติ",
-      value: "8",
+      value: pendingCount.toString(),
       icon: AlertCircle,
       color: "text-orange-600",
       bgColor: "bg-orange-50",
     },
     {
       title: "อนุมัติในเดือนนี้",
-      value: "24",
+      value: approvedThisMonth.toString(),
       icon: CheckCircle,
       color: "text-green-600",
       bgColor: "bg-green-50",
     },
     {
       title: "พนักงานทั้งหมด",
-      value: "45",
+      value: userCount.toString(),
       icon: Users,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
     },
     {
       title: "วันลาเฉลี่ย",
-      value: "12.5",
+      value: averageDayOff.toString(),
       icon: TrendingUp,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
