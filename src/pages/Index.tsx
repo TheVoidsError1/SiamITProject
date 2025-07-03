@@ -1,9 +1,9 @@
-
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, Users, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 
 const Index = () => {
   const stats = [
@@ -40,6 +40,30 @@ const Index = () => {
       bgColor: "bg-purple-50",
     },
   ];
+
+  const [leaveStats, setLeaveStats] = useState({ sick: 0, vacation: 0, business: 0 });
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [errorStats, setErrorStats] = useState("");
+
+  useEffect(() => {
+    setLoadingStats(true);
+    const token = localStorage.getItem("token");
+    fetch("/api/leave-request/statistics-by-type", {
+      headers: {
+        Authorization: token ? `Bearer ${token}` : undefined,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success) {
+          setLeaveStats(data.data);
+        } else {
+          setErrorStats("ไม่สามารถโหลดข้อมูลสถิติการลาได้");
+        }
+      })
+      .catch(() => setErrorStats("เกิดข้อผิดพลาดในการเชื่อมต่อ API"))
+      .finally(() => setLoadingStats(false));
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -157,20 +181,26 @@ const Index = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">ลาป่วย</span>
-                  <span className="font-medium">2 วัน</span>
+              {loadingStats ? (
+                <div className="text-center py-6 text-gray-500">กำลังโหลดข้อมูล...</div>
+              ) : errorStats ? (
+                <div className="text-center py-6 text-red-500">{errorStats}</div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">ลาป่วย</span>
+                    <span className="font-medium">{leaveStats.sick} วัน</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">ลาพักผ่อน</span>
+                    <span className="font-medium">{leaveStats.vacation} วัน</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">ลากิจ</span>
+                    <span className="font-medium">{leaveStats.business} วัน</span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">ลาพักผ่อน</span>
-                  <span className="font-medium">5 วัน</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">ลากิจ</span>
-                  <span className="font-medium">1 วัน</span>
-                </div>
-              </div>
+              )}
             </CardContent>
           </Card>
         </div>
