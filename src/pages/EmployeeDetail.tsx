@@ -1,6 +1,5 @@
-
-import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useParams, Link, useLocation } from "react-router-dom";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,6 +16,7 @@ import { LeaveDetailDialog } from "@/components/dialogs/LeaveDetailDialog";
 
 const EmployeeDetail = () => {
   const { id } = useParams();
+  const location = useLocation();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [selectedLeave, setSelectedLeave] = useState(null);
@@ -30,18 +30,42 @@ const EmployeeDetail = () => {
     role: ''
   });
 
-  // Mock employee data
-  const employee = {
-    id: id,
-    full_name: id === '1' ? 'ผู้ดูแลระบบ' : id === '2' ? 'พนักงานทั่วไป' : id === '3' ? 'John Smith' : 'สมชาย ใจดี',
-    email: id === '1' ? 'admin@siamit.com' : id === '2' ? 'user@siamit.com' : id === '3' ? 'john@siamit.com' : 'somchai@siamit.com',
-    password: '••••••••',
-    role: id === '1' ? 'admin' : id === '4' ? 'intern' : 'employee',
-    department: id === '1' || id === '4' ? 'IT Department' : id === '2' ? 'Marketing' : 'Sales',
-    position: id === '1' ? 'System Administrator' : id === '2' ? 'Marketing Executive' : id === '3' ? 'Sales Manager' : 'Intern Developer',
-    usedLeaveDays: id === '1' ? 5 : id === '2' ? 12 : id === '3' ? 8 : 3,
-    totalLeaveDays: id === '1' ? 20 : id === '2' ? 18 : id === '3' ? 20 : 10
-  };
+  // เพิ่ม state สำหรับข้อมูลจริง
+  const [employee, setEmployee] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // อ่าน role จาก query string
+  const queryParams = new URLSearchParams(location.search);
+  const role = queryParams.get("role");
+
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    setError(null);
+    let url = "";
+    if (role === "admin") {
+      url = `http://localhost:3001/api/admin/${id}`;
+    } else {
+      url = `http://localhost:3001/api/users/${id}`;
+    }
+    fetch(url)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setEmployee(data.data);
+        } else {
+          setEmployee(null);
+          setError('ไม่พบข้อมูลพนักงาน');
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        setEmployee(null);
+        setError('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+        setLoading(false);
+      });
+  }, [id, role]);
 
   // Mock leave history with attachments
   const leaveHistory = [
@@ -82,12 +106,12 @@ const EmployeeDetail = () => {
 
   const handleEdit = () => {
     setEditData({
-      full_name: employee.full_name,
-      email: employee.email,
+      full_name: employee?.name || '',
+      email: employee?.email || '',
       password: '',
-      department: employee.department,
-      position: employee.position,
-      role: employee.role
+      department: employee?.department || '',
+      position: employee?.position || '',
+      role: employee?.role || ''
     });
     setIsEditing(true);
   };
@@ -117,9 +141,9 @@ const EmployeeDetail = () => {
     setLeaveDialogOpen(true);
   };
 
-  if (!employee) {
-    return <div>ไม่พบข้อมูลพนักงาน</div>;
-  }
+  if (loading) return <div>กำลังโหลดข้อมูล...</div>;
+  if (error) return <div>{error}</div>;
+  if (!employee) return <div>ไม่พบข้อมูลพนักงาน</div>;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -134,7 +158,7 @@ const EmployeeDetail = () => {
           </Button>
           <div className="flex-1">
             <h1 className="text-2xl font-bold text-gray-900">ข้อมูลพนักงาน</h1>
-            <p className="text-sm text-gray-600">{employee.full_name}</p>
+            <p className="text-sm text-gray-600">{employee.name}</p>
           </div>
         </div>
       </div>
@@ -164,7 +188,7 @@ const EmployeeDetail = () => {
                         className="mt-1"
                       />
                     ) : (
-                      <p className="text-lg font-semibold">{employee.full_name}</p>
+                      <p className="text-lg font-semibold">{employee.name}</p>
                     )}
                   </div>
                   <div>

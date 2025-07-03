@@ -29,6 +29,7 @@ class UserController {
         }
         result.push({
           id: pc.id,
+          repid: pc.Repid,
           name,
           email: pc.Email,
           role: pc.Role,

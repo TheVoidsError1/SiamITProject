@@ -31,8 +31,8 @@ const EmployeeManagement = () => {
       .then((data) => {
         if (data.success && Array.isArray(data.data)) {
           // map field ให้ตรงกับ type Employee
-          const employees = data.data.map((item, idx) => ({
-            id: idx + 1 + '', // สร้าง id ชั่วคราว (ถ้าไม่มี id จริง)
+          const employees = data.data.map((item) => ({
+            id: item.repid, // ใช้ repid (User_id หรือ admin_id) จาก backend
             full_name: item.name,
             email: item.email,
             position: item.position,
@@ -174,7 +174,7 @@ const EmployeeManagement = () => {
                           </TableCell>
                           <TableCell className="text-center">
                             <Button asChild size="sm" variant="outline" className="text-xs px-2 py-1">
-                              <Link to={`/admin/employees/${employee.id}`}>
+                              <Link to={`/admin/employees/${employee.id}?role=${employee.role}`}>
                                 <Eye className="w-3 h-3 mr-1" />
                                 ดูรายละเอียด
                               </Link>

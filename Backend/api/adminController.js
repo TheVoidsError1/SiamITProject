@@ -239,5 +239,53 @@ module.exports = (AppDataSource) => {
     }
   });
 
+  /**
+   * @swagger
+   * /api/admin/:id:
+   *   get:
+   *     summary: Get admin by ID
+   *     tags:
+   *       - Admin
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: integer
+   *     responses:
+   *       200:
+   *         description: Admin information
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 admin_id:
+   *                   type: integer
+   *                 name:
+   *                   type: string
+   *                 email:
+   *                   type: string
+   */
+  router.get('/admin/:id', async (req, res) => {
+    try {
+      const adminRepo = AppDataSource.getRepository('admin');
+      const admin = await adminRepo.findOneBy({ admin_id: parseInt(req.params.id) });
+      if (!admin) {
+        return res.status(404).json({ success: false, data: null, message: 'ไม่พบแอดมิน' });
+      }
+      res.json({
+        success: true,
+        data: {
+          admin_id: admin.admin_id,
+          name: admin.admin_name,
+          email: admin.Email
+        }
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, data: null, message: err.message });
+    }
+  });
+
   return router;
 };
