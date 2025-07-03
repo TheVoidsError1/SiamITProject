@@ -153,35 +153,102 @@ module.exports = (AppDataSource) => {
     try {
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
       const leaves = await leaveRepo.find();
+      
+      console.log('Total leaves found:', leaves.length);
+      
       if (leaves.length === 0) {
         return res.json({ success: true, data: 0, message: 'Average day off retrieved successfully' });
       }
+      
       let totalDays = 0;
+      let processedLeaves = 0;
+      
       for (const leave of leaves) {
-        if (leave.startTime && leave.endTime) {
-          // Calculate hours difference and convert to days (9 hours = 1 day)
-          const [startHour, startMinute] = leave.startTime.split(':').map(Number);
-          const [endHour, endMinute] = leave.endTime.split(':').map(Number);
-          let start = new Date();
-          let end = new Date();
-          start.setHours(startHour, startMinute || 0, 0, 0);
-          end.setHours(endHour, endMinute || 0, 0, 0);
-          let diffMs = end - start;
-          if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000; // handle overnight
-          const diffHours = diffMs / (1000 * 60 * 60);
-          const days = parseFloat((diffHours / 9).toFixed(2));
-          totalDays += days > 0 ? days : 1;
-        } else if (leave.startDate && leave.endDate) {
-          // Always count as 1 day regardless of date difference
-          totalDays += 1;
+        console.log('Processing leave:', {
+          id: leave.id,
+          startDate: leave.startDate,
+          endDate: leave.endDate,
+          startTime: leave.startTime,
+          endTime: leave.endTime
+        });
+        
+        let daysForThisLeave = 0;
+        
+        if (leave.startDate && leave.endDate) {
+          // Handle different date formats that might come from the database
+          let startDate, endDate;
+          
+          // If dates are already Date objects
+          if (leave.startDate instanceof Date && leave.endDate instanceof Date) {
+            startDate = leave.startDate;
+            endDate = leave.endDate;
+          } else {
+            // If dates are strings, parse them
+            startDate = new Date(leave.startDate);
+            endDate = new Date(leave.endDate);
+          }
+          
+          console.log('Parsed dates:', { startDate, endDate });
+          
+          // Check if dates are valid
+          if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+            console.log('Invalid dates, defaulting to 1 day');
+            daysForThisLeave = 1;
+          } else {
+            // Calculate difference in days (inclusive of both start and end dates)
+            const timeDiff = endDate.getTime() - startDate.getTime();
+            const dayDiff = Math.ceil(timeDiff / (1000 * 3600 * 24)) + 1; // +1 for inclusive counting
+            
+            daysForThisLeave = Math.max(1, dayDiff); // Minimum 1 day
+            
+            console.log('Date calculation:', { timeDiff, dayDiff, daysForThisLeave });
+            
+            // If startTime and endTime are provided, adjust for partial days
+            if (leave.startTime && leave.endTime) {
+              const [startHour, startMinute] = leave.startTime.split(':').map(Number);
+              const [endHour, endMinute] = leave.endTime.split(':').map(Number);
+              
+              // Calculate hours difference
+              let startTime = new Date();
+              let endTime = new Date();
+              startTime.setHours(startHour, startMinute || 0, 0, 0);
+              endTime.setHours(endHour, endMinute || 0, 0, 0);
+              
+              let diffMs = endTime - startTime;
+              if (diffMs < 0) diffMs += 24 * 60 * 60 * 1000; // handle overnight
+              
+              const diffHours = diffMs / (1000 * 60 * 60);
+              
+              // If it's the same day, calculate based on hours (9 hours = 1 day)
+              if (dayDiff === 1) {
+                daysForThisLeave = parseFloat((diffHours / 9).toFixed(2));
+                daysForThisLeave = Math.max(0.5, daysForThisLeave); // Minimum 0.5 day
+                console.log('Time calculation:', { diffHours, daysForThisLeave });
+              }
+            }
+          }
         } else {
-          totalDays += 1;
+          // If no dates provided, default to 1 day
+          daysForThisLeave = 1;
+          console.log('No dates provided, defaulting to 1 day');
         }
+        
+        totalDays += daysForThisLeave;
+        processedLeaves++;
+        
+        console.log('Leave processed:', { daysForThisLeave, totalDays, processedLeaves });
       }
-      const average = parseFloat((totalDays / leaves.length).toFixed(2));
+      
+      const average = processedLeaves > 0 ? parseFloat((totalDays / processedLeaves).toFixed(2)) : 0;
+      
+      console.log('Final calculation:', { totalDays, processedLeaves, average });
+      
+      // Ensure we return a valid number, not null
+      const finalAverage = isNaN(average) ? 0 : average;
+      
       res.json({
         success: true,
-        data: average,
+        data: finalAverage,
         message: 'Average day off retrieved successfully'
       });
     } catch (err) {

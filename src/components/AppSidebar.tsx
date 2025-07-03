@@ -1,6 +1,7 @@
 
 import { Calendar, Home, Clock, Settings, User, LogOut, Users } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
 import {
   Sidebar,
   SidebarContent,
@@ -14,6 +15,7 @@ import {
   SidebarFooter,
 } from "@/components/ui/sidebar";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import NotificationBell from "./NotificationBell";
@@ -58,6 +60,23 @@ export function AppSidebar() {
   const location = useLocation();
   const { user, logout } = useAuth();
   const { toast } = useToast();
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    
+    // Fetch user's profile image
+    fetch(`http://localhost:3001/api/profile/${user.id}/image`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.avatar_url) {
+          setAvatarUrl(`http://localhost:3001${data.avatar_url}`);
+        } else {
+          setAvatarUrl(null);
+        }
+      })
+      .catch(() => setAvatarUrl(null));
+  }, [user?.id]);
 
   const handleLogout = async () => {
     try {
@@ -128,7 +147,12 @@ export function AppSidebar() {
         <div className="space-y-4">
           <Link to="/profile" className="block">
             <div className="flex items-center gap-3 p-3 rounded-lg bg-sidebar-accent/20 hover:bg-sidebar-accent/30 transition-colors cursor-pointer">
-              <User className="w-8 h-8 text-sidebar-foreground" />
+              <Avatar className="w-8 h-8">
+                <AvatarImage src={avatarUrl || undefined} />
+                <AvatarFallback className="text-xs font-medium bg-sidebar-accent text-sidebar-foreground">
+                  {user?.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
+                </AvatarFallback>
+              </Avatar>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-sidebar-foreground truncate">
                   {user?.full_name || 'ผู้ใช้'}
