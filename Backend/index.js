@@ -149,6 +149,10 @@ app.use('/api/users', userRoutes);
 const midController = require('./api/MidController')(AppDataSource);
 app.use('/api', midController);
 
+const { router: profileRoutes, setController: setProfileController } = require('./api/profileRoutes');
+setProfileController(AppDataSource);
+app.use('/api/profile', profileRoutes);
+
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 }); 

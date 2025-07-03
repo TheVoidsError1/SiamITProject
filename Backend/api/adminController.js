@@ -270,16 +270,20 @@ module.exports = (AppDataSource) => {
   router.get('/admin/:id', async (req, res) => {
     try {
       const adminRepo = AppDataSource.getRepository('admin');
+      const processRepo = AppDataSource.getRepository('ProcessCheck');
       const admin = await adminRepo.findOneBy({ admin_id: parseInt(req.params.id) });
       if (!admin) {
         return res.status(404).json({ success: false, data: null, message: 'ไม่พบแอดมิน' });
       }
+      const processCheck = await processRepo.findOneBy({ Repid: admin.admin_id });
       res.json({
         success: true,
         data: {
-          admin_id: admin.admin_id,
           name: admin.admin_name,
-          email: admin.Email
+          admin_id: admin.admin_id,
+          admin_name: admin.admin_name,
+          email: processCheck ? processCheck.Email : null,
+          processCheckId: processCheck ? processCheck.id : null
         }
       });
     } catch (err) {

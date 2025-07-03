@@ -35,6 +35,8 @@ const EmployeeDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [leaveHistory, setLeaveHistory] = useState([]);
+  // เพิ่ม state สำหรับ processCheckId
+  const [processCheckId, setProcessCheckId] = useState(null);
 
   // อ่าน role จาก query string
   const queryParams = new URLSearchParams(location.search);
@@ -55,6 +57,8 @@ const EmployeeDetail = () => {
       .then(data => {
         if (data.success) {
           setEmployee(data.data);
+          // ดึง processCheckId ถ้ามี
+          if (data.data.processCheckId) setProcessCheckId(data.data.processCheckId);
           // ดึง leave history จริง
           const repid = role === 'admin' ? data.data.admin_id : id;
           fetch(`http://localhost:3001/api/leave-request/user/${repid}`)
@@ -102,12 +106,48 @@ const EmployeeDetail = () => {
     setIsEditing(true);
   };
 
-  const handleSave = () => {
-    toast({
-      title: "บันทึกข้อมูลสำเร็จ! ✅",
-      description: "ข้อมูลของพนักงานได้รับการอัปเดตแล้ว",
-    });
-    setIsEditing(false);
+  const handleSave = async () => {
+    if (!processCheckId) {
+      toast({ title: "เกิดข้อผิดพลาด", description: "ไม่พบ processCheckId" });
+      return;
+    }
+    try {
+      const payload: any = {
+        User_name: editData.full_name,
+        position: editData.position,
+        department: editData.department,
+        email: editData.email,
+      };
+      if (editData.password) payload.password = editData.password;
+      // role ไม่ได้อัปเดตใน backend (process_check.Role) ใน API นี้
+      const response = await fetch(`http://localhost:3001/api/profile/${processCheckId}` , {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (data.success) {
+        toast({
+          title: "บันทึกข้อมูลสำเร็จ! ✅",
+          description: "ข้อมูลของพนักงานได้รับการอัปเดตแล้ว",
+        });
+        setIsEditing(false);
+        // รีเฟรชข้อมูลใหม่
+        let url = "";
+        if (role === "admin") {
+          url = `http://localhost:3001/api/admin/${id}`;
+        } else {
+          url = `http://localhost:3001/api/users/${id}`;
+        }
+        const res = await fetch(url);
+        const empData = await res.json();
+        if (empData.success) setEmployee(empData.data);
+      } else {
+        toast({ title: "เกิดข้อผิดพลาด", description: data.message || "ไม่สามารถบันทึกข้อมูลได้" });
+      }
+    } catch (err) {
+      toast({ title: "เกิดข้อผิดพลาด", description: "ไม่สามารถบันทึกข้อมูลได้" });
+    }
   };
 
   const handleCancel = () => {

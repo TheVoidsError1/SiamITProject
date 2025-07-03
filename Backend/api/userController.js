@@ -65,7 +65,8 @@ class UserController {
           name: user.User_name,
           position: user.position,
           department: user.department,
-          email: processCheck ? processCheck.Email : null
+          email: processCheck ? processCheck.Email : null,
+          processCheckId: processCheck ? processCheck.id : null
         }
       });
     } catch (error) {
