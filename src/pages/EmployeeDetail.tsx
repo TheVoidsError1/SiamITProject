@@ -34,6 +34,7 @@ const EmployeeDetail = () => {
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [leaveHistory, setLeaveHistory] = useState([]);
 
   // อ่าน role จาก query string
   const queryParams = new URLSearchParams(location.search);
@@ -54,6 +55,18 @@ const EmployeeDetail = () => {
       .then(data => {
         if (data.success) {
           setEmployee(data.data);
+          // ดึง leave history จริง
+          const repid = role === 'admin' ? data.data.admin_id : id;
+          fetch(`http://localhost:3001/api/leave-request/user/${repid}`)
+            .then(res => res.json())
+            .then(leaveData => {
+              if (leaveData.success) {
+                setLeaveHistory(leaveData.data);
+              } else {
+                setLeaveHistory([]);
+              }
+            })
+            .catch(() => setLeaveHistory([]));
         } else {
           setEmployee(null);
           setError('ไม่พบข้อมูลพนักงาน');
@@ -66,33 +79,6 @@ const EmployeeDetail = () => {
         setLoading(false);
       });
   }, [id, role]);
-
-  // Mock leave history with attachments
-  const leaveHistory = [
-    {
-      id: 1,
-      type: "ลาพักผ่อน",
-      startDate: new Date(2024, 10, 15),
-      endDate: new Date(2024, 10, 17),
-      days: 3,
-      reason: "เดินทางท่องเที่ยวกับครอบครัว",
-      status: "approved",
-      submittedDate: new Date(2024, 10, 10),
-    },
-    {
-      id: 2,
-      type: "ลาป่วย",
-      startDate: new Date(2024, 9, 22),
-      endDate: new Date(2024, 9, 23),
-      days: 2,
-      reason: "ป่วยด้วยโรคไข้หวัดใหญ่",
-      status: "approved",
-      submittedDate: new Date(2024, 9, 21),
-      attachments: [
-        new File([""], "medical-certificate.jpg", { type: "image/jpeg" })
-      ]
-    },
-  ];
 
   const departments = [
     'IT Department',
@@ -336,19 +322,19 @@ const EmployeeDetail = () => {
                 <TableBody>
                   {leaveHistory.map((leave) => (
                     <TableRow key={leave.id}>
-                      <TableCell className="font-medium">{leave.type}</TableCell>
+                      <TableCell className="font-medium">{leave.leaveType}</TableCell>
                       <TableCell>
-                        {format(leave.startDate, "dd MMM", { locale: th })} - {format(leave.endDate, "dd MMM yyyy", { locale: th })}
+                        {leave.startDate ? format(new Date(leave.startDate), "dd MMM", { locale: th }) : ''} - {leave.endDate ? format(new Date(leave.endDate), "dd MMM yyyy", { locale: th }) : ''}
                       </TableCell>
-                      <TableCell>{leave.days} วัน</TableCell>
+                      <TableCell>{leave.days || ''} วัน</TableCell>
                       <TableCell className="max-w-xs truncate">{leave.reason}</TableCell>
                       <TableCell>
-                        <Badge className="bg-green-100 text-green-800 border-green-200">
-                          อนุมัติแล้ว
+                        <Badge className={leave.status === 'approved' ? "bg-green-100 text-green-800 border-green-200" : "bg-yellow-100 text-yellow-800 border-yellow-200"}>
+                          {leave.status === 'approved' ? 'อนุมัติแล้ว' : 'รอดำเนินการ'}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {format(leave.submittedDate, "dd MMM yyyy", { locale: th })}
+                        {leave.submittedDate ? format(new Date(leave.submittedDate), "dd MMM yyyy", { locale: th }) : ''}
                       </TableCell>
                       <TableCell className="text-center">
                         <Button

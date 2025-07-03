@@ -226,5 +226,20 @@ module.exports = (AppDataSource) => {
     }
   });
 
+  // GET /api/leave-request/user/:repid - Get leave requests by Repid
+  router.get('/leave-request/user/:repid', async (req, res) => {
+    try {
+      const leaveRepo = AppDataSource.getRepository('LeaveRequest');
+      const repid = req.params.repid;
+      const leaves = await leaveRepo.find({
+        where: { Repid: repid },
+        order: { createdAt: 'DESC' }
+      });
+      res.json({ success: true, data: leaves });
+    } catch (err) {
+      res.status(500).json({ success: false, error: err.message });
+    }
+  });
+
   return router;
 }; 
