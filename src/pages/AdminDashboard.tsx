@@ -46,9 +46,14 @@ const AdminDashboard = () => {
   }, []);
 
   const handleApprove = (id: number, employeeName: string) => {
+    const token = localStorage.getItem('token');
+
     fetch(`/api/leave-request/${id}/status`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
       body: JSON.stringify({ status: 'approved' }),
     })
       .then(res => res.json())
@@ -62,9 +67,14 @@ const AdminDashboard = () => {
   };
 
   const handleReject = (id: number, employeeName: string) => {
+    const token = localStorage.getItem('token');
+
     fetch(`/api/leave-request/${id}/status`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
       body: JSON.stringify({ status: 'rejected' }),
     })
       .then(res => res.json())

@@ -42,9 +42,11 @@ module.exports = (AppDataSource) => {
   });
 
   // PUT /api/leave-request/:id/status
-  router.put('/leave-request/:id/status', async (req, res) => {
+  router.put('/leave-request/:id/status', authMiddleware, async (req, res) => {
     try {
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
+      const processRepo = AppDataSource.getRepository('ProcessCheck');
+      const adminRepo = AppDataSource.getRepository('admin');
       const { id } = req.params;
       const { status } = req.body; // status: 'approved' หรือ 'rejected'
 
@@ -56,8 +58,22 @@ module.exports = (AppDataSource) => {
       leave.status = status;
       if (status === 'approved') {
         leave.approvedTime = new Date();
+        // ดึงชื่อ admin จาก token
+        const Email = req.user.email;
+        const processUser = await processRepo.findOneBy({ Email });
+        if (processUser && processUser.Repid) {
+          const admin = await adminRepo.findOneBy({ admin_id: processUser.Repid });
+          if (admin && admin.admin_name) {
+            leave.approvedBy = admin.admin_name;
+          } else {
+            leave.approvedBy = Email;
+          }
+        } else {
+          leave.approvedBy = Email;
+        }
       } else if (status === 'rejected') {
         leave.approvedTime = null;
+        leave.approvedBy = null;
       }
       await leaveRepo.save(leave);
 

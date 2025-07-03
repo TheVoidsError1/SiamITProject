@@ -19,6 +19,8 @@ module.exports = new EntitySchema({
     imgLeave: { type: 'varchar', nullable: true },
     status: { type: 'varchar', nullable: true},
     approvedTime: { type: 'timestamp', nullable: true},
+    approvedBy: { type: 'varchar', nullable: true},
+    rejectedReason: { type: 'text', nullable: true},
     Repid: { type: 'int', nullable: true} //ไอ้ Repid  ของ ProcessCheck
   }
 });
