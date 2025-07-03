@@ -43,7 +43,8 @@ app.use(bodyParser.json());
 const allowedOrigins = [
   'http://localhost:8081',
   'http://192.168.50.64:8081',
-  'http://localhost:3001'
+  'http://localhost:3001',
+  'http://localhost:8080'
 ];
 
 app.use(cors({

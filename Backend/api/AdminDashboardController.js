@@ -31,17 +31,13 @@ module.exports = (AppDataSource) => {
   router.get('/dashboard/leave-status-count', async (req, res) => {
     try {
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
-      const pending = await leaveRepo.count({ where: { status: null } });
+      const pending = await leaveRepo.createQueryBuilder("leave").where("leave.status IS NULL OR leave.status = ''").getCount();
       res.json({
         success: true,
         data: { pending },
-        message: 'Pending count retrieved successfully'
-      });
-    } catch (err) {
+        message: 'Pending count retrieved successfully'});} catch (err) {
       console.error('Pending count error:', err);
-      res.status(500).json({ success: false, error: err.message });
-    }
-  });
+      res.status(500).json({ success: false, error: err.message });}});
 
   /**
    * @swagger

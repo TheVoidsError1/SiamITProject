@@ -63,14 +63,18 @@ const EmployeeManagement = () => {
     },
     {
       title: "พนักงานประจำ",
-      value: employees.filter(emp => emp.role === 'employee').length.toString(),
+      value: employees.filter(
+        emp =>
+          (emp.role === 'admin') ||
+          ((emp.role === 'employee' || emp.role === 'user') && emp.position?.toLowerCase() === 'employee')
+      ).length.toString(),
       icon: User,
       color: "text-green-600",
       bgColor: "bg-green-50",
     },
     {
       title: "เด็กฝึกงาน",
-      value: employees.filter(emp => emp.role === 'intern').length.toString(),
+      value: employees.filter(emp => emp.position?.toLowerCase() === 'intern').length.toString(),
       icon: User,
       color: "text-orange-600",
       bgColor: "bg-orange-50",
