@@ -52,26 +52,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const response = await fetch('http://localhost:3001/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ Email: email, Password: password }),
+      body: JSON.stringify({ email, password }), // เปลี่ยนจาก Email, Password เป็น email, password
     });
     const data = await response.json();
 
-    if (!response.ok) {
-      throw new Error(data.error || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
     }
 
-    // บันทึก user info ที่ได้จาก backend
+    // บันทึก user info ที่ได้จาก backend (ถ้ามี)
     const userInfo = {
-      id: data.userId || '',
+      id: data.data?.repid || data.data?.userId || '',
       email: email,
-      full_name: data.full_name,
-      role: data.role,
-      department: data.department,
-      position: data.position,
+      // เพิ่มเติมถ้ามี field อื่น ๆ ใน data
     };
     setUser(userInfo);
     localStorage.setItem('currentUser', JSON.stringify(userInfo));
-    localStorage.setItem('token', data.token);
+    localStorage.setItem('token', data.data?.token || '');
   };
 
   const signup = async (email: string, password: string, userData: Partial<User>) => {
@@ -83,8 +80,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         User_name: userData.full_name,
         position: userData.position,
         department: userData.department,
-        Email: email,
-        Password: password,
+        email: email,         // <-- แก้ตรงนี้
+        password: password,   // <-- แก้ตรงนี้
         Role: userData.role || 'employee',
       }),
     });

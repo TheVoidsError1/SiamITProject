@@ -135,6 +135,12 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 const midController = require('./api/MidController')(AppDataSource);
 app.use('/api', midController);
 
+const registerController = require('./api/RegisterController')(AppDataSource);
+app.use('/api', registerController);
+
+const loginController = require('./api/LoginController')(AppDataSource);
+app.use('/api', loginController);
+
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 }); 
