@@ -210,61 +210,6 @@ module.exports = (AppDataSource) => {
 
   /**
    * @swagger
-   * /admins:
-   *   post:
-   *     summary: สร้าง admin ใหม่
-   *     tags: [Admins]
-   *     requestBody:
-   *       required: true
-   *       content:
-   *         application/json:
-   *           schema:
-   *             type: object
-   *             properties:
-   *               admin_name:
-   *                 type: string
-   *               department:
-   *                 type: string
-   *               position:
-   *                 type: string
-   *     responses:
-   *       201:
-   *         description: สร้าง admin สำเร็จ
-   *         content:
-   *           application/json:
-   *             schema:
-   *               type: object
-   *               properties:
-   *                 success:
-   *                   type: boolean
-   *                 data:
-   *                   type: object
-   *                   properties:
-   *                     id:
-   *                       type: string
-   *                     admin_name:
-   *                       type: string
-   *                     department:
-   *                       type: string
-   *                     position:
-   *                       type: string
-   *                 message:
-   *                   type: string
-   */
-  router.post('/admins', async (req, res) => {
-    try {
-      const { admin_name, department, position } = req.body;
-      const adminRepo = AppDataSource.getRepository('admin');
-      const admin = adminRepo.create({ admin_name, department, position });
-      await adminRepo.save(admin);
-      res.status(201).json({ success: true, data: admin, message: 'สร้าง admin สำเร็จ' });
-    } catch (err) {
-      res.status(500).json({ success: false, data: null, message: err.message });
-    }
-  });
-
-  /**
-   * @swagger
    * /api/admins/register:
    *   post:
    *     summary: สร้างแอดมินใหม่
