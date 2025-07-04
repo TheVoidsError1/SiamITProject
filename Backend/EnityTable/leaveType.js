@@ -5,7 +5,7 @@ module.exports = new EntitySchema({
     name: 'LeaveType',
     tableName: 'leave_type',
     columns: {
-        id: {
+        id: { //ไอ้ id ของ LeaveType เชื่อมกับ leave_requst เขิงอมกับ id >>> leavetype
             primary: true,
             type: 'varchar',
             length: 36,

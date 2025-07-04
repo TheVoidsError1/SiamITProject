@@ -10,23 +10,22 @@ module.exports = new EntitySchema({
       type: 'varchar',
       length: 36,
     },
+    Repid: { type: 'varchar', nullable: true}, // Repid  ของ ProcessCheck เชื่อมกับ id ของ ProcessCheck
     employeeType: { type: 'varchar' },
+    supervisor: { type: 'varchar', nullable: true } , // supervisor เชื่อมกับ id ของ admin
     leaveType: { type: 'varchar' },
-    personalLeaveType: { type: 'varchar', nullable: true },
     startDate: { type: 'date' },
     endDate: { type: 'date' },
     startTime: { type: 'varchar', nullable: true },
     endTime: { type: 'varchar', nullable: true },
     reason: { type: 'text' },
-    supervisor: { type: 'varchar', nullable: true },
+    rejectedReason: { type: 'text', nullable: true},
     contact: { type: 'varchar', nullable: true },
     createdAt: { type: 'timestamp', createDate: true },
-    imgLeave: { type: 'varchar', nullable: true },
+    statusChangeTime: { type: 'timestamp', nullable: true},
     status: { type: 'varchar', nullable: true},
-    approvedTime: { type: 'timestamp', nullable: true},
-    approvedBy: { type: 'varchar', nullable: true},
-    rejectedReason: { type: 'text', nullable: true},
-    Repid: { type: 'int', nullable: true} //ไอ้ Repid  ของ ProcessCheck
+    statusBy: { type: 'varchar', nullable: true}, // status เชื่อมกับ id ของ admin
+    imgLeave: { type: 'varchar', nullable: true },
   },
   beforeInsert: (entity) => {
     if (!entity.id) {

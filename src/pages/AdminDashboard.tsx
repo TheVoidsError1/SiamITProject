@@ -82,7 +82,7 @@ const AdminDashboard = () => {
       });
   }, []);
 
-  const handleApprove = (id: number, employeeName: string) => {
+  const handleApprove = (id: string, employeeName: string) => {
     const token = localStorage.getItem('token');
 
     fetch(`/api/leave-request/${id}/status`, {
@@ -103,7 +103,7 @@ const AdminDashboard = () => {
       });
   };
 
-  const handleReject = (id: number, employeeName: string) => {
+  const handleReject = (id: string, employeeName: string) => {
     const token = localStorage.getItem('token');
 
     fetch(`/api/leave-request/${id}/status`, {

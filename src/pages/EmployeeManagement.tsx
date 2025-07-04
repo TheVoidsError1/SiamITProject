@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 // เพิ่ม type สำหรับข้อมูลพนักงาน
-type Employee = {
+interface Employee {
   id: string;
   full_name: string;
   email: string;
@@ -17,7 +17,7 @@ type Employee = {
   role: string;
   usedLeaveDays: number;
   totalLeaveDays: number;
-};
+}
 
 const EmployeeManagement = () => {
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -32,7 +32,7 @@ const EmployeeManagement = () => {
         if (data.success && Array.isArray(data.data)) {
           // map field ให้ตรงกับ type Employee
           const employees = data.data.map((item) => ({
-            id: item.repid, // ใช้ repid (id หรือ admin_id) จาก backend
+            id: String(item.repid), // ให้แน่ใจว่าเป็น string
             full_name: item.name,
             email: item.email,
             position: item.position,

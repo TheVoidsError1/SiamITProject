@@ -9,7 +9,7 @@ import { th } from "date-fns/locale";
 const LeaveHistory = () => {
   const leaveHistory = [
     {
-      id: 1,
+      id: '1',
       type: "ลาพักผ่อน",
       startDate: new Date(2024, 11, 20),
       endDate: new Date(2024, 11, 22),
@@ -20,7 +20,7 @@ const LeaveHistory = () => {
       submittedDate: new Date(2024, 11, 15),
     },
     {
-      id: 2,
+      id: '2',
       type: "ลาป่วย",
       startDate: new Date(2024, 10, 5),
       endDate: new Date(2024, 10, 6),
@@ -31,7 +31,7 @@ const LeaveHistory = () => {
       submittedDate: new Date(2024, 10, 4),
     },
     {
-      id: 3,
+      id: '3',
       type: "ลากิจ",
       startDate: new Date(2024, 9, 15),
       endDate: new Date(2024, 9, 15),
@@ -41,7 +41,7 @@ const LeaveHistory = () => {
       submittedDate: new Date(2024, 9, 12),
     },
     {
-      id: 4,
+      id: '4',
       type: "ลาพักผ่อน",
       startDate: new Date(2024, 8, 1),
       endDate: new Date(2024, 8, 5),

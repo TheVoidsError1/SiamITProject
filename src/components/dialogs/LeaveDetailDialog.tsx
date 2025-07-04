@@ -5,7 +5,7 @@ import { th } from "date-fns/locale";
 import { useEffect, useState } from "react";
 
 interface LeaveRequest {
-  id: number;
+  id: string;
   type: string;
   startDate: Date;
   endDate: Date;
