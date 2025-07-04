@@ -5,7 +5,7 @@ module.exports = new EntitySchema({
   name: 'ProcessCheck',
   tableName: 'process_check',
   columns: {
-    id: { // id ของ ProcessCheck เชื่อมกับ leave_request เขิงอมกับ id >>> process_check
+    id: {
       primary: true,
       type: 'varchar',
       length: 36,

@@ -1,8 +1,8 @@
 const { EntitySchema } = require('typeorm');
 
 module.exports = new EntitySchema({
-    name: 'Position',
-    tableName: 'position',
+    name: 'User',
+    tableName: 'user',
     columns: {
         id: {
             primary: true,
@@ -10,11 +10,6 @@ module.exports = new EntitySchema({
             length: 36,
             generated: 'uuid',
         },
-        position_name: { type: 'varchar' },
+        // ... other columns ...
     },
-    beforeInsert: (entity) => {
-        if (!entity.id) {
-            entity.id = uuidv4();
-        }
-    },
-})
+}); 

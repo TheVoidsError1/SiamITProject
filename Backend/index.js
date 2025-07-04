@@ -19,7 +19,7 @@ const AppDataSource = new DataSource({
   host: 'localhost',
   port: 3306,
   username: 'root',
-  password: '', // ใส่รหัสผ่านของคุณ
+  password: 'password', // ใส่รหัสผ่านของคุณ
   database: 'siamitleave',
   synchronize: true, // dev only! จะสร้าง/อัปเดต table อัตโนมัติ
   logging: false,
@@ -130,6 +130,12 @@ const swaggerOptions = {
 };
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// Register PositionController and DepartmentController
+const positionController = require('./api/PositionController')(AppDataSource);
+app.use('/api', positionController);
+const departmentController = require('./api/DepartmentController')(AppDataSource);
+app.use('/api', departmentController);
 
 // เชื่อมต่อ MidController เท่านั้น
 const midController = require('./api/MidController')(AppDataSource);

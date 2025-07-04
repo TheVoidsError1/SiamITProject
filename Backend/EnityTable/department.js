@@ -1,5 +1,4 @@
 const { EntitySchema } = require('typeorm');
-const { v4: uuidv4 } = require('uuid');
 
 module.exports = new EntitySchema({
     name: 'Department',
@@ -13,4 +12,4 @@ module.exports = new EntitySchema({
         },
         department_name: { type: 'varchar' },
     },
-})
+});
