@@ -64,7 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const userInfo = {
       id: data.data?.repid || data.data?.userId || '',
       email: email,
-      // เพิ่มเติมถ้ามี field อื่น ๆ ใน data
+      role: data.data?.role, // เพิ่มบรรทัดนี้
     };
     setUser(userInfo);
     localStorage.setItem('currentUser', JSON.stringify(userInfo));

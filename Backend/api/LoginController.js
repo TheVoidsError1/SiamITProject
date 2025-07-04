@@ -16,8 +16,9 @@ module.exports = (AppDataSource) => {
     if (!isPasswordValid) {
       return res.status(401).json({ success: false, data: null, message: 'Email หรือ Password ไม่ถูกต้อง' });
     }
-    const token = jwt.sign({ userId: processCheck.Repid }, 'your_secret_key', { expiresIn: '1h' });
-    res.json({ success: true, data: { token }, message: 'Login successful' });
+    // เพิ่ม role ลงใน token
+    const token = jwt.sign({ userId: processCheck.Repid, role: processCheck.Role }, 'your_secret_key', { expiresIn: '1h' });
+    res.json({ success: true, data: { token, role: processCheck.Role }, message: 'Login successful' });
   });
   return router;
 };
