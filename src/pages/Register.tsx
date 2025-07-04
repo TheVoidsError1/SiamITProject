@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,25 +21,55 @@ const Register = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [positions, setPositions] = useState<string[]>([]);
+  const [newDepartment, setNewDepartment] = useState('');
+  const [newPosition, setNewPosition] = useState('');
   
   const { signup } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const departments = [
-    'IT Department',
-    'Human Resources',
-    'Marketing',
-    'Sales',
-    'Finance',
-    'Operations',
-    'Customer Service'
-  ];
+  // ดึงข้อมูลจาก API
+  useEffect(() => {
+    fetch('http://localhost:3001/api/departments')
+      .then(res => res.json())
+      .then(data => setDepartments(data.data.map((d: any) => d.department_name)))
+      .catch(() => setDepartments([]));
 
-  const positions = [
-    { value: 'employee', label: 'พนักงานภายในบริษัท' },
-    { value: 'intern', label: 'เด็กฝึกงาน' }
-  ];
+    fetch('http://localhost:3001/api/positions')
+      .then(res => res.json())
+      .then(data => setPositions(data.data.map((p: any) => p.position_name)))
+      .catch(() => setPositions([]));
+  }, []);
+
+  // เพิ่ม department ใหม่
+  const handleAddDepartment = async () => {
+    if (!newDepartment) return;
+    const res = await fetch('http://localhost:3001/api/departments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ department_name: newDepartment }),
+    });
+    if (res.ok) {
+      setDepartments(prev => [...prev, newDepartment]);
+      setNewDepartment('');
+    }
+  };
+
+  // เพิ่ม position ใหม่
+  const handleAddPosition = async () => {
+    if (!newPosition) return;
+    const res = await fetch('http://localhost:3001/api/positions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ position_name: newPosition }),
+    });
+    if (res.ok) {
+      setPositions(prev => [...prev, newPosition]);
+      setNewPosition('');
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,15 +155,13 @@ const Register = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="position">ตำแหน่งงาน</Label>
-                <Select onValueChange={(value) => setFormData(prev => ({ ...prev, position: value, role: value === 'intern' ? 'intern' : 'employee' }))}>
+                <Select onValueChange={(value) => setFormData(prev => ({ ...prev, position: value }))}>
                   <SelectTrigger>
                     <SelectValue placeholder="เลือกตำแหน่งงาน" />
                   </SelectTrigger>
                   <SelectContent>
                     {positions.map((position) => (
-                      <SelectItem key={position.value} value={position.value}>
-                        {position.label}
-                      </SelectItem>
+                      <SelectItem key={position} value={position}>{position}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
