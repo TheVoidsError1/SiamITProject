@@ -370,9 +370,7 @@ export const LeaveForm = () => {
           type="button" 
           variant="outline" 
           onClick={() => {
-            localStorage.removeItem('token');
-            localStorage.removeItem('currentUser');
-            window.location.reload();
+            navigate("/"); // หรือเปลี่ยนเป็น path ที่ต้องการ เช่น "/dashboard"
           }}
           size="lg"
         >

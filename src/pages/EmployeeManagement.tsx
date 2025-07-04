@@ -32,7 +32,7 @@ const EmployeeManagement = () => {
         if (data.success && Array.isArray(data.data)) {
           // map field ให้ตรงกับ type Employee
           const employees = data.data.map((item) => ({
-            id: item.repid, // ใช้ repid (User_id หรือ admin_id) จาก backend
+            id: item.repid, // ใช้ repid (id หรือ admin_id) จาก backend
             full_name: item.name,
             email: item.email,
             position: item.position,

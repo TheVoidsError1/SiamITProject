@@ -146,7 +146,7 @@ module.exports = (AppDataSource) => {
         .getRepository('LeaveRequest')
         .createQueryBuilder('leave')
         .leftJoinAndMapOne('leave.process', 'ProcessCheck', 'process', 'leave.Repid = process.Repid')
-        .leftJoinAndMapOne('leave.user', 'User', 'user', 'process.Repid = user.User_id')
+        .leftJoinAndMapOne('leave.user', 'User', 'user', 'process.Repid = user.id')
         .orderBy('leave.createdAt', 'DESC')
         .getMany();
 

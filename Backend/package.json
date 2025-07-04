@@ -23,7 +23,8 @@
     "sqlstring": "^2.3.3",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
-    "typeorm": "^0.3.25"
+    "typeorm": "^0.3.25",
+    "uuid": "^11.1.0"
   },
   "scripts": {
     "start": "node index.js",

@@ -9,6 +9,7 @@ const swaggerJsdoc = require('swagger-jsdoc');
 const cors = require('cors');
 const path = require('path');
 
+
 const app = express();
 const port = 3001;
 
@@ -23,10 +24,14 @@ const AppDataSource = new DataSource({
   synchronize: true, // dev only! จะสร้าง/อัปเดต table อัตโนมัติ
   logging: false,
   entities: [
-    require('./EnityTable/user.entity.js'),
-    require('./EnityTable/ProcessCheck.entity.js'),
-    require('./EnityTable/admin.entity.js'),
-    require('./EnityTable/leaveRequest.entity.js')
+    require('./EnityTable/user.js'),
+    require('./EnityTable/processCheck.entity.js'),
+    require('./EnityTable/admin.js'),
+    require('./EnityTable/leaveRequest.entity.js'),
+    require('./EnityTable/position.js'),
+    require('./EnityTable/leavetype.js'),
+    require('./EnityTable/department.js')
+    
 ],
 });
 
@@ -65,14 +70,14 @@ app.get('/', (req, res) => {
 });
 
 // ตัวอย่าง route ดึงข้อมูลจากฐานข้อมูล
-app.get('/users', (req, res) => {
-  db.query('SELECT * FROM users', (err, results) => {
-    if (err) {
-      res.status(500).json({ error: err.message });
-      return;
-    }
-    res.json(results);
-  });
+app.get('/users', async (req, res) => {
+  try {
+    const userRepo = AppDataSource.getRepository('User');
+    const users = await userRepo.find();
+    res.json(users);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // สมัครสมาชิก
@@ -100,7 +105,7 @@ app.post('/register', async (req, res) => {
     await userRepo.save(user);
 
     // สร้าง JWT
-    const token = jwt.sign({ userId: user.User_id, email: Email }, 'your_secret_key', { expiresIn: '1h' });
+            const token = jwt.sign({ userId: user.id, email: Email }, 'your_secret_key', { expiresIn: '1h' });
 
     // อัปเดต token ใน ProcessCheck (optional)
     processCheck.Token = token;

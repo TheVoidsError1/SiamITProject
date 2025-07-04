@@ -22,7 +22,7 @@ class UserController {
           const admin = await adminRepo.findOneBy({ admin_id: pc.Repid });
           name = admin ? admin.admin_name : '-';
         } else if (pc.Role === 'employee' || pc.Role === 'user' || pc.Role === 'intern') {
-          const user = await userRepo.findOneBy({ User_id: pc.Repid });
+          const user = await userRepo.findOneBy({ id: pc.Repid });
           name = user ? user.User_name : '-';
           position = user ? user.position : '-';
           department = user ? user.department : '-';
@@ -51,14 +51,11 @@ class UserController {
   async getUserById(req, res) {
     try {
       const { id } = req.params;
-      if (isNaN(parseInt(id))) {
-        return res.status(400).json({ success: false, message: 'Invalid user id' });
-      }
-      const user = await this.userRepository.findOne({ where: { User_id: parseInt(id) } });
+      const user = await this.userRepository.findOne({ where: { id: id } });
       if (!user) {
         return res.status(404).json({ success: false, message: 'User not found' });
       }
-      const processCheck = await this.dataSource.getRepository('ProcessCheck').findOne({ where: { Repid: user.User_id } });
+      const processCheck = await this.dataSource.getRepository('ProcessCheck').findOne({ where: { Repid: user.id } });
       res.json({
         success: true,
         data: {
@@ -145,7 +142,7 @@ class UserController {
       let updatedProfile = null;
       if (processUser.Role === 'employee' || processUser.Role === 'user') {
         // Update users table
-        const user = await userRepo.findOneBy({ User_id: processUser.Repid });
+        const user = await userRepo.findOneBy({ id: processUser.Repid });
         if (!user) {
           return res.status(404).json({ success: false, message: 'User not found' });
         }
@@ -195,13 +192,13 @@ class UserController {
   async deleteUser(req, res) {
     try {
       const { id } = req.params;
-      const user = await this.userRepository.findOne({ where: { User_id: parseInt(id) } });
+      const user = await this.userRepository.findOne({ where: { id: id } });
       if (!user) {
         return res.status(404).json({ success: false, message: 'User not found' });
       }
       // Delete matching process check
       const processCheckRepo = this.dataSource.getRepository('ProcessCheck');
-      const processCheck = await processCheckRepo.findOne({ where: { Repid: user.User_id } });
+      const processCheck = await processCheckRepo.findOne({ where: { Repid: user.id } });
       if (processCheck) {
         await processCheckRepo.remove(processCheck);
       }

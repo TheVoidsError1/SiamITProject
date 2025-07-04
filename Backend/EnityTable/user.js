@@ -1,25 +1,28 @@
 const { EntitySchema } = require('typeorm');
+const { v4: uuidv4 } = require('uuid');
 
 module.exports = new EntitySchema({
   name: 'User',
   tableName: 'users',
   columns: {
-    User_id: {
+    id: {
       primary: true,
-      type: 'int',
-      generated: true,
+      type: 'varchar',
+      length: 36,
     },
     User_name: {
       type: 'varchar',
-    },
-    position: {
-      type: 'varchar',
-    },
-    department: {
+     },
+     department: {
       type: 'varchar',
      },
-     role:{
-      type: 'varchar'
+     position: {
+      type: 'varchar',
      },
-},
+  },
+  beforeInsert: (entity) => {
+    if (!entity.id) {
+      entity.id = uuidv4();
+    }
+  },
 }); 

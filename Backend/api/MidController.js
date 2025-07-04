@@ -47,7 +47,7 @@ module.exports = (AppDataSource) => {
       let deleted = { processCheck: processUser };
       if (processUser.Role === 'employee' || processUser.Role === 'user') {
         // Delete from users table
-        const user = await userRepo.findOneBy({ User_id: processUser.Repid });
+        const user = await userRepo.findOneBy({ id: processUser.Repid });
         if (user) {
           await userRepo.remove(user);
           deleted.user = user;

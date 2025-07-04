@@ -19,7 +19,7 @@ module.exports = (AppDataSource) => {
         return res.status(400).json({ error: 'Email นี้ถูกใช้ไปแล้ว' });
       }
 
-      // 1. สร้าง User ก่อน เพื่อให้ได้ User_id
+      // 1. สร้าง User ก่อน เพื่อให้ได้ id
       const user = userRepo.create({ 
         User_name, 
         position, 
@@ -32,21 +32,21 @@ module.exports = (AppDataSource) => {
       const hashedPassword = await bcrypt.hash(Password, 10);
 
       // 3. สร้าง JWT
-      const token = jwt.sign({ userId: user.User_id, email: Email, role: Role || 'user' }, 'your_secret_key', { expiresIn: '1h' });
+              const token = jwt.sign({ userId: user.id, email: Email, role: Role || 'user' }, 'your_secret_key', { expiresIn: '1h' });
 
       // 4. สร้าง ProcessCheck โดยเก็บ Email, Password, Role, Repid, Token (save only once)
       const processCheck = processRepo.create({ 
         Email, 
         Password: hashedPassword, 
         Role: Role || 'user', 
-        Repid: user.User_id,  // ใช้ Repid เป็นตัวเชื่อมกับ User_id
+        Repid: user.id,  // ใช้ Repid เป็นตัวเชื่อมกับ id
         Token: token
       });
       await processRepo.save(processCheck);
 
       res.json({ 
         token,
-        userId: user.User_id,
+        userId: user.id,
         message: 'สมัครสมาชิกสำเร็จ'
       });
     } catch (err) {
@@ -83,7 +83,7 @@ module.exports = (AppDataSource) => {
         position = '-';
       } else {
         // สำหรับ employee/user ให้ดึงข้อมูลจากตาราง users
-        const userProfile = await userRepo.findOneBy({ User_id: processUser.Repid });
+        const userProfile = await userRepo.findOneBy({ id: processUser.Repid });
         console.log('User Profile Found:', userProfile);
         full_name = userProfile ? userProfile.User_name : '';
         department = userProfile ? userProfile.department : '';

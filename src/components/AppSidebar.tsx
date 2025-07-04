@@ -101,7 +101,7 @@ export function AppSidebar() {
       <SidebarHeader className="p-6">
         <div className="flex items-center gap-3">
           <img
-            src="/lovable-uploads/041aa731-ed5d-477d-851c-0e290485c0e6.png"
+            src="/lovable-uploads/IMG_4486-removebg-preview.png"
             alt="Siam IT Logo"
             className="w-12 h-12 object-contain"
           />

@@ -87,7 +87,7 @@ const Register = () => {
       <div className="w-full max-w-md space-y-8 animate-fade-in">
         <div className="text-center">
           <img
-            src="/lovable-uploads/041aa731-ed5d-477d-851c-0e290485c0e6.png"
+            src="/lovable-uploads/IMG_4486-removebg-preview.png"
             alt="Siam IT Logo"
             className="mx-auto h-16 w-auto mb-6"
           />

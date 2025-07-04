@@ -23,7 +23,7 @@ class ProfileController {
       let updatedProfile = null;
       if (processUser.Role === 'employee' || processUser.Role === 'user' || processUser.Role === 'intern') {
         // Update users table
-        const user = await userRepo.findOneBy({ User_id: processUser.Repid });
+        const user = await userRepo.findOneBy({ id: processUser.Repid });
         if (!user) {
           return res.status(404).json({ success: false, message: 'User not found' });
         }
