@@ -116,9 +116,6 @@ app.post('/register', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
-const profileUpload = require('./api/profileUpload')(AppDataSource);
-app.use('/api', profileUpload);
-app.use('/profile-uploads', express.static(path.join(__dirname, '../public/profile-uploads')));
 
 // Swagger config
 const swaggerOptions = {
@@ -134,29 +131,9 @@ const swaggerOptions = {
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// เชื่อมต่อ route /register
-const authRoutes = require('./api/auth')(AppDataSource);
-app.use('/api', authRoutes);
-
-const adminController = require('./api/adminController')(AppDataSource);
-app.use('/api', adminController);
-
-const leaveRequestController = require('./api/leaveRequestController')(AppDataSource);
-app.use('/api', leaveRequestController);
-
-const adminDashboardController = require('./api/AdminDashboardController')(AppDataSource);
-app.use('/api', adminDashboardController);
-
-const { router: userRoutes, setController: setUserController } = require('./api/userRoutes');
-setUserController(AppDataSource);
-app.use('/api/users', userRoutes);
-
+// เชื่อมต่อ MidController เท่านั้น
 const midController = require('./api/MidController')(AppDataSource);
 app.use('/api', midController);
-
-const { router: profileRoutes, setController: setProfileController } = require('./api/profileRoutes');
-setProfileController(AppDataSource);
-app.use('/api/profile', profileRoutes);
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
