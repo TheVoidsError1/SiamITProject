@@ -9,12 +9,9 @@ module.exports = new EntitySchema({
             primary: true,
             type: 'varchar',
             length: 36,
+            generated: 'uuid',
         },
         position_name: { type: 'varchar' },
     },
-    beforeInsert: (entity) => {
-        if (!entity.id) {
-            entity.id = uuidv4();
-        }
-    },
+
 })

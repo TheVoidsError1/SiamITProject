@@ -265,6 +265,101 @@ module.exports = (AppDataSource) => {
 
   /**
    * @swagger
+   * /api/admins/register:
+   *   post:
+   *     summary: สร้างแอดมินใหม่
+   *     tags: [Admins]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               email:
+   *                 type: string
+   *               password:
+   *                 type: string
+   *               admin_name:
+   *                 type: string
+   *               department:
+   *                 type: string
+   *               position:
+   *                 type: string
+   *     responses:
+   *       201:
+   *         description: สร้างแอดมินสำเร็จ
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 data:
+   *                   type: object
+   *                 message:
+   *                   type: string
+   */
+  const { v4: uuidv4 } = require('uuid');
+  const bcrypt = require('bcryptjs');
+  const jwt = require('jsonwebtoken');
+
+  router.post('/admins/register', async (req, res) => {
+    try {
+      const { email, password, admin_name, department, position } = req.body;
+      const adminRepo = AppDataSource.getRepository('admin');
+      const processRepo = AppDataSource.getRepository('ProcessCheck');
+
+      // ตรวจสอบ email ซ้ำ
+      const exist = await processRepo.findOneBy({ Email: email });
+      if (exist) {
+        return res.status(400).json({ success: false, data: null, message: 'Email นี้ถูกใช้ไปแล้ว' });
+      }
+
+      // hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // สร้าง admin ก่อน เพื่อให้ได้ id
+      const admin = adminRepo.create({
+        id: uuidv4(),
+        admin_name,
+        department,
+        position
+      });
+      await adminRepo.save(admin);
+
+      // สร้าง JWT Token
+      const token = jwt.sign(
+        { adminId: admin.id, email: email },
+        'your_secret_key',
+        { expiresIn: '1h' }
+      );
+
+      // สร้าง process_check พร้อม Token, Repid, role=admin
+      const processCheck = processRepo.create({
+        id: uuidv4(),
+        Email: email,
+        Password: hashedPassword,
+        Token: token,
+        Repid: admin.id,
+        Role: 'admin',
+        avatar_url: null
+      });
+      await processRepo.save(processCheck);
+
+      res.status(201).json({
+        success: true,
+        data: { ...admin, token, repid: admin.id },
+        message: 'สร้างแอดมินสำเร็จ'
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, data: null, message: err.message });
+    }
+  });
+
+  /**
+   * @swagger
    * /admins/{id}:
    *   delete:
    *     summary: ลบ admin ตาม id

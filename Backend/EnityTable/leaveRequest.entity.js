@@ -9,6 +9,7 @@ module.exports = new EntitySchema({
       primary: true,
       type: 'varchar',
       length: 36,
+      generated: 'uuid',
     },
     Repid: { type: 'varchar', nullable: true}, // Repid  ของ ProcessCheck เชื่อมกับ id ของ ProcessCheck
     employeeType: { type: 'varchar' },
@@ -26,10 +27,5 @@ module.exports = new EntitySchema({
     status: { type: 'varchar', nullable: true},
     statusBy: { type: 'varchar', nullable: true}, // status เชื่อมกับ id ของ admin
     imgLeave: { type: 'varchar', nullable: true },
-  },
-  beforeInsert: (entity) => {
-    if (!entity.id) {
-      entity.id = uuidv4();
-    }
   },
 });

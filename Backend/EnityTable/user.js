@@ -9,6 +9,7 @@ module.exports = new EntitySchema({
       primary: true,
       type: 'varchar',
       length: 36,
+      generated: 'uuid',
     },
     User_name: {
       type: 'varchar',
@@ -19,10 +20,5 @@ module.exports = new EntitySchema({
      position: {
       type: 'varchar',
      },
-  },
-  beforeInsert: (entity) => {
-    if (!entity.id) {
-      entity.id = uuidv4();
-    }
   },
 }); 
