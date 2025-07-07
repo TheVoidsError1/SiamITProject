@@ -24,6 +24,10 @@ export const DateRangePicker = ({
   disabled = false,
   minDate,
 }: DateRangePickerProps) => {
+  // กำหนด minDate เป็นวันนี้ (เวลา 00:00:00) เสมอ
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const minDateToUse = minDate || today;
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div className="space-y-2">
@@ -49,7 +53,7 @@ export const DateRangePicker = ({
               selected={startDate}
               onSelect={onStartDateChange}
               initialFocus
-              disabled={minDate ? (date => date < minDate) : undefined}
+              disabled={date => date < minDateToUse}
             />
           </PopoverContent>
         </Popover>
@@ -78,7 +82,7 @@ export const DateRangePicker = ({
               selected={endDate}
               onSelect={onEndDateChange}
               initialFocus
-              disabled={minDate ? (date => date < minDate) : undefined}
+              disabled={date => date < minDateToUse}
             />
           </PopoverContent>
         </Popover>
