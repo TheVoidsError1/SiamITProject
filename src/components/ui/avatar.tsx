@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 import * as AvatarPrimitive from "@radix-ui/react-avatar"
 import * as React from "react"
+=======
+import * as React from "react"
+import * as AvatarPrimitive from "@radix-ui/react-avatar"
+>>>>>>> origin/db_yod
 
 import { cn } from "@/lib/utils"
 
@@ -45,4 +50,8 @@ const AvatarFallback = React.forwardRef<
 ))
 AvatarFallback.displayName = AvatarPrimitive.Fallback.displayName
 
+<<<<<<< HEAD
 export { Avatar, AvatarFallback, AvatarImage }
+=======
+export { Avatar, AvatarImage, AvatarFallback }
+>>>>>>> origin/db_yod

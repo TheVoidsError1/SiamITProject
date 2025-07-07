@@ -1,16 +1,19 @@
-
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Clock, Calendar, FileText, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const LeaveHistory = () => {
+  const { t } = useTranslation();
+
   const leaveHistory = [
     {
-      id: '1',
-      type: "ลาพักผ่อน",
+      id: 1,
+      type: t('leaveTypes.vacation'),
       startDate: new Date(2024, 11, 20),
       endDate: new Date(2024, 11, 22),
       days: 3,
@@ -20,8 +23,8 @@ const LeaveHistory = () => {
       submittedDate: new Date(2024, 11, 15),
     },
     {
-      id: '2',
-      type: "ลาป่วย",
+      id: 2,
+      type: t('leaveTypes.sick'),
       startDate: new Date(2024, 10, 5),
       endDate: new Date(2024, 10, 6),
       days: 2,
@@ -31,8 +34,8 @@ const LeaveHistory = () => {
       submittedDate: new Date(2024, 10, 4),
     },
     {
-      id: '3',
-      type: "ลากิจ",
+      id: 3,
+      type: t('leaveTypes.personal'),
       startDate: new Date(2024, 9, 15),
       endDate: new Date(2024, 9, 15),
       days: 1,
@@ -41,8 +44,8 @@ const LeaveHistory = () => {
       submittedDate: new Date(2024, 9, 12),
     },
     {
-      id: '4',
-      type: "ลาพักผ่อน",
+      id: 4,
+      type: t('leaveTypes.vacation'),
       startDate: new Date(2024, 8, 1),
       endDate: new Date(2024, 8, 5),
       days: 5,
@@ -60,21 +63,21 @@ const LeaveHistory = () => {
         return (
           <Badge className="bg-green-100 text-green-800 border-green-200">
             <CheckCircle className="w-3 h-3 mr-1" />
-            อนุมัติแล้ว
+            {t('leave.approved')}
           </Badge>
         );
       case "pending":
         return (
           <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
             <AlertCircle className="w-3 h-3 mr-1" />
-            รออนุมัติ
+            {t('history.pendingApproval')}
           </Badge>
         );
       case "rejected":
         return (
           <Badge className="bg-red-100 text-red-800 border-red-200">
             <XCircle className="w-3 h-3 mr-1" />
-            ไม่อนุมัติ
+            {t('leave.rejected')}
           </Badge>
         );
       default:
@@ -83,16 +86,10 @@ const LeaveHistory = () => {
   };
 
   const getTypeColor = (type: string) => {
-    switch (type) {
-      case "ลาพักผ่อน":
-        return "text-blue-600";
-      case "ลาป่วย":
-        return "text-red-600";
-      case "ลากิจ":
-        return "text-green-600";
-      default:
-        return "text-gray-600";
-    }
+    if (type === t('leaveTypes.vacation')) return "text-blue-600";
+    if (type === t('leaveTypes.sick')) return "text-red-600";
+    if (type === t('leaveTypes.personal')) return "text-green-600";
+    return "text-gray-600";
   };
 
   return (
@@ -101,11 +98,12 @@ const LeaveHistory = () => {
         <div className="flex h-16 items-center px-4 gap-4">
           <SidebarTrigger />
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">ประวัติการลา</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t('leave.leaveHistory')}</h1>
             <p className="text-sm text-gray-600">
-              ข้อมูลการลาทั้งหมดของคุณ
+              {t('history.leaveHistoryTitle')}
             </p>
           </div>
+          <LanguageSwitcher />
         </div>
       </div>
 
@@ -121,7 +119,7 @@ const LeaveHistory = () => {
                   </div>
                   <div>
                     <p className="text-2xl font-bold">11</p>
-                    <p className="text-sm text-muted-foreground">วันที่ลาแล้ว</p>
+                    <p className="text-sm text-muted-foreground">{t('history.totalLeaveDays')}</p>
                   </div>
                 </div>
               </CardContent>
@@ -135,7 +133,7 @@ const LeaveHistory = () => {
                   </div>
                   <div>
                     <p className="text-2xl font-bold">3</p>
-                    <p className="text-sm text-muted-foreground">คำขอที่อนุมัติ</p>
+                    <p className="text-sm text-muted-foreground">{t('history.approvedRequests')}</p>
                   </div>
                 </div>
               </CardContent>
@@ -145,11 +143,11 @@ const LeaveHistory = () => {
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-                    <AlertCircle className="w-5 h-5 text-yellow-600" />
+                    <Clock className="w-5 h-5 text-yellow-600" />
                   </div>
                   <div>
                     <p className="text-2xl font-bold">1</p>
-                    <p className="text-sm text-muted-foreground">รออนุมัติ</p>
+                    <p className="text-sm text-muted-foreground">{t('history.pendingRequests')}</p>
                   </div>
                 </div>
               </CardContent>
@@ -158,70 +156,75 @@ const LeaveHistory = () => {
 
           {/* Leave History List */}
           <div className="space-y-4">
-            {leaveHistory.map((leave, index) => (
-              <Card 
-                key={leave.id} 
-                className="border-0 shadow-md hover:shadow-lg transition-all duration-300"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
+            {leaveHistory.map((leave) => (
+              <Card key={leave.id} className="border-0 shadow-md hover:shadow-lg transition-shadow">
                 <CardHeader className="pb-3">
-                  <div className="flex justify-between items-start">
+                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <FileText className="w-5 h-5 text-blue-600" />
+                      <div className={`text-lg font-semibold ${getTypeColor(leave.type)}`}>
+                        {leave.type}
                       </div>
-                      <div>
-                        <CardTitle className={`text-lg ${getTypeColor(leave.type)}`}>
-                          {leave.type}
-                        </CardTitle>
-                        <CardDescription>
-                          ส่งคำขอเมื่อ {format(leave.submittedDate, "dd MMMM yyyy", { locale: th })}
-                        </CardDescription>
-                      </div>
+                      {getStatusBadge(leave.status)}
                     </div>
-                    {getStatusBadge(leave.status)}
+                    <div className="text-sm text-muted-foreground">
+                      {format(leave.submittedDate, 'dd MMM yyyy', { locale: th })}
+                    </div>
                   </div>
                 </CardHeader>
-                
-                <CardContent className="space-y-4">
+                <CardContent className="pt-0">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm">
-                        {format(leave.startDate, "dd MMM", { locale: th })} - {format(leave.endDate, "dd MMM yyyy", { locale: th })}
-                      </span>
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Calendar className="w-4 h-4 text-muted-foreground" />
+                        <span className="font-medium">{t('leave.startDate')}:</span>
+                        <span>{format(leave.startDate, 'dd MMM yyyy', { locale: th })}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Calendar className="w-4 h-4 text-muted-foreground" />
+                        <span className="font-medium">{t('leave.endDate')}:</span>
+                        <span>{format(leave.endDate, 'dd MMM yyyy', { locale: th })}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm">
+                        <Clock className="w-4 h-4 text-muted-foreground" />
+                        <span className="font-medium">{t('leave.duration')}:</span>
+                        <span>{leave.days} {t('leave.days')}</span>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Clock className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm">{leave.days} วัน</span>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <p className="text-sm font-medium text-gray-700">เหตุผล:</p>
-                    <p className="text-sm text-gray-600 mt-1">{leave.reason}</p>
-                  </div>
-                  
-                  {leave.status === "approved" && leave.approvedBy && (
-                    <div className="bg-green-50 p-3 rounded-lg">
-                      <p className="text-sm text-green-800">
-                        <strong>อนุมัติโดย:</strong> {leave.approvedBy}
-                      </p>
-                    </div>
-                  )}
-                  
-                  {leave.status === "rejected" && leave.rejectedBy && (
-                    <div className="bg-red-50 p-3 rounded-lg">
-                      <p className="text-sm text-red-800 mb-1">
-                        <strong>ไม่อนุมัติโดย:</strong> {leave.rejectedBy}
-                      </p>
-                      {leave.rejectionReason && (
-                        <p className="text-sm text-red-700">
-                          <strong>เหตุผล:</strong> {leave.rejectionReason}
-                        </p>
+                    <div className="space-y-2">
+                      <div className="flex items-start gap-2 text-sm">
+                        <FileText className="w-4 h-4 text-muted-foreground mt-0.5" />
+                        <div>
+                          <span className="font-medium">{t('leave.reason')}:</span>
+                          <p className="text-muted-foreground">{leave.reason}</p>
+                        </div>
+                      </div>
+                      {leave.status === "approved" && leave.approvedBy && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <CheckCircle className="w-4 h-4 text-green-600" />
+                          <span className="font-medium">{t('leave.approvedBy')}:</span>
+                          <span>{leave.approvedBy}</span>
+                        </div>
+                      )}
+                      {leave.status === "rejected" && (
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-sm">
+                            <XCircle className="w-4 h-4 text-red-600" />
+                            <span className="font-medium">{t('leave.rejectedBy')}:</span>
+                            <span>{leave.rejectedBy}</span>
+                          </div>
+                          {leave.rejectionReason && (
+                            <div className="flex items-start gap-2 text-sm">
+                              <FileText className="w-4 h-4 text-muted-foreground mt-0.5" />
+                              <div>
+                                <span className="font-medium">{t('leave.rejectionReason')}:</span>
+                                <p className="text-muted-foreground">{leave.rejectionReason}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
                       )}
                     </div>
-                  )}
+                  </div>
                 </CardContent>
               </Card>
             ))}
