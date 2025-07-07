@@ -23,22 +23,22 @@ import { useTranslation } from "react-i18next";
 
 const items = [
   {
-    title: "หน้าหลัก",
+    title: "navigation.home",
     url: "/",
     icon: Home,
   },
   {
-    title: "ยื่นคำขอลา",
+    title: "navigation.leaveRequest",
     url: "/leave-request",
     icon: Calendar,
   },
   {
-    title: "ประวัติการลา",
+    title: "navigation.leaveHistory",
     url: "/leave-history",
     icon: Clock,
   },
   {
-    title: "โปรไฟล์",
+    title: "navigation.profile",
     url: "/profile",
     icon: User,
   },
@@ -46,12 +46,12 @@ const items = [
 
 const adminItems = [
   {
-    title: "จัดการระบบ",
+    title: "navigation.adminDashboard",
     url: "/admin",
     icon: Settings,
   },
   {
-    title: "บุคลากรทั้งหมด",
+    title: "navigation.allEmployees",
     url: "/admin/employees",
     icon: Users,
   },
@@ -135,7 +135,7 @@ export function AppSidebar() {
                   >
                     <Link to={item.url} className="flex items-center gap-3">
                       <item.icon className="w-5 h-5" />
-                      <span className="font-medium">{item.title}</span>
+                      <span className="font-medium">{t(item.title)}</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

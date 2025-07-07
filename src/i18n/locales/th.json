@@ -38,7 +38,8 @@
     "profile": "โปรไฟล์",
     "adminDashboard": "จัดการระบบ",
     "employeeManagement": "จัดการพนักงาน",
-    "mainMenu": "เมนูหลัก"
+    "mainMenu": "เมนูหลัก",
+    "allEmployees": "บุคลากรทั้งหมด"
   },
   "common": {
     "submit": "ส่ง",
@@ -229,10 +230,21 @@
     "approveSuccess": "อนุมัติสำเร็จ",
     "approveSuccessDesc": "อนุมัติคำขอลาของ",
     "rejectSuccess": "ไม่อนุมัติ",
-    "rejectSuccessDesc": "ไม่อนุมัติคำขอลาของ"
+    "rejectSuccessDesc": "ไม่อนุมัติคำขอลาของ",
+    "connectionError": "เกิดข้อผิดพลาดในการเชื่อมต่อ"
   },
   "system": {
-    "onlineLeaveSystem": "ระบบลาออนไลน์"
+    "onlineLeaveSystem": "ระบบลาออนไลน์",
+    "employeeList": "รายชื่อพนักงาน",
+    "allEmployeesInterns": "พนักงานและเด็กฝึกงานทั้งหมด",
+    "usedTotal": "ใช้แล้ว/ทั้งหมด",
+    "employee": "พนักงาน",
+    "seeDetails": "ดูรายละเอียด",
+    "management": "การจัดการ",
+    "totalEmployees": "พนักงานทั้งหมด",
+    "regularEmployees": "พนักงานประจำ",
+    "interns": "เด็กฝึกงาน",
+    "days": "วัน"
   },
   "error": {
     "apiConnectionError": "ข้อผิดพลาดการเชื่อมต่อ API"
