@@ -18,15 +18,55 @@ const Profile = () => {
   const { t } = useTranslation();
   const { user, updateUser } = useAuth();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
-    full_name: user?.full_name || '',
-    email: user?.email || '',
-    department: user?.department || '',
-    position: user?.position || '',
+    full_name: '',
+    email: '',
+    department: '',
+    position: '',
   });
+  const [saving, setSaving] = useState(false);
+
+  // Fetch profile from backend on mount
+  useEffect(() => {
+    const fetchProfile = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setError('No token found. Please log in.');
+          setLoading(false);
+          return;
+        }
+        const res = await axios.get('http://localhost:3001/api/profile', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = res.data.data;
+        setFormData({
+          full_name: data.name || '',
+          email: data.email || '',
+          department: data.department || '',
+          position: data.position || '',
+        });
+        // Optionally update user context
+        updateUser({
+          full_name: data.name,
+          email: data.email,
+          department: data.department,
+          position: data.position,
+        });
+      } catch (err: any) {
+        setError('Failed to load profile');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, [updateUser]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -65,26 +105,22 @@ const Profile = () => {
   };
 
   const handleSave = async () => {
-    setLoading(true);
+    setSaving(true);
     try {
       const requestData: any = {
         User_name: formData.full_name,
         email: formData.email,
       };
-
-      // Only include position and department for non-admin users
       if (user.role !== 'admin') {
         requestData.position = formData.position;
         requestData.department = formData.department;
       }
-
       const response = await axios.put(`http://localhost:3001/api/users/${user.id}`, requestData);
       if (response.data.success) {
         toast({
           title: t('profile.saveSuccess'),
           description: t('profile.saveSuccessDesc'),
         });
-        // Update user data in context and localStorage
         updateUser({
           full_name: formData.full_name,
           position: formData.position,
@@ -101,7 +137,7 @@ const Profile = () => {
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -231,8 +267,8 @@ const Profile = () => {
                   </div>
                 </div>
                 
-                <Button onClick={handleSave} disabled={loading} className="w-full md:w-auto">
-                  {loading ? (
+                <Button onClick={handleSave} disabled={saving || loading} className="w-full md:w-auto">
+                  {saving ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                       {t('profile.saving')}
