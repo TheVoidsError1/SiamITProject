@@ -37,7 +37,8 @@
     "leaveHistory": "ประวัติการลา",
     "profile": "โปรไฟล์",
     "adminDashboard": "จัดการระบบ",
-    "employeeManagement": "จัดการพนักงาน"
+    "employeeManagement": "จัดการพนักงาน",
+    "mainMenu": "เมนูหลัก"
   },
   "common": {
     "submit": "ส่ง",
@@ -58,7 +59,8 @@
     "total": "ทั้งหมด",
     "remaining": "เหลือ",
     "change": "เปลี่ยน",
-    "enable": "เปิดใช้งาน"
+    "enable": "เปิดใช้งาน",
+    "user": "ผู้ใช้"
   },
   "leave": {
     "leaveRequest": "ขอลา",
@@ -110,6 +112,11 @@
     "attachmentRequiredDesc": "การลาประเภทนี้จำเป็นต้องแนบเอกสารประกอบ",
     "leaveRequestSuccess": "ส่งคำขอลาสำเร็จ",
     "leaveRequestSuccessDesc": "คำขอลาของคุณได้รับการส่งเรียบร้อยแล้ว",
+    "approvedBy": "อนุมัติโดย",
+    "rejectedBy": "ไม่อนุมัติโดย",
+    "rejectionReason": "เหตุผลที่ไม่อนุมัติ",
+    "selectEmployeeType": "เลือกประเภทพนักงาน",
+    "employeeType": "ประเภทพนักงาน",
     "hourLeave": "ลาเป็นชั่วโมง",
     "dayLeave": "ลาเป็นวัน"
   },
@@ -135,6 +142,10 @@
     "intern": "เด็กฝึกงาน",
     "notSpecified": "ไม่ต้องการระบุ",
     "selectPosition": "เลือกตำแหน่ง"
+  },
+  "employeeTypes": {
+    "employee": "พนักงาน",
+    "intern": "เด็กฝึกงาน"
   },
   "main": {
     "siamIt": "สยาม ไอที",
@@ -190,6 +201,7 @@
     "leaveHistoryTitle": "ดูประวัติการลาของคุณ",
     "totalLeaveDays": "จำนวนวันลาทั้งหมด",
     "approvedRequests": "คำขอที่อนุมัติแล้ว",
+    "pendingRequests": "คำขอรออนุมัติ",
     "pendingApproval": "รอการอนุมัติ",
     "submittedOn": "ส่งคำขอเมื่อ",
     "approvedBy": "อนุมัติโดย",
@@ -218,5 +230,11 @@
     "approveSuccessDesc": "อนุมัติคำขอลาของ",
     "rejectSuccess": "ไม่อนุมัติ",
     "rejectSuccessDesc": "ไม่อนุมัติคำขอลาของ"
+  },
+  "system": {
+    "onlineLeaveSystem": "ระบบลาออนไลน์"
+  },
+  "error": {
+    "apiConnectionError": "ข้อผิดพลาดการเชื่อมต่อ API"
   }
 }

@@ -37,7 +37,8 @@
     "leaveHistory": "Leave History",
     "profile": "Profile",
     "adminDashboard": "Admin Dashboard",
-    "employeeManagement": "Employee Management"
+    "employeeManagement": "Employee Management",
+    "mainMenu": "Main Menu"
   },
   "common": {
     "submit": "Submit",
@@ -58,7 +59,8 @@
     "total": "Total",
     "remaining": "remaining",
     "change": "Change",
-    "enable": "Enable"
+    "enable": "Enable",
+    "user": "User"
   },
   "leave": {
     "leaveRequest": "Leave Request",
@@ -110,6 +112,11 @@
     "attachmentRequiredDesc": "This leave type requires supporting documents",
     "leaveRequestSuccess": "Leave request submitted successfully",
     "leaveRequestSuccessDesc": "Your leave request has been submitted successfully",
+    "approvedBy": "Approved by",
+    "rejectedBy": "Rejected by",
+    "rejectionReason": "Reason for rejection",
+    "selectEmployeeType": "Select Employee Type",
+    "employeeType": "Employee Type",
     "hourLeave": "Hourly Leave",
     "dayLeave": "Daily Leave"
   },
@@ -135,6 +142,10 @@
     "intern": "Intern",
     "notSpecified": "Prefer not to specify",
     "selectPosition": "Select Position"
+  },
+  "employeeTypes": {
+    "employee": "Employee",
+    "intern": "Intern"
   },
   "main": {
     "siamIt": "Siam IT",
@@ -190,6 +201,7 @@
     "leaveHistoryTitle": "View your leave history",
     "totalLeaveDays": "Total Leave Days",
     "approvedRequests": "Approved Requests",
+    "pendingRequests": "Pending Requests",
     "pendingApproval": "Pending Approval",
     "submittedOn": "Submitted on",
     "approvedBy": "Approved by",
@@ -218,5 +230,11 @@
     "approveSuccessDesc": "Approved leave request for",
     "rejectSuccess": "Rejected",
     "rejectSuccessDesc": "Rejected leave request for"
+  },
+  "system": {
+    "onlineLeaveSystem": "Online Leave System"
+  },
+  "error": {
+    "apiConnectionError": "API Connection Error"
   }
 }
