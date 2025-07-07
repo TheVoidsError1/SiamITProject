@@ -37,12 +37,24 @@ const Register = () => {
   useEffect(() => {
     fetch('http://localhost:3001/api/departments')
       .then(res => res.json())
-      .then(data => setDepartments(data.data.map((d: any) => d.department_name)))
+      .then(data => {
+        let depts = data.data.map((d: any) => d.department_name);
+        const isNoDept = (d: string) => !d || d.trim() === '' || d.toLowerCase() === 'none' || d.toLowerCase() === 'no department';
+        const noDept = depts.filter(isNoDept);
+        const normalDepts = depts.filter(d => !isNoDept(d)).sort((a, b) => a.localeCompare(b));
+        setDepartments([...normalDepts, ...noDept]);
+      })
       .catch(() => setDepartments([]));
 
     fetch('http://localhost:3001/api/positions')
       .then(res => res.json())
-      .then(data => setPositions(data.data.map((p: any) => p.position_name)))
+      .then(data => {
+        let pos = data.data.map((p: any) => p.position_name);
+        const isNoPos = (p: string) => !p || p.trim() === '' || p.toLowerCase() === 'none' || p.toLowerCase() === 'no position';
+        const noPos = pos.filter(isNoPos);
+        const normalPos = pos.filter(p => !isNoPos(p)).sort((a, b) => a.localeCompare(b));
+        setPositions([...normalPos, ...noPos]);
+      })
       .catch(() => setPositions([]));
   }, []);
 

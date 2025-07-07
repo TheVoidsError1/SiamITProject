@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { User, Mail, Building, Briefcase, Shield, Calendar, Camera, Save } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../components/ui/select";
 
 const Profile = () => {
   const { t } = useTranslation();
@@ -29,6 +30,8 @@ const Profile = () => {
     position: '',
   });
   const [saving, setSaving] = useState(false);
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [positions, setPositions] = useState<string[]>([]);
 
   // Fetch profile from backend on mount
   useEffect(() => {
@@ -80,6 +83,31 @@ const Profile = () => {
       })
       .catch(() => setAvatarUrl(null));
   }, [user?.id]);
+
+  useEffect(() => {
+    fetch('http://localhost:3001/api/departments')
+      .then(res => res.json())
+      .then(data => {
+        let depts = data.data.map((d: any) => d.department_name);
+        // Identify all 'no department' variants
+        const isNoDept = (d: string) => !d || d.trim() === '' || d.toLowerCase() === 'none' || d.toLowerCase() === 'no department';
+        const noDept = depts.filter(isNoDept);
+        const normalDepts = depts.filter(d => !isNoDept(d)).sort((a, b) => a.localeCompare(b));
+        setDepartments([...normalDepts, ...noDept]);
+      })
+      .catch(() => setDepartments([]));
+
+    fetch('http://localhost:3001/api/positions')
+      .then(res => res.json())
+      .then(data => {
+        let pos = data.data.map((p: any) => p.position_name);
+        pos = pos.filter(p => p && p.toLowerCase() !== 'none').sort((a, b) => a.localeCompare(b));
+        const none = data.data.find((p: any) => !p.position_name || p.position_name.toLowerCase() === 'none');
+        if (none) pos.push(none.position_name || '');
+        setPositions(pos);
+      })
+      .catch(() => setPositions([]));
+  }, []);
 
   const handleCameraClick = () => {
     fileInputRef.current?.click();
@@ -246,24 +274,38 @@ const Profile = () => {
                   
                   <div className="space-y-2">
                     <Label htmlFor="position">{t('auth.position')}</Label>
-                    <Input
-                      id="position"
+                    <Select
                       value={formData.position}
-                      onChange={(e) => setFormData(prev => ({ ...prev, position: e.target.value }))}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, position: value }))}
                       disabled={user?.role === 'admin'}
-                      className={user?.role === 'admin' ? 'bg-gray-100 cursor-not-allowed' : ''}
-                    />
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('positions.selectPosition')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {positions.map((position) => (
+                          <SelectItem key={position} value={position}>{position}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="department">{t('auth.department')}</Label>
-                    <Input
-                      id="department"
+                    <Select
                       value={formData.department}
-                      onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, department: value }))}
                       disabled={user?.role === 'admin'}
-                      className={user?.role === 'admin' ? 'bg-gray-100 cursor-not-allowed' : ''}
-                    />
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('departments.selectDepartment')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {departments.map((dept) => (
+                          <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
                 
