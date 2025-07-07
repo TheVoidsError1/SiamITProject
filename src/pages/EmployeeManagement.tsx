@@ -1,3 +1,4 @@
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,9 +6,8 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Eye, User, Users } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { Link } from "react-router-dom";
 
 // เพิ่ม type สำหรับข้อมูลพนักงาน
 interface Employee {
@@ -29,25 +29,34 @@ const EmployeeManagement = () => {
   const itemsPerPage = 4;
 
   useEffect(() => {
-    fetch("http://localhost:3001/api/users")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && Array.isArray(data.data)) {
-          // map field ให้ตรงกับ type Employee
-          const employees = data.data.map((item) => ({
-            id: String(item.repid), // ให้แน่ใจว่าเป็น string
-            full_name: item.name,
-            email: item.email,
-            position: item.position,
-            department: item.department,
-            role: item.role || 'employee', // ถ้าไม่มี role ให้ default เป็น employee
-            usedLeaveDays: item.usedLeaveDays || 0,
-            totalLeaveDays: item.totalLeaveDays || 20 // กำหนดค่า default
-          }));
-          setEmployees(employees);
-        } else {
-          setEmployees([]);
-        }
+    Promise.all([
+      fetch("http://localhost:3001/api/employee/users").then(res => res.json()),
+      fetch("http://localhost:3001/api/employee/admins").then(res => res.json())
+    ])
+      .then(([userRes, adminRes]) => {
+        const userList = Array.isArray(userRes.data) ? userRes.data.map((item) => ({
+          id: String(item.id),
+          full_name: item.User_name || item.name || "-",
+          email: item.Email || item.email || "-",
+          position: item.position || "-",
+          department: item.department || "-",
+          role: "employee",
+          usedLeaveDays: item.usedLeaveDays || 0,
+          totalLeaveDays: item.totalLeaveDays || 20
+        })) : [];
+
+        const adminList = Array.isArray(adminRes.data) ? adminRes.data.map((item) => ({
+          id: String(item.id),
+          full_name: item.admin_name || item.name || "-",
+          email: item.Email || item.email || "-",
+          position: item.position || "-",
+          department: item.department || "-",
+          role: "admin",
+          usedLeaveDays: item.usedLeaveDays || 0,
+          totalLeaveDays: item.totalLeaveDays || 20
+        })) : [];
+
+        setEmployees([...userList, ...adminList]);
         setLoading(false);
       })
       .catch(() => setLoading(false));
