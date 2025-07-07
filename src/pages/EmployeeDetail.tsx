@@ -1,5 +1,11 @@
+<<<<<<< HEAD
 import { useState, useEffect } from "react";
 import { useParams, Link, useLocation } from "react-router-dom";
+=======
+
+import { useState } from "react";
+import { useParams, Link } from "react-router-dom";
+>>>>>>> origin/db_yod
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,7 +22,10 @@ import { LeaveDetailDialog } from "@/components/dialogs/LeaveDetailDialog";
 
 const EmployeeDetail = () => {
   const { id } = useParams();
+<<<<<<< HEAD
   const location = useLocation();
+=======
+>>>>>>> origin/db_yod
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [selectedLeave, setSelectedLeave] = useState(null);
@@ -30,6 +39,7 @@ const EmployeeDetail = () => {
     role: ''
   });
 
+<<<<<<< HEAD
   // เพิ่ม state สำหรับข้อมูลจริง
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -83,6 +93,47 @@ const EmployeeDetail = () => {
         setLoading(false);
       });
   }, [id, role]);
+=======
+  // Mock employee data
+  const employee = {
+    id: id,
+    full_name: id === '1' ? 'ผู้ดูแลระบบ' : id === '2' ? 'พนักงานทั่วไป' : id === '3' ? 'John Smith' : 'สมชาย ใจดี',
+    email: id === '1' ? 'admin@siamit.com' : id === '2' ? 'user@siamit.com' : id === '3' ? 'john@siamit.com' : 'somchai@siamit.com',
+    password: '••••••••',
+    role: id === '1' ? 'admin' : id === '4' ? 'intern' : 'employee',
+    department: id === '1' || id === '4' ? 'IT Department' : id === '2' ? 'Marketing' : 'Sales',
+    position: id === '1' ? 'System Administrator' : id === '2' ? 'Marketing Executive' : id === '3' ? 'Sales Manager' : 'Intern Developer',
+    usedLeaveDays: id === '1' ? 5 : id === '2' ? 12 : id === '3' ? 8 : 3,
+    totalLeaveDays: id === '1' ? 20 : id === '2' ? 18 : id === '3' ? 20 : 10
+  };
+
+  // Mock leave history with attachments
+  const leaveHistory = [
+    {
+      id: 1,
+      type: "ลาพักผ่อน",
+      startDate: new Date(2024, 10, 15),
+      endDate: new Date(2024, 10, 17),
+      days: 3,
+      reason: "เดินทางท่องเที่ยวกับครอบครัว",
+      status: "approved",
+      submittedDate: new Date(2024, 10, 10),
+    },
+    {
+      id: 2,
+      type: "ลาป่วย",
+      startDate: new Date(2024, 9, 22),
+      endDate: new Date(2024, 9, 23),
+      days: 2,
+      reason: "ป่วยด้วยโรคไข้หวัดใหญ่",
+      status: "approved",
+      submittedDate: new Date(2024, 9, 21),
+      attachments: [
+        new File([""], "medical-certificate.jpg", { type: "image/jpeg" })
+      ]
+    },
+  ];
+>>>>>>> origin/db_yod
 
   const departments = [
     'IT Department',
@@ -96,16 +147,26 @@ const EmployeeDetail = () => {
 
   const handleEdit = () => {
     setEditData({
+<<<<<<< HEAD
       full_name: employee?.name || '',
       email: employee?.email || '',
       password: '',
       department: employee?.department || '',
       position: employee?.position || '',
       role: employee?.role || ''
+=======
+      full_name: employee.full_name,
+      email: employee.email,
+      password: '',
+      department: employee.department,
+      position: employee.position,
+      role: employee.role
+>>>>>>> origin/db_yod
     });
     setIsEditing(true);
   };
 
+<<<<<<< HEAD
   const handleSave = async () => {
     if (!processCheckId) {
       toast({ title: "เกิดข้อผิดพลาด", description: "ไม่พบ processCheckId" });
@@ -148,6 +209,14 @@ const EmployeeDetail = () => {
     } catch (err) {
       toast({ title: "เกิดข้อผิดพลาด", description: "ไม่สามารถบันทึกข้อมูลได้" });
     }
+=======
+  const handleSave = () => {
+    toast({
+      title: "บันทึกข้อมูลสำเร็จ! ✅",
+      description: "ข้อมูลของพนักงานได้รับการอัปเดตแล้ว",
+    });
+    setIsEditing(false);
+>>>>>>> origin/db_yod
   };
 
   const handleCancel = () => {
@@ -167,9 +236,15 @@ const EmployeeDetail = () => {
     setLeaveDialogOpen(true);
   };
 
+<<<<<<< HEAD
   if (loading) return <div>กำลังโหลดข้อมูล...</div>;
   if (error) return <div>{error}</div>;
   if (!employee) return <div>ไม่พบข้อมูลพนักงาน</div>;
+=======
+  if (!employee) {
+    return <div>ไม่พบข้อมูลพนักงาน</div>;
+  }
+>>>>>>> origin/db_yod
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -184,7 +259,11 @@ const EmployeeDetail = () => {
           </Button>
           <div className="flex-1">
             <h1 className="text-2xl font-bold text-gray-900">ข้อมูลพนักงาน</h1>
+<<<<<<< HEAD
             <p className="text-sm text-gray-600">{employee.name}</p>
+=======
+            <p className="text-sm text-gray-600">{employee.full_name}</p>
+>>>>>>> origin/db_yod
           </div>
         </div>
       </div>
@@ -214,7 +293,11 @@ const EmployeeDetail = () => {
                         className="mt-1"
                       />
                     ) : (
+<<<<<<< HEAD
                       <p className="text-lg font-semibold">{employee.name}</p>
+=======
+                      <p className="text-lg font-semibold">{employee.full_name}</p>
+>>>>>>> origin/db_yod
                     )}
                   </div>
                   <div>
@@ -362,6 +445,7 @@ const EmployeeDetail = () => {
                 <TableBody>
                   {leaveHistory.map((leave) => (
                     <TableRow key={leave.id}>
+<<<<<<< HEAD
                       <TableCell className="font-medium">{leave.leaveType}</TableCell>
                       <TableCell>
                         {leave.startDate ? format(new Date(leave.startDate), "dd MMM", { locale: th }) : ''} - {leave.endDate ? format(new Date(leave.endDate), "dd MMM yyyy", { locale: th }) : ''}
@@ -375,6 +459,21 @@ const EmployeeDetail = () => {
                       </TableCell>
                       <TableCell>
                         {leave.submittedDate ? format(new Date(leave.submittedDate), "dd MMM yyyy", { locale: th }) : ''}
+=======
+                      <TableCell className="font-medium">{leave.type}</TableCell>
+                      <TableCell>
+                        {format(leave.startDate, "dd MMM", { locale: th })} - {format(leave.endDate, "dd MMM yyyy", { locale: th })}
+                      </TableCell>
+                      <TableCell>{leave.days} วัน</TableCell>
+                      <TableCell className="max-w-xs truncate">{leave.reason}</TableCell>
+                      <TableCell>
+                        <Badge className="bg-green-100 text-green-800 border-green-200">
+                          อนุมัติแล้ว
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {format(leave.submittedDate, "dd MMM yyyy", { locale: th })}
+>>>>>>> origin/db_yod
                       </TableCell>
                       <TableCell className="text-center">
                         <Button

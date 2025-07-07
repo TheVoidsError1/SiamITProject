@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -56,25 +57,97 @@ const EmployeeManagement = () => {
   const stats = [
     {
       title: "พนักงานทั้งหมด",
+=======
+
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Users, Mail, User, Eye } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+
+const EmployeeManagement = () => {
+  const { t } = useTranslation();
+  
+  const employees = [
+    {
+      id: '1',
+      full_name: 'ผู้ดูแลระบบ',
+      email: 'admin@siamit.com',
+      role: 'admin',
+      department: 'IT Department',
+      position: 'System Administrator',
+      usedLeaveDays: 5,
+      totalLeaveDays: 20
+    },
+    {
+      id: '2',
+      full_name: 'พนักงานทั่วไป',
+      email: 'user@siamit.com',
+      role: 'employee',
+      department: 'Marketing',
+      position: 'Marketing Executive',
+      usedLeaveDays: 12,
+      totalLeaveDays: 18
+    },
+    {
+      id: '3',
+      full_name: 'John Smith',
+      email: 'john@siamit.com',
+      role: 'employee',
+      department: 'Sales',
+      position: 'Sales Manager',
+      usedLeaveDays: 8,
+      totalLeaveDays: 20
+    },
+    {
+      id: '4',
+      full_name: 'สมชาย ใจดี',
+      email: 'somchai@siamit.com',
+      role: 'intern',
+      department: 'IT Department',
+      position: 'Intern Developer',
+      usedLeaveDays: 3,
+      totalLeaveDays: 10
+    }
+  ];
+
+  const stats = [
+    {
+      title: t('system.totalEmployees'),
+>>>>>>> origin/db_yod
       value: employees.length.toString(),
       icon: Users,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
     },
     {
+<<<<<<< HEAD
       title: "พนักงานประจำ",
       value: employees.filter(
         emp =>
           (emp.role === 'admin') ||
           ((emp.role === 'employee' || emp.role === 'user') && emp.position?.toLowerCase() === 'employee')
       ).length.toString(),
+=======
+      title: t('system.regularEmployees'),
+      value: employees.filter(emp => emp.role === 'employee').length.toString(),
+>>>>>>> origin/db_yod
       icon: User,
       color: "text-green-600",
       bgColor: "bg-green-50",
     },
     {
+<<<<<<< HEAD
       title: "เด็กฝึกงาน",
       value: employees.filter(emp => emp.position?.toLowerCase() === 'intern').length.toString(),
+=======
+      title: t('system.interns'),
+      value: employees.filter(emp => emp.role === 'intern').length.toString(),
+>>>>>>> origin/db_yod
       icon: User,
       color: "text-orange-600",
       bgColor: "bg-orange-50",
@@ -87,11 +160,20 @@ const EmployeeManagement = () => {
         <div className="flex h-16 items-center px-4 gap-4">
           <SidebarTrigger />
           <div className="flex-1">
+<<<<<<< HEAD
             <h1 className="text-2xl font-bold text-gray-900">บุคลากรทั้งหมด</h1>
             <p className="text-sm text-gray-600">
               จัดการข้อมูลพนักงานและเด็กฝึกงาน
             </p>
           </div>
+=======
+            <h1 className="text-2xl font-bold text-gray-900">{t('navigation.employeeManagement')}</h1>
+            <p className="text-sm text-gray-600">
+              {t('system.manageDepartment')}
+            </p>
+          </div>
+          <LanguageSwitcher />
+>>>>>>> origin/db_yod
         </div>
       </div>
 
@@ -125,6 +207,7 @@ const EmployeeManagement = () => {
 
           {/* Employee List */}
           <Card className="border-0 shadow-lg">
+<<<<<<< HEAD
             <CardHeader className="gradient-bg text-white rounded-t-lg p-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <Users className="w-4 h-4" />
@@ -200,6 +283,67 @@ const EmployeeManagement = () => {
                   )}
                 </>
               )}
+=======
+            <CardHeader className="gradient-bg text-white rounded-t-lg">
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                {t('system.employeeList')}
+              </CardTitle>
+              <CardDescription className="text-blue-100">
+                {t('system.allEmployeesInterns')}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('auth.fullName')}</TableHead>
+                    <TableHead>{t('auth.email')}</TableHead>
+                    <TableHead>{t('auth.position')}</TableHead>
+                    <TableHead>{t('auth.department')}</TableHead>
+                    <TableHead>{t('common.status')}</TableHead>
+                    <TableHead>{t('system.usedTotal')}</TableHead>
+                    <TableHead className="text-center">{t('system.management')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {employees.map((employee) => (
+                    <TableRow key={employee.id}>
+                      <TableCell className="font-medium">{employee.full_name}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-gray-400" />
+                          {employee.email}
+                        </div>
+                      </TableCell>
+                      <TableCell>{employee.position}</TableCell>
+                      <TableCell>{employee.department}</TableCell>
+                      <TableCell>
+                        <Badge 
+                          variant={employee.role === 'admin' ? 'default' : employee.role === 'employee' ? 'secondary' : 'outline'}
+                        >
+                          {employee.role === 'admin' ? t('system.admin') : 
+                           employee.role === 'employee' ? t('system.employee') : t('system.intern')}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className={`font-medium ${employee.usedLeaveDays > employee.totalLeaveDays * 0.8 ? 'text-red-600' : 'text-green-600'}`}>
+                          {employee.usedLeaveDays}/{employee.totalLeaveDays} {t('system.days')}
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Button asChild size="sm" variant="outline">
+                          <Link to={`/admin/employees/${employee.id}`}>
+                            <Eye className="w-4 h-4 mr-2" />
+                            {t('system.seeDetails')}
+                          </Link>
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+>>>>>>> origin/db_yod
             </CardContent>
           </Card>
         </div>

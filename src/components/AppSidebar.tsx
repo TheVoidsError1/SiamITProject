@@ -1,7 +1,20 @@
 
+<<<<<<< HEAD
 import { Calendar, Home, Clock, Settings, User, LogOut, Users } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
+=======
+import {
+  Calendar,
+  History,
+  Home,
+  Settings,
+  Users,
+  LogOut,
+  Shield,
+} from "lucide-react"
+
+>>>>>>> origin/db_yod
 import {
   Sidebar,
   SidebarContent,
@@ -11,6 +24,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+<<<<<<< HEAD
   SidebarHeader,
   SidebarFooter,
 } from "@/components/ui/sidebar";
@@ -77,11 +91,63 @@ export function AppSidebar() {
       })
       .catch(() => setAvatarUrl(null));
   }, [user?.id]);
+=======
+  SidebarFooter,
+} from "@/components/ui/sidebar"
+import { Link, useLocation } from "react-router-dom"
+import { useAuth } from "@/contexts/AuthContext"
+import { useToast } from "@/hooks/use-toast"
+import { Button } from "@/components/ui/button"
+import { useTranslation } from "react-i18next"
+
+export function AppSidebar() {
+  const { t } = useTranslation();
+  const location = useLocation();
+  const { user, logout } = useAuth();
+  const { toast } = useToast();
+
+  const userItems = [
+    {
+      title: t('navigation.home'),
+      url: "/",
+      icon: Home,
+    },
+    {
+      title: t('navigation.leaveRequest'),
+      url: "/leave-request",
+      icon: Calendar,
+    },
+    {
+      title: t('navigation.leaveHistory'),
+      url: "/leave-history",
+      icon: History,
+    },
+    {
+      title: t('navigation.profile'),
+      url: "/profile",
+      icon: Settings,
+    },
+  ];
+
+  const adminItems = [
+    {
+      title: t('navigation.adminDashboard'),
+      url: "/admin",
+      icon: Shield,
+    },
+    {
+      title: t('navigation.employeeManagement'),
+      url: "/admin/employees",
+      icon: Users,
+    },
+  ];
+>>>>>>> origin/db_yod
 
   const handleLogout = async () => {
     try {
       await logout();
       toast({
+<<<<<<< HEAD
         title: "ออกจากระบบสำเร็จ",
         description: "ขอบคุณที่ใช้ระบบลาออนไลน์",
       });
@@ -89,11 +155,21 @@ export function AppSidebar() {
       toast({
         title: "เกิดข้อผิดพลาด",
         description: "ไม่สามารถออกจากระบบได้",
+=======
+        title: t('auth.logoutSuccess'),
+        description: t('auth.logoutSuccess'),
+      });
+    } catch (error) {
+      toast({
+        title: t('system.error'),
+        description: t('system.error'),
+>>>>>>> origin/db_yod
         variant: "destructive",
       });
     }
   };
 
+<<<<<<< HEAD
   const allItems = user?.role === 'admin' ? [...items, ...adminItems] : items;
 
   return (
@@ -134,6 +210,35 @@ export function AppSidebar() {
                     <Link to={item.url} className="flex items-center gap-3">
                       <item.icon className="w-5 h-5" />
                       <span className="font-medium">{item.title}</span>
+=======
+  return (
+    <Sidebar>
+      <SidebarContent>
+        <div className="p-4 border-b">
+          <div className="flex items-center gap-3">
+            <img
+              src="/lovable-uploads/siamit.png"
+              alt="Siam IT Logo"
+              className="h-8 w-auto"
+            />
+            <div>
+              <h2 className="font-semibold text-lg">{t('system.siamIt')}</h2>
+              <p className="text-xs text-muted-foreground">{t('system.onlineLeaveSystem')}</p>
+            </div>
+          </div>
+        </div>
+
+        <SidebarGroup>
+          <SidebarGroupLabel>{t('navigation.home')}</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              {userItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton asChild isActive={location.pathname === item.url}>
+                    <Link to={item.url}>
+                      <item.icon />
+                      <span>{item.title}</span>
+>>>>>>> origin/db_yod
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -141,6 +246,7 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+<<<<<<< HEAD
       </SidebarContent>
       
       <SidebarFooter className="p-6">
@@ -172,9 +278,54 @@ export function AppSidebar() {
           >
             <LogOut className="w-4 h-4 mr-2" />
             ออกจากระบบ
+=======
+
+        {user?.role === 'admin' && (
+          <SidebarGroup>
+            <SidebarGroupLabel>{t('navigation.adminDashboard')}</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {adminItems.map((item) => (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild isActive={location.pathname === item.url}>
+                      <Link to={item.url}>
+                        <item.icon />
+                        <span>{item.title}</span>
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                ))}
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+      </SidebarContent>
+
+      <SidebarFooter>
+        <div className="p-4 border-t">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-sm">
+              <p className="font-medium">{user?.full_name}</p>
+              <p className="text-xs text-muted-foreground">{user?.email}</p>
+            </div>
+          </div>
+          <Button
+            onClick={handleLogout}
+            variant="outline"
+            size="sm"
+            className="w-full"
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            {t('auth.logout')}
+>>>>>>> origin/db_yod
           </Button>
         </div>
       </SidebarFooter>
     </Sidebar>
+<<<<<<< HEAD
   );
 }
+=======
+  )
+}
+>>>>>>> origin/db_yod

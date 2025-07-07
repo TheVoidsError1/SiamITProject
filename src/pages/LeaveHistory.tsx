@@ -5,12 +5,25 @@ import { Badge } from "@/components/ui/badge";
 import { Clock, Calendar, FileText, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
+<<<<<<< HEAD
 
 const LeaveHistory = () => {
   const leaveHistory = [
     {
       id: '1',
       type: "ลาพักผ่อน",
+=======
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+
+const LeaveHistory = () => {
+  const { t } = useTranslation();
+
+  const leaveHistory = [
+    {
+      id: 1,
+      type: t('leaveTypes.vacation'),
+>>>>>>> origin/db_yod
       startDate: new Date(2024, 11, 20),
       endDate: new Date(2024, 11, 22),
       days: 3,
@@ -20,8 +33,13 @@ const LeaveHistory = () => {
       submittedDate: new Date(2024, 11, 15),
     },
     {
+<<<<<<< HEAD
       id: '2',
       type: "ลาป่วย",
+=======
+      id: 2,
+      type: t('leaveTypes.sick'),
+>>>>>>> origin/db_yod
       startDate: new Date(2024, 10, 5),
       endDate: new Date(2024, 10, 6),
       days: 2,
@@ -31,8 +49,13 @@ const LeaveHistory = () => {
       submittedDate: new Date(2024, 10, 4),
     },
     {
+<<<<<<< HEAD
       id: '3',
       type: "ลากิจ",
+=======
+      id: 3,
+      type: t('leaveTypes.personal'),
+>>>>>>> origin/db_yod
       startDate: new Date(2024, 9, 15),
       endDate: new Date(2024, 9, 15),
       days: 1,
@@ -41,8 +64,13 @@ const LeaveHistory = () => {
       submittedDate: new Date(2024, 9, 12),
     },
     {
+<<<<<<< HEAD
       id: '4',
       type: "ลาพักผ่อน",
+=======
+      id: 4,
+      type: t('leaveTypes.vacation'),
+>>>>>>> origin/db_yod
       startDate: new Date(2024, 8, 1),
       endDate: new Date(2024, 8, 5),
       days: 5,
@@ -60,21 +88,33 @@ const LeaveHistory = () => {
         return (
           <Badge className="bg-green-100 text-green-800 border-green-200">
             <CheckCircle className="w-3 h-3 mr-1" />
+<<<<<<< HEAD
             อนุมัติแล้ว
+=======
+            {t('leave.approved')}
+>>>>>>> origin/db_yod
           </Badge>
         );
       case "pending":
         return (
           <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
             <AlertCircle className="w-3 h-3 mr-1" />
+<<<<<<< HEAD
             รออนุมัติ
+=======
+            {t('history.pendingApproval')}
+>>>>>>> origin/db_yod
           </Badge>
         );
       case "rejected":
         return (
           <Badge className="bg-red-100 text-red-800 border-red-200">
             <XCircle className="w-3 h-3 mr-1" />
+<<<<<<< HEAD
             ไม่อนุมัติ
+=======
+            {t('leave.rejected')}
+>>>>>>> origin/db_yod
           </Badge>
         );
       default:
@@ -83,6 +123,7 @@ const LeaveHistory = () => {
   };
 
   const getTypeColor = (type: string) => {
+<<<<<<< HEAD
     switch (type) {
       case "ลาพักผ่อน":
         return "text-blue-600";
@@ -93,6 +134,12 @@ const LeaveHistory = () => {
       default:
         return "text-gray-600";
     }
+=======
+    if (type === t('leaveTypes.vacation')) return "text-blue-600";
+    if (type === t('leaveTypes.sick')) return "text-red-600";
+    if (type === t('leaveTypes.personal')) return "text-green-600";
+    return "text-gray-600";
+>>>>>>> origin/db_yod
   };
 
   return (
@@ -101,11 +148,20 @@ const LeaveHistory = () => {
         <div className="flex h-16 items-center px-4 gap-4">
           <SidebarTrigger />
           <div className="flex-1">
+<<<<<<< HEAD
             <h1 className="text-2xl font-bold text-gray-900">ประวัติการลา</h1>
             <p className="text-sm text-gray-600">
               ข้อมูลการลาทั้งหมดของคุณ
             </p>
           </div>
+=======
+            <h1 className="text-2xl font-bold text-gray-900">{t('leave.leaveHistory')}</h1>
+            <p className="text-sm text-gray-600">
+              {t('history.leaveHistoryTitle')}
+            </p>
+          </div>
+          <LanguageSwitcher />
+>>>>>>> origin/db_yod
         </div>
       </div>
 
@@ -121,7 +177,11 @@ const LeaveHistory = () => {
                   </div>
                   <div>
                     <p className="text-2xl font-bold">11</p>
+<<<<<<< HEAD
                     <p className="text-sm text-muted-foreground">วันที่ลาแล้ว</p>
+=======
+                    <p className="text-sm text-muted-foreground">{t('history.totalLeaveDays')}</p>
+>>>>>>> origin/db_yod
                   </div>
                 </div>
               </CardContent>
@@ -135,7 +195,11 @@ const LeaveHistory = () => {
                   </div>
                   <div>
                     <p className="text-2xl font-bold">3</p>
+<<<<<<< HEAD
                     <p className="text-sm text-muted-foreground">คำขอที่อนุมัติ</p>
+=======
+                    <p className="text-sm text-muted-foreground">{t('history.approvedRequests')}</p>
+>>>>>>> origin/db_yod
                   </div>
                 </div>
               </CardContent>
@@ -149,7 +213,11 @@ const LeaveHistory = () => {
                   </div>
                   <div>
                     <p className="text-2xl font-bold">1</p>
+<<<<<<< HEAD
                     <p className="text-sm text-muted-foreground">รออนุมัติ</p>
+=======
+                    <p className="text-sm text-muted-foreground">{t('history.pendingApproval')}</p>
+>>>>>>> origin/db_yod
                   </div>
                 </div>
               </CardContent>
@@ -175,7 +243,11 @@ const LeaveHistory = () => {
                           {leave.type}
                         </CardTitle>
                         <CardDescription>
+<<<<<<< HEAD
                           ส่งคำขอเมื่อ {format(leave.submittedDate, "dd MMMM yyyy", { locale: th })}
+=======
+                          {t('history.submittedOn')} {format(leave.submittedDate, "dd MMMM yyyy", { locale: th })}
+>>>>>>> origin/db_yod
                         </CardDescription>
                       </div>
                     </div>
@@ -193,19 +265,31 @@ const LeaveHistory = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       <Clock className="w-4 h-4 text-gray-500" />
+<<<<<<< HEAD
                       <span className="text-sm">{leave.days} วัน</span>
+=======
+                      <span className="text-sm">{leave.days} {t('common.days')}</span>
+>>>>>>> origin/db_yod
                     </div>
                   </div>
                   
                   <div>
+<<<<<<< HEAD
                     <p className="text-sm font-medium text-gray-700">เหตุผล:</p>
+=======
+                    <p className="text-sm font-medium text-gray-700">{t('leave.reason')}:</p>
+>>>>>>> origin/db_yod
                     <p className="text-sm text-gray-600 mt-1">{leave.reason}</p>
                   </div>
                   
                   {leave.status === "approved" && leave.approvedBy && (
                     <div className="bg-green-50 p-3 rounded-lg">
                       <p className="text-sm text-green-800">
+<<<<<<< HEAD
                         <strong>อนุมัติโดย:</strong> {leave.approvedBy}
+=======
+                        <strong>{t('history.approvedBy')}:</strong> {leave.approvedBy}
+>>>>>>> origin/db_yod
                       </p>
                     </div>
                   )}
@@ -213,11 +297,19 @@ const LeaveHistory = () => {
                   {leave.status === "rejected" && leave.rejectedBy && (
                     <div className="bg-red-50 p-3 rounded-lg">
                       <p className="text-sm text-red-800 mb-1">
+<<<<<<< HEAD
                         <strong>ไม่อนุมัติโดย:</strong> {leave.rejectedBy}
                       </p>
                       {leave.rejectionReason && (
                         <p className="text-sm text-red-700">
                           <strong>เหตุผล:</strong> {leave.rejectionReason}
+=======
+                        <strong>{t('history.rejectedBy')}:</strong> {leave.rejectedBy}
+                      </p>
+                      {leave.rejectionReason && (
+                        <p className="text-sm text-red-700">
+                          <strong>{t('history.reasonForRejection')}:</strong> {leave.rejectionReason}
+>>>>>>> origin/db_yod
                         </p>
                       )}
                     </div>

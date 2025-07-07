@@ -10,8 +10,10 @@ import { DateRangePicker } from "./DateRangePicker";
 import { FileUpload } from "./FileUpload";
 import { leaveTypes, employeeTypes, personalLeaveOptions, timeSlots } from "@/constants/leaveTypes";
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from "react-i18next";
 
 export const LeaveForm = () => {
+  const { t } = useTranslation();
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [leaveType, setLeaveType] = useState("");
@@ -29,64 +31,58 @@ export const LeaveForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
     if (!startDate || !leaveType || !reason || !employeeType) {
       toast({
-        title: "กรุณากรอกข้อมูลให้ครบถ้วน",
-        description: "โปรดระบุข้อมูลทุกช่องที่จำเป็น",
+        title: t('leave.fillAllFields'),
+        description: t('leave.fillAllFieldsDesc'),
         variant: "destructive",
       });
       return;
     }
-
     // Check personal leave type validation
     if (leaveType === "personal") {
       if (!personalLeaveType) {
         toast({
-          title: "กรุณาเลือกประเภทการลากิจ",
-          description: "โปรดระบุว่าจะลาเป็นวันหรือชั่วโมง",
+          title: t('leave.selectPersonalLeave'),
+          description: t('leave.selectPersonalLeaveDesc'),
           variant: "destructive",
         });
         return;
       }
-      
       if (personalLeaveType === "hour" && (!startTime || !endTime)) {
         toast({
-          title: "กรุณาระบุเวลา",
-          description: "โปรดเลือกเวลาเริ่มต้นและสิ้นสุดการลา",
+          title: t('leave.specifyTime'),
+          description: t('leave.specifyTimeDesc'),
           variant: "destructive",
         });
         return;
       }
-      
       if (personalLeaveType === "day" && !endDate) {
         toast({
-          title: "กรุณาเลือกวันสิ้นสุด",
-          description: "โปรดระบุวันที่สิ้นสุดการลา",
+          title: t('leave.selectEndDate'),
+          description: t('leave.selectEndDateDesc'),
           variant: "destructive",
         });
         return;
       }
     } else if (!endDate) {
       toast({
-        title: "กรุณาเลือกวันสิ้นสุด",
-        description: "โปรดระบุวันที่สิ้นสุดการลา",
+        title: t('leave.selectEndDate'),
+        description: t('leave.selectEndDateDesc'),
         variant: "destructive",
       });
       return;
     }
-
     // Check if attachment is required for certain leave types
-    const requiresAttachmentField = ["sick", "maternity", "emergency"].includes(leaveType);
-    if (requiresAttachmentField && attachments.length === 0) {
+    const requiresAttachment = ["sick", "maternity", "emergency"].includes(leaveType);
+    if (requiresAttachment && attachments.length === 0) {
       toast({
-        title: "กรุณาแนบหลักฐาน",
-        description: "การลาประเภทนี้จำเป็นต้องแนบหลักฐาน",
+        title: t('leave.attachmentRequired'),
+        description: t('leave.attachmentRequiredDesc'),
         variant: "destructive",
       });
       return;
     }
-
     // --- API Integration ---
     try {
       const formData = new FormData();
@@ -100,11 +96,9 @@ export const LeaveForm = () => {
       formData.append("reason", reason);
       formData.append("supervisor", supervisor);
       formData.append("contact", contact);
-      // แนบไฟล์ imgLeave (เอาไฟล์แรก)
       if (attachments.length > 0) {
         formData.append("imgLeave", attachments[0]);
       }
-      // ส่ง API
       const token = localStorage.getItem('token');
       const response = await fetch("http://localhost:3001/api/leave-request", {
         method: "POST",
@@ -115,13 +109,12 @@ export const LeaveForm = () => {
       });
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || "เกิดข้อผิดพลาดในการส่งคำขอลา");
+        throw new Error(data.error || t('leave.leaveRequestError'));
       }
       toast({
-        title: "ส่งคำขอลาเรียบร้อย! ✅",
-        description: "คำขอลาของคุณถูกส่งไปยังผู้บริหารเพื่อพิจารณาแล้ว",
+        title: t('leave.leaveRequestSuccess'),
+        description: t('leave.leaveRequestSuccessDesc'),
       });
-      // Reset form
       setStartDate(undefined);
       setEndDate(undefined);
       setLeaveType("");
@@ -136,8 +129,8 @@ export const LeaveForm = () => {
       if (formRef.current) formRef.current.reset();
     } catch (err: any) {
       toast({
-        title: "เกิดข้อผิดพลาด",
-        description: err.message || "ไม่สามารถส่งคำขอลาได้",
+        title: t('leave.leaveRequestError'),
+        description: err.message || t('leave.leaveRequestErrorDesc'),
         variant: "destructive",
       });
     }
@@ -155,12 +148,11 @@ export const LeaveForm = () => {
   };
 
   const selectedLeaveType = leaveTypes.find(type => type.value === leaveType);
-  const requiresAttachmentField = selectedLeaveType?.requiresAttachment || false;
+  const requiresAttachment = selectedLeaveType?.requiresAttachment || false;
   const hasTimeOption = selectedLeaveType?.hasTimeOption || false;
   const isPersonalLeave = leaveType === "personal";
   const isHourlyLeave = personalLeaveType === "hour";
 
-  // Set today's date for hourly leave
   const handlePersonalLeaveTypeChange = (value: string) => {
     setPersonalLeaveType(value);
     if (value === "hour") {
@@ -178,35 +170,34 @@ export const LeaveForm = () => {
       {/* Employee Type */}
       <div className="space-y-2">
         <Label htmlFor="employee-type" className="text-sm font-medium">
-          ตำแหน่งการลา *
+          {t('leave.employeeType')} *
         </Label>
         <Select value={employeeType} onValueChange={setEmployeeType}>
           <SelectTrigger>
-            <SelectValue placeholder="เลือกตำแหน่งของคุณ" />
+            <SelectValue placeholder={t('leave.selectEmployeeType')} />
           </SelectTrigger>
           <SelectContent>
             {employeeTypes.map((type) => (
               <SelectItem key={type.value} value={type.value}>
-                {type.label}
+                {t(`leave.employeeType_${type.value}`)}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
-
       {/* Leave Type */}
       <div className="space-y-2">
         <Label htmlFor="leave-type" className="text-sm font-medium">
-          ประเภทการลา *
+          {t('leave.leaveType')} *
         </Label>
         <Select value={leaveType} onValueChange={setLeaveType}>
           <SelectTrigger>
-            <SelectValue placeholder="เลือกประเภทการลา" />
+            <SelectValue placeholder={t('leave.selectLeaveType')} />
           </SelectTrigger>
           <SelectContent>
             {leaveTypes.map((type) => (
               <SelectItem key={type.value} value={type.value}>
-                {type.label}
+                {t(`leaveTypes.${type.value}`)}
                 {type.requiresAttachment && (
                   <span className="text-red-500 ml-1">*</span>
                 )}
@@ -214,42 +205,40 @@ export const LeaveForm = () => {
             ))}
           </SelectContent>
         </Select>
-        {requiresAttachmentField && (
+        {requiresAttachment && (
           <p className="text-xs text-red-600">
-            * ประเภทการลานี้จำเป็นต้องแนบหลักฐาน
+            * {t('leave.requiresAttachment')}
           </p>
         )}
       </div>
-
       {/* Personal Leave Type Selection */}
       {isPersonalLeave && (
         <div className="space-y-2">
           <Label className="text-sm font-medium">
-            รูปแบบการลากิจ *
+            {t('leave.personalLeaveType')} *
           </Label>
           <Select value={personalLeaveType} onValueChange={handlePersonalLeaveTypeChange}>
             <SelectTrigger>
-              <SelectValue placeholder="เลือกรูปแบบการลา" />
+              <SelectValue placeholder={t('leave.selectPersonalLeaveType')} />
             </SelectTrigger>
             <SelectContent>
               {personalLeaveOptions.map((option) => (
                 <SelectItem key={option.value} value={option.value}>
-                  {option.label}
+                  {t(`leave.${option.value}Leave`)}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
       )}
-
       {/* Time Selection for Hourly Leave */}
       {isPersonalLeave && isHourlyLeave && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label className="text-sm font-medium">เวลาเริ่มต้น *</Label>
+            <Label className="text-sm font-medium">{t('leave.startTime')} *</Label>
             <Select value={startTime} onValueChange={setStartTime}>
               <SelectTrigger>
-                <SelectValue placeholder="เลือกเวลาเริ่มต้น" />
+                <SelectValue placeholder={t('leave.selectStartTime')} />
               </SelectTrigger>
               <SelectContent>
                 {timeSlots.map((time) => (
@@ -261,10 +250,10 @@ export const LeaveForm = () => {
             </Select>
           </div>
           <div className="space-y-2">
-            <Label className="text-sm font-medium">เวลาสิ้นสุด *</Label>
+            <Label className="text-sm font-medium">{t('leave.endTime')} *</Label>
             <Select value={endTime} onValueChange={setEndTime}>
               <SelectTrigger>
-                <SelectValue placeholder="เลือกเวลาสิ้นสุด" />
+                <SelectValue placeholder={t('leave.selectEndTime')} />
               </SelectTrigger>
               <SelectContent>
                 {timeSlots.map((time) => (
@@ -277,7 +266,6 @@ export const LeaveForm = () => {
           </div>
         </div>
       )}
-
       {/* Date Range - Show only for day leave or non-personal leave */}
       {(!isPersonalLeave || personalLeaveType === "day") && (
         <DateRangePicker
@@ -288,11 +276,10 @@ export const LeaveForm = () => {
           disabled={isHourlyLeave}
         />
       )}
-
       {/* Display selected date for hourly leave */}
       {isPersonalLeave && isHourlyLeave && startDate && (
         <div className="space-y-2">
-          <Label className="text-sm font-medium">วันที่ลา</Label>
+          <Label className="text-sm font-medium">{t('leave.leaveDate')}</Label>
           <div className="p-3 bg-gray-50 rounded-lg">
             <p className="text-sm text-gray-700">
               {startDate.toLocaleDateString('th-TH', { 
@@ -304,58 +291,53 @@ export const LeaveForm = () => {
           </div>
         </div>
       )}
-
       {/* Supervisor */}
       <div className="space-y-2">
         <Label htmlFor="supervisor" className="text-sm font-medium">
-          ชื่อผู้ดูแล/หัวหน้างาน
+          {t('leave.supervisor')}
         </Label>
         <Input
           id="supervisor"
-          placeholder="ระบุชื่อผู้ดูแลหรือหัวหน้างาน"
+          placeholder={t('leave.supervisorPlaceholder')}
           value={supervisor}
           onChange={(e) => setSupervisor(e.target.value)}
           className="w-full"
         />
       </div>
-
       {/* Reason */}
       <div className="space-y-2">
         <Label htmlFor="reason" className="text-sm font-medium">
-          เหตุผลในการลา *
+          {t('leave.reason')} *
         </Label>
         <Textarea
           id="reason"
-          placeholder="กรุณาระบุเหตุผลในการลา..."
+          placeholder={t('leave.reasonPlaceholder')}
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           className="min-h-[100px] resize-none"
         />
       </div>
-
       {/* File Upload - Show only for certain leave types */}
-      {requiresAttachmentField && (
+      {requiresAttachment && (
         <FileUpload
           attachments={attachments}
           onFileUpload={handleFileUpload}
           onRemoveAttachment={removeAttachment}
         />
       )}
-
       {/* Contact Info */}
       <div className="space-y-2">
         <Label htmlFor="contact" className="text-sm font-medium">
-          ช่องทางติดต่อระหว่างลา
+          {t('leave.contactInfo')}
         </Label>
         <Input
           id="contact"
-          placeholder="เบอร์โทรศัพท์หรืออีเมล"
+          placeholder={t('leave.contactPlaceholder')}
           className="w-full"
           value={contact}
           onChange={e => setContact(e.target.value)}
         />
       </div>
-
       {/* Submit Button */}
       <div className="flex gap-3 pt-4">
         <Button 
@@ -364,17 +346,15 @@ export const LeaveForm = () => {
           size="lg"
         >
           <Send className="w-4 h-4 mr-2" />
-          ส่งคำขอลา
+          {t('leave.submitLeave')}
         </Button>
         <Button 
           type="button" 
           variant="outline" 
-          onClick={() => {
-            navigate("/"); // หรือเปลี่ยนเป็น path ที่ต้องการ เช่น "/dashboard"
-          }}
+          onClick={() => navigate("/")}
           size="lg"
         >
-          ยกเลิก
+          {t('common.cancel')}
         </Button>
       </div>
     </form>
