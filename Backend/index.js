@@ -29,7 +29,7 @@ const AppDataSource = new DataSource({
     require('./EnityTable/admin.js'),
     require('./EnityTable/leaveRequest.entity.js'),
     require('./EnityTable/position.js'),
-    require('./EnityTable/leavetype.js'),
+    require('./EnityTable/leaveType.js'),
     require('./EnityTable/department.js')
     
 ],
@@ -134,8 +134,12 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 // Register PositionController and DepartmentController
 const positionController = require('./api/PositionController')(AppDataSource);
 app.use('/api', positionController);
+
 const departmentController = require('./api/DepartmentController')(AppDataSource);
 app.use('/api', departmentController);
+
+const typeLeaveController = require('./api/TpyeLeaveController')(AppDataSource);
+app.use('/api', typeLeaveController);
 
 // เชื่อมต่อ MidController เท่านั้น
 const midController = require('./api/MidController')(AppDataSource);
@@ -146,6 +150,9 @@ app.use('/api', registerController);
 
 const loginController = require('./api/LoginController')(AppDataSource);
 app.use('/api', loginController);
+
+const leaveRequestController = require('./api/LeaveRequestController');
+app.use('/api', leaveRequestController);
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);

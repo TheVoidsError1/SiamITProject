@@ -4,11 +4,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Send } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { DateRangePicker } from "./DateRangePicker";
 import { FileUpload } from "./FileUpload";
-import { leaveTypes, employeeTypes, personalLeaveOptions, timeSlots } from "@/constants/leaveTypes";
+import { leaveTypes, personalLeaveOptions, timeSlots } from "@/constants/leaveTypes";
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from "react-i18next";
 
@@ -28,6 +28,46 @@ export const LeaveForm = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
+  const [departments, setDepartments] = useState<{ id: number; department_name: string }[]>([]);
+  const [leaveTypes, setLeaveTypes] = useState<{ id: string; leave_type: string }[]>([]);
+
+  useEffect(() => {
+    // ดึงข้อมูล department จาก API
+    const fetchDepartments = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch("http://localhost:3001/api/departments", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (data.status === "success" && Array.isArray(data.data)) {
+          setDepartments(data.data);
+        }
+      } catch (err) {
+        // สามารถ toast แจ้ง error ได้ถ้าต้องการ
+      }
+    };
+    fetchDepartments();
+  }, []);
+
+  useEffect(() => {
+    // ดึงข้อมูล leave types จาก API
+    const fetchLeaveTypes = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch("http://localhost:3001/api/leave-types", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) {
+          setLeaveTypes(data.data);
+        }
+      } catch (err) {
+        // สามารถ toast แจ้ง error ได้ถ้าต้องการ
+      }
+    };
+    fetchLeaveTypes();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -156,9 +196,19 @@ export const LeaveForm = () => {
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
-  const selectedLeaveType = leaveTypes.find(type => type.value === leaveType);
-  const requiresAttachmentField = selectedLeaveType?.requiresAttachment || false;
-  const hasTimeOption = selectedLeaveType?.hasTimeOption || false;
+  // const selectedLeaveType = leaveTypes.find(type => type.id === leaveType);
+  // const requiresAttachmentField = selectedLeaveType?.requiresAttachment || false;
+  // const hasTimeOption = selectedLeaveType?.hasTimeOption || false;
+  // หมายเหตุ: ถ้าต้องการใช้ requiresAttachmentField หรือ hasTimeOption ต้องเพิ่มฟิลด์นี้ใน leaveType ที่ backend ด้วย
+  // ฟีเจอร์แนบไฟล์: เฉพาะ sick, emergency, maternity
+  const requiresAttachmentField = (() => {
+    // สมมุติว่า leave_type ในฐานข้อมูลเป็นภาษาอังกฤษ (sick, emergency, maternity)
+    const selected = leaveTypes.find(type => type.id === leaveType);
+    if (!selected) return false;
+    const name = selected.leave_type?.toLowerCase();
+    return name === 'sick' || name === 'emergency' || name === 'maternity';
+  })();
+  const hasTimeOption = false; // ปิดฟีเจอร์เลือกเวลาแบบ dynamic ชั่วคราว
   const isPersonalLeave = leaveType === "personal";
   const isHourlyLeave = personalLeaveType === "hour";
 
@@ -177,7 +227,7 @@ export const LeaveForm = () => {
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
-      {/* Employee Type */}
+      {/* Employee Type (เปลี่ยนเป็น Department) */}
       <div className="space-y-2">
         <Label htmlFor="employee-type" className="text-sm font-medium">
           {t('leave.employeeType')} *
@@ -187,16 +237,16 @@ export const LeaveForm = () => {
             <SelectValue placeholder={t('leave.selectEmployeeType')} />
           </SelectTrigger>
           <SelectContent>
-            {employeeTypes.map((type) => (
-              <SelectItem key={type.value} value={type.value}>
-                {t(`employeeTypes.${type.value}`)}
+            {departments.map((dept) => (
+              <SelectItem key={dept.id} value={dept.department_name}>
+                {dept.department_name}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
 
-      {/* Leave Type */}
+      {/* Leave Type (เปลี่ยนเป็น dynamic จาก API) */}
       <div className="space-y-2">
         <Label htmlFor="leave-type" className="text-sm font-medium">
           {t('leave.leaveType')} *
@@ -207,20 +257,12 @@ export const LeaveForm = () => {
           </SelectTrigger>
           <SelectContent>
             {leaveTypes.map((type) => (
-              <SelectItem key={type.value} value={type.value}>
-                {t(`leaveTypes.${type.value}`)}
-                {type.requiresAttachment && (
-                  <span className="text-red-500 ml-1">*</span>
-                )}
+              <SelectItem key={type.id} value={type.id}>
+                {type.leave_type}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
-        {requiresAttachmentField && (
-          <p className="text-xs text-red-600">
-            * {t('leave.requiresAttachment')}
-          </p>
-        )}
       </div>
 
       {/* Personal Leave Type Selection */}
