@@ -151,7 +151,7 @@ app.use('/api', registerController);
 const loginController = require('./api/LoginController')(AppDataSource);
 app.use('/api', loginController);
 
-const leaveRequestController = require('./api/LeaveRequestController');
+const leaveRequestController = require('./api/LeaveRequestController')(AppDataSource);
 app.use('/api', leaveRequestController);
 
 app.listen(port, () => {

@@ -20,6 +20,16 @@ function isValidTimeFormat(timeStr: string): boolean {
   return /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(timeStr);
 }
 
+// ฟังก์ชันเติม : อัตโนมัติเมื่อป้อนเวลา เช่น 900 -> 09:00, 1730 -> 17:30
+function autoFormatTimeInput(value: string) {
+  let digits = value.replace(/[^0-9]/g, "");
+  if (digits.length > 4) digits = digits.slice(0, 4);
+  if (digits.length >= 3) {
+    return digits.slice(0, digits.length - 2) + ":" + digits.slice(-2);
+  }
+  return digits;
+}
+
 export const LeaveForm = () => {
   const { t } = useTranslation();
   const [startDate, setStartDate] = useState<Date>();
@@ -38,6 +48,8 @@ export const LeaveForm = () => {
   const formRef = useRef<HTMLFormElement>(null);
   const [departments, setDepartments] = useState<{ id: number; department_name: string }[]>([]);
   const [leaveTypes, setLeaveTypes] = useState<{ id: string; leave_type: string }[]>([]);
+  const [positions, setPositions] = useState<{ id: string; position_name: string }[]>([]);
+  const [admins, setAdmins] = useState<{ id: string; admin_name: string }[]>([]);
 
   useEffect(() => {
     // ดึงข้อมูล department จาก API
@@ -75,6 +87,44 @@ export const LeaveForm = () => {
       }
     };
     fetchLeaveTypes();
+  }, []);
+
+  useEffect(() => {
+    // ดึงข้อมูลตำแหน่ง (position) จาก API
+    const fetchPositions = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch("http://localhost:3001/api/positions", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (data.status === "success" && Array.isArray(data.data)) {
+          setPositions(data.data);
+        }
+      } catch (err) {
+        // สามารถ toast แจ้ง error ได้ถ้าต้องการ
+      }
+    };
+    fetchPositions();
+  }, []);
+
+  useEffect(() => {
+    // ดึงข้อมูล admin จาก API
+    const fetchAdmins = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch("http://localhost:3001/api/admins", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.data)) {
+          setAdmins(data.data);
+        }
+      } catch (err) {
+        // สามารถ toast แจ้ง error ได้ถ้าต้องการ
+      }
+    };
+    fetchAdmins();
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -263,7 +313,7 @@ export const LeaveForm = () => {
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
-      {/* Employee Type (เปลี่ยนเป็น Department) */}
+      {/* Employee Type (เปลี่ยนเป็น Position) */}
       <div className="space-y-2">
         <Label htmlFor="employee-type" className="text-sm font-medium">
           {t('leave.employeeType')} *
@@ -273,9 +323,9 @@ export const LeaveForm = () => {
             <SelectValue placeholder={t('leave.selectEmployeeType')} />
           </SelectTrigger>
           <SelectContent>
-            {departments.map((dept) => (
-              <SelectItem key={dept.id} value={dept.department_name}>
-                {dept.department_name}
+            {positions.map((pos) => (
+              <SelectItem key={pos.id} value={pos.position_name}>
+                {pos.position_name}
               </SelectItem>
             ))}
           </SelectContent>
@@ -358,7 +408,7 @@ export const LeaveForm = () => {
             <Input
               type="text"
               value={startTime}
-              onChange={e => setStartTime(e.target.value.replace(/[^0-9:]/g, ''))}
+              onChange={e => setStartTime(autoFormatTimeInput(e.target.value))}
               placeholder="เช่น 09:00 หรือ 17:30"
               required
               inputMode="numeric"
@@ -371,7 +421,7 @@ export const LeaveForm = () => {
             <Input
               type="text"
               value={endTime}
-              onChange={e => setEndTime(e.target.value.replace(/[^0-9:]/g, ''))}
+              onChange={e => setEndTime(autoFormatTimeInput(e.target.value))}
               placeholder="เช่น 09:00 หรือ 17:30"
               required
               inputMode="numeric"
@@ -396,16 +446,22 @@ export const LeaveForm = () => {
 
       {/* Supervisor */}
       <div className="space-y-2">
-        <Label htmlFor="supervisor" className="text-sm font-medium">
-          {t('leave.supervisor')}
-        </Label>
-        <Input
-          id="supervisor"
-          placeholder={t('leave.supervisorPlaceholder')}
+        <Label htmlFor="supervisor">ผู้บังคับบัญชา</Label>
+        <Select
           value={supervisor}
-          onChange={(e) => setSupervisor(e.target.value)}
-          className="w-full"
-        />
+          onValueChange={setSupervisor}
+        >
+          <SelectTrigger id="supervisor">
+            <SelectValue placeholder="เลือกผู้บังคับบัญชา" />
+          </SelectTrigger>
+          <SelectContent>
+            {admins.map((admin) => (
+              <SelectItem key={admin.id} value={admin.id}>
+                {admin.admin_name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Reason */}
