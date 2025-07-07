@@ -15,6 +15,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon } from "lucide-react";
 
+// ฟังก์ชัน validate เวลา HH:mm (24 ชั่วโมง)
+function isValidTimeFormat(timeStr: string): boolean {
+  return /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(timeStr);
+}
+
 export const LeaveForm = () => {
   const { t } = useTranslation();
   const [startDate, setStartDate] = useState<Date>();
@@ -95,13 +100,24 @@ export const LeaveForm = () => {
         return;
       }
       
-      if (personalLeaveType === "hour" && (!startTime || !endTime)) {
-        toast({
-          title: t('leave.specifyTime'),
-          description: t('leave.specifyTimeDesc'),
-          variant: "destructive",
-        });
-        return;
+      if (personalLeaveType === "hour") {
+        if (!startTime || !endTime) {
+          toast({
+            title: t('leave.specifyTime'),
+            description: t('leave.specifyTimeDesc'),
+            variant: "destructive",
+          });
+          return;
+        }
+        // validate รูปแบบเวลา HH:mm
+        if (!isValidTimeFormat(startTime) || !isValidTimeFormat(endTime)) {
+          toast({
+            title: 'รูปแบบเวลาไม่ถูกต้อง',
+            description: 'กรุณากรอกเวลาเป็น HH:mm เช่น 09:00, 17:30',
+            variant: "destructive",
+          });
+          return;
+        }
       }
       
       if (personalLeaveType === "day" && !endDate) {
@@ -340,25 +356,27 @@ export const LeaveForm = () => {
           <div className="space-y-2">
             <Label className="text-sm font-medium">{t('leave.startTime')} *</Label>
             <Input
-              type="time"
+              type="text"
               value={startTime}
-              onChange={e => setStartTime(e.target.value)}
-              placeholder={t('leave.selectStartTime')}
+              onChange={e => setStartTime(e.target.value.replace(/[^0-9:]/g, ''))}
+              placeholder="เช่น 09:00 หรือ 17:30"
               required
-              step={60} // 1 นาที
-              lang={t('lang') === 'th' ? 'th-TH' : 'en-US'}
+              inputMode="numeric"
+              pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$"
+              maxLength={5}
             />
           </div>
           <div className="space-y-2">
             <Label className="text-sm font-medium">{t('leave.endTime')} *</Label>
             <Input
-              type="time"
+              type="text"
               value={endTime}
-              onChange={e => setEndTime(e.target.value)}
-              placeholder={t('leave.selectEndTime')}
+              onChange={e => setEndTime(e.target.value.replace(/[^0-9:]/g, ''))}
+              placeholder="เช่น 09:00 หรือ 17:30"
               required
-              step={60}
-              lang={t('lang') === 'th' ? 'th-TH' : 'en-US'}
+              inputMode="numeric"
+              pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$"
+              maxLength={5}
             />
           </div>
         </div>
