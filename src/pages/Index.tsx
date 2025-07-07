@@ -1,72 +1,41 @@
-<<<<<<< HEAD
-=======
-
->>>>>>> origin/db_yod
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, Users, TrendingUp } from "lucide-react";
 import { Link } from "react-router-dom";
-<<<<<<< HEAD
 import { useEffect, useState } from "react";
-
-const Index = () => {
-  const stats = [
-    {
-      title: "วันลาคงเหลือ",
-      value: "12",
-      unit: "วัน",
-=======
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const Index = () => {
   const { t } = useTranslation();
-
   const stats = [
     {
       title: t('main.daysRemaining'),
       value: "12",
       unit: t('common.days'),
->>>>>>> origin/db_yod
       icon: Calendar,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
     },
     {
-<<<<<<< HEAD
-      title: "วันลาที่ใช้แล้ว",
-      value: "8",
-      unit: "วัน",
-=======
       title: t('main.daysUsed'),
       value: "8",
       unit: t('common.days'),
->>>>>>> origin/db_yod
       icon: Clock,
       color: "text-green-600",
       bgColor: "bg-green-50",
     },
     {
-<<<<<<< HEAD
-      title: "คำขอที่รออนุมัติ",
-      value: "2",
-      unit: "คำขอ",
-=======
       title: t('main.pendingRequests'),
       value: "2",
       unit: t('main.requests'),
->>>>>>> origin/db_yod
       icon: Users,
       color: "text-orange-600",
       bgColor: "bg-orange-50",
     },
     {
-<<<<<<< HEAD
-      title: "อัตราการอนุมัติ",
-=======
       title: t('main.approvalRate'),
->>>>>>> origin/db_yod
       value: "95",
       unit: "%",
       icon: TrendingUp,
@@ -75,7 +44,6 @@ const Index = () => {
     },
   ];
 
-<<<<<<< HEAD
   const [leaveStats, setLeaveStats] = useState({ sick: 0, vacation: 0, business: 0 });
   const [loadingStats, setLoadingStats] = useState(true);
   const [errorStats, setErrorStats] = useState("");
@@ -93,15 +61,13 @@ const Index = () => {
         if (data.success) {
           setLeaveStats(data.data);
         } else {
-          setErrorStats("ไม่สามารถโหลดข้อมูลสถิติการลาได้");
+          setErrorStats(t('error.cannotLoadStats'));
         }
       })
-      .catch(() => setErrorStats("เกิดข้อผิดพลาดในการเชื่อมต่อ API"))
+      .catch(() => setErrorStats(t('error.apiConnectionError')))
       .finally(() => setLoadingStats(false));
-  }, []);
+  }, [t]);
 
-=======
->>>>>>> origin/db_yod
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="border-b bg-white/80 backdrop-blur-sm">
@@ -109,14 +75,6 @@ const Index = () => {
           <SidebarTrigger />
           <div className="flex-1">
             <h1 className="text-2xl font-bold text-gray-900">
-<<<<<<< HEAD
-              ระบบจัดการการลา
-            </h1>
-            <p className="text-sm text-gray-600">
-              ยินดีต้อนรับเข้าสู่ระบบลาออนไลน์ของบริษัทสยามไอที
-            </p>
-          </div>
-=======
               {t('main.leaveManagementSystem')}
             </h1>
             <p className="text-sm text-gray-600">
@@ -124,7 +82,6 @@ const Index = () => {
             </p>
           </div>
           <LanguageSwitcher />
->>>>>>> origin/db_yod
         </div>
       </div>
 
@@ -132,15 +89,9 @@ const Index = () => {
         {/* Welcome Section */}
         <div className="gradient-bg rounded-2xl p-8 text-white relative overflow-hidden">
           <div className="relative z-10">
-<<<<<<< HEAD
-            <h2 className="text-3xl font-bold mb-2">สวัสดี สมชาย ใจดี! 👋</h2>
-            <p className="text-blue-100 mb-6">
-              วันนี้เป็นวันที่ {new Date().toLocaleDateString('th-TH', {
-=======
             <h2 className="text-3xl font-bold mb-2">{t('main.hello')} สมชาย ใจดี! 👋</h2>
             <p className="text-blue-100 mb-6">
               {t('main.today')} {new Date().toLocaleDateString('th-TH', {
->>>>>>> origin/db_yod
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric',
@@ -153,11 +104,7 @@ const Index = () => {
                 variant="secondary"
                 className="bg-white text-blue-600 hover:bg-blue-50 font-medium"
               >
-<<<<<<< HEAD
-                ยื่นคำขอลาใหม่
-=======
                 {t('main.newLeaveRequest')}
->>>>>>> origin/db_yod
               </Button>
             </Link>
           </div>
@@ -205,38 +152,23 @@ const Index = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="w-5 h-5 text-blue-600" />
-<<<<<<< HEAD
-                การกระทำด่วน
-              </CardTitle>
-              <CardDescription>
-                เข้าถึงฟังก์ชันที่ใช้บ่อยได้อย่างรวดเร็ว
-=======
                 {t('main.quickActions')}
               </CardTitle>
               <CardDescription>
                 {t('main.quickActionsDesc')}
->>>>>>> origin/db_yod
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <Link to="/leave-request">
                 <Button className="w-full justify-start" variant="outline">
                   <Calendar className="w-4 h-4 mr-2" />
-<<<<<<< HEAD
-                  ยื่นคำขอลาใหม่
-=======
                   {t('main.newLeaveRequest')}
->>>>>>> origin/db_yod
                 </Button>
               </Link>
               <Link to="/leave-history">
                 <Button className="w-full justify-start" variant="outline">
                   <Clock className="w-4 h-4 mr-2" />
-<<<<<<< HEAD
-                  ดูประวัติการลา
-=======
                   {t('leave.leaveHistory')}
->>>>>>> origin/db_yod
                 </Button>
               </Link>
             </CardContent>
@@ -246,35 +178,6 @@ const Index = () => {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <TrendingUp className="w-5 h-5 text-green-600" />
-<<<<<<< HEAD
-                สถิติการลาล่าสุด
-              </CardTitle>
-              <CardDescription>
-                ข้อมูลการใช้วันลาในเดือนนี้
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {loadingStats ? (
-                <div className="text-center py-6 text-gray-500">กำลังโหลดข้อมูล...</div>
-              ) : errorStats ? (
-                <div className="text-center py-6 text-red-500">{errorStats}</div>
-              ) : (
-                <div className="space-y-4">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">ลาป่วย</span>
-                    <span className="font-medium">{leaveStats.sick} วัน</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">ลาพักผ่อน</span>
-                    <span className="font-medium">{leaveStats.vacation} วัน</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">ลากิจ</span>
-                    <span className="font-medium">{leaveStats.business} วัน</span>
-                  </div>
-                </div>
-              )}
-=======
                 {t('main.recentLeaveStats')}
               </CardTitle>
               <CardDescription>
@@ -282,21 +185,26 @@ const Index = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">{t('leaveTypes.sick')}</span>
-                  <span className="font-medium">2 {t('common.days')}</span>
+              {loadingStats ? (
+                <div className="text-center py-6 text-gray-500">{t('common.loading')}</div>
+              ) : errorStats ? (
+                <div className="text-center py-6 text-red-500">{errorStats}</div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">{t('leaveTypes.sick')}</span>
+                    <span className="font-medium">{leaveStats.sick} {t('common.days')}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">{t('leaveTypes.vacation')}</span>
+                    <span className="font-medium">{leaveStats.vacation} {t('common.days')}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm">{t('leaveTypes.personal')}</span>
+                    <span className="font-medium">{leaveStats.business} {t('common.days')}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">{t('leaveTypes.vacation')}</span>
-                  <span className="font-medium">5 {t('common.days')}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm">{t('leaveTypes.personal')}</span>
-                  <span className="font-medium">1 {t('common.days')}</span>
-                </div>
-              </div>
->>>>>>> origin/db_yod
+              )}
             </CardContent>
           </Card>
         </div>
@@ -305,8 +213,4 @@ const Index = () => {
   );
 };
 
-<<<<<<< HEAD
 export default Index;
-=======
-export default Index;
->>>>>>> origin/db_yod
