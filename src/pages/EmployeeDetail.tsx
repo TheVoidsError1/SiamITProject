@@ -1,11 +1,5 @@
-<<<<<<< HEAD
 import { useState, useEffect } from "react";
 import { useParams, Link, useLocation } from "react-router-dom";
-=======
-
-import { useState } from "react";
-import { useParams, Link } from "react-router-dom";
->>>>>>> origin/db_yod
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,13 +13,13 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import { LeaveDetailDialog } from "@/components/dialogs/LeaveDetailDialog";
+import { useTranslation } from "react-i18next";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const EmployeeDetail = () => {
   const { id } = useParams();
-<<<<<<< HEAD
   const location = useLocation();
-=======
->>>>>>> origin/db_yod
+  const { t } = useTranslation();
   const { toast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
   const [selectedLeave, setSelectedLeave] = useState(null);
@@ -39,7 +33,6 @@ const EmployeeDetail = () => {
     role: ''
   });
 
-<<<<<<< HEAD
   // เพิ่ม state สำหรับข้อมูลจริง
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -83,57 +76,16 @@ const EmployeeDetail = () => {
             .catch(() => setLeaveHistory([]));
         } else {
           setEmployee(null);
-          setError('ไม่พบข้อมูลพนักงาน');
+          setError(t('employee.notFound'));
         }
         setLoading(false);
       })
       .catch(() => {
         setEmployee(null);
-        setError('เกิดข้อผิดพลาดในการโหลดข้อมูล');
+        setError(t('employee.loadError'));
         setLoading(false);
       });
-  }, [id, role]);
-=======
-  // Mock employee data
-  const employee = {
-    id: id,
-    full_name: id === '1' ? 'ผู้ดูแลระบบ' : id === '2' ? 'พนักงานทั่วไป' : id === '3' ? 'John Smith' : 'สมชาย ใจดี',
-    email: id === '1' ? 'admin@siamit.com' : id === '2' ? 'user@siamit.com' : id === '3' ? 'john@siamit.com' : 'somchai@siamit.com',
-    password: '••••••••',
-    role: id === '1' ? 'admin' : id === '4' ? 'intern' : 'employee',
-    department: id === '1' || id === '4' ? 'IT Department' : id === '2' ? 'Marketing' : 'Sales',
-    position: id === '1' ? 'System Administrator' : id === '2' ? 'Marketing Executive' : id === '3' ? 'Sales Manager' : 'Intern Developer',
-    usedLeaveDays: id === '1' ? 5 : id === '2' ? 12 : id === '3' ? 8 : 3,
-    totalLeaveDays: id === '1' ? 20 : id === '2' ? 18 : id === '3' ? 20 : 10
-  };
-
-  // Mock leave history with attachments
-  const leaveHistory = [
-    {
-      id: 1,
-      type: "ลาพักผ่อน",
-      startDate: new Date(2024, 10, 15),
-      endDate: new Date(2024, 10, 17),
-      days: 3,
-      reason: "เดินทางท่องเที่ยวกับครอบครัว",
-      status: "approved",
-      submittedDate: new Date(2024, 10, 10),
-    },
-    {
-      id: 2,
-      type: "ลาป่วย",
-      startDate: new Date(2024, 9, 22),
-      endDate: new Date(2024, 9, 23),
-      days: 2,
-      reason: "ป่วยด้วยโรคไข้หวัดใหญ่",
-      status: "approved",
-      submittedDate: new Date(2024, 9, 21),
-      attachments: [
-        new File([""], "medical-certificate.jpg", { type: "image/jpeg" })
-      ]
-    },
-  ];
->>>>>>> origin/db_yod
+  }, [id, role, t]);
 
   const departments = [
     'IT Department',
@@ -147,29 +99,19 @@ const EmployeeDetail = () => {
 
   const handleEdit = () => {
     setEditData({
-<<<<<<< HEAD
       full_name: employee?.name || '',
       email: employee?.email || '',
       password: '',
       department: employee?.department || '',
       position: employee?.position || '',
       role: employee?.role || ''
-=======
-      full_name: employee.full_name,
-      email: employee.email,
-      password: '',
-      department: employee.department,
-      position: employee.position,
-      role: employee.role
->>>>>>> origin/db_yod
     });
     setIsEditing(true);
   };
 
-<<<<<<< HEAD
   const handleSave = async () => {
     if (!processCheckId) {
-      toast({ title: "เกิดข้อผิดพลาด", description: "ไม่พบ processCheckId" });
+      toast({ title: t('error.title'), description: t('employee.noProcessCheckId') });
       return;
     }
     try {
@@ -189,8 +131,8 @@ const EmployeeDetail = () => {
       const data = await response.json();
       if (data.success) {
         toast({
-          title: "บันทึกข้อมูลสำเร็จ! ✅",
-          description: "ข้อมูลของพนักงานได้รับการอัปเดตแล้ว",
+          title: t('employee.saveSuccess'),
+          description: t('employee.updateSuccess'),
         });
         setIsEditing(false);
         // รีเฟรชข้อมูลใหม่
@@ -204,19 +146,11 @@ const EmployeeDetail = () => {
         const empData = await res.json();
         if (empData.success) setEmployee(empData.data);
       } else {
-        toast({ title: "เกิดข้อผิดพลาด", description: data.message || "ไม่สามารถบันทึกข้อมูลได้" });
+        toast({ title: t('error.title'), description: data.message || t('employee.saveError') });
       }
     } catch (err) {
-      toast({ title: "เกิดข้อผิดพลาด", description: "ไม่สามารถบันทึกข้อมูลได้" });
+      toast({ title: t('error.title'), description: t('employee.saveError') });
     }
-=======
-  const handleSave = () => {
-    toast({
-      title: "บันทึกข้อมูลสำเร็จ! ✅",
-      description: "ข้อมูลของพนักงานได้รับการอัปเดตแล้ว",
-    });
-    setIsEditing(false);
->>>>>>> origin/db_yod
   };
 
   const handleCancel = () => {
@@ -236,15 +170,9 @@ const EmployeeDetail = () => {
     setLeaveDialogOpen(true);
   };
 
-<<<<<<< HEAD
-  if (loading) return <div>กำลังโหลดข้อมูล...</div>;
+  if (loading) return <div>{t('common.loading')}</div>;
   if (error) return <div>{error}</div>;
-  if (!employee) return <div>ไม่พบข้อมูลพนักงาน</div>;
-=======
-  if (!employee) {
-    return <div>ไม่พบข้อมูลพนักงาน</div>;
-  }
->>>>>>> origin/db_yod
+  if (!employee) return <div>{t('employee.notFound')}</div>;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -254,17 +182,14 @@ const EmployeeDetail = () => {
           <Button asChild variant="ghost" size="sm">
             <Link to="/admin/employees">
               <ArrowLeft className="w-4 h-4 mr-2" />
-              กลับ
+              {t('common.back')}
             </Link>
           </Button>
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">ข้อมูลพนักงาน</h1>
-<<<<<<< HEAD
+            <h1 className="text-2xl font-bold text-gray-900">{t('employee.details')}</h1>
             <p className="text-sm text-gray-600">{employee.name}</p>
-=======
-            <p className="text-sm text-gray-600">{employee.full_name}</p>
->>>>>>> origin/db_yod
           </div>
+          <LanguageSwitcher />
         </div>
       </div>
 
@@ -275,17 +200,17 @@ const EmployeeDetail = () => {
             <CardHeader className="gradient-bg text-white rounded-t-lg">
               <CardTitle className="flex items-center gap-2">
                 <User className="w-5 h-5" />
-                ข้อมูลส่วนตัว
+                {t('employee.personalInfo')}
               </CardTitle>
               <CardDescription className="text-blue-100">
-                รายละเอียดข้อมูลพนักงาน
+                {t('employee.personalInfoDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-4">
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">ชื่อ-นามสกุล</Label>
+                    <Label className="text-sm font-medium text-gray-700">{t('employee.fullName')}</Label>
                     {isEditing ? (
                       <Input
                         value={editData.full_name}
@@ -293,15 +218,11 @@ const EmployeeDetail = () => {
                         className="mt-1"
                       />
                     ) : (
-<<<<<<< HEAD
                       <p className="text-lg font-semibold">{employee.name}</p>
-=======
-                      <p className="text-lg font-semibold">{employee.full_name}</p>
->>>>>>> origin/db_yod
                     )}
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">ตำแหน่ง</Label>
+                    <Label className="text-sm font-medium text-gray-700">{t('employee.position')}</Label>
                     {isEditing ? (
                       <Input
                         value={editData.position}
@@ -313,7 +234,7 @@ const EmployeeDetail = () => {
                     )}
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">แผนก</Label>
+                    <Label className="text-sm font-medium text-gray-700">{t('employee.department')}</Label>
                     {isEditing ? (
                       <Select onValueChange={(value) => setEditData({...editData, department: value})}>
                         <SelectTrigger className="mt-1">
@@ -330,19 +251,19 @@ const EmployeeDetail = () => {
                     )}
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">สถานะ</Label>
+                    <Label className="text-sm font-medium text-gray-700">{t('employee.status')}</Label>
                     {isEditing ? (
                       <Select onValueChange={(value) => setEditData({...editData, role: value})}>
                         <SelectTrigger className="mt-1">
                           <SelectValue placeholder={
-                            editData.role === 'admin' ? 'ผู้ดูแลระบบ' : 
-                            editData.role === 'employee' ? 'พนักงาน' : 'เด็กฝึกงาน'
+                            editData.role === 'admin' ? t('employee.admin') : 
+                            editData.role === 'employee' ? t('employee.employee') : t('employee.intern')
                           } />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="admin">ผู้ดูแลระบบ</SelectItem>
-                          <SelectItem value="employee">พนักงาน</SelectItem>
-                          <SelectItem value="intern">เด็กฝึกงาน</SelectItem>
+                          <SelectItem value="admin">{t('employee.admin')}</SelectItem>
+                          <SelectItem value="employee">{t('employee.employee')}</SelectItem>
+                          <SelectItem value="intern">{t('employee.intern')}</SelectItem>
                         </SelectContent>
                       </Select>
                     ) : (
@@ -350,8 +271,8 @@ const EmployeeDetail = () => {
                         variant={employee.role === 'admin' ? 'default' : employee.role === 'employee' ? 'secondary' : 'outline'}
                         className="ml-2"
                       >
-                        {employee.role === 'admin' ? 'ผู้ดูแลระบบ' : 
-                         employee.role === 'employee' ? 'พนักงาน' : 'เด็กฝึกงาน'}
+                        {employee.role === 'admin' ? t('employee.admin') : 
+                         employee.role === 'employee' ? t('employee.employee') : t('employee.intern')}
                       </Badge>
                     )}
                   </div>
@@ -359,7 +280,7 @@ const EmployeeDetail = () => {
                 
                 <div className="space-y-4">
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">อีเมล</Label>
+                    <Label className="text-sm font-medium text-gray-700">{t('employee.email')}</Label>
                     {isEditing ? (
                       <Input
                         type="email"
@@ -375,11 +296,11 @@ const EmployeeDetail = () => {
                     )}
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">รหัสผ่าน</Label>
+                    <Label className="text-sm font-medium text-gray-700">{t('employee.password')}</Label>
                     {isEditing ? (
                       <Input
                         type="password"
-                        placeholder="ใส่รหัสผ่านใหม่"
+                        placeholder={t('employee.newPassword')}
                         value={editData.password}
                         onChange={(e) => setEditData({...editData, password: e.target.value})}
                         className="mt-1"
@@ -389,9 +310,9 @@ const EmployeeDetail = () => {
                     )}
                   </div>
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">วันลาที่ใช้แล้ว</Label>
+                    <Label className="text-sm font-medium text-gray-700">{t('employee.usedLeaveDays')}</Label>
                     <p className={`text-lg font-semibold mt-1 ${employee.usedLeaveDays > employee.totalLeaveDays * 0.8 ? 'text-red-600' : 'text-green-600'}`}>
-                      {employee.usedLeaveDays}/{employee.totalLeaveDays} วัน
+                      {employee.usedLeaveDays}/{employee.totalLeaveDays} {t('leave.days')}
                     </p>
                   </div>
                   <div className="flex gap-2 mt-4">
@@ -399,17 +320,17 @@ const EmployeeDetail = () => {
                       <>
                         <Button onClick={handleSave} size="sm" className="bg-green-600 hover:bg-green-700">
                           <Save className="w-4 h-4 mr-2" />
-                          บันทึก
+                          {t('common.save')}
                         </Button>
                         <Button onClick={handleCancel} size="sm" variant="outline">
                           <X className="w-4 h-4 mr-2" />
-                          ยกเลิก
+                          {t('common.cancel')}
                         </Button>
                       </>
                     ) : (
                       <Button onClick={handleEdit} size="sm" variant="outline">
                         <Edit className="w-4 h-4 mr-2" />
-                        แก้ไข
+                        {t('common.edit')}
                       </Button>
                     )}
                   </div>
@@ -423,48 +344,33 @@ const EmployeeDetail = () => {
             <CardHeader className="gradient-bg text-white rounded-t-lg">
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="w-5 h-5" />
-                ประวัติการลา
+                {t('leave.leaveHistory')}
               </CardTitle>
               <CardDescription className="text-blue-100">
-                รายการการลาทั้งหมดของพนักงาน
+                {t('employee.leaveHistoryDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="p-6">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>ประเภท</TableHead>
-                    <TableHead>วันที่ลา</TableHead>
-                    <TableHead>จำนวนวัน</TableHead>
-                    <TableHead>เหตุผล</TableHead>
-                    <TableHead>สถานะ</TableHead>
-                    <TableHead>วันที่ส่งคำขอ</TableHead>
-                    <TableHead className="text-center">การจัดการ</TableHead>
+                    <TableHead>{t('leave.type')}</TableHead>
+                    <TableHead>{t('leave.date')}</TableHead>
+                    <TableHead>{t('leave.duration')}</TableHead>
+                    <TableHead>{t('leave.reason')}</TableHead>
+                    <TableHead>{t('leave.status')}</TableHead>
+                    <TableHead>{t('leave.submittedDate')}</TableHead>
+                    <TableHead className="text-center">{t('common.actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {leaveHistory.map((leave) => (
                     <TableRow key={leave.id}>
-<<<<<<< HEAD
                       <TableCell className="font-medium">{leave.leaveType}</TableCell>
                       <TableCell>
                         {leave.startDate ? format(new Date(leave.startDate), "dd MMM", { locale: th }) : ''} - {leave.endDate ? format(new Date(leave.endDate), "dd MMM yyyy", { locale: th }) : ''}
                       </TableCell>
-                      <TableCell>{leave.days || ''} วัน</TableCell>
-                      <TableCell className="max-w-xs truncate">{leave.reason}</TableCell>
-                      <TableCell>
-                        <Badge className={leave.status === 'approved' ? "bg-green-100 text-green-800 border-green-200" : "bg-yellow-100 text-yellow-800 border-yellow-200"}>
-                          {leave.status === 'approved' ? 'อนุมัติแล้ว' : 'รอดำเนินการ'}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {leave.submittedDate ? format(new Date(leave.submittedDate), "dd MMM yyyy", { locale: th }) : ''}
-=======
-                      <TableCell className="font-medium">{leave.type}</TableCell>
-                      <TableCell>
-                        {format(leave.startDate, "dd MMM", { locale: th })} - {format(leave.endDate, "dd MMM yyyy", { locale: th })}
-                      </TableCell>
-                      <TableCell>{leave.days} วัน</TableCell>
+                      <TableCell>{leave.days || ''} {t('leave.days')}</TableCell>
                       <TableCell className="max-w-xs truncate">{leave.reason}</TableCell>
                       <TableCell>
                         <Badge className="bg-green-100 text-green-800 border-green-200">
@@ -472,8 +378,7 @@ const EmployeeDetail = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {format(leave.submittedDate, "dd MMM yyyy", { locale: th })}
->>>>>>> origin/db_yod
+                        {leave.submittedDate ? format(new Date(leave.submittedDate), "dd MMM yyyy", { locale: th }) : ''}
                       </TableCell>
                       <TableCell className="text-center">
                         <Button
@@ -482,7 +387,7 @@ const EmployeeDetail = () => {
                           onClick={() => handleViewLeaveDetails(leave)}
                         >
                           <Eye className="w-4 h-4 mr-2" />
-                          ดูรายละเอียด
+                          {t('common.viewDetails')}
                         </Button>
                       </TableCell>
                     </TableRow>
