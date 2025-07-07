@@ -11,6 +11,9 @@ import { FileUpload } from "./FileUpload";
 import { leaveTypes, personalLeaveOptions, timeSlots } from "@/constants/leaveTypes";
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from "react-i18next";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { CalendarIcon } from "lucide-react";
 
 export const LeaveForm = () => {
   const { t } = useTranslation();
@@ -209,19 +212,36 @@ export const LeaveForm = () => {
     return name === 'sick' || name === 'emergency' || name === 'maternity';
   })();
   const hasTimeOption = false; // ปิดฟีเจอร์เลือกเวลาแบบ dynamic ชั่วคราว
-  const isPersonalLeave = leaveType === "personal";
+  // ตรวจสอบว่า leave_type ที่เลือกคือ 'personal' (ลากิจ)
+  const isPersonalLeave = (() => {
+    const selected = leaveTypes.find(type => type.id === leaveType);
+    if (!selected) return false;
+    return selected.leave_type?.toLowerCase() === 'personal';
+  })();
   const isHourlyLeave = personalLeaveType === "hour";
 
-  // Set today's date for hourly leave
+  // Reset fields เมื่อเปลี่ยน leaveType
+  const handleLeaveTypeChange = (value: string) => {
+    setLeaveType(value);
+    setPersonalLeaveType("");
+    setStartDate(undefined);
+    setEndDate(undefined);
+    setStartTime("");
+    setEndTime("");
+  };
+
+  // Reset fields เมื่อเปลี่ยน personalLeaveType
   const handlePersonalLeaveTypeChange = (value: string) => {
     setPersonalLeaveType(value);
+    setStartTime("");
+    setEndTime("");
     if (value === "hour") {
       const today = new Date();
       setStartDate(today);
       setEndDate(today);
     } else {
-      setStartTime("");
-      setEndTime("");
+      setStartDate(undefined);
+      setEndDate(undefined);
     }
   };
 
@@ -251,7 +271,7 @@ export const LeaveForm = () => {
         <Label htmlFor="leave-type" className="text-sm font-medium">
           {t('leave.leaveType')} *
         </Label>
-        <Select value={leaveType} onValueChange={setLeaveType}>
+        <Select value={leaveType} onValueChange={handleLeaveTypeChange}>
           <SelectTrigger>
             <SelectValue placeholder={t('leave.selectLeaveType')} />
           </SelectTrigger>
@@ -276,13 +296,41 @@ export const LeaveForm = () => {
               <SelectValue placeholder={t('leave.selectPersonalLeaveType')} />
             </SelectTrigger>
             <SelectContent>
-              {personalLeaveOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  {t(`leave.${option.value}Leave`)}
-                </SelectItem>
-              ))}
+              <SelectItem value="day">{t('leave.dayLeave')}</SelectItem>
+              <SelectItem value="hour">{t('leave.hourLeave')}</SelectItem>
             </SelectContent>
           </Select>
+
+          {/* Display selected date for hourly leave (move here) */}
+          {isHourlyLeave && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">{t('leave.leaveDate')}</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-full justify-start text-left font-normal"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {startDate ? (
+                      startDate.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
+                    ) : (
+                      <span>เลือกวันที่</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={startDate}
+                    onSelect={setStartDate}
+                    initialFocus
+                    disabled={date => date < new Date(new Date().setHours(0,0,0,0))}
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+          )}
         </div>
       )}
 
@@ -291,33 +339,27 @@ export const LeaveForm = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
             <Label className="text-sm font-medium">{t('leave.startTime')} *</Label>
-            <Select value={startTime} onValueChange={setStartTime}>
-              <SelectTrigger>
-                <SelectValue placeholder={t('leave.selectStartTime')} />
-              </SelectTrigger>
-              <SelectContent>
-                {timeSlots.map((time) => (
-                  <SelectItem key={time} value={time}>
-                    {time}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Input
+              type="time"
+              value={startTime}
+              onChange={e => setStartTime(e.target.value)}
+              placeholder={t('leave.selectStartTime')}
+              required
+              step={60} // 1 นาที
+              lang={t('lang') === 'th' ? 'th-TH' : 'en-US'}
+            />
           </div>
           <div className="space-y-2">
             <Label className="text-sm font-medium">{t('leave.endTime')} *</Label>
-            <Select value={endTime} onValueChange={setEndTime}>
-              <SelectTrigger>
-                <SelectValue placeholder={t('leave.selectEndTime')} />
-              </SelectTrigger>
-              <SelectContent>
-                {timeSlots.map((time) => (
-                  <SelectItem key={time} value={time}>
-                    {time}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Input
+              type="time"
+              value={endTime}
+              onChange={e => setEndTime(e.target.value)}
+              placeholder={t('leave.selectEndTime')}
+              required
+              step={60}
+              lang={t('lang') === 'th' ? 'th-TH' : 'en-US'}
+            />
           </div>
         </div>
       )}
@@ -330,23 +372,8 @@ export const LeaveForm = () => {
           onStartDateChange={setStartDate}
           onEndDateChange={setEndDate}
           disabled={isHourlyLeave}
+          minDate={isPersonalLeave && personalLeaveType === "day" ? new Date() : undefined}
         />
-      )}
-
-      {/* Display selected date for hourly leave */}
-      {isPersonalLeave && isHourlyLeave && startDate && (
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">{t('leave.leaveDate')}</Label>
-          <div className="p-3 bg-gray-50 rounded-lg">
-            <p className="text-sm text-gray-700">
-              {startDate.toLocaleDateString('th-TH', { 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-              })}
-            </p>
-          </div>
-        </div>
       )}
 
       {/* Supervisor */}

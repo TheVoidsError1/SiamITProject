@@ -13,6 +13,7 @@ interface DateRangePickerProps {
   onStartDateChange: (date: Date | undefined) => void;
   onEndDateChange: (date: Date | undefined) => void;
   disabled?: boolean;
+  minDate?: Date;
 }
 
 export const DateRangePicker = ({
@@ -21,6 +22,7 @@ export const DateRangePicker = ({
   onStartDateChange,
   onEndDateChange,
   disabled = false,
+  minDate,
 }: DateRangePickerProps) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -47,6 +49,7 @@ export const DateRangePicker = ({
               selected={startDate}
               onSelect={onStartDateChange}
               initialFocus
+              disabled={minDate ? (date => date < minDate) : undefined}
             />
           </PopoverContent>
         </Popover>
@@ -75,6 +78,7 @@ export const DateRangePicker = ({
               selected={endDate}
               onSelect={onEndDateChange}
               initialFocus
+              disabled={minDate ? (date => date < minDate) : undefined}
             />
           </PopoverContent>
         </Popover>
