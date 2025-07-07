@@ -119,7 +119,10 @@
     "selectEmployeeType": "Select Employee Type",
     "employeeType": "Employee Type",
     "hourLeave": "Hourly Leave",
-    "dayLeave": "Daily Leave"
+    "dayLeave": "Daily Leave",
+    "selectDate": "Select date",
+    "selectSupervisor": "Select supervisor",
+    "timePlaceholder": "e.g. 09:00 or 17:30"
   },
   "leaveTypes": {
     "vacation": "Vacation Leave",

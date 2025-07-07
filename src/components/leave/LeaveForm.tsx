@@ -381,7 +381,7 @@ export const LeaveForm = () => {
                     {startDate ? (
                       startDate.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
                     ) : (
-                      <span>เลือกวันที่</span>
+                      <span>{t('leave.selectDate')}</span>
                     )}
                   </Button>
                 </PopoverTrigger>
@@ -409,7 +409,7 @@ export const LeaveForm = () => {
               type="text"
               value={startTime}
               onChange={e => setStartTime(autoFormatTimeInput(e.target.value))}
-              placeholder="เช่น 09:00 หรือ 17:30"
+              placeholder={t('leave.timePlaceholder')}
               required
               inputMode="numeric"
               pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$"
@@ -422,7 +422,7 @@ export const LeaveForm = () => {
               type="text"
               value={endTime}
               onChange={e => setEndTime(autoFormatTimeInput(e.target.value))}
-              placeholder="เช่น 09:00 หรือ 17:30"
+              placeholder={t('leave.timePlaceholder')}
               required
               inputMode="numeric"
               pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$"
@@ -446,13 +446,13 @@ export const LeaveForm = () => {
 
       {/* Supervisor */}
       <div className="space-y-2">
-        <Label htmlFor="supervisor">ผู้บังคับบัญชา</Label>
+        <Label htmlFor="supervisor">{t('leave.supervisor')}</Label>
         <Select
           value={supervisor}
           onValueChange={setSupervisor}
         >
           <SelectTrigger id="supervisor">
-            <SelectValue placeholder="เลือกผู้บังคับบัญชา" />
+            <SelectValue placeholder={t('leave.selectSupervisor')} />
           </SelectTrigger>
           <SelectContent>
             {admins.map((admin) => (

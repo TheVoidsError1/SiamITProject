@@ -119,7 +119,10 @@
     "selectEmployeeType": "เลือกประเภทพนักงาน",
     "employeeType": "ประเภทพนักงาน",
     "hourLeave": "ลาเป็นชั่วโมง",
-    "dayLeave": "ลาเป็นวัน"
+    "dayLeave": "ลาเป็นวัน",
+    "selectDate": "เลือกวันที่",
+    "selectSupervisor": "เลือกผู้บังคับบัญชา",
+    "timePlaceholder": "เช่น 09:00 หรือ 17:30"
   },
   "leaveTypes": {
     "vacation": "ลาพักผ่อน",
