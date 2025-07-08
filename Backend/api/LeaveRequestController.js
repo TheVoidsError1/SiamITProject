@@ -98,6 +98,37 @@
        }
      });
 
+     // GET /api/leave-request/history
+     router.get('/history', async (req, res) => {
+       try {
+         const leaveRepo = AppDataSource.getRepository('LeaveRequest');
+         const userRepo = AppDataSource.getRepository('User');
+         const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+         // ดึงใบคำขอที่ status เป็น approved หรือ rejected
+         const processedLeaves = await leaveRepo.find({
+           where: [
+             { status: 'approved' },
+             { status: 'rejected' }
+           ],
+           order: { id: 'DESC' },
+         });
+         const result = await Promise.all(processedLeaves.map(async (leave) => {
+           let user = null;
+           let leaveTypeObj = null;
+           if (leave.Repid) user = await userRepo.findOneBy({ id: leave.Repid });
+           if (leave.leaveType) leaveTypeObj = await leaveTypeRepo.findOneBy({ id: leave.leaveType });
+           return {
+             ...leave,
+             user: user ? { User_name: user.User_name, department: user.department, position: user.position } : null,
+             leaveTypeName: leaveTypeObj ? leaveTypeObj.leave_type : leave.leaveType,
+           };
+         }));
+         res.json({ status: 'success', data: result });
+       } catch (err) {
+         res.status(500).json({ status: 'error', message: err.message });
+       }
+     });
+
      // GET /api/leave-request/:id
      router.get('/:id', async (req, res) => {
        try {

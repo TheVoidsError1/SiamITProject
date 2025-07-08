@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
+import { format, differenceInCalendarDays } from "date-fns";
 import { th } from "date-fns/locale";
 import { AlertCircle, CheckCircle, Clock, Eye, TrendingUp, Users, XCircle } from "lucide-react";
 import React, { useEffect, useState } from "react";
@@ -37,6 +37,7 @@ const AdminDashboard = () => {
 
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
   const [recentRequests, setRecentRequests] = useState<any[]>([]);
+  const [historyRequests, setHistoryRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
@@ -98,9 +99,13 @@ const AdminDashboard = () => {
 
   const handleApprove = (id: string, employeeName: string) => {
     const token = localStorage.getItem('token');
+    if (!token) {
+      toast({ title: "ไม่พบ token", description: "กรุณาเข้าสู่ระบบใหม่", variant: "destructive" });
+      return;
+    }
     const approverName = localStorage.getItem('user_name'); // สมมติว่าเก็บชื่อไว้
 
-    fetch(`/api/leave-request/${id}/status`, {
+    fetch(`http://localhost:3001/api/leave-request/${id}/status`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -114,14 +119,20 @@ const AdminDashboard = () => {
           toast({ title: t('admin.approveSuccess'), description: `${t('admin.approveSuccessDesc')} ${employeeName}` });
           // รีเฟรชข้อมูล
           refreshLeaveRequests();
+        } else {
+          toast({ title: t('admin.rejectError'), description: data.message, variant: "destructive" });
         }
       });
   };
 
   const handleReject = (id: string, employeeName: string) => {
     const token = localStorage.getItem('token');
+    if (!token) {
+      toast({ title: "ไม่พบ token", description: "กรุณาเข้าสู่ระบบใหม่", variant: "destructive" });
+      return;
+    }
 
-    fetch(`/api/leave-request/${id}/status`, {
+    fetch(`http://localhost:3001/api/leave-request/${id}/status`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -135,6 +146,8 @@ const AdminDashboard = () => {
           toast({ title: t('admin.rejectSuccess'), description: `${t('admin.rejectSuccessDesc')} ${employeeName}`, variant: "destructive" });
           // รีเฟรชข้อมูล
           refreshLeaveRequests();
+        } else {
+          toast({ title: t('admin.rejectError'), description: data.message, variant: "destructive" });
         }
       });
   };
@@ -147,18 +160,42 @@ const AdminDashboard = () => {
   // เพิ่มฟังก์ชันสำหรับรีเฟรชข้อมูล
   const refreshLeaveRequests = () => {
     setLoading(true);
-    fetch("/api/leave-request/dashboard")
+    const token = localStorage.getItem('token');
+    fetch("http://localhost:3001/api/leave-request/pending", {
+      headers: { Authorization: `Bearer ${token}` }
+    })
       .then((res) => res.json())
       .then((data) => {
-        if (data.success) {
-          setPendingRequests(data.data.pendingRequests);
-          setRecentRequests(data.data.recentRequests);
-          // สามารถ set สถิติอื่นๆ ได้ถ้าต้องการ
+        if (data.status === "success") {
+          setPendingRequests(data.data);
+          setError(""); // clear error
         } else {
-          setError(t('admin.loadError'));
+          setPendingRequests([]);
+          setError(""); // ไม่ต้องแสดง error
         }
       })
-      .catch(() => setError(t('admin.connectionError')))
+      .catch(() => {
+        setPendingRequests([]);
+        setError(""); // ไม่ต้องแสดง error
+      })
+      .finally(() => setLoading(false));
+  };
+
+  const fetchHistoryRequests = () => {
+    setLoading(true);
+    const token = localStorage.getItem('token');
+    fetch("http://localhost:3001/api/leave-request/history", {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === "success") {
+          setHistoryRequests(data.data);
+        } else {
+          setHistoryRequests([]);
+        }
+      })
+      .catch(() => setHistoryRequests([]))
       .finally(() => setLoading(false));
   };
 
@@ -184,6 +221,10 @@ const AdminDashboard = () => {
       }
     };
     fetchPending();
+  }, [t]);
+
+  useEffect(() => {
+    fetchHistoryRequests();
   }, [t]);
 
   return (
@@ -339,41 +380,68 @@ const AdminDashboard = () => {
                 <CardContent className="p-6">
                   {loading ? (
                     <div className="text-center py-10 text-gray-500">{t('common.loading')}</div>
-                  ) : error ? (
-                    <div className="text-center py-10 text-red-500">{error}</div>
                   ) : (
                     <div className="space-y-4">
-                      {recentRequests.map((request) => (
-                        <div 
-                          key={request.id}
-                          className="border border-gray-200 rounded-lg p-4"
-                        >
-                          <div className="flex justify-between items-start mb-3">
-                            <div>
-                              <h3 className="font-semibold text-lg">{request.user?.User_name || "-"}</h3>
-                              <p className="text-sm text-gray-600">{request.leaveType}</p>
-                            </div>
-                            <Badge className="bg-green-100 text-green-800 border-green-200">
-                              <CheckCircle className="w-3 h-3 mr-1" />
-                              {t('admin.approved')}
+                      {historyRequests.length === 0 && (
+                        <div className="text-center text-gray-500">ไม่มีประวัติการอนุมัติ/ไม่อนุมัติ</div>
+                      )}
+                      {historyRequests.map((request) => {
+                        // คำนวณจำนวนวันลา
+                        const start = new Date(request.startDate);
+                        const end = new Date(request.endDate);
+                        const leaveDays = differenceInCalendarDays(end, start) + 1;
+                        // แปลงวันที่เป็นภาษาไทย
+                        const startStr = format(start, "d MMM yyyy", { locale: th });
+                        const endStr = format(end, "d MMM yyyy", { locale: th });
+                        // วันที่อนุมัติ/ไม่อนุมัติ
+                        let statusDate = "-";
+                        if (request.status === "approved" && request.approvedTime) {
+                          statusDate = format(new Date(request.approvedTime), "d MMMM yyyy", { locale: th });
+                        } else if (request.updatedAt) {
+                          statusDate = format(new Date(request.updatedAt), "d MMMM yyyy", { locale: th });
+                        }
+                        return (
+                          <div
+                            key={request.id}
+                            className="relative border border-gray-200 rounded-lg p-6 flex flex-col md:flex-row md:items-end md:justify-between"
+                          >
+                            {/* Badge มุมขวาบน */}
+                            <Badge
+                              className={
+                                (request.status === "approved"
+                                  ? "bg-green-100 text-green-800 border-green-200"
+                                  : "bg-red-100 text-red-800 border-red-200") +
+                                " flex items-center absolute right-6 top-6"
+                              }
+                            >
+                              {request.status === "approved" ? (
+                                <>
+                                  <CheckCircle className="w-4 h-4 mr-1" /> อนุมัติแล้ว
+                                </>
+                              ) : (
+                                <>
+                                  <XCircle className="w-4 h-4 mr-1" /> ไม่อนุมัติแล้ว
+                                </>
+                              )}
                             </Badge>
-                          </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <div>
-                              <p className="text-sm font-medium text-gray-700">{t('leave.date')}:</p>
-                              <p className="text-sm text-gray-600">
-                                {format(new Date(request.startDate), "dd MMM", { locale: th })} - {format(new Date(request.endDate), "dd MMM yyyy", { locale: th })}
-                              </p>
+
+                            {/* ฝั่งซ้ายล่าง */}
+                            <div className="flex-1">
+                              <div className="font-bold text-lg mb-1">{request.user?.User_name || "-"}</div>
+                              <div className="text-base text-gray-700 mb-2">{request.leaveTypeName}</div>
+                              <div className="text-sm text-gray-700 mb-1">
+                                วันที่ลา: {startStr} - {endStr} ({leaveDays} วัน)
+                              </div>
                             </div>
-                            <div>
-                              <p className="text-sm font-medium text-gray-700">{t('admin.approvedDate')}:</p>
-                              <p className="text-sm text-gray-600">
-                                {request.approvedTime ? format(new Date(request.approvedTime), "dd MMMM yyyy HH:mm", { locale: th }) : "-"}
-                              </p>
+                            {/* ฝั่งขวาล่าง (วันที่อนุมัติ) */}
+                            <div className="flex flex-col items-end text-right gap-2 mt-4 md:mt-0 md:ml-8 min-w-[180px]">
+                              <div className="text-sm text-gray-700">
+                                {request.status === "approved" ? "อนุมัติเมื่อ:" : "ไม่อนุมัติเมื่อ:"} {statusDate}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </CardContent>
