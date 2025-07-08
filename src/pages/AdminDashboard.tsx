@@ -42,6 +42,9 @@ const AdminDashboard = () => {
   const [error, setError] = useState<string>("");
   const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectingRequest, setRejectingRequest] = useState<any | null>(null);
 
   // ปรับการคำนวณสถิติให้ใช้ข้อมูลจาก leave request ที่ดึงมา
   const pendingCount = pendingRequests.length;
@@ -126,29 +129,39 @@ const AdminDashboard = () => {
   };
 
   const handleReject = (id: string, employeeName: string) => {
+    setRejectingRequest({ id, employeeName });
+    setRejectReason("");
+    setShowRejectDialog(true);
+  };
+
+  const confirmReject = () => {
+    if (!rejectingRequest) return;
     const token = localStorage.getItem('token');
     if (!token) {
       toast({ title: "ไม่พบ token", description: "กรุณาเข้าสู่ระบบใหม่", variant: "destructive" });
       return;
     }
-
-    fetch(`http://localhost:3001/api/leave-request/${id}/status`, {
+    fetch(`http://localhost:3001/api/leave-request/${rejectingRequest.id}/status`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ status: 'rejected' }),
+      body: JSON.stringify({ status: 'rejected', rejectedReason: rejectReason }),
     })
       .then(res => res.json())
       .then(data => {
         if (data.success) {
-          toast({ title: t('admin.rejectSuccess'), description: `${t('admin.rejectSuccessDesc')} ${employeeName}`, variant: "destructive" });
-          // รีเฟรชข้อมูล
+          toast({ title: t('admin.rejectSuccess'), description: `${t('admin.rejectSuccessDesc')} ${rejectingRequest.employeeName}`, variant: "destructive" });
           refreshLeaveRequests();
         } else {
           toast({ title: t('admin.rejectError'), description: data.message, variant: "destructive" });
         }
+      })
+      .finally(() => {
+        setShowRejectDialog(false);
+        setRejectingRequest(null);
+        setRejectReason("");
       });
   };
 
@@ -509,6 +522,26 @@ const AdminDashboard = () => {
             <Button className="px-8 py-2 text-lg rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow" onClick={() => setShowDetailDialog(false)}>
               ปิด
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog สำหรับป้อนเหตุผลไม่อนุมัติ */}
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>กรุณาระบุเหตุผลในการไม่อนุมัติ</DialogTitle>
+          </DialogHeader>
+          <textarea
+            className="w-full border rounded p-2 mt-2"
+            rows={3}
+            placeholder="กรอกเหตุผล..."
+            value={rejectReason}
+            onChange={e => setRejectReason(e.target.value)}
+          />
+          <DialogFooter className="flex gap-2 justify-end mt-4">
+            <Button variant="outline" onClick={() => setShowRejectDialog(false)}>ย้อนกลับ</Button>
+            <Button variant="destructive" onClick={confirmReject} disabled={!rejectReason.trim()}>ยืนยัน</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

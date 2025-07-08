@@ -217,7 +217,7 @@
        try {
          const leaveRepo = AppDataSource.getRepository('LeaveRequest');
          const userRepo = AppDataSource.getRepository('User');
-         const { status, statusby } = req.body;
+         const { status, statusby, rejectedReason } = req.body;
          const { id } = req.params;
 
          // ดึงชื่อผู้อนุมัติจาก JWT (ถ้าไม่ได้ส่งมา)
@@ -254,6 +254,7 @@
          }
          if (status === 'rejected') {
            leave.rejectedTime = new Date();
+           if (rejectedReason) leave.rejectedReason = rejectedReason;
          }
          await leaveRepo.save(leave);
 
