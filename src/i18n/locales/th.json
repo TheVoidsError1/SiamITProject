@@ -196,7 +196,12 @@
     "changePasswordDesc": "เปลี่ยนรหัสผ่านของคุณ",
     "passwordChanged": "เปลี่ยนรหัสผ่านสำเร็จ",
     "darkMode": "โหมดมืด",
-    "darkModeDesc": "เปลี่ยนเป็นธีมสีมืด"
+    "darkModeDesc": "เปลี่ยนเป็นธีมสีมืด",
+    "saveSuccess": "อัปเดตโปรไฟล์สำเร็จ",
+    "saveSuccessDesc": "ข้อมูลโปรไฟล์ของคุณได้รับการบันทึกเรียบร้อยแล้ว",
+    "saveError": "บันทึกโปรไฟล์ไม่สำเร็จ",
+    "uploadSuccess": "อัปโหลดรูปโปรไฟล์สำเร็จ",
+    "uploadError": "อัปโหลดรูปโปรไฟล์ไม่สำเร็จ"
   },
   "history": {
     "leaveHistoryTitle": "ดูประวัติการลาของคุณ",

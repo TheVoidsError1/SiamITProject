@@ -69,7 +69,7 @@ const Profile = () => {
       }
     };
     fetchProfile();
-  }, [updateUser]);
+  }, []);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -135,20 +135,37 @@ const Profile = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const requestData: any = {
-        User_name: formData.full_name,
-        email: formData.email,
-      };
-      if (user.role !== 'admin') {
-        requestData.position = formData.position;
-        requestData.department = formData.department;
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast({
+          title: t('error.title'),
+          description: 'No token found. Please log in.',
+          variant: "destructive",
+        });
+        return;
       }
-      const response = await axios.put(`http://localhost:3001/api/users/${user.id}`, requestData);
+
+      const requestData = {
+        name: formData.full_name,
+        email: formData.email,
+        position: formData.position,
+        department: formData.department,
+      };
+
+      const response = await axios.put('http://localhost:3001/api/profile', requestData, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
       if (response.data.success) {
         toast({
           title: t('profile.saveSuccess'),
           description: t('profile.saveSuccessDesc'),
         });
+        
+        // Update user context with new data
         updateUser({
           full_name: formData.full_name,
           position: formData.position,
@@ -161,7 +178,7 @@ const Profile = () => {
     } catch (error: any) {
       toast({
         title: t('error.title'),
-        description: t('profile.saveError'),
+        description: error.response?.data?.message || t('profile.saveError'),
         variant: "destructive",
       });
     } finally {

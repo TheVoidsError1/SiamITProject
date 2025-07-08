@@ -159,6 +159,126 @@ module.exports = (AppDataSource) => {
     }
   });
 
+  /**
+   * @swagger
+   * /api/profile:
+   *   put:
+   *     summary: Update the logged-in user's profile information
+   *     description: >
+   *       Allows the user to update their name, email, position, and department. The system checks the JWT token, finds the user in the ProcessCheck table by token, and updates the User or Admin table based on the user's role.
+   *     tags: [Profile]
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               name:
+   *                 type: string
+   *               email:
+   *                 type: string
+   *               position:
+   *                 type: string
+   *               department:
+   *                 type: string
+   *     responses:
+   *       200:
+   *         description: Profile updated successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 data:
+   *                   type: object
+   *       401:
+   *         description: No or invalid token provided
+   *       403:
+   *         description: Invalid token
+   *       404:
+   *         description: User not found
+   *       500:
+   *         description: Internal server error
+   */
+  router.put('/profile', async (req, res) => {
+    try {
+      const authHeader = req.headers['authorization'];
+      const token = authHeader && authHeader.split(' ')[1];
+      if (!token) {
+        return res.status(401).json({ success: false, message: 'Access token required' });
+      }
+      let payload;
+      try {
+        payload = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+      } catch (err) {
+        return res.status(403).json({ success: false, message: 'Invalid token' });
+      }
+      const processRepo = AppDataSource.getRepository('ProcessCheck');
+      const processCheck = await processRepo.findOne({ where: { Token: token } });
+      if (!processCheck) {
+        return res.status(404).json({ success: false, message: 'User not found in ProcessCheck' });
+      }
+      const { Role: role, Repid: repid, Email: email } = processCheck;
+      const { name, email: newEmail, position, department } = req.body;
+      const departmentRepo = AppDataSource.getRepository('Department');
+      const positionRepo = AppDataSource.getRepository('Position');
+      let updated;
+      if (role === 'admin') {
+        const adminRepo = AppDataSource.getRepository('Admin');
+        const admin = await adminRepo.findOne({ where: { id: repid } });
+        if (!admin) {
+          return res.status(404).json({ success: false, message: 'Admin not found' });
+        }
+        // Find department and position by name
+        let departmentEntity = null;
+        let positionEntity = null;
+        if (department) departmentEntity = await departmentRepo.findOne({ where: { department_name: department } });
+        if (position) positionEntity = await positionRepo.findOne({ where: { position_name: position } });
+        admin.admin_name = name || admin.admin_name;
+        admin.email = newEmail || admin.email;
+        admin.department = departmentEntity ? departmentEntity.id : admin.department;
+        admin.position = positionEntity ? positionEntity.id : admin.position;
+        updated = await adminRepo.save(admin);
+      } else {
+        const userRepo = AppDataSource.getRepository('User');
+        const user = await userRepo.findOne({ where: { id: repid } });
+        if (!user) {
+          return res.status(404).json({ success: false, message: 'User not found' });
+        }
+        let departmentEntity = null;
+        let positionEntity = null;
+        if (department) departmentEntity = await departmentRepo.findOne({ where: { department_name: department } });
+        if (position) positionEntity = await positionRepo.findOne({ where: { position_name: position } });
+        user.User_name = name || user.User_name;
+        user.email = newEmail || user.email;
+        user.department = departmentEntity ? departmentEntity.id : user.department;
+        user.position = positionEntity ? positionEntity.id : user.position;
+        updated = await userRepo.save(user);
+      }
+      // Return updated profile in the same format as GET
+      let profile = { email: updated.email || email };
+      if (role === 'admin') {
+        profile.name = updated.admin_name;
+        profile.position = updated.position ? (await positionRepo.findOne({ where: { id: updated.position } }))?.position_name : '';
+        profile.department = updated.department ? (await departmentRepo.findOne({ where: { id: updated.department } }))?.department_name : '';
+      } else {
+        profile.name = updated.User_name;
+        profile.position = updated.position ? (await positionRepo.findOne({ where: { id: updated.position } }))?.position_name : '';
+        profile.department = updated.department ? (await departmentRepo.findOne({ where: { id: updated.department } }))?.department_name : '';
+      }
+      return res.json({ success: true, data: profile });
+    } catch (err) {
+      console.error('Profile update error:', err);
+      return res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+  });
+
   console.log('ProfileController router created successfully');
   return router;
 };
