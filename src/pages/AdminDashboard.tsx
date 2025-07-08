@@ -415,7 +415,7 @@ const AdminDashboard = () => {
                   ) : (
                     <div className="space-y-4">
                       {historyRequests.length === 0 && (
-                        <div className="text-center text-gray-500">ไม่มีประวัติการอนุมัติ/ไม่อนุมัติ</div>
+                        <div className="text-center text-gray-500">{t('admin.noApprovalHistory')}</div>
                       )}
                       {historyRequests.map((request) => {
                         // คำนวณจำนวนวันลา
@@ -448,11 +448,11 @@ const AdminDashboard = () => {
                             >
                               {request.status === "approved" ? (
                                 <>
-                                  <CheckCircle className="w-4 h-4 mr-1" /> อนุมัติแล้ว
+                                  <CheckCircle className="w-4 h-4 mr-1" /> {t('admin.approved')}
                                 </>
                               ) : (
                                 <>
-                                  <XCircle className="w-4 h-4 mr-1" /> ไม่อนุมัติแล้ว
+                                  <XCircle className="w-4 h-4 mr-1" /> {t('admin.rejected')}
                                 </>
                               )}
                             </Badge>
@@ -462,13 +462,17 @@ const AdminDashboard = () => {
                               <div className="font-bold text-lg mb-1">{request.user?.User_name || "-"}</div>
                               <div className="text-base text-gray-700 mb-2">{request.leaveTypeName}</div>
                               <div className="text-sm text-gray-700 mb-1">
-                                วันที่ลา: {startStr} - {endStr} ({leaveDays} วัน)
+                                {t('leave.date')}: {startStr} - {endStr} ({leaveDays} {t('leave.days')})
                               </div>
                             </div>
                             {/* ฝั่งขวาล่าง (วันที่อนุมัติ) */}
                             <div className="flex flex-col items-end text-right gap-2 mt-4 md:mt-0 md:ml-8 min-w-[180px]">
                               <div className="text-sm text-gray-700">
-                                {request.status === "approved" ? "อนุมัติเมื่อ:" : "ไม่อนุมัติเมื่อ:"} {statusDate}
+                                {request.status === "approved"
+                                  ? `${t('admin.approvedWhen')} ${statusDate !== '-' ? statusDate : '-'}`
+                                  : request.status === "rejected"
+                                    ? `${t('admin.rejectedWhen')} ${statusDate !== '-' ? statusDate : '-'}`
+                                    : ''}
                               </div>
                             </div>
                           </div>

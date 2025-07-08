@@ -249,7 +249,11 @@
     "rejectSuccess": "Rejected",
     "rejectSuccessDesc": "Rejected leave request for",
     "connectionError": "Connection Error",
-    "noPendingRequests": "No pending leave requests"
+    "noPendingRequests": "No pending leave requests",
+    "approvedWhen": "Approved on:",
+    "rejectedWhen": "Rejected on:",
+    "rejected": "Rejected",
+    "noApprovalHistory": "No approval/rejection history"
   },
   "system": {
     "onlineLeaveSystem": "Online Leave System",
