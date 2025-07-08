@@ -65,6 +65,9 @@ app.use(cors({
   credentials: true
 }));
 
+// Serve static files for uploaded images
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 app.get('/', (req, res) => {
   res.send('Hello from Express + TypeORM!');
 });

@@ -72,17 +72,29 @@ const Profile = () => {
   }, []);
 
   useEffect(() => {
-    if (!user?.id) return;
-    axios.get(`http://localhost:3001/api/profile/${user.id}/image`)
-      .then(res => {
-        if (res.data.avatar_url) {
+    const fetchAvatar = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        
+        const res = await axios.get('http://localhost:3001/api/avatar', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (res.data.success && res.data.avatar_url) {
           setAvatarUrl(`http://localhost:3001${res.data.avatar_url}`);
+          // Update user context with avatar URL
+          updateUser({ avatar_url: res.data.avatar_url });
         } else {
           setAvatarUrl(null);
         }
-      })
-      .catch(() => setAvatarUrl(null));
-  }, [user?.id]);
+      } catch (err) {
+        setAvatarUrl(null);
+      }
+    };
+    
+    fetchAvatar();
+  }, [updateUser]);
 
   useEffect(() => {
     fetch('http://localhost:3001/api/departments')
@@ -114,21 +126,39 @@ const Profile = () => {
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !user?.id) return;
+    if (!e.target.files) return;
     const file = e.target.files[0];
     const formData = new FormData();
-    formData.append('profileImg', file);
-    formData.append('userId', user.id);
+    formData.append('avatar', file);
+    
     try {
-      await axios.post('http://localhost:3001/api/profile/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast({ title: t('error.title'), description: 'No token found', variant: 'destructive' });
+        return;
+      }
+
+      const response = await axios.post('http://localhost:3001/api/avatar', formData, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data' 
+        },
       });
-      // หลังอัปโหลดเสร็จ reload avatar ใหม่
-      const res = await axios.get(`http://localhost:3001/api/profile/${user.id}/image`);
-      setAvatarUrl(`http://localhost:3001${res.data.avatar_url}`);
-      toast({ title: t('profile.uploadSuccess') });
-    } catch (err) {
-      toast({ title: t('profile.uploadError'), variant: 'destructive' });
+
+      if (response.data.success) {
+        setAvatarUrl(`http://localhost:3001${response.data.avatar_url}`);
+        // Update user context with new avatar URL
+        updateUser({ avatar_url: response.data.avatar_url });
+        toast({ title: t('profile.uploadSuccess') });
+      } else {
+        throw new Error(response.data.message || t('profile.uploadError'));
+      }
+    } catch (err: any) {
+      toast({ 
+        title: t('profile.uploadError'), 
+        description: err.response?.data?.message || err.message,
+        variant: 'destructive' 
+      });
     }
   };
 

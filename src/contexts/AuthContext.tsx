@@ -67,6 +67,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(userInfo);
     localStorage.setItem('currentUser', JSON.stringify(userInfo));
     localStorage.setItem('token', data.data?.token || '');
+
+    // Fetch avatar URL after login
+    try {
+      const avatarResponse = await fetch('http://localhost:3001/api/avatar', {
+        headers: { 'Authorization': `Bearer ${data.data?.token || ''}` }
+      });
+      
+      if (avatarResponse.ok) {
+        const avatarData = await avatarResponse.json();
+        if (avatarData.success && avatarData.avatar_url) {
+          const updatedUserInfo = { ...userInfo, avatar_url: avatarData.avatar_url };
+          setUser(updatedUserInfo);
+          localStorage.setItem('currentUser', JSON.stringify(updatedUserInfo));
+        }
+      }
+    } catch (err) {
+      // Avatar fetch failed, but login is still successful
+      console.log('Failed to fetch avatar:', err);
+    }
   };
 
   const signup = async (email: string, password: string, userData: Partial<User>) => {

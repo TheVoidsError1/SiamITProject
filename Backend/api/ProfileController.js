@@ -1,11 +1,46 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
 
 console.log('ProfileController is being loaded...');
 
 module.exports = (AppDataSource) => {
   console.log('ProfileController module function is being executed...');
   const router = express.Router();
+
+  // Configure multer for file uploads
+  const storage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      const uploadDir = path.join(__dirname, '../uploads/avatars');
+      // Create directory if it doesn't exist
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      cb(null, uploadDir);
+    },
+    filename: function (req, file, cb) {
+      // Generate unique filename with timestamp
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+      cb(null, 'avatar-' + uniqueSuffix + path.extname(file.originalname));
+    }
+  });
+
+  const upload = multer({
+    storage: storage,
+    limits: {
+      fileSize: 5 * 1024 * 1024 // 5MB limit
+    },
+    fileFilter: function (req, file, cb) {
+      // Check file type
+      if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+      } else {
+        cb(new Error('Only image files are allowed!'), false);
+      }
+    }
+  });
 
   /**
    * @swagger
@@ -277,6 +312,274 @@ module.exports = (AppDataSource) => {
       console.error('Profile update error:', err);
       return res.status(500).json({ success: false, message: 'Internal server error' });
     }
+  });
+
+  /**
+   * @swagger
+   * /api/avatar:
+   *   post:
+   *     summary: Upload avatar image for logged-in user
+   *     description: >
+   *       Uploads an avatar image for the currently logged-in user and stores the URL in the ProcessCheck table.
+   *       The image is saved to the server and the avatar_url field is updated in the database.
+   *     tags: [Profile]
+   *     security:
+   *       - bearerAuth: []
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         multipart/form-data:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               avatar:
+   *                 type: string
+   *                 format: binary
+   *                 description: Image file to upload (max 5MB)
+   *     responses:
+   *       200:
+   *         description: Avatar uploaded successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 message:
+   *                   type: string
+   *                   example: Avatar uploaded successfully
+   *                 avatar_url:
+   *                   type: string
+   *                   example: /uploads/avatars/avatar-1234567890.jpg
+   *       400:
+   *         description: Invalid file or no file provided
+   *       401:
+   *         description: No or invalid token provided
+   *       403:
+   *         description: Invalid token
+   *       404:
+   *         description: User not found in ProcessCheck
+   *       500:
+   *         description: Internal server error
+   */
+  router.post('/avatar', async (req, res) => {
+    try {
+      // 1. Get token from Authorization header
+      const authHeader = req.headers['authorization'];
+      const token = authHeader && authHeader.split(' ')[1];
+      if (!token) {
+        return res.status(401).json({ success: false, message: 'Access token required' });
+      }
+
+      // 2. Decode token to get payload
+      let payload;
+      try {
+        payload = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+      } catch (err) {
+        return res.status(403).json({ success: false, message: 'Invalid token' });
+      }
+
+      // 3. Find user in ProcessCheck table by token
+      const processRepo = AppDataSource.getRepository('ProcessCheck');
+      const processCheck = await processRepo.findOne({ where: { Token: token } });
+      if (!processCheck) {
+        return res.status(404).json({ success: false, message: 'User not found in ProcessCheck' });
+      }
+
+      // 4. Handle file upload
+      upload.single('avatar')(req, res, async function (err) {
+        if (err) {
+          if (err instanceof multer.MulterError) {
+            if (err.code === 'LIMIT_FILE_SIZE') {
+              return res.status(400).json({ success: false, message: 'File size too large. Maximum 5MB allowed.' });
+            }
+          }
+          return res.status(400).json({ success: false, message: err.message || 'File upload error' });
+        }
+
+        if (!req.file) {
+          return res.status(400).json({ success: false, message: 'No file uploaded' });
+        }
+
+        try {
+          // 5. Generate relative URL for the uploaded file
+          const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+
+          // 6. Update ProcessCheck table with new avatar URL
+          processCheck.avatar_url = avatarUrl;
+          await processRepo.save(processCheck);
+
+          return res.json({
+            success: true,
+            message: 'Avatar uploaded successfully',
+            avatar_url: avatarUrl
+          });
+        } catch (updateErr) {
+          console.error('Avatar update error:', updateErr);
+          // If database update fails, delete the uploaded file
+          if (req.file.path && fs.existsSync(req.file.path)) {
+            fs.unlinkSync(req.file.path);
+          }
+          return res.status(500).json({ success: false, message: 'Failed to update avatar URL' });
+        }
+      });
+    } catch (err) {
+      console.error('Avatar upload error:', err);
+      return res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/avatar:
+   *   get:
+   *     summary: Get avatar URL for logged-in user
+   *     description: >
+   *       Returns the avatar URL for the currently logged-in user from the ProcessCheck table.
+   *     tags: [Profile]
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: Avatar URL retrieved successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 avatar_url:
+   *                   type: string
+   *                   example: /uploads/avatars/avatar-1234567890.jpg
+   *       401:
+   *         description: No or invalid token provided
+   *       403:
+   *         description: Invalid token
+   *       404:
+   *         description: User not found in ProcessCheck
+   *       500:
+   *         description: Internal server error
+   */
+  router.get('/avatar', async (req, res) => {
+    try {
+      // 1. Get token from Authorization header
+      const authHeader = req.headers['authorization'];
+      const token = authHeader && authHeader.split(' ')[1];
+      if (!token) {
+        return res.status(401).json({ success: false, message: 'Access token required' });
+      }
+
+      // 2. Decode token to get payload
+      let payload;
+      try {
+        payload = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+      } catch (err) {
+        return res.status(403).json({ success: false, message: 'Invalid token' });
+      }
+
+      // 3. Find user in ProcessCheck table by token
+      const processRepo = AppDataSource.getRepository('ProcessCheck');
+      const processCheck = await processRepo.findOne({ where: { Token: token } });
+      if (!processCheck) {
+        return res.status(404).json({ success: false, message: 'User not found in ProcessCheck' });
+      }
+
+      return res.json({
+        success: true,
+        avatar_url: processCheck.avatar_url || null
+      });
+    } catch (err) {
+      console.error('Avatar get error:', err);
+      return res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/avatar:
+   *   delete:
+   *     summary: Delete avatar for logged-in user
+   *     description: >
+   *       Deletes the avatar image for the currently logged-in user and removes the URL from the ProcessCheck table.
+   *     tags: [Profile]
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: Avatar deleted successfully
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                   example: true
+   *                 message:
+   *                   type: string
+   *                   example: Avatar deleted successfully
+   *       401:
+   *         description: No or invalid token provided
+   *       403:
+   *         description: Invalid token
+   *       404:
+   *         description: User not found in ProcessCheck
+   *       500:
+   *         description: Internal server error
+   */
+  router.delete('/avatar', async (req, res) => {
+    try {
+      // 1. Get token from Authorization header
+      const authHeader = req.headers['authorization'];
+      const token = authHeader && authHeader.split(' ')[1];
+      if (!token) {
+        return res.status(401).json({ success: false, message: 'Access token required' });
+      }
+
+      // 2. Decode token to get payload
+      let payload;
+      try {
+        payload = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+      } catch (err) {
+        return res.status(403).json({ success: false, message: 'Invalid token' });
+      }
+
+      // 3. Find user in ProcessCheck table by token
+      const processRepo = AppDataSource.getRepository('ProcessCheck');
+      const processCheck = await processRepo.findOne({ where: { Token: token } });
+      if (!processCheck) {
+        return res.status(404).json({ success: false, message: 'User not found in ProcessCheck' });
+      }
+
+      // 4. Delete the file if it exists
+      if (processCheck.avatar_url) {
+        const filePath = path.join(__dirname, '..', processCheck.avatar_url);
+        if (fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+      }
+
+      // 5. Update ProcessCheck table to remove avatar URL
+      processCheck.avatar_url = null;
+      await processRepo.save(processCheck);
+
+      return res.json({
+        success: true,
+        message: 'Avatar deleted successfully'
+      });
+    } catch (err) {
+      console.error('Avatar delete error:', err);
+      return res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+  });
+
+  // Test route to verify ProfileController is working
+  router.get('/test', (req, res) => {
+    res.json({ message: 'ProfileController is working!' });
   });
 
   console.log('ProfileController router created successfully');
