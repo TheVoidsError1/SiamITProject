@@ -127,7 +127,16 @@
     "approvedTime": "Approval Time",
     "viewAttachment": "View Attachment",
     "status": "Status",
-    "type": "Leave Type"
+    "type": "Leave Type",
+    "detailTitle": "Leave Details",
+    "employeeName": "Employee Name",
+    "position": "Position",
+    "department": "Department",
+    "date": "Leave Date",
+    "reason": "Reason",
+    "contact": "Contact Number",
+    "submittedDate": "Submitted Date",
+    "attachment": "Attachment"
   },
   "leaveTypes": {
     "vacation": "Vacation Leave",

@@ -389,42 +389,42 @@ const AdminDashboard = () => {
           style={{ maxWidth: 700 }}
         >
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold mb-2 text-center text-blue-900">รายละเอียดการลา</DialogTitle>
+            <DialogTitle className="text-2xl font-bold mb-2 text-center text-blue-900">{t('leave.detailTitle', 'รายละเอียดการลา')}</DialogTitle>
             <DialogDescription asChild>
               {selectedRequest && (
                 <div className="space-y-3 text-gray-700">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
                     <div>
-                      <span className="font-semibold text-blue-800">ชื่อพนักงาน:</span> {typeof selectedRequest.user === "string"
+                      <span className="font-semibold text-blue-800">{t('leave.employeeName', 'ชื่อพนักงาน')}:</span> {typeof selectedRequest.user === "string"
                         ? JSON.parse(selectedRequest.user).User_name
                         : selectedRequest.user?.User_name || "-"}
                     </div>
                     <div>
-                      <span className="font-semibold text-blue-800">ตำแหน่ง:</span> {selectedRequest.employeeType || "-"}
+                      <span className="font-semibold text-blue-800">{t('leave.position', 'ตำแหน่ง')}:</span> {selectedRequest.employeeType || "-"}
                     </div>
                     <div>
-                      <span className="font-semibold text-blue-800">แผนก:</span> {selectedRequest.user?.department || "-"}
+                      <span className="font-semibold text-blue-800">{t('leave.department', 'แผนก')}:</span> {selectedRequest.user?.department || "-"}
                     </div>
                     <div>
-                      <span className="font-semibold text-blue-800">ประเภทการลา:</span> {selectedRequest.leaveTypeName}
+                      <span className="font-semibold text-blue-800">{t('leave.type', 'ประเภทการลา')}:</span> {selectedRequest.leaveTypeName}
                     </div>
                     <div>
-                      <span className="font-semibold text-blue-800">เหตุผล:</span> {selectedRequest.reason}
+                      <span className="font-semibold text-blue-800">{t('leave.reason', 'เหตุผล')}:</span> {selectedRequest.reason}
                     </div>
                     <div>
-                      <span className="font-semibold text-blue-800">วันที่ลา:</span> {selectedRequest.startDate} - {selectedRequest.endDate}
+                      <span className="font-semibold text-blue-800">{t('leave.date', 'วันที่ลา')}:</span> {selectedRequest.startDate} - {selectedRequest.endDate}
                     </div>
                     <div>
-                      <span className="font-semibold text-blue-800">วันที่ส่งคำขอ:</span> {selectedRequest.createdAt ? selectedRequest.createdAt.split('T')[0] : "-"}
+                      <span className="font-semibold text-blue-800">{t('leave.submittedDate', 'วันที่ส่งคำขอ')}:</span> {selectedRequest.createdAt ? selectedRequest.createdAt.split('T')[0] : "-"}
                     </div>
                     <div>
-                      <span className="font-semibold text-blue-800">เบอร์ติดต่อ:</span> {selectedRequest.contact || "-"}
+                      <span className="font-semibold text-blue-800">{t('leave.contact', 'เบอร์ติดต่อ')}:</span> {selectedRequest.contact || "-"}
                     </div>
               
                   </div>
                   {selectedRequest.imgLeave && (
                     <div className="flex flex-col items-center mt-4">
-                      <span className="font-semibold mb-2 text-blue-800">ไฟล์แนบ:</span>
+                      <span className="font-semibold mb-2 text-blue-800">{t('leave.attachment', 'ไฟล์แนบ')}:</span>
                       <img
                         src={`/leave-uploads/${selectedRequest.imgLeave}`}
                         alt="แนบไฟล์"

@@ -126,7 +126,17 @@
     "status": "สถานะ",
     "type": "ประเภทการลา",
     "details": "รายละเอียดใบลา",
-    "viewAttachment": "ดูไฟล์แนบ"
+    "viewAttachment": "ดูไฟล์แนบ",
+    "detailTitle": "รายละเอียดการลา",
+    "employeeName": "ชื่อพนักงาน",
+    "position": "ตำแหน่ง",
+    "department": "แผนก",
+    "type": "ประเภทการลา",
+    "date": "วันที่ลา",
+    "reason": "เหตุผล",
+    "contact": "เบอร์ติดต่อ",
+    "submittedDate": "วันที่ส่งคำขอ",
+    "attachment": "ไฟล์แนบ"
   },
   "leaveTypes": {
     "vacation": "ลาพักผ่อน",
