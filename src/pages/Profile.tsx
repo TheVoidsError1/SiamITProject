@@ -330,15 +330,15 @@ const Profile = () => {
               
               <div className="flex-1">
                 <h2 className="text-2xl font-bold text-gray-900">{user?.full_name}</h2>
-                <p className="text-gray-600 mb-2">{user?.position || '-'}</p>
+                <p className="text-gray-600 mb-2">{user?.position ? t(`positions.${user.position}`) : '-'}</p>
                 <div className="flex items-center gap-4">
                   <Badge variant={user?.role === 'admin' ? 'default' : 'secondary'} className="flex items-center gap-1">
                     <Shield className="h-3 w-3" />
-                    {user?.role === 'admin' ? t('main.systemAdmin') : (user?.position || t('main.employee'))}
+                    {user?.role === 'admin' ? t('main.systemAdmin') : (user?.position ? t(`positions.${user.position}`) : t('main.employee'))}
                   </Badge>
                   <Badge variant="outline" className="flex items-center gap-1">
                     <Building className="h-3 w-3" />
-                    {user?.department || '-'}
+                    {user?.department ? t(`departments.${user.department}`) : '-'}
                   </Badge>
                 </div>
               </div>
