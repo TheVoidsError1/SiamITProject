@@ -10,6 +10,7 @@ import { AlertCircle, CheckCircle, Clock, Eye, TrendingUp, Users, XCircle } from
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 type LeaveRequest = {
   id: number;
@@ -38,6 +39,8 @@ const AdminDashboard = () => {
   const [recentRequests, setRecentRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
+  const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
 
   // ปรับการคำนวณสถิติให้ใช้ข้อมูลจาก leave request ที่ดึงมา
   const pendingCount = pendingRequests.length;
@@ -133,6 +136,11 @@ const AdminDashboard = () => {
           refreshLeaveRequests();
         }
       });
+  };
+
+  const handleViewDetails = (request: any) => {
+    setSelectedRequest(request);
+    setShowDetailDialog(true);
   };
 
   // เพิ่มฟังก์ชันสำหรับรีเฟรชข้อมูล
@@ -303,7 +311,7 @@ const AdminDashboard = () => {
                               <XCircle className="w-4 h-4 mr-2" />
                               {t('admin.reject')}
                             </Button>
-                            <Button size="sm" variant="outline">
+                            <Button size="sm" variant="outline" onClick={() => handleViewDetails(request)}>
                               <Eye className="w-4 h-4 mr-2" />
                               {t('admin.viewDetails')}
                             </Button>
@@ -373,6 +381,45 @@ const AdminDashboard = () => {
           </Tabs>
         </div>
       </div>
+
+      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>รายละเอียดการลา</DialogTitle>
+            <DialogDescription>
+              {selectedRequest && (
+                <div className="space-y-2">
+                  <p><b>ชื่อพนักงาน:</b> {typeof selectedRequest.user === "string"
+                    ? JSON.parse(selectedRequest.user).User_name
+                    : selectedRequest.user?.User_name || "-"}</p>
+                  <p><b>แผนก:</b> {selectedRequest.user?.department || "-"}</p>
+                  <p><b>ตำแหน่ง:</b> {selectedRequest.user?.position || "-"}</p>
+                  <p><b>ประเภทการลา:</b> {selectedRequest.leaveTypeName}</p>
+                  <p><b>วันที่ลา:</b> {selectedRequest.startDate} - {selectedRequest.endDate}</p>
+                  <p><b>เหตุผล:</b> {selectedRequest.reason}</p>
+                  <p><b>เบอร์ติดต่อ:</b> {selectedRequest.contact || "-"}</p>
+                  <p><b>ประเภทพนักงาน:</b> {selectedRequest.employeeType || "-"}</p>
+                  <p><b>วันที่ส่งคำขอ:</b> {selectedRequest.createdAt ? selectedRequest.createdAt.split('T')[0] : "-"}</p>
+                  {selectedRequest.imgLeave && (
+                    <div>
+                      <b>ไฟล์แนบ:</b>
+                      <br />
+                      <img
+                        src={`/leave-uploads/${selectedRequest.imgLeave}`}
+                        alt="แนบไฟล์"
+                        style={{ maxWidth: 200, marginTop: 8 }}
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={() => setShowDetailDialog(false)}>ปิด</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
