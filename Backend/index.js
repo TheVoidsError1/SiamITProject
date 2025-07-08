@@ -19,7 +19,7 @@ const AppDataSource = new DataSource({
   host: 'localhost',
   port: 3306,
   username: 'root',
-  password: '', // ใส่รหัสผ่านของคุณ
+  password: 'password', // ใส่รหัสผ่านของคุณ
   database: 'siamitleave',
   synchronize: true, // dev only! จะสร้าง/อัปเดต table อัตโนมัติ
   logging: false,
@@ -31,8 +31,7 @@ const AppDataSource = new DataSource({
     require('./EnityTable/position.js'),
     require('./EnityTable/leaveType.js'),
     require('./EnityTable/department.js')
-    
-],
+  ],
 });
 
 AppDataSource.initialize()
@@ -48,6 +47,7 @@ app.use(bodyParser.json());
 const allowedOrigins = [
   'http://localhost:8081',
   'http://192.168.50.64:8081',
+  'http://localhost:3000',
   'http://localhost:3001',
   'http://localhost:8080'
 ];
@@ -64,6 +64,9 @@ app.use(cors({
   },
   credentials: true
 }));
+
+// Serve static files for uploaded images
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.get('/', (req, res) => {
   res.send('Hello from Express + TypeORM!');
@@ -150,6 +153,12 @@ app.use('/api', registerController);
 
 const loginController = require('./api/LoginController')(AppDataSource);
 app.use('/api', loginController);
+
+const profileController = require('./api/ProfileController')(AppDataSource);
+app.use('/api', profileController);
+
+const employeeController = require('./api/EmployeeController')(AppDataSource);
+app.use('/api', employeeController);
 
 const leaveRequestController = require('./api/LeaveRequestController')(AppDataSource);
 app.use('/api/leave-request', leaveRequestController);

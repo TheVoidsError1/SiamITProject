@@ -40,6 +40,34 @@ const EmployeeDetail = () => {
   const [leaveHistory, setLeaveHistory] = useState([]);
   // เพิ่ม state สำหรับ processCheckId
   const [processCheckId, setProcessCheckId] = useState(null);
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [positions, setPositions] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch('http://localhost:3001/api/departments')
+      .then(res => res.json())
+      .then(data => {
+        let depts = data.data.map((d: any) => d.department_name);
+        const isNoDept = (d: string) => !d || d.trim() === '' || d.toLowerCase() === 'none' || d.toLowerCase() === 'no department' || d.toLowerCase() === 'nodepartment';
+        const noDept = depts.filter(isNoDept);
+        // Sort by translated label
+        const normalDepts = depts.filter(d => !isNoDept(d)).sort((a, b) => t(`departments.${a}`).localeCompare(t(`departments.${b}`)));
+        setDepartments([...normalDepts, ...noDept]);
+      })
+      .catch(() => setDepartments([]));
+
+    fetch('http://localhost:3001/api/positions')
+      .then(res => res.json())
+      .then(data => {
+        let pos = data.data.map((p: any) => p.position_name);
+        const isNoPos = (p: string) => !p || p.trim() === '' || p.toLowerCase() === 'none' || p.toLowerCase() === 'no position' || p.toLowerCase() === 'noposition';
+        const noPos = pos.filter(isNoPos);
+        // Sort by translated label
+        const normalPos = pos.filter(p => !isNoPos(p)).sort((a, b) => t(`positions.${a}`).localeCompare(t(`positions.${b}`)));
+        setPositions([...normalPos, ...noPos]);
+      })
+      .catch(() => setPositions([]));
+  }, []);
 
   // อ่าน role จาก query string
   const queryParams = new URLSearchParams(location.search);
@@ -49,31 +77,11 @@ const EmployeeDetail = () => {
     if (!id) return;
     setLoading(true);
     setError(null);
-    let url = "";
-    if (role === "admin") {
-      url = `http://localhost:3001/api/admin/${id}`;
-    } else {
-      url = `http://localhost:3001/api/users/${id}`;
-    }
-    fetch(url)
+    fetch(`http://localhost:3001/api/employee/${id}`)
       .then(res => res.json())
       .then(data => {
         if (data.success) {
           setEmployee(data.data);
-          // ดึง processCheckId ถ้ามี
-          if (data.data.processCheckId) setProcessCheckId(data.data.processCheckId);
-          // ดึง leave history จริง
-          const repid = role === 'admin' ? data.data.admin_id : id;
-          fetch(`http://localhost:3001/api/leave-request/user/${repid}`)
-            .then(res => res.json())
-            .then(leaveData => {
-              if (leaveData.success) {
-                setLeaveHistory(leaveData.data);
-              } else {
-                setLeaveHistory([]);
-              }
-            })
-            .catch(() => setLeaveHistory([]));
         } else {
           setEmployee(null);
           setError(t('employee.notFound'));
@@ -85,23 +93,13 @@ const EmployeeDetail = () => {
         setError(t('employee.loadError'));
         setLoading(false);
       });
-  }, [id, role, t]);
-
-  const departments = [
-    'IT Department',
-    'Human Resources',
-    'Marketing',
-    'Sales',
-    'Finance',
-    'Operations',
-    'Customer Service'
-  ];
+  }, [id, t]);
 
   const handleEdit = () => {
     setEditData({
       full_name: employee?.name || '',
       email: employee?.email || '',
-      password: '',
+      password: '', // Always blank when editing
       department: employee?.department || '',
       position: employee?.position || '',
       role: employee?.role || ''
@@ -121,7 +119,7 @@ const EmployeeDetail = () => {
         department: editData.department,
         email: editData.email,
       };
-      if (editData.password) payload.password = editData.password;
+      if (editData.password && editData.password.trim() !== '') payload.password = editData.password;
       // role ไม่ได้อัปเดตใน backend (process_check.Role) ใน API นี้
       const response = await fetch(`http://localhost:3001/api/profile/${processCheckId}` , {
         method: 'PUT',
@@ -199,7 +197,7 @@ const EmployeeDetail = () => {
           <Card className="border-0 shadow-lg">
             <CardHeader className="gradient-bg text-white rounded-t-lg">
               <CardTitle className="flex items-center gap-2">
-                <User className="w-5 h-5" />
+                <User className="h-5 w-5" />
                 {t('employee.personalInfo')}
               </CardTitle>
               <CardDescription className="text-blue-100">
@@ -224,30 +222,43 @@ const EmployeeDetail = () => {
                   <div>
                     <Label className="text-sm font-medium text-gray-700">{t('employee.position')}</Label>
                     {isEditing ? (
-                      <Input
-                        value={editData.position}
-                        onChange={(e) => setEditData({...editData, position: e.target.value})}
-                        className="mt-1"
-                      />
+                      <Select onValueChange={(value) => setEditData({...editData, position: value})} value={editData.position}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder={t('positions.selectPosition')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {positions.map((key) => (
+                            <SelectItem key={key} value={key}>
+                              {key === '' || key.toLowerCase() === 'none' || key.toLowerCase() === 'no position' || key.toLowerCase() === 'noposition'
+                                ? t('positions.noPosition')
+                                : t(`positions.${key}`)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     ) : (
-                      <p className="text-sm text-gray-600">{employee.position}</p>
+                      <p className="text-sm text-gray-600">{t(`positions.${employee.position}`)}</p>
                     )}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-700">{t('employee.department')}</Label>
                     {isEditing ? (
-                      <Select onValueChange={(value) => setEditData({...editData, department: value})}>
+                      <Select onValueChange={(value) => setEditData({...editData, department: value})} value={editData.department}>
                         <SelectTrigger className="mt-1">
-                          <SelectValue placeholder={editData.department} />
+                          <SelectValue placeholder={t('departments.selectDepartment')} />
                         </SelectTrigger>
                         <SelectContent>
-                          {departments.map((dept) => (
-                            <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                          {departments.map((key) => (
+                            <SelectItem key={key} value={key}>
+                              {key === '' || key.toLowerCase() === 'none' || key.toLowerCase() === 'no department' || key.toLowerCase() === 'nodepartment'
+                                ? t('departments.noDepartment')
+                                : t(`departments.${key}`)}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     ) : (
-                      <p className="text-sm text-gray-600">{employee.department}</p>
+                      <p className="text-sm text-gray-600">{t(`departments.${employee.department}`)}</p>
                     )}
                   </div>
                   <div>
@@ -300,19 +311,21 @@ const EmployeeDetail = () => {
                     {isEditing ? (
                       <Input
                         type="password"
-                        placeholder={t('employee.newPassword')}
-                        value={editData.password}
+                        placeholder={t('employee.setNewPassword')}
+                        value={editData.password || ''}
                         onChange={(e) => setEditData({...editData, password: e.target.value})}
                         className="mt-1"
                       />
                     ) : (
-                      <p className="text-sm text-gray-600 mt-1">{employee.password}</p>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {employee.password ? '********' : t('employee.noPassword')}
+                      </p>
                     )}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-700">{t('employee.usedLeaveDays')}</Label>
-                    <p className={`text-lg font-semibold mt-1 ${employee.usedLeaveDays > employee.totalLeaveDays * 0.8 ? 'text-red-600' : 'text-green-600'}`}>
-                      {employee.usedLeaveDays}/{employee.totalLeaveDays} {t('leave.days')}
+                    <p className={`text-lg font-semibold mt-1 ${employee.usedLeaveDays && employee.totalLeaveDays && employee.usedLeaveDays > employee.totalLeaveDays * 0.8 ? 'text-red-600' : 'text-green-600'}`}>
+                      {employee.usedLeaveDays ?? '-'} / {employee.totalLeaveDays ?? '-'} {t('leave.days')}
                     </p>
                   </div>
                   <div className="flex gap-2 mt-4">
@@ -343,7 +356,7 @@ const EmployeeDetail = () => {
           <Card className="border-0 shadow-lg">
             <CardHeader className="gradient-bg text-white rounded-t-lg">
               <CardTitle className="flex items-center gap-2">
-                <Calendar className="w-5 h-5" />
+                <Calendar className="h-5 w-5" />
                 {t('leave.leaveHistory')}
               </CardTitle>
               <CardDescription className="text-blue-100">

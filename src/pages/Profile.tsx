@@ -13,83 +13,258 @@ import { useToast } from '@/hooks/use-toast';
 import { User, Mail, Building, Briefcase, Shield, Calendar, Camera, Save } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../components/ui/select";
 
 const Profile = () => {
   const { t } = useTranslation();
   const { user, updateUser } = useAuth();
   const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [formData, setFormData] = useState({
-    full_name: user?.full_name || '',
-    email: user?.email || '',
-    department: user?.department || '',
-    position: user?.position || '',
+    full_name: '',
+    email: '',
+    department: '',
+    position: '',
   });
+  const [saving, setSaving] = useState(false);
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [positions, setPositions] = useState<string[]>([]);
+  const [profileLoaded, setProfileLoaded] = useState(false);
+  const [positionsLoaded, setPositionsLoaded] = useState(false);
+  const [departmentsLoaded, setDepartmentsLoaded] = useState(false);
+
+  const getKeyByLabel = (label: string, options: string[], tPrefix: string) => {
+    for (const key of options) {
+      if (t(`${tPrefix}.${key}`) === label) return key;
+    }
+    return label; // fallback: assume it's already a key
+  };
+
+  const normalizeKey = (value: string, options: string[], tPrefix: string) => {
+    if (!value) return '';
+    // If value is like 'positions.Employee' or 'departments.Customer Service', strip the prefix
+    if (value.startsWith(`${tPrefix}.`)) {
+      return value.replace(`${tPrefix}.`, '').replace(/\s/g, '');
+    }
+    // If value matches a label, map to key
+    for (const key of options) {
+      if (t(`${tPrefix}.${key}`) === value) return key;
+    }
+    return value; // fallback: assume it's already a key
+  };
+
+  const extractKey = (value: string, tPrefix: string) => {
+    if (!value) return '';
+    // If value is like 'positions.Employee' or 'departments.Customer Service', extract the part after the dot and remove spaces
+    if (value.startsWith(`${tPrefix}.`)) {
+      const raw = value.split('.').slice(1).join('.').replace(/\s/g, '');
+      // Lowercase first letter for consistency with keys
+      return raw.charAt(0).toLowerCase() + raw.slice(1);
+    }
+    // If value is a label, try to map to key (not implemented here, but could be added)
+    return value;
+  };
+
+  // Fetch profile from backend on mount
+  useEffect(() => {
+    if (!positionsLoaded || !departmentsLoaded) return;
+    // Fetch profile from backend
+    const fetchProfile = async () => {
+      setLoading(true);
+      setError('');
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setError('No token found. Please log in.');
+          setLoading(false);
+          return;
+        }
+        const res = await axios.get('http://localhost:3001/api/profile', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = res.data.data;
+        
+        console.log('Backend position:', data.position);
+        console.log('Backend department:', data.department);
+        console.log('Positions array:', positions);
+        console.log('Departments array:', departments);
+
+        // Only set form data if profile hasn't been loaded yet
+        if (!profileLoaded) {
+          setFormData({
+            full_name: data.name || '',
+            email: data.email || '',
+            department: data.department || '',
+            position: data.position || '',
+          });
+          setProfileLoaded(true);
+        }
+        
+        // Update user context with latest data
+        updateUser({
+          full_name: data.name,
+          email: data.email,
+          department: data.department,
+          position: data.position,
+        });
+      } catch (err: any) {
+        setError('Failed to load profile');
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchProfile();
+  }, [positionsLoaded, departmentsLoaded]);
 
   useEffect(() => {
-    if (!user?.id) return;
-    axios.get(`http://localhost:3001/api/profile/${user.id}/image`)
-      .then(res => {
-        if (res.data.avatar_url) {
+    const fetchAvatar = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        
+        const res = await axios.get('http://localhost:3001/api/avatar', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (res.data.success && res.data.avatar_url) {
           setAvatarUrl(`http://localhost:3001${res.data.avatar_url}`);
+          // Only update user context if avatar_url is not already set
+          if (!user?.avatar_url) {
+            updateUser({ avatar_url: res.data.avatar_url });
+          }
         } else {
           setAvatarUrl(null);
         }
+      } catch (err) {
+        setAvatarUrl(null);
+      }
+    };
+    
+    fetchAvatar();
+  }, []); // Remove updateUser from dependencies
+
+  useEffect(() => {
+    fetch('http://localhost:3001/api/positions')
+      .then(res => res.json())
+      .then(data => {
+        let pos = data.data.map((p: any) => p.position_name);
+        const isNoPos = (p: string) => !p || p.trim() === '' || p.toLowerCase() === 'none' || p.toLowerCase() === 'no position' || p.toLowerCase() === 'noposition';
+        const noPos = pos.filter(isNoPos);
+        // Sort by translated label
+        const normalPos = pos.filter(p => !isNoPos(p)).sort((a, b) => t(`positions.${a}`).localeCompare(t(`positions.${b}`)));
+        setPositions([...normalPos, ...noPos]);
+        setPositionsLoaded(true);
       })
-      .catch(() => setAvatarUrl(null));
-  }, [user?.id]);
+      .catch(() => setPositionsLoaded(true));
+
+    fetch('http://localhost:3001/api/departments')
+      .then(res => res.json())
+      .then(data => {
+        let depts = data.data.map((d: any) => d.department_name);
+        const isNoDept = (d: string) => !d || d.trim() === '' || d.toLowerCase() === 'none' || d.toLowerCase() === 'no department' || d.toLowerCase() === 'nodepartment';
+        const noDept = depts.filter(isNoDept);
+        // Sort by translated label
+        const normalDepts = depts.filter(d => !isNoDept(d)).sort((a, b) => t(`departments.${a}`).localeCompare(t(`departments.${b}`)));
+        setDepartments([...normalDepts, ...noDept]);
+        setDepartmentsLoaded(true);
+      })
+      .catch(() => setDepartmentsLoaded(true));
+  }, []);
 
   const handleCameraClick = () => {
     fileInputRef.current?.click();
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files || !user?.id) return;
+    if (!e.target.files) return;
     const file = e.target.files[0];
     const formData = new FormData();
-    formData.append('profileImg', file);
-    formData.append('userId', user.id);
+    formData.append('avatar', file);
+    
     try {
-      await axios.post('http://localhost:3001/api/profile/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast({ title: t('error.title'), description: 'No token found', variant: 'destructive' });
+        return;
+      }
+
+      const response = await axios.post('http://localhost:3001/api/avatar', formData, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data' 
+        },
       });
-      // หลังอัปโหลดเสร็จ reload avatar ใหม่
-      const res = await axios.get(`http://localhost:3001/api/profile/${user.id}/image`);
-      setAvatarUrl(`http://localhost:3001${res.data.avatar_url}`);
-      toast({ title: t('profile.uploadSuccess') });
-    } catch (err) {
-      toast({ title: t('profile.uploadError'), variant: 'destructive' });
+
+      if (response.data.success) {
+        setAvatarUrl(`http://localhost:3001${response.data.avatar_url}`);
+        // Update user context with new avatar URL
+        updateUser({ avatar_url: response.data.avatar_url });
+        toast({ title: t('profile.uploadSuccess') });
+      } else {
+        throw new Error(response.data.message || t('profile.uploadError'));
+      }
+    } catch (err: any) {
+      toast({ 
+        title: t('profile.uploadError'), 
+        description: err.response?.data?.message || err.message,
+        variant: 'destructive' 
+      });
     }
   };
 
   const handleSave = async () => {
-    setLoading(true);
+    setSaving(true);
     try {
-      const requestData: any = {
-        User_name: formData.full_name,
-        email: formData.email,
-      };
-
-      // Only include position and department for non-admin users
-      if (user.role !== 'admin') {
-        requestData.position = formData.position;
-        requestData.department = formData.department;
+      const token = localStorage.getItem('token');
+      if (!token) {
+        toast({
+          title: t('error.title'),
+          description: 'No token found. Please log in.',
+          variant: "destructive",
+        });
+        return;
       }
 
-      const response = await axios.put(`http://localhost:3001/api/users/${user.id}`, requestData);
+      const requestData = {
+        name: formData.full_name,
+        email: formData.email,
+        position: formData.position,
+        department: formData.department,
+      };
+
+      const response = await axios.put('http://localhost:3001/api/profile', requestData, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
       if (response.data.success) {
         toast({
           title: t('profile.saveSuccess'),
           description: t('profile.saveSuccessDesc'),
         });
-        // Update user data in context and localStorage
+        
+        // Update form data with the response data to ensure consistency
+        const updatedData = response.data.data;
+        console.log('Updated position:', updatedData.position);
+        console.log('Updated department:', updatedData.department);
+        setFormData({
+          full_name: updatedData.name || formData.full_name,
+          email: updatedData.email || formData.email,
+          department: updatedData.department || formData.department,
+          position: updatedData.position || formData.position,
+        });
+        
+        // Update user context with new data
         updateUser({
-          full_name: formData.full_name,
-          position: formData.position,
-          department: formData.department,
-          email: formData.email,
+          full_name: updatedData.name || formData.full_name,
+          position: updatedData.position || formData.position,
+          department: updatedData.department || formData.department,
+          email: updatedData.email || formData.email,
         });
       } else {
         throw new Error(response.data.message || t('profile.saveError'));
@@ -97,11 +272,11 @@ const Profile = () => {
     } catch (error: any) {
       toast({
         title: t('error.title'),
-        description: t('profile.saveError'),
+        description: error.response?.data?.message || t('profile.saveError'),
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -155,15 +330,15 @@ const Profile = () => {
               
               <div className="flex-1">
                 <h2 className="text-2xl font-bold text-gray-900">{user?.full_name}</h2>
-                <p className="text-gray-600 mb-2">{user?.position || '-'}</p>
+                <p className="text-gray-600 mb-2">{user?.position ? t(`positions.${user.position}`) : '-'}</p>
                 <div className="flex items-center gap-4">
                   <Badge variant={user?.role === 'admin' ? 'default' : 'secondary'} className="flex items-center gap-1">
                     <Shield className="h-3 w-3" />
-                    {user?.role === 'admin' ? t('main.systemAdmin') : t('main.employee')}
+                    {user?.role === 'admin' ? t('main.systemAdmin') : (user?.position ? t(`positions.${user.position}`) : t('main.employee'))}
                   </Badge>
                   <Badge variant="outline" className="flex items-center gap-1">
                     <Building className="h-3 w-3" />
-                    {user?.department || '-'}
+                    {user?.department ? t(`departments.${user.department}`) : '-'}
                   </Badge>
                 </div>
               </div>
@@ -210,29 +385,49 @@ const Profile = () => {
                   
                   <div className="space-y-2">
                     <Label htmlFor="position">{t('auth.position')}</Label>
-                    <Input
-                      id="position"
+                    <Select
                       value={formData.position}
-                      onChange={(e) => setFormData(prev => ({ ...prev, position: e.target.value }))}
-                      disabled={user?.role === 'admin'}
-                      className={user?.role === 'admin' ? 'bg-gray-100 cursor-not-allowed' : ''}
-                    />
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, position: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('positions.selectPosition')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {positions.map((key) => (
+                          <SelectItem key={key} value={key}>
+                            {key === '' || key.toLowerCase() === 'none' || key.toLowerCase() === 'no position'
+                              ? t('positions.notSpecified')
+                              : t(`positions.${key}`)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   
                   <div className="space-y-2">
                     <Label htmlFor="department">{t('auth.department')}</Label>
-                    <Input
-                      id="department"
+                    <Select
                       value={formData.department}
-                      onChange={(e) => setFormData(prev => ({ ...prev, department: e.target.value }))}
-                      disabled={user?.role === 'admin'}
-                      className={user?.role === 'admin' ? 'bg-gray-100 cursor-not-allowed' : ''}
-                    />
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, department: value }))}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('departments.selectDepartment')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {departments.map((key) => (
+                          <SelectItem key={key} value={key}>
+                            {key === '' || key.toLowerCase() === 'none' || key.toLowerCase() === 'no department'
+                              ? t('departments.notSpecified', t('departments.selectDepartment'))
+                              : t(`departments.${key}`)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                 </div>
                 
-                <Button onClick={handleSave} disabled={loading} className="w-full md:w-auto">
-                  {loading ? (
+                <Button onClick={handleSave} disabled={saving || loading} className="w-full md:w-auto">
+                  {saving ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                       {t('profile.saving')}

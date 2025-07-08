@@ -61,7 +61,8 @@
     "remaining": "remaining",
     "change": "Change",
     "enable": "Enable",
-    "user": "User"
+    "user": "User",
+    "back": "Back"
   },
   "leave": {
     "leaveRequest": "Leave Request",
@@ -153,13 +154,16 @@
     "finance": "Finance",
     "operations": "Operations",
     "customerService": "Customer Service",
-    "selectDepartment": "Select Department"
+    "selectDepartment": "Select Department",
+    "notSpecified": "Prefer not to specify",
+    "noDepartment": "No Department"
   },
   "positions": {
     "employee": "Employee",
     "intern": "Intern",
     "notSpecified": "Prefer not to specify",
-    "selectPosition": "Select Position"
+    "selectPosition": "Select Position",
+    "noPosition": "No Position"
   },
   "employeeTypes": {
     "employee": "Employee",
@@ -213,7 +217,12 @@
     "changePasswordDesc": "Change your password",
     "passwordChanged": "Password changed successfully",
     "darkMode": "Dark Mode",
-    "darkModeDesc": "Switch to dark theme"
+    "darkModeDesc": "Switch to dark theme",
+    "saveSuccess": "Profile updated successfully",
+    "saveSuccessDesc": "Your profile information has been saved successfully",
+    "saveError": "Failed to save profile",
+    "uploadSuccess": "Profile picture uploaded successfully",
+    "uploadError": "Failed to upload profile picture"
   },
   "history": {
     "leaveHistoryTitle": "View your leave history",
@@ -270,6 +279,32 @@
   },
   "error": {
     "apiConnectionError": "API Connection Error"
+  },
+  "employee": {
+    "details": "Employee Details",
+    "personalInfo": "Personal Information",
+    "personalInfoDesc": "View and manage the employee's personal information.",
+    "leaveHistoryDesc": "View the employee's leave history.",
+    "fullName": "Full Name",
+    "position": "Position",
+    "department": "Department",
+    "status": "Status",
+    "email": "Email",
+    "password": "Password",
+    "usedLeaveDays": "Used Leave Days",
+    "notFound": "Employee not found.",
+    "loadError": "Failed to load employee data.",
+    "admin": "Admin",
+    "employee": "Employee",
+    "intern": "Intern",
+    "saveSuccess": "Saved successfully!",
+    "updateSuccess": "Employee information updated successfully.",
+    "saveError": "Failed to save employee information.",
+    "noProcessCheckId": "No process check ID found.",
+    "newPassword": "New Password",
+    "leaveHistoryDesc": "Employee leave history.",
+    "noPassword": "Not set",
+    "setNewPassword": "Set new password"
   },
   "employee": {
     "name": "Name",

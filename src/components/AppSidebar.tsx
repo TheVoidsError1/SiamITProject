@@ -62,23 +62,8 @@ export function AppSidebar() {
   const location = useLocation();
   const { user, logout } = useAuth();
   const { toast } = useToast();
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!user?.id) return;
-    
-    // Fetch user's profile image
-    fetch(`http://localhost:3001/api/profile/${user.id}/image`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.avatar_url) {
-          setAvatarUrl(`http://localhost:3001${data.avatar_url}`);
-        } else {
-          setAvatarUrl(null);
-        }
-      })
-      .catch(() => setAvatarUrl(null));
-  }, [user?.id]);
+  // Use avatar URL from user context if available, otherwise fetch it
+  const avatarUrl = user?.avatar_url ? `http://localhost:3001${user.avatar_url}` : null;
 
   const handleLogout = async () => {
     try {
@@ -160,7 +145,7 @@ export function AppSidebar() {
                   {user?.full_name || t('common.user')}
                 </p>
                 <p className="text-xs text-sidebar-foreground/70 truncate">
-                  {user?.position || t('main.employee')}
+                  {user?.position ? t(`positions.${user.position}`) : t('main.employee')}
                 </p>
               </div>
             </div>

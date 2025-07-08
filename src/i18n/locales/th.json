@@ -61,7 +61,8 @@
     "remaining": "เหลือ",
     "change": "เปลี่ยน",
     "enable": "เปิดใช้งาน",
-    "user": "ผู้ใช้"
+    "user": "ผู้ใช้",
+    "back": "ย้อนกลับ"
   },
   "leave": {
     "leaveRequest": "ขอลา",
@@ -153,13 +154,16 @@
     "finance": "แผนกการเงิน",
     "operations": "แผนกปฏิบัติการ",
     "customerService": "แผนกบริการลูกค้า",
-    "selectDepartment": "เลือกแผนก"
+    "selectDepartment": "เลือกแผนก",
+    "notSpecified": "ไม่ต้องการระบุ",
+    "noDepartment": "ไม่มีแผนก"
   },
   "positions": {
     "employee": "พนักงาน",
     "intern": "เด็กฝึกงาน",
     "notSpecified": "ไม่ต้องการระบุ",
-    "selectPosition": "เลือกตำแหน่ง"
+    "selectPosition": "เลือกตำแหน่ง",
+    "noPosition": "ไม่มีตำแหน่ง"
   },
   "employeeTypes": {
     "employee": "พนักงาน",
@@ -213,7 +217,12 @@
     "changePasswordDesc": "เปลี่ยนรหัสผ่านของคุณ",
     "passwordChanged": "เปลี่ยนรหัสผ่านสำเร็จ",
     "darkMode": "โหมดมืด",
-    "darkModeDesc": "เปลี่ยนเป็นธีมสีมืด"
+    "darkModeDesc": "เปลี่ยนเป็นธีมสีมืด",
+    "saveSuccess": "อัปเดตโปรไฟล์สำเร็จ",
+    "saveSuccessDesc": "ข้อมูลโปรไฟล์ของคุณได้รับการบันทึกเรียบร้อยแล้ว",
+    "saveError": "บันทึกโปรไฟล์ไม่สำเร็จ",
+    "uploadSuccess": "อัปโหลดรูปโปรไฟล์สำเร็จ",
+    "uploadError": "อัปโหลดรูปโปรไฟล์ไม่สำเร็จ"
   },
   "history": {
     "leaveHistoryTitle": "ดูประวัติการลาของคุณ",
@@ -283,5 +292,31 @@
   "employee": {
     "name": "ชื่อ",
     "phone": "เบอร์โทรศัพท์"
+  },
+  "employee": {
+    "details": "รายละเอียดพนักงาน",
+    "personalInfo": "ข้อมูลส่วนตัวพนักงาน",
+    "personalInfoDesc": "ดูและจัดการข้อมูลส่วนตัวของพนักงาน",
+    "leaveHistoryDesc": "ดูประวัติการลาของพนักงาน",
+    "fullName": "ชื่อ-นามสกุล",
+    "position": "ตำแหน่ง",
+    "department": "แผนก",
+    "status": "สถานะ",
+    "email": "อีเมล",
+    "password": "รหัสผ่าน",
+    "usedLeaveDays": "วันลาที่ใช้ไป",
+    "notFound": "ไม่พบข้อมูลพนักงาน",
+    "loadError": "ไม่สามารถโหลดข้อมูลพนักงานได้",
+    "admin": "ผู้ดูแลระบบ",
+    "employee": "พนักงาน",
+    "intern": "เด็กฝึกงาน",
+    "saveSuccess": "บันทึกสำเร็จ!",
+    "updateSuccess": "อัปเดตข้อมูลพนักงานสำเร็จ",
+    "saveError": "บันทึกข้อมูลพนักงานไม่สำเร็จ",
+    "noProcessCheckId": "ไม่พบ process check ID",
+    "newPassword": "รหัสผ่านใหม่",
+    "leaveHistoryDesc": "ประวัติการลาของพนักงาน",
+    "noPassword": "ยังไม่ได้ตั้งรหัสผ่าน",
+    "setNewPassword": "ตั้งรหัสผ่านใหม่"
   }
 }

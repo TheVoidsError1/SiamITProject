@@ -37,12 +37,26 @@ const Register = () => {
   useEffect(() => {
     fetch('http://localhost:3001/api/departments')
       .then(res => res.json())
-      .then(data => setDepartments(data.data.map((d: any) => d.department_name)))
+      .then(data => {
+        let depts = data.data.map((d: any) => d.department_name);
+        const isNoDept = (d: string) => !d || d.trim() === '' || d.toLowerCase() === 'none' || d.toLowerCase() === 'no department' || d.toLowerCase() === 'nodepartment';
+        const noDept = depts.filter(isNoDept);
+        // Sort by translated label
+        const normalDepts = depts.filter(d => !isNoDept(d)).sort((a, b) => t(`departments.${a}`).localeCompare(t(`departments.${b}`)));
+        setDepartments([...normalDepts, ...noDept]);
+      })
       .catch(() => setDepartments([]));
 
     fetch('http://localhost:3001/api/positions')
       .then(res => res.json())
-      .then(data => setPositions(data.data.map((p: any) => p.position_name)))
+      .then(data => {
+        let pos = data.data.map((p: any) => p.position_name);
+        const isNoPos = (p: string) => !p || p.trim() === '' || p.toLowerCase() === 'none' || p.toLowerCase() === 'no position' || p.toLowerCase() === 'noposition';
+        const noPos = pos.filter(isNoPos);
+        // Sort by translated label
+        const normalPos = pos.filter(p => !isNoPos(p)).sort((a, b) => t(`positions.${a}`).localeCompare(t(`positions.${b}`)));
+        setPositions([...normalPos, ...noPos]);
+      })
       .catch(() => setPositions([]));
   }, []);
 
@@ -166,8 +180,12 @@ const Register = () => {
                     <SelectValue placeholder={t('positions.selectPosition')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {positions.map((position) => (
-                      <SelectItem key={position} value={position}>{position}</SelectItem>
+                    {positions.map((key) => (
+                      <SelectItem key={key} value={key}>
+                        {key === '' || key.toLowerCase() === 'none' || key.toLowerCase() === 'no position'
+                          ? t('positions.notSpecified')
+                          : t(`positions.${key}`)}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -180,8 +198,12 @@ const Register = () => {
                     <SelectValue placeholder={t('departments.selectDepartment')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {departments.map((dept) => (
-                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                    {departments.map((key) => (
+                      <SelectItem key={key} value={key}>
+                        {key === '' || key.toLowerCase() === 'none' || key.toLowerCase() === 'no department'
+                          ? t('departments.notSpecified', t('departments.selectDepartment'))
+                          : t(`departments.${key}`)}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
