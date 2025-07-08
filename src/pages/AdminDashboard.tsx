@@ -339,9 +339,11 @@ const AdminDashboard = () => {
                               </p>
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-gray-700">{t('admin.submittedDate')}:</p>
+                              <p className="text-sm font-medium text-gray-700">เวลาที่ลา:</p>
                               <p className="text-sm text-gray-600">
-                                {request.createdAt ? request.createdAt.split('T')[0] : "-"}
+                                {request.startTime && request.endTime
+                                  ? `${request.startTime} - ${request.endTime}`
+                                  : 'ไม่มีการลาเป็น ชม.'}
                               </p>
                             </div>
                           </div>
@@ -500,6 +502,11 @@ const AdminDashboard = () => {
                     </div>
                     <div>
                       <span className="font-semibold text-blue-800">{t('leave.contact', 'เบอร์ติดต่อ')}:</span> {selectedRequest.contact || "-"}
+                    </div>
+                    <div>
+                      <span className="font-semibold text-blue-800">เวลาที่ลา:</span> {selectedRequest?.startTime && selectedRequest?.endTime
+                        ? `${selectedRequest.startTime} - ${selectedRequest.endTime}`
+                        : 'ไม่มีการลาเป็น ชม.'}
                     </div>
               
                   </div>

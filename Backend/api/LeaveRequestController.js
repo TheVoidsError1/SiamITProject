@@ -249,6 +249,7 @@
 
          leave.status = status;
          leave.statusBy = approverName;
+         leave.statusChangeTime = new Date();
          if (status === 'approved') {
            leave.approvedTime = new Date();
          }
