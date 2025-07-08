@@ -45,6 +45,12 @@ const AdminDashboard = () => {
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [rejectingRequest, setRejectingRequest] = useState<any | null>(null);
+  const [dashboardStats, setDashboardStats] = useState({
+    pendingCount: 0,
+    approvedCount: 0,
+    userCount: 0,
+    averageDayOff: 0,
+  });
 
   // ปรับการคำนวณสถิติให้ใช้ข้อมูลจาก leave request ที่ดึงมา
   const pendingCount = pendingRequests.length;
@@ -72,28 +78,28 @@ const AdminDashboard = () => {
   const stats = [
     {
       title: t('admin.pendingRequests'),
-      value: pendingCount.toString(),
+      value: dashboardStats.pendingCount.toString(),
       icon: AlertCircle,
       color: "text-orange-600",
       bgColor: "bg-orange-50",
     },
     {
-      title: t('admin.approvedThisMonth'),
-      value: approvedThisMonth.toString(),
+      title: 'อนุมัติทั้งหมด',
+      value: dashboardStats.approvedCount.toString(),
       icon: CheckCircle,
       color: "text-green-600",
       bgColor: "bg-green-50",
     },
     {
       title: t('admin.totalEmployees'),
-      value: userCount.toString(),
+      value: dashboardStats.userCount.toString(),
       icon: Users,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
     },
     {
       title: t('admin.averageLeaveDays'),
-      value: averageDayOff.toString(),
+      value: dashboardStats.averageDayOff.toString(),
       icon: TrendingUp,
       color: "text-purple-600",
       bgColor: "bg-purple-50",
@@ -120,8 +126,8 @@ const AdminDashboard = () => {
       .then(data => {
         if (data.success) {
           toast({ title: t('admin.approveSuccess'), description: `${t('admin.approveSuccessDesc')} ${employeeName}` });
-          // รีเฟรชข้อมูล
-          refreshLeaveRequests();
+          setPendingRequests(prev => prev.filter(r => r.id !== id));
+          fetchHistoryRequests();
         } else {
           toast({ title: t('admin.rejectError'), description: data.message, variant: "destructive" });
         }
@@ -153,7 +159,8 @@ const AdminDashboard = () => {
       .then(data => {
         if (data.success) {
           toast({ title: t('admin.rejectSuccess'), description: `${t('admin.rejectSuccessDesc')} ${rejectingRequest.employeeName}`, variant: "destructive" });
-          refreshLeaveRequests();
+          setPendingRequests(prev => prev.filter(r => r.id !== rejectingRequest.id));
+          fetchHistoryRequests();
         } else {
           toast({ title: t('admin.rejectError'), description: data.message, variant: "destructive" });
         }
@@ -239,6 +246,16 @@ const AdminDashboard = () => {
   useEffect(() => {
     fetchHistoryRequests();
   }, [t]);
+
+  useEffect(() => {
+    fetch("http://localhost:3001/api/leave-request/dashboard-stats")
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === "success") {
+          setDashboardStats(data.data);
+        }
+      });
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">

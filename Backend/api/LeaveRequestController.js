@@ -135,26 +135,13 @@
          const leaveRepo = AppDataSource.getRepository('LeaveRequest');
          // 1. Pending count
          const pendingCount = await leaveRepo.count({ where: { status: 'pending' } });
-         // 2. Approved count (ทุกใบที่ status = approved)
+         // 2. Approved count (นับจำนวนใบลาที่ status = 'approved')
          const approvedCount = await leaveRepo.count({ where: { status: 'approved' } });
-         // 3. Approved this month (status = approved และ approvedTime อยู่ในเดือนนี้)
-         const now = new Date();
-         const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-         const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-         const approvedThisMonth = await leaveRepo.count({
-           where: {
-             status: 'approved',
-             approvedTime: {
-               $gte: firstDay,
-               $lte: lastDay
-             }
-           }
-         });
-         // 4. User count (unique Repid in leave requests)
+         // 3. User count (unique Repid in leave requests)
          const allLeaves = await leaveRepo.find();
          const userIds = Array.from(new Set(allLeaves.map(l => l.Repid)));
          const userCount = userIds.length;
-         // 5. Average leave days (เฉพาะที่อนุมัติ)
+         // 4. Average leave days (เฉพาะที่อนุมัติ)
          const approvedLeaves = allLeaves.filter(l => l.status === 'approved');
          let averageDayOff = 0;
          if (approvedLeaves.length > 0) {
@@ -173,7 +160,6 @@
            data: {
              pendingCount,
              approvedCount,
-             approvedThisMonth,
              userCount,
              averageDayOff
            }
