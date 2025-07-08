@@ -98,6 +98,7 @@ const AdminDashboard = () => {
 
   const handleApprove = (id: string, employeeName: string) => {
     const token = localStorage.getItem('token');
+    const approverName = localStorage.getItem('user_name'); // สมมติว่าเก็บชื่อไว้
 
     fetch(`/api/leave-request/${id}/status`, {
       method: 'PUT',
@@ -105,7 +106,7 @@ const AdminDashboard = () => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ status: 'approved' }),
+      body: JSON.stringify({ status: 'approved', statusby: approverName }),
     })
       .then(res => res.json())
       .then(data => {

@@ -122,7 +122,11 @@
     "dayLeave": "ลาเป็นวัน",
     "selectDate": "เลือกวันที่",
     "selectSupervisor": "เลือกผู้บังคับบัญชา",
-    "timePlaceholder": "เช่น 09:00 หรือ 17:30"
+    "timePlaceholder": "เช่น 09:00 หรือ 17:30",
+    "status": "สถานะ",
+    "type": "ประเภทการลา",
+    "details": "รายละเอียดใบลา",
+    "viewAttachment": "ดูไฟล์แนบ"
   },
   "leaveTypes": {
     "vacation": "ลาพักผ่อน",
@@ -251,5 +255,18 @@
   },
   "error": {
     "apiConnectionError": "ข้อผิดพลาดการเชื่อมต่อ API"
+  },
+  "leaveDetail": {
+    "details": "รายละเอียดใบลา",
+    "approvedTime": "เวลาที่อนุมัติ",
+    "viewAttachment": "ดูไฟล์แนบ",
+    "rejectionReason": "เหตุผลที่ไม่อนุมัติ",
+    "approvedBy": "ผู้อนุมัติ",
+    "attachments": "ไฟล์แนบ",
+    "submittedDate": "วันที่ส่งคำขอ"
+  },
+  "employee": {
+    "name": "ชื่อ",
+    "phone": "เบอร์โทรศัพท์"
   }
 }

@@ -97,5 +97,66 @@
          res.status(500).json({ status: 'error', message: err.message });
        }
      });
+
+     // GET /api/leave-request/:id
+     router.get('/:id', async (req, res) => {
+       try {
+         const leaveRepo = AppDataSource.getRepository('LeaveRequest');
+         const userRepo = AppDataSource.getRepository('User');
+         const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+         const { id } = req.params;
+
+         const leave = await leaveRepo.findOneBy({ id });
+         if (!leave) return res.status(404).json({ success: false, message: 'Not found' });
+
+         let user = null;
+         let leaveTypeObj = null;
+         if (leave.Repid) user = await userRepo.findOneBy({ id: leave.Repid });
+         if (leave.leaveType) leaveTypeObj = await leaveTypeRepo.findOneBy({ id: leave.leaveType });
+
+         res.json({
+           success: true,
+           data: {
+             ...leave,
+             user,
+             leaveTypeName: leaveTypeObj ? leaveTypeObj.leave_type : leave.leaveType,
+           }
+         });
+       } catch (err) {
+         res.status(500).json({ success: false, message: err.message });
+       }
+     });
+
+     // PUT /api/leave-request/:id/status
+     router.put('/:id/status', async (req, res) => {
+       try {
+         const leaveRepo = AppDataSource.getRepository('LeaveRequest');
+         const userRepo = AppDataSource.getRepository('User');
+         const { status, statusby } = req.body;
+         const { id } = req.params;
+
+         // ดึงชื่อผู้อนุมัติจาก JWT (ถ้าไม่ได้ส่งมา)
+         let approverName = statusby;
+         const authHeader = req.headers.authorization;
+         if (!approverName && authHeader && authHeader.startsWith('Bearer ')) {
+           const token = authHeader.split(' ')[1];
+           const decoded = jwt.verify(token, SECRET);
+           const user = await userRepo.findOneBy({ id: decoded.userId });
+           approverName = user ? user.User_name : null;
+         }
+
+         const leave = await leaveRepo.findOneBy({ id: id });
+         if (!leave) return res.status(404).json({ success: false, message: 'Leave request not found' });
+
+         leave.status = status;
+         leave.statusBy = approverName;
+         if (status === 'approved') leave.approvedTime = new Date();
+         await leaveRepo.save(leave);
+
+         res.json({ success: true, data: leave });
+       } catch (err) {
+         res.status(500).json({ success: false, message: err.message });
+       }
+     });
      return router;
    };
