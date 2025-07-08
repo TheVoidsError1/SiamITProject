@@ -32,6 +32,7 @@ const Profile = () => {
   const [saving, setSaving] = useState(false);
   const [departments, setDepartments] = useState<string[]>([]);
   const [positions, setPositions] = useState<string[]>([]);
+  const [profileLoaded, setProfileLoaded] = useState(false);
 
   // Fetch profile from backend on mount
   useEffect(() => {
@@ -49,13 +50,19 @@ const Profile = () => {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = res.data.data;
-        setFormData({
-          full_name: data.name || '',
-          email: data.email || '',
-          department: data.department || '',
-          position: data.position || '',
-        });
-        // Optionally update user context
+        
+        // Only set form data if profile hasn't been loaded yet
+        if (!profileLoaded) {
+          setFormData({
+            full_name: data.name || '',
+            email: data.email || '',
+            department: data.department || '',
+            position: data.position || '',
+          });
+          setProfileLoaded(true);
+        }
+        
+        // Update user context with latest data
         updateUser({
           full_name: data.name,
           email: data.email,
@@ -69,7 +76,7 @@ const Profile = () => {
       }
     };
     fetchProfile();
-  }, []);
+  }, []); // Keep empty dependency array
 
   useEffect(() => {
     const fetchAvatar = async () => {
@@ -83,8 +90,10 @@ const Profile = () => {
         
         if (res.data.success && res.data.avatar_url) {
           setAvatarUrl(`http://localhost:3001${res.data.avatar_url}`);
-          // Update user context with avatar URL
-          updateUser({ avatar_url: res.data.avatar_url });
+          // Only update user context if avatar_url is not already set
+          if (!user?.avatar_url) {
+            updateUser({ avatar_url: res.data.avatar_url });
+          }
         } else {
           setAvatarUrl(null);
         }
@@ -94,7 +103,7 @@ const Profile = () => {
     };
     
     fetchAvatar();
-  }, [updateUser]);
+  }, []); // Remove updateUser from dependencies
 
   useEffect(() => {
     fetch('http://localhost:3001/api/departments')
@@ -195,12 +204,21 @@ const Profile = () => {
           description: t('profile.saveSuccessDesc'),
         });
         
+        // Update form data with the response data to ensure consistency
+        const updatedData = response.data.data;
+        setFormData({
+          full_name: updatedData.name || formData.full_name,
+          email: updatedData.email || formData.email,
+          department: updatedData.department || formData.department,
+          position: updatedData.position || formData.position,
+        });
+        
         // Update user context with new data
         updateUser({
-          full_name: formData.full_name,
-          position: formData.position,
-          department: formData.department,
-          email: formData.email,
+          full_name: updatedData.name || formData.full_name,
+          position: updatedData.position || formData.position,
+          department: updatedData.department || formData.department,
+          email: updatedData.email || formData.email,
         });
       } else {
         throw new Error(response.data.message || t('profile.saveError'));
