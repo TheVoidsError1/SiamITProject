@@ -397,8 +397,8 @@ const AdminDashboard = () => {
                         let statusDate = "-";
                         if (request.status === "approved" && request.approvedTime) {
                           statusDate = format(new Date(request.approvedTime), "d MMMM yyyy", { locale: th });
-                        } else if (request.updatedAt) {
-                          statusDate = format(new Date(request.updatedAt), "d MMMM yyyy", { locale: th });
+                        } else if (request.status === "rejected" && request.rejectedTime) {
+                          statusDate = format(new Date(request.rejectedTime), "d MMMM yyyy", { locale: th });
                         }
                         return (
                           <div

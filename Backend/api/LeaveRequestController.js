@@ -129,6 +129,60 @@
        }
      });
 
+     // GET /api/leave-request/dashboard-stats
+     router.get('/dashboard-stats', async (req, res) => {
+       try {
+         const leaveRepo = AppDataSource.getRepository('LeaveRequest');
+         // 1. Pending count
+         const pendingCount = await leaveRepo.count({ where: { status: 'pending' } });
+         // 2. Approved count (ทุกใบที่ status = approved)
+         const approvedCount = await leaveRepo.count({ where: { status: 'approved' } });
+         // 3. Approved this month (status = approved และ approvedTime อยู่ในเดือนนี้)
+         const now = new Date();
+         const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
+         const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+         const approvedThisMonth = await leaveRepo.count({
+           where: {
+             status: 'approved',
+             approvedTime: {
+               $gte: firstDay,
+               $lte: lastDay
+             }
+           }
+         });
+         // 4. User count (unique Repid in leave requests)
+         const allLeaves = await leaveRepo.find();
+         const userIds = Array.from(new Set(allLeaves.map(l => l.Repid)));
+         const userCount = userIds.length;
+         // 5. Average leave days (เฉพาะที่อนุมัติ)
+         const approvedLeaves = allLeaves.filter(l => l.status === 'approved');
+         let averageDayOff = 0;
+         if (approvedLeaves.length > 0) {
+           const totalDays = approvedLeaves.reduce((sum, l) => {
+             const start = l.startDate ? new Date(l.startDate) : null;
+             const end = l.endDate ? new Date(l.endDate) : null;
+             if (start && end && !isNaN(start.getTime()) && !isNaN(end.getTime())) {
+               return sum + ((end.getTime() - start.getTime()) / (1000*60*60*24) + 1);
+             }
+             return sum;
+           }, 0);
+           averageDayOff = parseFloat((totalDays / approvedLeaves.length).toFixed(1));
+         }
+         res.json({
+           status: 'success',
+           data: {
+             pendingCount,
+             approvedCount,
+             approvedThisMonth,
+             userCount,
+             averageDayOff
+           }
+         });
+       } catch (err) {
+         res.status(500).json({ status: 'error', message: err.message });
+       }
+     });
+
      // GET /api/leave-request/:id
      router.get('/:id', async (req, res) => {
        try {
@@ -172,8 +226,22 @@
          if (!approverName && authHeader && authHeader.startsWith('Bearer ')) {
            const token = authHeader.split(' ')[1];
            const decoded = jwt.verify(token, SECRET);
-           const user = await userRepo.findOneBy({ id: decoded.userId });
-           approverName = user ? user.User_name : null;
+           let user = await userRepo.findOneBy({ id: decoded.userId });
+           if (user) {
+             approverName = user.User_name;
+           } else {
+             // fallback หาใน process_check
+             const processRepo = AppDataSource.getRepository('ProcessCheck');
+             const processCheck = await processRepo.findOneBy({ Repid: decoded.userId });
+             if (processCheck) {
+               // หาใน admin table
+               const adminRepo = AppDataSource.getRepository('admin');
+               const admin = await adminRepo.findOneBy({ id: decoded.userId });
+               approverName = admin ? admin.admin_name : processCheck.Email;
+             } else {
+               approverName = null;
+             }
+           }
          }
 
          const leave = await leaveRepo.findOneBy({ id: id });
@@ -181,7 +249,12 @@
 
          leave.status = status;
          leave.statusBy = approverName;
-         if (status === 'approved') leave.approvedTime = new Date();
+         if (status === 'approved') {
+           leave.approvedTime = new Date();
+         }
+         if (status === 'rejected') {
+           leave.rejectedTime = new Date();
+         }
          await leaveRepo.save(leave);
 
          res.json({ success: true, data: leave });
