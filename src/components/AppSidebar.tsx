@@ -145,7 +145,7 @@ export function AppSidebar() {
                   {user?.full_name || t('common.user')}
                 </p>
                 <p className="text-xs text-sidebar-foreground/70 truncate">
-                  {user?.position || t('main.employee')}
+                  {user?.position ? t(`positions.${user.position}`) : t('main.employee')}
                 </p>
               </div>
             </div>
