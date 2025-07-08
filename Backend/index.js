@@ -152,7 +152,7 @@ const loginController = require('./api/LoginController')(AppDataSource);
 app.use('/api', loginController);
 
 const leaveRequestController = require('./api/LeaveRequestController')(AppDataSource);
-app.use('/api', leaveRequestController);
+app.use('/api/leave-request', leaveRequestController);
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);

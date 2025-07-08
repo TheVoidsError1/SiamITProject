@@ -14,6 +14,7 @@ import { useTranslation } from "react-i18next";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 // ฟังก์ชัน validate เวลา HH:mm (24 ชั่วโมง)
 function isValidTimeFormat(timeStr: string): boolean {
@@ -50,6 +51,7 @@ export const LeaveForm = () => {
   const [leaveTypes, setLeaveTypes] = useState<{ id: string; leave_type: string }[]>([]);
   const [positions, setPositions] = useState<{ id: string; position_name: string }[]>([]);
   const [admins, setAdmins] = useState<{ id: string; admin_name: string }[]>([]);
+  const { user } = useAuth();
 
   useEffect(() => {
     // ดึงข้อมูล department จาก API
@@ -214,6 +216,10 @@ export const LeaveForm = () => {
       // แนบไฟล์ imgLeave (เอาไฟล์แรก)
       if (attachments.length > 0) {
         formData.append("imgLeave", attachments[0]);
+      }
+      // เพิ่ม repid (id ของ user ปัจจุบัน)
+      if (user?.id) {
+        formData.append("repid", user.id);
       }
       // ส่ง API
       const token = localStorage.getItem('token');

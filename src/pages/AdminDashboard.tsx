@@ -15,75 +15,71 @@ const AdminDashboard = () => {
   const { t } = useTranslation();
   const { toast } = useToast();
 
-  const [adminName, setAdminName] = useState<string>("");
-  const [userCount, setUserCount] = useState<number>(0);
-  const [approvedThisMonth, setApprovedThisMonth] = useState<number>(0);
-  const [pendingCount, setPendingCount] = useState<number>(0);
-  const [averageDayOff, setAverageDayOff] = useState<number>(0);
+  // ลบ state ที่ไม่ได้ใช้จริง
+  // const [adminName, setAdminName] = useState<string>("");
+  // const [userCount, setUserCount] = useState<number>(0);
+  // const [approvedThisMonth, setApprovedThisMonth] = useState<number>(0);
+  // const [pendingCount, setPendingCount] = useState<number>(0);
+  // const [averageDayOff, setAverageDayOff] = useState<number>(0);
 
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
   const [recentRequests, setRecentRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
 
-  useEffect(() => {
-    fetch("/api/admin/list")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success && data.data.length > 0) {
-          setAdminName(data.data[0].admin_name);
+  // ปรับการคำนวณสถิติให้ใช้ข้อมูลจาก leave request ที่ดึงมา
+  const pendingCount = pendingRequests.length;
+  const approvedThisMonth = recentRequests.filter(r => {
+    const now = new Date();
+    const approvedDate = r.approvedTime ? new Date(r.approvedTime) : null;
+    return approvedDate && approvedDate.getMonth() === now.getMonth() && approvedDate.getFullYear() === now.getFullYear();
+  }).length;
+  // สมมุติว่าพนักงานทั้งหมดคือ user ที่มีใน leave request
+  const userCount = Array.from(new Set([...pendingRequests, ...recentRequests].map(r => r.user?.id))).length;
+  // วันลาเฉลี่ย (ถ้ามีข้อมูล)
+  const averageDayOff = recentRequests.length > 0 ?
+    (
+      recentRequests.reduce((sum, r) => {
+        const start = r.startDate ? new Date(r.startDate) : null;
+        const end = r.endDate ? new Date(r.endDate) : null;
+        if (start && end && !isNaN(start.getTime()) && !isNaN(end.getTime())) {
+          return sum + ((end.getTime() - start.getTime()) / (1000*60*60*24) + 1);
         }
-      });
+        return sum;
+      }, 0) / recentRequests.length
+    ).toFixed(1)
+    : 0;
 
-    setLoading(true);
-    fetch("/api/leave-request/full")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.success) {
-          // แยก pending กับ recent
-          const pending = data.data.filter((item: any) => !item.status || item.status === "pending");
-          const recent = data.data.filter((item: any) => item.status === "approved");
-          setPendingRequests(pending);
-          setRecentRequests(recent);
-        } else {
-          setError(t('admin.loadError'));
-        }
-      })
-      .catch(() => setError(t('admin.connectionError')))
-      .finally(() => setLoading(false));
-  }, [t]);
-
-  useEffect(() => {
-    fetch('http://localhost:3001/api/dashboard/user-count')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setUserCount(data.data);
-      });
-  }, []);
-
-  useEffect(() => {
-    fetch('http://localhost:3001/api/dashboard/approved-this-month')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setApprovedThisMonth(data.data);
-      });
-  }, []);
-
-  useEffect(() => {
-    fetch('http://localhost:3001/api/dashboard/leave-status-count')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setPendingCount(data.data.pending);
-      });
-  }, []);
-
-  useEffect(() => {
-    fetch('http://localhost:3001/api/dashboard/average-day-off')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) setAverageDayOff(data.data);
-      });
-  }, []);
+  const stats = [
+    {
+      title: t('admin.pendingRequests'),
+      value: pendingCount.toString(),
+      icon: AlertCircle,
+      color: "text-orange-600",
+      bgColor: "bg-orange-50",
+    },
+    {
+      title: t('admin.approvedThisMonth'),
+      value: approvedThisMonth.toString(),
+      icon: CheckCircle,
+      color: "text-green-600",
+      bgColor: "bg-green-50",
+    },
+    {
+      title: t('admin.totalEmployees'),
+      value: userCount.toString(),
+      icon: Users,
+      color: "text-blue-600",
+      bgColor: "bg-blue-50",
+    },
+    {
+      title: t('admin.averageLeaveDays'),
+      value: averageDayOff.toString(),
+      icon: TrendingUp,
+      color: "text-purple-600",
+      bgColor: "bg-purple-50",
+    },
+  ];
 
   const handleApprove = (id: string, employeeName: string) => {
     const token = localStorage.getItem('token');
@@ -130,14 +126,13 @@ const AdminDashboard = () => {
   // เพิ่มฟังก์ชันสำหรับรีเฟรชข้อมูล
   const refreshLeaveRequests = () => {
     setLoading(true);
-    fetch("/api/leave-request/full")
+    fetch("/api/leave-request/dashboard")
       .then((res) => res.json())
       .then((data) => {
         if (data.success) {
-          const pending = data.data.filter((item: any) => !item.status || item.status === "pending");
-          const recent = data.data.filter((item: any) => item.status === "approved");
-          setPendingRequests(pending);
-          setRecentRequests(recent);
+          setPendingRequests(data.data.pendingRequests);
+          setRecentRequests(data.data.recentRequests);
+          // สามารถ set สถิติอื่นๆ ได้ถ้าต้องการ
         } else {
           setError(t('admin.loadError'));
         }
@@ -146,37 +141,6 @@ const AdminDashboard = () => {
       .finally(() => setLoading(false));
   };
 
-  const stats = [
-    {
-      title: t('admin.pendingRequests'),
-      value: pendingCount.toString(),
-      icon: AlertCircle,
-      color: "text-orange-600",
-      bgColor: "bg-orange-50",
-    },
-    {
-      title: t('admin.approvedThisMonth'),
-      value: approvedThisMonth.toString(),
-      icon: CheckCircle,
-      color: "text-green-600",
-      bgColor: "bg-green-50",
-    },
-    {
-      title: t('admin.totalEmployees'),
-      value: userCount.toString(),
-      icon: Users,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
-    },
-    {
-      title: t('admin.averageLeaveDays'),
-      value: averageDayOff.toString(),
-      icon: TrendingUp,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50",
-    },
-  ];
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="border-b bg-white/80 backdrop-blur-sm">
@@ -184,7 +148,7 @@ const AdminDashboard = () => {
           <SidebarTrigger />
           <div className="flex-1">
             <h1 className="text-2xl font-bold text-gray-900">
-              {t('navigation.adminDashboard')} {adminName && `- ${t('admin.admin')}: ${adminName}`}
+              {t('navigation.adminDashboard')} {/* adminName && `- ${t('admin.admin')}: ${adminName}` */}
             </h1>
             <p className="text-sm text-gray-600">
               {t('admin.dashboardDesc')}
