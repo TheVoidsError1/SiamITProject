@@ -10,11 +10,33 @@ module.exports = (AppDataSource) => {
       const { User_name, department, position, email, password } = req.body;
       const userRepo = AppDataSource.getRepository('User');
       const processRepo = AppDataSource.getRepository('ProcessCheck');
+      const departmentRepo = AppDataSource.getRepository('department');
+      const positionRepo = AppDataSource.getRepository('position');
 
       // ตรวจสอบ email ซ้ำ
       const exist = await processRepo.findOneBy({ Email: email });
       if (exist) {
         return res.status(400).json({ success: false, data: null, message: 'Email นี้ถูกใช้ไปแล้ว' });
+      }
+
+      // แปลง department name เป็น UUID
+      let departmentId = null;
+      if (department) {
+        const deptEntity = await departmentRepo.findOne({ where: { department_name: department } });
+        if (!deptEntity) {
+          return res.status(400).json({ success: false, data: null, message: 'Department not found' });
+        }
+        departmentId = deptEntity.id;
+      }
+
+      // แปลง position name เป็น UUID
+      let positionId = null;
+      if (position) {
+        const posEntity = await positionRepo.findOne({ where: { position_name: position } });
+        if (!posEntity) {
+          return res.status(400).json({ success: false, data: null, message: 'Position not found' });
+        }
+        positionId = posEntity.id;
       }
 
       // hash password
@@ -24,8 +46,8 @@ module.exports = (AppDataSource) => {
       const user = userRepo.create({
         id: uuidv4(),
         User_name,
-        department,
-        position
+        department: departmentId,
+        position: positionId
       });
       await userRepo.save(user);
 
