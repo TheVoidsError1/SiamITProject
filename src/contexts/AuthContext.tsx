@@ -50,7 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const response = await fetch('http://localhost:3001/api/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }), // เปลี่ยนจาก Email, Password เป็น email, password
+      body: JSON.stringify({ email, password }),
     });
     const data = await response.json();
 
@@ -58,28 +58,55 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error(data.message || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
     }
 
-    // บันทึก user info ที่ได้จาก backend (ถ้ามี)
+    // Initial user info from login
     const userInfo = {
       id: data.data?.repid || data.data?.userId || '',
       email: email,
-      role: data.data?.role, // เพิ่มบรรทัดนี้
+      role: data.data?.role,
     };
     setUser(userInfo);
     localStorage.setItem('currentUser', JSON.stringify(userInfo));
     localStorage.setItem('token', data.data?.token || '');
+
+    // Fetch profile info after login
+    try {
+      const profileRes = await fetch('http://localhost:3001/api/profile', {
+        headers: { 'Authorization': `Bearer ${data.data?.token || ''}` }
+      });
+      if (profileRes.ok) {
+        const profileData = await profileRes.json();
+        if (profileData.success) {
+          const d = profileData.data;
+          const updatedUser = {
+            ...userInfo,
+            full_name: d.name,
+            position: d.position,
+            department: d.department,
+            email: d.email,
+          };
+          setUser(updatedUser);
+          localStorage.setItem('currentUser', JSON.stringify(updatedUser));
+        }
+      }
+    } catch (err) {
+      // Profile fetch failed, but login is still successful
+      console.log('Failed to fetch profile:', err);
+    }
 
     // Fetch avatar URL after login
     try {
       const avatarResponse = await fetch('http://localhost:3001/api/avatar', {
         headers: { 'Authorization': `Bearer ${data.data?.token || ''}` }
       });
-      
       if (avatarResponse.ok) {
         const avatarData = await avatarResponse.json();
         if (avatarData.success && avatarData.avatar_url) {
-          const updatedUserInfo = { ...userInfo, avatar_url: avatarData.avatar_url };
-          setUser(updatedUserInfo);
-          localStorage.setItem('currentUser', JSON.stringify(updatedUserInfo));
+          setUser(prev => {
+            if (!prev) return prev;
+            const updatedUserInfo = { ...prev, avatar_url: avatarData.avatar_url };
+            localStorage.setItem('currentUser', JSON.stringify(updatedUserInfo));
+            return updatedUserInfo;
+          });
         }
       }
     } catch (err) {

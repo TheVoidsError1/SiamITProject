@@ -164,7 +164,7 @@ module.exports = (AppDataSource) => {
       const positionRepo = AppDataSource.getRepository('Position');
 
       if (role === 'admin') {
-        const adminRepo = AppDataSource.getRepository('Admin');
+        const adminRepo = AppDataSource.getRepository('admin');
         const admin = await adminRepo.findOne({ where: { id: repid } });
         if (!admin) {
           return res.status(404).json({ success: false, message: 'Admin not found' });
@@ -265,7 +265,7 @@ module.exports = (AppDataSource) => {
       const positionRepo = AppDataSource.getRepository('Position');
       let updated;
       if (role === 'admin') {
-        const adminRepo = AppDataSource.getRepository('Admin');
+        const adminRepo = AppDataSource.getRepository('admin');
         const admin = await adminRepo.findOne({ where: { id: repid } });
         if (!admin) {
           return res.status(404).json({ success: false, message: 'Admin not found' });

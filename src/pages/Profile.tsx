@@ -288,7 +288,7 @@ const Profile = () => {
                 <div className="flex items-center gap-4">
                   <Badge variant={user?.role === 'admin' ? 'default' : 'secondary'} className="flex items-center gap-1">
                     <Shield className="h-3 w-3" />
-                    {user?.role === 'admin' ? t('main.systemAdmin') : t('main.employee')}
+                    {user?.role === 'admin' ? t('main.systemAdmin') : (user?.position || t('main.employee'))}
                   </Badge>
                   <Badge variant="outline" className="flex items-center gap-1">
                     <Building className="h-3 w-3" />
@@ -342,7 +342,6 @@ const Profile = () => {
                     <Select
                       value={formData.position}
                       onValueChange={(value) => setFormData(prev => ({ ...prev, position: value }))}
-                      disabled={user?.role === 'admin'}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder={t('positions.selectPosition')} />
@@ -360,7 +359,6 @@ const Profile = () => {
                     <Select
                       value={formData.department}
                       onValueChange={(value) => setFormData(prev => ({ ...prev, department: value }))}
-                      disabled={user?.role === 'admin'}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder={t('departments.selectDepartment')} />
