@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const bcrypt = require('bcryptjs');
 
 console.log('ProfileController is being loaded...');
 
@@ -260,17 +261,20 @@ module.exports = (AppDataSource) => {
         return res.status(404).json({ success: false, message: 'User not found in ProcessCheck' });
       }
       const { Role: role, Repid: repid, Email: email } = processCheck;
-      const { name, email: newEmail, position, department } = req.body;
+      const { name, email: newEmail, position, department, password } = req.body;
       const departmentRepo = AppDataSource.getRepository('Department');
       const positionRepo = AppDataSource.getRepository('Position');
       let updated;
+      let hashedPassword = null;
+      if (password) {
+        hashedPassword = await bcrypt.hash(password, 10);
+      }
       if (role === 'admin') {
         const adminRepo = AppDataSource.getRepository('admin');
         const admin = await adminRepo.findOne({ where: { id: repid } });
         if (!admin) {
           return res.status(404).json({ success: false, message: 'Admin not found' });
         }
-        // Find department and position by name
         let departmentEntity = null;
         let positionEntity = null;
         if (department) departmentEntity = await departmentRepo.findOne({ where: { department_name: department } });
@@ -279,6 +283,7 @@ module.exports = (AppDataSource) => {
         admin.email = newEmail || admin.email;
         admin.department = departmentEntity ? departmentEntity.id : admin.department;
         admin.position = positionEntity ? positionEntity.id : admin.position;
+        if (hashedPassword) admin.password = hashedPassword;
         updated = await adminRepo.save(admin);
       } else {
         const userRepo = AppDataSource.getRepository('User');
@@ -294,7 +299,13 @@ module.exports = (AppDataSource) => {
         user.email = newEmail || user.email;
         user.department = departmentEntity ? departmentEntity.id : user.department;
         user.position = positionEntity ? positionEntity.id : user.position;
+        if (hashedPassword) user.password = hashedPassword;
         updated = await userRepo.save(user);
+      }
+      // Update password in ProcessCheck if changed
+      if (hashedPassword) {
+        processCheck.Password = hashedPassword;
+        await processRepo.save(processCheck);
       }
       // Return updated profile in the same format as GET
       let profile = { email: updated.email || email };

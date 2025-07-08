@@ -77,31 +77,11 @@ const EmployeeDetail = () => {
     if (!id) return;
     setLoading(true);
     setError(null);
-    let url = "";
-    if (role === "admin") {
-      url = `http://localhost:3001/api/admin/${id}`;
-    } else {
-      url = `http://localhost:3001/api/users/${id}`;
-    }
-    fetch(url)
+    fetch(`http://localhost:3001/api/employee/${id}`)
       .then(res => res.json())
       .then(data => {
         if (data.success) {
           setEmployee(data.data);
-          // ดึง processCheckId ถ้ามี
-          if (data.data.processCheckId) setProcessCheckId(data.data.processCheckId);
-          // ดึง leave history จริง
-          const repid = role === 'admin' ? data.data.admin_id : id;
-          fetch(`http://localhost:3001/api/leave-request/user/${repid}`)
-            .then(res => res.json())
-            .then(leaveData => {
-              if (leaveData.success) {
-                setLeaveHistory(leaveData.data);
-              } else {
-                setLeaveHistory([]);
-              }
-            })
-            .catch(() => setLeaveHistory([]));
         } else {
           setEmployee(null);
           setError(t('employee.notFound'));
@@ -113,13 +93,13 @@ const EmployeeDetail = () => {
         setError(t('employee.loadError'));
         setLoading(false);
       });
-  }, [id, role, t]);
+  }, [id, t]);
 
   const handleEdit = () => {
     setEditData({
       full_name: employee?.name || '',
       email: employee?.email || '',
-      password: '',
+      password: '', // Always blank when editing
       department: employee?.department || '',
       position: employee?.position || '',
       role: employee?.role || ''
@@ -139,7 +119,7 @@ const EmployeeDetail = () => {
         department: editData.department,
         email: editData.email,
       };
-      if (editData.password) payload.password = editData.password;
+      if (editData.password && editData.password.trim() !== '') payload.password = editData.password;
       // role ไม่ได้อัปเดตใน backend (process_check.Role) ใน API นี้
       const response = await fetch(`http://localhost:3001/api/profile/${processCheckId}` , {
         method: 'PUT',
@@ -217,7 +197,7 @@ const EmployeeDetail = () => {
           <Card className="border-0 shadow-lg">
             <CardHeader className="gradient-bg text-white rounded-t-lg">
               <CardTitle className="flex items-center gap-2">
-                <User className="w-5 h-5" />
+                <User className="h-5 w-5" />
                 {t('employee.personalInfo')}
               </CardTitle>
               <CardDescription className="text-blue-100">
@@ -331,19 +311,21 @@ const EmployeeDetail = () => {
                     {isEditing ? (
                       <Input
                         type="password"
-                        placeholder={t('employee.newPassword')}
-                        value={editData.password}
+                        placeholder={t('employee.setNewPassword')}
+                        value={editData.password || ''}
                         onChange={(e) => setEditData({...editData, password: e.target.value})}
                         className="mt-1"
                       />
                     ) : (
-                      <p className="text-sm text-gray-600 mt-1">{employee.password}</p>
+                      <p className="text-sm text-gray-600 mt-1">
+                        {employee.password ? '********' : t('employee.noPassword')}
+                      </p>
                     )}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-700">{t('employee.usedLeaveDays')}</Label>
-                    <p className={`text-lg font-semibold mt-1 ${employee.usedLeaveDays > employee.totalLeaveDays * 0.8 ? 'text-red-600' : 'text-green-600'}`}>
-                      {employee.usedLeaveDays}/{employee.totalLeaveDays} {t('leave.days')}
+                    <p className={`text-lg font-semibold mt-1 ${employee.usedLeaveDays && employee.totalLeaveDays && employee.usedLeaveDays > employee.totalLeaveDays * 0.8 ? 'text-red-600' : 'text-green-600'}`}>
+                      {employee.usedLeaveDays ?? '-'} / {employee.totalLeaveDays ?? '-'} {t('leave.days')}
                     </p>
                   </div>
                   <div className="flex gap-2 mt-4">
@@ -374,7 +356,7 @@ const EmployeeDetail = () => {
           <Card className="border-0 shadow-lg">
             <CardHeader className="gradient-bg text-white rounded-t-lg">
               <CardTitle className="flex items-center gap-2">
-                <Calendar className="w-5 h-5" />
+                <Calendar className="h-5 w-5" />
                 {t('leave.leaveHistory')}
               </CardTitle>
               <CardDescription className="text-blue-100">

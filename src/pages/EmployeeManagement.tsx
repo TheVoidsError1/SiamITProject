@@ -33,14 +33,14 @@ const EmployeeManagement = () => {
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.data)) {
-          // map เฉพาะชื่อ-นามสกุล กับอีเมล
-          const employees = data.data.map((item, idx) => ({
-            id: String(idx),
+          // map field ให้ตรงกับ type Employee
+          const employees = data.data.map((item) => ({
+            id: item.id,
             full_name: item.name || '',
             email: item.email || '',
             position: item.position || '',
             department: item.department || '',
-            role: item.status || '',
+            role: item.role || '',
             usedLeaveDays: 0,
             totalLeaveDays: 20
           }));

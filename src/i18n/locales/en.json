@@ -61,7 +61,8 @@
     "remaining": "remaining",
     "change": "Change",
     "enable": "Enable",
-    "user": "User"
+    "user": "User",
+    "back": "Back"
   },
   "leave": {
     "leaveRequest": "Leave Request",
@@ -256,5 +257,31 @@
   },
   "error": {
     "apiConnectionError": "API Connection Error"
+  },
+  "employee": {
+    "details": "Employee Details",
+    "personalInfo": "Personal Information",
+    "personalInfoDesc": "View and manage the employee's personal information.",
+    "leaveHistoryDesc": "View the employee's leave history.",
+    "fullName": "Full Name",
+    "position": "Position",
+    "department": "Department",
+    "status": "Status",
+    "email": "Email",
+    "password": "Password",
+    "usedLeaveDays": "Used Leave Days",
+    "notFound": "Employee not found.",
+    "loadError": "Failed to load employee data.",
+    "admin": "Admin",
+    "employee": "Employee",
+    "intern": "Intern",
+    "saveSuccess": "Saved successfully!",
+    "updateSuccess": "Employee information updated successfully.",
+    "saveError": "Failed to save employee information.",
+    "noProcessCheckId": "No process check ID found.",
+    "newPassword": "New Password",
+    "leaveHistoryDesc": "Employee leave history.",
+    "noPassword": "Not set",
+    "setNewPassword": "Set new password"
   }
 }

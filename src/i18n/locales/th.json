@@ -61,7 +61,8 @@
     "remaining": "เหลือ",
     "change": "เปลี่ยน",
     "enable": "เปิดใช้งาน",
-    "user": "ผู้ใช้"
+    "user": "ผู้ใช้",
+    "back": "ย้อนกลับ"
   },
   "leave": {
     "leaveRequest": "ขอลา",
@@ -256,5 +257,31 @@
   },
   "error": {
     "apiConnectionError": "ข้อผิดพลาดการเชื่อมต่อ API"
+  },
+  "employee": {
+    "details": "รายละเอียดพนักงาน",
+    "personalInfo": "ข้อมูลส่วนตัวพนักงาน",
+    "personalInfoDesc": "ดูและจัดการข้อมูลส่วนตัวของพนักงาน",
+    "leaveHistoryDesc": "ดูประวัติการลาของพนักงาน",
+    "fullName": "ชื่อ-นามสกุล",
+    "position": "ตำแหน่ง",
+    "department": "แผนก",
+    "status": "สถานะ",
+    "email": "อีเมล",
+    "password": "รหัสผ่าน",
+    "usedLeaveDays": "วันลาที่ใช้ไป",
+    "notFound": "ไม่พบข้อมูลพนักงาน",
+    "loadError": "ไม่สามารถโหลดข้อมูลพนักงานได้",
+    "admin": "ผู้ดูแลระบบ",
+    "employee": "พนักงาน",
+    "intern": "เด็กฝึกงาน",
+    "saveSuccess": "บันทึกสำเร็จ!",
+    "updateSuccess": "อัปเดตข้อมูลพนักงานสำเร็จ",
+    "saveError": "บันทึกข้อมูลพนักงานไม่สำเร็จ",
+    "noProcessCheckId": "ไม่พบ process check ID",
+    "newPassword": "รหัสผ่านใหม่",
+    "leaveHistoryDesc": "ประวัติการลาของพนักงาน",
+    "noPassword": "ยังไม่ได้ตั้งรหัสผ่าน",
+    "setNewPassword": "ตั้งรหัสผ่านใหม่"
   }
 }
