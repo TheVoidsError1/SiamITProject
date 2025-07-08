@@ -29,34 +29,25 @@ const EmployeeManagement = () => {
   const itemsPerPage = 4;
 
   useEffect(() => {
-    Promise.all([
-      fetch("http://localhost:3001/api/employee/users").then(res => res.json()),
-      fetch("http://localhost:3001/api/employee/admins").then(res => res.json())
-    ])
-      .then(([userRes, adminRes]) => {
-        const userList = Array.isArray(userRes.data) ? userRes.data.map((item) => ({
-          id: String(item.id),
-          full_name: item.User_name || item.name || "-",
-          email: item.Email || item.email || "-",
-          position: item.position || "-",
-          department: item.department || "-",
-          role: "employee",
-          usedLeaveDays: item.usedLeaveDays || 0,
-          totalLeaveDays: item.totalLeaveDays || 20
-        })) : [];
-
-        const adminList = Array.isArray(adminRes.data) ? adminRes.data.map((item) => ({
-          id: String(item.id),
-          full_name: item.admin_name || item.name || "-",
-          email: item.Email || item.email || "-",
-          position: item.position || "-",
-          department: item.department || "-",
-          role: "admin",
-          usedLeaveDays: item.usedLeaveDays || 0,
-          totalLeaveDays: item.totalLeaveDays || 20
-        })) : [];
-
-        setEmployees([...userList, ...adminList]);
+    fetch("http://localhost:3001/api/employees")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.data)) {
+          // map เฉพาะชื่อ-นามสกุล กับอีเมล
+          const employees = data.data.map((item, idx) => ({
+            id: String(idx),
+            full_name: item.name || '',
+            email: item.email || '',
+            position: item.position || '',
+            department: item.department || '',
+            role: item.status || '',
+            usedLeaveDays: 0,
+            totalLeaveDays: 20
+          }));
+          setEmployees(employees);
+        } else {
+          setEmployees([]);
+        }
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -173,11 +164,10 @@ const EmployeeManagement = () => {
                           <TableCell className="text-sm">{employee.department}</TableCell>
                           <TableCell>
                             <Badge 
-                              variant={employee.role === 'admin' ? 'default' : employee.role === 'employee' ? 'secondary' : 'outline'}
+                              variant={employee.role === 'admin' ? 'default' : 'secondary'}
                               className="text-xs px-2 py-0.5"
                             >
-                              {employee.role === 'admin' ? t('system.admin') : 
-                                employee.role === 'employee' ? t('system.employee') : t('system.intern')}
+                              {employee.role === 'admin' ? 'ผู้ดูแลระบบ' : 'พนักงาน'}
                             </Badge>
                           </TableCell>
                           <TableCell>

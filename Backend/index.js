@@ -148,7 +148,7 @@ const loginController = require('./api/LoginController')(AppDataSource);
 app.use('/api', loginController);
 
 const employeeController = require('./api/EmployeeController')(AppDataSource);
-app.use('/api/employee', employeeController);
+app.use('/api', employeeController);
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
