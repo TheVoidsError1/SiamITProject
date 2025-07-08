@@ -33,9 +33,45 @@ const Profile = () => {
   const [departments, setDepartments] = useState<string[]>([]);
   const [positions, setPositions] = useState<string[]>([]);
   const [profileLoaded, setProfileLoaded] = useState(false);
+  const [positionsLoaded, setPositionsLoaded] = useState(false);
+  const [departmentsLoaded, setDepartmentsLoaded] = useState(false);
+
+  const getKeyByLabel = (label: string, options: string[], tPrefix: string) => {
+    for (const key of options) {
+      if (t(`${tPrefix}.${key}`) === label) return key;
+    }
+    return label; // fallback: assume it's already a key
+  };
+
+  const normalizeKey = (value: string, options: string[], tPrefix: string) => {
+    if (!value) return '';
+    // If value is like 'positions.Employee' or 'departments.Customer Service', strip the prefix
+    if (value.startsWith(`${tPrefix}.`)) {
+      return value.replace(`${tPrefix}.`, '').replace(/\s/g, '');
+    }
+    // If value matches a label, map to key
+    for (const key of options) {
+      if (t(`${tPrefix}.${key}`) === value) return key;
+    }
+    return value; // fallback: assume it's already a key
+  };
+
+  const extractKey = (value: string, tPrefix: string) => {
+    if (!value) return '';
+    // If value is like 'positions.Employee' or 'departments.Customer Service', extract the part after the dot and remove spaces
+    if (value.startsWith(`${tPrefix}.`)) {
+      const raw = value.split('.').slice(1).join('.').replace(/\s/g, '');
+      // Lowercase first letter for consistency with keys
+      return raw.charAt(0).toLowerCase() + raw.slice(1);
+    }
+    // If value is a label, try to map to key (not implemented here, but could be added)
+    return value;
+  };
 
   // Fetch profile from backend on mount
   useEffect(() => {
+    if (!positionsLoaded || !departmentsLoaded) return;
+    // Fetch profile from backend
     const fetchProfile = async () => {
       setLoading(true);
       setError('');
@@ -51,6 +87,11 @@ const Profile = () => {
         });
         const data = res.data.data;
         
+        console.log('Backend position:', data.position);
+        console.log('Backend department:', data.department);
+        console.log('Positions array:', positions);
+        console.log('Departments array:', departments);
+
         // Only set form data if profile hasn't been loaded yet
         if (!profileLoaded) {
           setFormData({
@@ -76,7 +117,7 @@ const Profile = () => {
       }
     };
     fetchProfile();
-  }, []); // Keep empty dependency array
+  }, [positionsLoaded, departmentsLoaded]);
 
   useEffect(() => {
     const fetchAvatar = async () => {
@@ -106,6 +147,18 @@ const Profile = () => {
   }, []); // Remove updateUser from dependencies
 
   useEffect(() => {
+    fetch('http://localhost:3001/api/positions')
+      .then(res => res.json())
+      .then(data => {
+        let pos = data.data.map((p: any) => p.position_name);
+        pos = pos.filter(p => p && p.toLowerCase() !== 'none').sort((a, b) => a.localeCompare(b));
+        const none = data.data.find((p: any) => !p.position_name || p.position_name.toLowerCase() === 'none');
+        if (none) pos.push(none.position_name || '');
+        setPositions(pos);
+        setPositionsLoaded(true);
+      })
+      .catch(() => setPositionsLoaded(true));
+
     fetch('http://localhost:3001/api/departments')
       .then(res => res.json())
       .then(data => {
@@ -115,19 +168,9 @@ const Profile = () => {
         const noDept = depts.filter(isNoDept);
         const normalDepts = depts.filter(d => !isNoDept(d)).sort((a, b) => a.localeCompare(b));
         setDepartments([...normalDepts, ...noDept]);
+        setDepartmentsLoaded(true);
       })
-      .catch(() => setDepartments([]));
-
-    fetch('http://localhost:3001/api/positions')
-      .then(res => res.json())
-      .then(data => {
-        let pos = data.data.map((p: any) => p.position_name);
-        pos = pos.filter(p => p && p.toLowerCase() !== 'none').sort((a, b) => a.localeCompare(b));
-        const none = data.data.find((p: any) => !p.position_name || p.position_name.toLowerCase() === 'none');
-        if (none) pos.push(none.position_name || '');
-        setPositions(pos);
-      })
-      .catch(() => setPositions([]));
+      .catch(() => setDepartmentsLoaded(true));
   }, []);
 
   const handleCameraClick = () => {
@@ -206,6 +249,8 @@ const Profile = () => {
         
         // Update form data with the response data to ensure consistency
         const updatedData = response.data.data;
+        console.log('Updated position:', updatedData.position);
+        console.log('Updated department:', updatedData.department);
         setFormData({
           full_name: updatedData.name || formData.full_name,
           email: updatedData.email || formData.email,
@@ -347,8 +392,12 @@ const Profile = () => {
                         <SelectValue placeholder={t('positions.selectPosition')} />
                       </SelectTrigger>
                       <SelectContent>
-                        {positions.map((position) => (
-                          <SelectItem key={position} value={position}>{position}</SelectItem>
+                        {positions.map((key) => (
+                          <SelectItem key={key} value={key}>
+                            {key === '' || key.toLowerCase() === 'none' || key.toLowerCase() === 'no position'
+                              ? t('positions.notSpecified')
+                              : t(`positions.${key}`)}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
@@ -364,8 +413,12 @@ const Profile = () => {
                         <SelectValue placeholder={t('departments.selectDepartment')} />
                       </SelectTrigger>
                       <SelectContent>
-                        {departments.map((dept) => (
-                          <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                        {departments.map((key) => (
+                          <SelectItem key={key} value={key}>
+                            {key === '' || key.toLowerCase() === 'none' || key.toLowerCase() === 'no department'
+                              ? t('departments.notSpecified', t('departments.selectDepartment'))
+                              : t(`departments.${key}`)}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

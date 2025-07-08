@@ -136,13 +136,16 @@
     "finance": "Finance",
     "operations": "Operations",
     "customerService": "Customer Service",
-    "selectDepartment": "Select Department"
+    "selectDepartment": "Select Department",
+    "notSpecified": "Prefer not to specify",
+    "noDepartment": "No Department"
   },
   "positions": {
     "employee": "Employee",
     "intern": "Intern",
     "notSpecified": "Prefer not to specify",
-    "selectPosition": "Select Position"
+    "selectPosition": "Select Position",
+    "noPosition": "No Position"
   },
   "employeeTypes": {
     "employee": "Employee",

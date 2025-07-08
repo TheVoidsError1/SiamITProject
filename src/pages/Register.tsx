@@ -178,8 +178,12 @@ const Register = () => {
                     <SelectValue placeholder={t('positions.selectPosition')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {positions.map((position) => (
-                      <SelectItem key={position} value={position}>{position}</SelectItem>
+                    {positions.map((key) => (
+                      <SelectItem key={key} value={key}>
+                        {key === '' || key.toLowerCase() === 'none' || key.toLowerCase() === 'no position'
+                          ? t('positions.notSpecified')
+                          : t(`positions.${key}`)}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -192,8 +196,12 @@ const Register = () => {
                     <SelectValue placeholder={t('departments.selectDepartment')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {departments.map((dept) => (
-                      <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                    {departments.map((key) => (
+                      <SelectItem key={key} value={key}>
+                        {key === '' || key.toLowerCase() === 'none' || key.toLowerCase() === 'no department'
+                          ? t('departments.notSpecified', t('departments.selectDepartment'))
+                          : t(`departments.${key}`)}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>

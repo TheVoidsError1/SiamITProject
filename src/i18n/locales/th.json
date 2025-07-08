@@ -136,13 +136,16 @@
     "finance": "แผนกการเงิน",
     "operations": "แผนกปฏิบัติการ",
     "customerService": "แผนกบริการลูกค้า",
-    "selectDepartment": "เลือกแผนก"
+    "selectDepartment": "เลือกแผนก",
+    "notSpecified": "ไม่ต้องการระบุ",
+    "noDepartment": "ไม่มีแผนก"
   },
   "positions": {
     "employee": "พนักงาน",
     "intern": "เด็กฝึกงาน",
     "notSpecified": "ไม่ต้องการระบุ",
-    "selectPosition": "เลือกตำแหน่ง"
+    "selectPosition": "เลือกตำแหน่ง",
+    "noPosition": "ไม่มีตำแหน่ง"
   },
   "employeeTypes": {
     "employee": "พนักงาน",

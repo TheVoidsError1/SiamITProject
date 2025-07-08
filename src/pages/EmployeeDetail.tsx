@@ -40,6 +40,32 @@ const EmployeeDetail = () => {
   const [leaveHistory, setLeaveHistory] = useState([]);
   // เพิ่ม state สำหรับ processCheckId
   const [processCheckId, setProcessCheckId] = useState(null);
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [positions, setPositions] = useState<string[]>([]);
+
+  useEffect(() => {
+    fetch('http://localhost:3001/api/departments')
+      .then(res => res.json())
+      .then(data => {
+        let depts = data.data.map((d: any) => d.department_name);
+        const isNoDept = (d: string) => !d || d.trim() === '' || d.toLowerCase() === 'none' || d.toLowerCase() === 'no department' || d.toLowerCase() === 'nodepartment';
+        const noDept = depts.filter(isNoDept);
+        const normalDepts = depts.filter(d => !isNoDept(d)).sort((a, b) => a.localeCompare(b));
+        setDepartments([...normalDepts, ...noDept]);
+      })
+      .catch(() => setDepartments([]));
+
+    fetch('http://localhost:3001/api/positions')
+      .then(res => res.json())
+      .then(data => {
+        let pos = data.data.map((p: any) => p.position_name);
+        const isNoPos = (p: string) => !p || p.trim() === '' || p.toLowerCase() === 'none' || p.toLowerCase() === 'no position' || p.toLowerCase() === 'noposition';
+        const noPos = pos.filter(isNoPos);
+        const normalPos = pos.filter(p => !isNoPos(p)).sort((a, b) => a.localeCompare(b));
+        setPositions([...normalPos, ...noPos]);
+      })
+      .catch(() => setPositions([]));
+  }, []);
 
   // อ่าน role จาก query string
   const queryParams = new URLSearchParams(location.search);
@@ -86,16 +112,6 @@ const EmployeeDetail = () => {
         setLoading(false);
       });
   }, [id, role, t]);
-
-  const departments = [
-    'IT Department',
-    'Human Resources',
-    'Marketing',
-    'Sales',
-    'Finance',
-    'Operations',
-    'Customer Service'
-  ];
 
   const handleEdit = () => {
     setEditData({
@@ -224,30 +240,43 @@ const EmployeeDetail = () => {
                   <div>
                     <Label className="text-sm font-medium text-gray-700">{t('employee.position')}</Label>
                     {isEditing ? (
-                      <Input
-                        value={editData.position}
-                        onChange={(e) => setEditData({...editData, position: e.target.value})}
-                        className="mt-1"
-                      />
+                      <Select onValueChange={(value) => setEditData({...editData, position: value})} value={editData.position}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder={t('positions.selectPosition')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {positions.map((key) => (
+                            <SelectItem key={key} value={key}>
+                              {key === '' || key.toLowerCase() === 'none' || key.toLowerCase() === 'no position' || key.toLowerCase() === 'noposition'
+                                ? t('positions.noPosition')
+                                : t(`positions.${key}`)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     ) : (
-                      <p className="text-sm text-gray-600">{employee.position}</p>
+                      <p className="text-sm text-gray-600">{t(`positions.${employee.position}`)}</p>
                     )}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-700">{t('employee.department')}</Label>
                     {isEditing ? (
-                      <Select onValueChange={(value) => setEditData({...editData, department: value})}>
+                      <Select onValueChange={(value) => setEditData({...editData, department: value})} value={editData.department}>
                         <SelectTrigger className="mt-1">
-                          <SelectValue placeholder={editData.department} />
+                          <SelectValue placeholder={t('departments.selectDepartment')} />
                         </SelectTrigger>
                         <SelectContent>
-                          {departments.map((dept) => (
-                            <SelectItem key={dept} value={dept}>{dept}</SelectItem>
+                          {departments.map((key) => (
+                            <SelectItem key={key} value={key}>
+                              {key === '' || key.toLowerCase() === 'none' || key.toLowerCase() === 'no department' || key.toLowerCase() === 'nodepartment'
+                                ? t('departments.noDepartment')
+                                : t(`departments.${key}`)}
+                            </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     ) : (
-                      <p className="text-sm text-gray-600">{employee.department}</p>
+                      <p className="text-sm text-gray-600">{t(`departments.${employee.department}`)}</p>
                     )}
                   </div>
                   <div>
