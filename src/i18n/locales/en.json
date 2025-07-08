@@ -122,7 +122,12 @@
     "dayLeave": "Daily Leave",
     "selectDate": "Select date",
     "selectSupervisor": "Select supervisor",
-    "timePlaceholder": "e.g. 09:00 or 17:30"
+    "timePlaceholder": "e.g. 09:00 or 17:30",
+    "details": "Leave Details",
+    "approvedTime": "Approval Time",
+    "viewAttachment": "View Attachment",
+    "status": "Status",
+    "type": "Leave Type"
   },
   "leaveTypes": {
     "vacation": "Vacation Leave",
@@ -251,5 +256,9 @@
   },
   "error": {
     "apiConnectionError": "API Connection Error"
+  },
+  "employee": {
+    "name": "Name",
+    "phone": "Phone"
   }
 }

@@ -25,6 +25,7 @@ module.exports = new EntitySchema({
     statusChangeTime: { type: 'timestamp', nullable: true},
     status: { type: 'varchar', nullable: true},
     statusBy: { type: 'varchar', nullable: true}, // status เชื่อมกับ id ของ admin
+    approvedTime: { type: 'timestamp', nullable: true }, // เวลาที่อนุมัติ
     imgLeave: { type: 'varchar', nullable: true },
   },
 });

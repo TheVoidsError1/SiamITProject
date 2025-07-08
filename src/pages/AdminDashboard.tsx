@@ -10,6 +10,7 @@ import { AlertCircle, CheckCircle, Clock, Eye, TrendingUp, Users, XCircle } from
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { LeaveDetailDialog } from "@/components/dialogs/LeaveDetailDialog";
 
 type LeaveRequest = {
   id: number;
@@ -38,6 +39,8 @@ const AdminDashboard = () => {
   const [recentRequests, setRecentRequests] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [selectedLeave, setSelectedLeave] = useState<any>(null);
 
   // ปรับการคำนวณสถิติให้ใช้ข้อมูลจาก leave request ที่ดึงมา
   const pendingCount = pendingRequests.length;
@@ -95,6 +98,7 @@ const AdminDashboard = () => {
 
   const handleApprove = (id: string, employeeName: string) => {
     const token = localStorage.getItem('token');
+    const approverName = localStorage.getItem('user_name'); // สมมติว่าเก็บชื่อไว้
 
     fetch(`/api/leave-request/${id}/status`, {
       method: 'PUT',
@@ -102,7 +106,7 @@ const AdminDashboard = () => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ status: 'approved' }),
+      body: JSON.stringify({ status: 'approved', statusby: approverName }),
     })
       .then(res => res.json())
       .then(data => {
@@ -303,7 +307,7 @@ const AdminDashboard = () => {
                               <XCircle className="w-4 h-4 mr-2" />
                               {t('admin.reject')}
                             </Button>
-                            <Button size="sm" variant="outline">
+                            <Button size="sm" variant="outline" onClick={() => { setSelectedLeave(request); setDetailDialogOpen(true); }}>
                               <Eye className="w-4 h-4 mr-2" />
                               {t('admin.viewDetails')}
                             </Button>
@@ -373,6 +377,7 @@ const AdminDashboard = () => {
           </Tabs>
         </div>
       </div>
+      <LeaveDetailDialog open={detailDialogOpen} onOpenChange={setDetailDialogOpen} leaveRequest={selectedLeave} />
     </div>
   );
 };

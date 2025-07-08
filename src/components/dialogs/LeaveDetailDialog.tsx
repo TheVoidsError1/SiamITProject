@@ -7,22 +7,23 @@ import { useTranslation } from "react-i18next";
 
 interface LeaveRequest {
   id: string;
-  type: string;
-  startDate: Date;
-  endDate: Date;
-  days: number;
+  type?: string;
+  leaveTypeName?: string;
+  user?: { User_name?: string; department?: string; position?: string };
+  startDate: string;
+  endDate: string;
+  days?: number;
   reason: string;
   status: string;
-  submittedDate: Date;
-  attachments?: File[];
-  rejectionReason?: string;
-  approvedBy?: string;
+  createdAt?: string;
+  statusBy?: string;
   approvedTime?: string;
   startTime?: string;
   endTime?: string;
   personalLeaveType?: string;
   imgLeave?: string;
-  phone?: string;
+  contact?: string;
+  rejectedReason?: string;
 }
 
 interface LeaveDetailDialogProps {
@@ -88,19 +89,28 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-gray-700">{t('leave.type')}</label>
-              <p className="text-sm">{leaveDetail.type || leaveDetail.personalLeaveType}</p>
+              <label className="text-sm font-medium text-gray-700">{t('employee.name')}</label>
+              <p className="text-sm">{leaveDetail.user?.User_name || '-'}</p>
             </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">{t('leave.type')}</label>
+              <p className="text-sm">{leaveDetail.leaveTypeName || leaveDetail.type || leaveDetail.personalLeaveType}</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium text-gray-700">{t('leave.status')}</label>
               <div className="mt-1">{getStatusBadge(leaveDetail.status)}</div>
             </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">{t('leave.submittedDate')}</label>
+              <p className="text-sm">{leaveDetail.createdAt ? format(new Date(leaveDetail.createdAt), "dd MMMM yyyy", { locale: th }) : ''}</p>
+            </div>
           </div>
-
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="text-sm font-medium text-gray-700">{t('leave.startDate')}</label>
-              <p className="text-sm">{leaveDetail.startDate ? format(new Date(leaveDetail.startDate), "dd MMMM yyyy", { locale: th }) : ''}</p>
+              <label className="text-sm font-medium text-gray-700">{t('leave.date')}</label>
+              <p className="text-sm">{leaveDetail.startDate ? format(new Date(leaveDetail.startDate), "dd MMMM yyyy", { locale: th }) : ''} - {leaveDetail.endDate ? format(new Date(leaveDetail.endDate), "dd MMMM yyyy", { locale: th }) : ''}</p>
               {leaveDetail.startTime && <p className="text-xs text-gray-500">{t('leave.time')}: {leaveDetail.startTime}</p>}
             </div>
             <div>
@@ -109,40 +119,20 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
               {leaveDetail.endTime && <p className="text-xs text-gray-500">{t('leave.time')}: {leaveDetail.endTime}</p>}
             </div>
           </div>
-
-          {leaveDetail.personalLeaveType && (
-            <div>
-              <label className="text-sm font-medium text-gray-700">{t('leave.specificType')}</label>
-              <p className="text-sm">{leaveDetail.personalLeaveType}</p>
-            </div>
-          )}
-
-          <div>
-            <label className="text-sm font-medium text-gray-700">{t('leave.duration')}</label>
-            <p className="text-sm">{leaveDetail.days || ''} {t('leave.days')}</p>
-          </div>
-
           <div>
             <label className="text-sm font-medium text-gray-700">{t('leave.reason')}</label>
             <p className="text-sm bg-gray-50 p-3 rounded-lg">{leaveDetail.reason}</p>
           </div>
-
-          {leaveDetail.status === 'rejected' && leaveDetail.rejectionReason && (
+          {leaveDetail.status === 'rejected' && leaveDetail.rejectedReason && (
             <div>
               <label className="text-sm font-medium text-red-700">{t('leave.rejectionReason')}</label>
-              <p className="text-sm bg-red-50 p-3 rounded-lg text-red-800">{leaveDetail.rejectionReason}</p>
+              <p className="text-sm bg-red-50 p-3 rounded-lg text-red-800">{leaveDetail.rejectedReason}</p>
             </div>
           )}
-
-          <div>
-            <label className="text-sm font-medium text-gray-700">{t('leave.submittedDate')}</label>
-            <p className="text-sm">{leaveDetail.submittedDate ? format(new Date(leaveDetail.submittedDate), "dd MMMM yyyy", { locale: th }) : ''}</p>
-          </div>
-
-          {leaveDetail.approvedBy && (
+          {leaveDetail.statusBy && (
             <div>
               <label className="text-sm font-medium text-gray-700">{t('leave.approvedBy')}</label>
-              <p className="text-sm">{leaveDetail.approvedBy}</p>
+              <p className="text-sm">{leaveDetail.statusBy}</p>
             </div>
           )}
           {leaveDetail.approvedTime && (
@@ -151,16 +141,16 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
               <p className="text-sm">{format(new Date(leaveDetail.approvedTime), "dd MMMM yyyy HH:mm", { locale: th })}</p>
             </div>
           )}
-          {leaveDetail.phone && (
+          {leaveDetail.contact && (
             <div>
               <label className="text-sm font-medium text-gray-700">{t('employee.phone')}</label>
-              <p className="text-sm">{leaveDetail.phone}</p>
+              <p className="text-sm">{leaveDetail.contact}</p>
             </div>
           )}
           {leaveDetail.imgLeave && (
             <div>
               <label className="text-sm font-medium text-gray-700">{t('leave.attachments')}</label>
-              <a href={leaveDetail.imgLeave} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">{t('leave.viewAttachment')}</a>
+              <a href={`/leave-uploads/${leaveDetail.imgLeave}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">{t('leave.viewAttachment')}</a>
             </div>
           )}
 
