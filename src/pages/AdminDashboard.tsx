@@ -7,9 +7,21 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import { AlertCircle, CheckCircle, Clock, Eye, TrendingUp, Users, XCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+
+type LeaveRequest = {
+  id: number;
+  Repid: string; // หรือ user_id
+  leaveType: string;
+  startDate: string;
+  endDate: string;
+  reason: string;
+  status: string;
+  createdAt?: string;
+  // เพิ่ม field อื่นๆ ตามที่ backend ส่งมา
+};
 
 const AdminDashboard = () => {
   const { t } = useTranslation();
@@ -141,6 +153,30 @@ const AdminDashboard = () => {
       .finally(() => setLoading(false));
   };
 
+  // โหลด leave request ที่ pending จาก API
+  useEffect(() => {
+    const fetchPending = async () => {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch("http://localhost:3001/api/leave-request/pending", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.status === "success") {
+          setPendingRequests(data.data);
+        } else {
+          setError(t('admin.loadError'));
+        }
+      } catch (e) {
+        setError(t('admin.connectionError'));
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPending();
+  }, [t]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="border-b bg-white/80 backdrop-blur-sm">
@@ -148,7 +184,7 @@ const AdminDashboard = () => {
           <SidebarTrigger />
           <div className="flex-1">
             <h1 className="text-2xl font-bold text-gray-900">
-              {t('navigation.adminDashboard')} {/* adminName && `- ${t('admin.admin')}: ${adminName}` */}
+              {t('navigation.adminDashboard')}
             </h1>
             <p className="text-sm text-gray-600">
               {t('admin.dashboardDesc')}
@@ -211,6 +247,9 @@ const AdminDashboard = () => {
                     <div className="text-center py-10 text-red-500">{error}</div>
                   ) : (
                     <div className="space-y-4">
+                      {pendingRequests.length === 0 && (
+                        <div className="text-center text-gray-500">{t('admin.noPendingRequests')}</div>
+                      )}
                       {pendingRequests.map((request) => (
                         <div 
                           key={request.id}
@@ -218,8 +257,12 @@ const AdminDashboard = () => {
                         >
                           <div className="flex justify-between items-start mb-3">
                             <div>
-                              <h3 className="font-semibold text-lg">{request.user?.User_name || "-"}</h3>
-                              <p className="text-sm text-gray-600">{request.leaveType}</p>
+                              <h3 className="font-semibold text-lg">
+                                {typeof request.user === "string"
+                                  ? JSON.parse(request.user).User_name
+                                  : request.user?.User_name || "-"}
+                              </h3>
+                              <p className="text-sm text-gray-600">{request.leaveTypeName}</p>
                             </div>
                             <Badge variant="outline" className="text-orange-600 border-orange-200">
                               {t('admin.pending')}
@@ -229,13 +272,13 @@ const AdminDashboard = () => {
                             <div>
                               <p className="text-sm font-medium text-gray-700">{t('leave.date')}:</p>
                               <p className="text-sm text-gray-600">
-                                {format(new Date(request.startDate), "dd MMM", { locale: th })} - {format(new Date(request.endDate), "dd MMM yyyy", { locale: th })}
+                                {request.startDate} - {request.endDate}
                               </p>
                             </div>
                             <div>
                               <p className="text-sm font-medium text-gray-700">{t('admin.submittedDate')}:</p>
                               <p className="text-sm text-gray-600">
-                                {request.createdAt ? format(new Date(request.createdAt), "dd MMMM yyyy", { locale: th }) : "-"}
+                                {request.createdAt ? request.createdAt.split('T')[0] : "-"}
                               </p>
                             </div>
                           </div>
@@ -247,7 +290,7 @@ const AdminDashboard = () => {
                             <Button 
                               size="sm" 
                               className="bg-green-600 hover:bg-green-700"
-                              onClick={() => handleApprove(request.id, request.user?.User_name || "")}
+                              onClick={() => handleApprove(request.id, typeof request.user === "string" ? JSON.parse(request.user).User_name : request.user?.User_name || "")}
                             >
                               <CheckCircle className="w-4 h-4 mr-2" />
                               {t('admin.approve')}
@@ -255,7 +298,7 @@ const AdminDashboard = () => {
                             <Button 
                               size="sm" 
                               variant="destructive"
-                              onClick={() => handleReject(request.id, request.user?.User_name || "")}
+                              onClick={() => handleReject(request.id, typeof request.user === "string" ? JSON.parse(request.user).User_name : request.user?.User_name || "")}
                             >
                               <XCircle className="w-4 h-4 mr-2" />
                               {t('admin.reject')}

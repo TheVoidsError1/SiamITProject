@@ -64,5 +64,38 @@
          res.status(500).json({ status: 'error', message: err.message });
        }
      });
+
+     // GET /api/leave-request/pending
+     router.get('/pending', async (req, res) => {
+       try {
+         const leaveRepo = AppDataSource.getRepository('LeaveRequest');
+         const userRepo = AppDataSource.getRepository('User');
+         const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+         // ดึง leave requests ที่ pending
+         const pendingLeaves = await leaveRepo.find({
+           where: { status: 'pending' },
+           order: { id: 'DESC' },
+         });
+         // join user (Repid -> user.id) และ leaveType (leaveType -> LeaveType.id)
+         const result = await Promise.all(pendingLeaves.map(async (leave) => {
+           let user = null;
+           let leaveTypeObj = null;
+           if (leave.Repid) {
+             user = await userRepo.findOneBy({ id: leave.Repid });
+           }
+           if (leave.leaveType) {
+             leaveTypeObj = await leaveTypeRepo.findOneBy({ id: leave.leaveType });
+           }
+           return {
+             ...leave,
+             user: user ? { User_name: user.User_name, department: user.department, position: user.position } : null,
+             leaveTypeName: leaveTypeObj ? leaveTypeObj.leave_type : leave.leaveType,
+           };
+         }));
+         res.json({ status: 'success', data: result });
+       } catch (err) {
+         res.status(500).json({ status: 'error', message: err.message });
+       }
+     });
      return router;
    };
