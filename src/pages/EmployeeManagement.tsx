@@ -1,3 +1,4 @@
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,9 +6,8 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Eye, User, Users } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { Link } from "react-router-dom";
 
 // เพิ่ม type สำหรับข้อมูลพนักงาน
 interface Employee {
@@ -29,20 +29,20 @@ const EmployeeManagement = () => {
   const itemsPerPage = 4;
 
   useEffect(() => {
-    fetch("http://localhost:3001/api/users")
+    fetch("http://localhost:3001/api/employees")
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.data)) {
-          // map field ให้ตรงกับ type Employee
-          const employees = data.data.map((item) => ({
-            id: String(item.repid), // ให้แน่ใจว่าเป็น string
-            full_name: item.name,
-            email: item.email,
-            position: item.position,
-            department: item.department,
-            role: item.role || 'employee', // ถ้าไม่มี role ให้ default เป็น employee
-            usedLeaveDays: item.usedLeaveDays || 0,
-            totalLeaveDays: item.totalLeaveDays || 20 // กำหนดค่า default
+          // map เฉพาะชื่อ-นามสกุล กับอีเมล
+          const employees = data.data.map((item, idx) => ({
+            id: String(idx),
+            full_name: item.name || '',
+            email: item.email || '',
+            position: item.position || '',
+            department: item.department || '',
+            role: item.status || '',
+            usedLeaveDays: 0,
+            totalLeaveDays: 20
           }));
           setEmployees(employees);
         } else {
@@ -164,11 +164,10 @@ const EmployeeManagement = () => {
                           <TableCell className="text-sm">{employee.department}</TableCell>
                           <TableCell>
                             <Badge 
-                              variant={employee.role === 'admin' ? 'default' : employee.role === 'employee' ? 'secondary' : 'outline'}
+                              variant={employee.role === 'admin' ? 'default' : 'secondary'}
                               className="text-xs px-2 py-0.5"
                             >
-                              {employee.role === 'admin' ? t('system.admin') : 
-                                employee.role === 'employee' ? t('system.employee') : t('system.intern')}
+                              {employee.role === 'admin' ? 'ผู้ดูแลระบบ' : 'พนักงาน'}
                             </Badge>
                           </TableCell>
                           <TableCell>

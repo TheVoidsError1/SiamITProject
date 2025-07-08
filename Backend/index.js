@@ -31,8 +31,7 @@ const AppDataSource = new DataSource({
     require('./EnityTable/position.js'),
     require('./EnityTable/leavetype.js'),
     require('./EnityTable/department.js')
-    
-],
+  ],
 });
 
 AppDataSource.initialize()
@@ -48,6 +47,7 @@ app.use(bodyParser.json());
 const allowedOrigins = [
   'http://localhost:8081',
   'http://192.168.50.64:8081',
+  'http://localhost:3000',
   'http://localhost:3001',
   'http://localhost:8080'
 ];
@@ -152,6 +152,9 @@ app.use('/api', loginController);
 
 const profileController = require('./api/ProfileController')(AppDataSource);
 app.use('/api', profileController);
+
+const employeeController = require('./api/EmployeeController')(AppDataSource);
+app.use('/api', employeeController);
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
