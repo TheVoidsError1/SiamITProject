@@ -384,31 +384,52 @@ const AdminDashboard = () => {
       </div>
 
       <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
-        <DialogContent>
+        <DialogContent
+          className="w-[95vw] max-w-2xl border border-blue-200 bg-white rounded-2xl shadow-xl p-8"
+          style={{ maxWidth: 700 }}
+        >
           <DialogHeader>
-            <DialogTitle>รายละเอียดการลา</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="text-2xl font-bold mb-2 text-center text-blue-900">รายละเอียดการลา</DialogTitle>
+            <DialogDescription asChild>
               {selectedRequest && (
-                <div className="space-y-2">
-                  <p><b>ชื่อพนักงาน:</b> {typeof selectedRequest.user === "string"
-                    ? JSON.parse(selectedRequest.user).User_name
-                    : selectedRequest.user?.User_name || "-"}</p>
-                  <p><b>แผนก:</b> {selectedRequest.user?.department || "-"}</p>
-                  <p><b>ตำแหน่ง:</b> {selectedRequest.user?.position || "-"}</p>
-                  <p><b>ประเภทการลา:</b> {selectedRequest.leaveTypeName}</p>
-                  <p><b>วันที่ลา:</b> {selectedRequest.startDate} - {selectedRequest.endDate}</p>
-                  <p><b>เหตุผล:</b> {selectedRequest.reason}</p>
-                  <p><b>เบอร์ติดต่อ:</b> {selectedRequest.contact || "-"}</p>
-                  <p><b>ประเภทพนักงาน:</b> {selectedRequest.employeeType || "-"}</p>
-                  <p><b>วันที่ส่งคำขอ:</b> {selectedRequest.createdAt ? selectedRequest.createdAt.split('T')[0] : "-"}</p>
-                  {selectedRequest.imgLeave && (
+                <div className="space-y-3 text-gray-700">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
                     <div>
-                      <b>ไฟล์แนบ:</b>
-                      <br />
+                      <span className="font-semibold text-blue-800">ชื่อพนักงาน:</span> {typeof selectedRequest.user === "string"
+                        ? JSON.parse(selectedRequest.user).User_name
+                        : selectedRequest.user?.User_name || "-"}
+                    </div>
+                    <div>
+                      <span className="font-semibold text-blue-800">ตำแหน่ง:</span> {selectedRequest.employeeType || "-"}
+                    </div>
+                    <div>
+                      <span className="font-semibold text-blue-800">แผนก:</span> {selectedRequest.user?.department || "-"}
+                    </div>
+                    <div>
+                      <span className="font-semibold text-blue-800">ประเภทการลา:</span> {selectedRequest.leaveTypeName}
+                    </div>
+                    <div>
+                      <span className="font-semibold text-blue-800">เหตุผล:</span> {selectedRequest.reason}
+                    </div>
+                    <div>
+                      <span className="font-semibold text-blue-800">วันที่ลา:</span> {selectedRequest.startDate} - {selectedRequest.endDate}
+                    </div>
+                    <div>
+                      <span className="font-semibold text-blue-800">วันที่ส่งคำขอ:</span> {selectedRequest.createdAt ? selectedRequest.createdAt.split('T')[0] : "-"}
+                    </div>
+                    <div>
+                      <span className="font-semibold text-blue-800">เบอร์ติดต่อ:</span> {selectedRequest.contact || "-"}
+                    </div>
+              
+                  </div>
+                  {selectedRequest.imgLeave && (
+                    <div className="flex flex-col items-center mt-4">
+                      <span className="font-semibold mb-2 text-blue-800">ไฟล์แนบ:</span>
                       <img
                         src={`/leave-uploads/${selectedRequest.imgLeave}`}
                         alt="แนบไฟล์"
-                        style={{ maxWidth: 200, marginTop: 8 }}
+                        className="rounded-xl border-2 border-blue-200 shadow max-w-xs bg-white"
+                        style={{ marginTop: 8 }}
                       />
                     </div>
                   )}
@@ -416,8 +437,10 @@ const AdminDashboard = () => {
               )}
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter>
-            <Button onClick={() => setShowDetailDialog(false)}>ปิด</Button>
+          <DialogFooter className="flex justify-center mt-6">
+            <Button className="px-8 py-2 text-lg rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow" onClick={() => setShowDetailDialog(false)}>
+              ปิด
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
