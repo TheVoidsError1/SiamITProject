@@ -248,7 +248,8 @@
     "approveSuccessDesc": "Approved leave request for",
     "rejectSuccess": "Rejected",
     "rejectSuccessDesc": "Rejected leave request for",
-    "connectionError": "Connection Error"
+    "connectionError": "Connection Error",
+    "noPendingRequests": "No pending leave requests"
   },
   "system": {
     "onlineLeaveSystem": "Online Leave System",
