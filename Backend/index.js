@@ -25,7 +25,7 @@ const AppDataSource = new DataSource({
   logging: false,
   entities: [
     require('./EnityTable/user.js'),
-    require('./EnityTable/processCheck.entity.js'),
+    require('./EnityTable/ProcessCheck.entity.js'),
     require('./EnityTable/admin.js'),
     require('./EnityTable/leaveRequest.entity.js'),
     require('./EnityTable/position.js'),
