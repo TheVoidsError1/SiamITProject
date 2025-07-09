@@ -6,56 +6,38 @@ import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useEffect, useState } from "react";
 
 const LeaveHistory = () => {
   const { t } = useTranslation();
+  const [leaveHistory, setLeaveHistory] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const leaveHistory = [
-    {
-      id: 1,
-      type: t('leaveTypes.vacation'),
-      startDate: new Date(2024, 11, 20),
-      endDate: new Date(2024, 11, 22),
-      days: 3,
-      reason: "พักผ่อนกับครอบครัว",
-      status: "approved",
-      approvedBy: "คุณสมศรี ผู้จัดการ",
-      submittedDate: new Date(2024, 11, 15),
-    },
-    {
-      id: 2,
-      type: t('leaveTypes.sick'),
-      startDate: new Date(2024, 10, 5),
-      endDate: new Date(2024, 10, 6),
-      days: 2,
-      reason: "ไข้หวัดใหญ่",
-      status: "approved",
-      approvedBy: "คุณสมศรี ผู้จัดการ",
-      submittedDate: new Date(2024, 10, 4),
-    },
-    {
-      id: 3,
-      type: t('leaveTypes.personal'),
-      startDate: new Date(2024, 9, 15),
-      endDate: new Date(2024, 9, 15),
-      days: 1,
-      reason: "ติดต่อราชการ",
-      status: "pending",
-      submittedDate: new Date(2024, 9, 12),
-    },
-    {
-      id: 4,
-      type: t('leaveTypes.vacation'),
-      startDate: new Date(2024, 8, 1),
-      endDate: new Date(2024, 8, 5),
-      days: 5,
-      reason: "เดินทางท่องเที่ยว",
-      status: "rejected",
-      rejectedBy: "คุณสมศรี ผู้จัดการ",
-      rejectionReason: "ช่วงเวลาดังกล่าวมีงานเร่งด่วน",
-      submittedDate: new Date(2024, 7, 25),
-    },
-  ];
+  useEffect(() => {
+    const fetchLeaveHistory = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) throw new Error('No token found, please login');
+        const res = await fetch('/api/leave-history', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.status === "success") {
+          setLeaveHistory(data.data);
+        } else {
+          setError(data.message || "Unknown error");
+        }
+      } catch (err: any) {
+        setError(err.message || "Unknown error");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchLeaveHistory();
+  }, []);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -156,78 +138,84 @@ const LeaveHistory = () => {
 
           {/* Leave History List */}
           <div className="space-y-4">
-            {leaveHistory.map((leave) => (
-              <Card key={leave.id} className="border-0 shadow-md hover:shadow-lg transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`text-lg font-semibold ${getTypeColor(leave.type)}`}>
-                        {leave.type}
-                      </div>
-                      {getStatusBadge(leave.status)}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {format(leave.submittedDate, 'dd MMM yyyy', { locale: th })}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <span className="font-medium">{t('leave.startDate')}:</span>
-                        <span>{format(leave.startDate, 'dd MMM yyyy', { locale: th })}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        <span className="font-medium">{t('leave.endDate')}:</span>
-                        <span>{format(leave.endDate, 'dd MMM yyyy', { locale: th })}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Clock className="w-4 h-4 text-muted-foreground" />
-                        <span className="font-medium">{t('leave.duration')}:</span>
-                        <span>{leave.days} {t('leave.days')}</span>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-start gap-2 text-sm">
-                        <FileText className="w-4 h-4 text-muted-foreground mt-0.5" />
-                        <div>
-                          <span className="font-medium">{t('leave.reason')}:</span>
-                          <p className="text-muted-foreground">{leave.reason}</p>
+            {loading ? (
+              <p>{t('history.loadingLeaveHistory')}</p>
+            ) : error ? (
+              <p className="text-red-500">{error}</p>
+            ) : (
+              leaveHistory.map((leave) => (
+                <Card key={leave.id} className="border-0 shadow-md hover:shadow-lg transition-shadow">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`text-lg font-semibold ${getTypeColor(leave.type)}`}>
+                          {leave.type}
                         </div>
+                        {getStatusBadge(leave.status)}
                       </div>
-                      {leave.status === "approved" && leave.approvedBy && (
+                      <div className="text-sm text-muted-foreground">
+                        {format(new Date(leave.submittedDate), 'dd MMM yyyy', { locale: th })}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
                         <div className="flex items-center gap-2 text-sm">
-                          <CheckCircle className="w-4 h-4 text-green-600" />
-                          <span className="font-medium">{t('leave.approvedBy')}:</span>
-                          <span>{leave.approvedBy}</span>
+                          <Calendar className="w-4 h-4 text-muted-foreground" />
+                          <span className="font-medium">{t('leave.startDate')}:</span>
+                          <span>{format(new Date(leave.startDate), 'dd MMM yyyy', { locale: th })}</span>
                         </div>
-                      )}
-                      {leave.status === "rejected" && (
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2 text-sm">
-                            <XCircle className="w-4 h-4 text-red-600" />
-                            <span className="font-medium">{t('leave.rejectedBy')}:</span>
-                            <span>{leave.rejectedBy}</span>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Calendar className="w-4 h-4 text-muted-foreground" />
+                          <span className="font-medium">{t('leave.endDate')}:</span>
+                          <span>{format(new Date(leave.endDate), 'dd MMM yyyy', { locale: th })}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm">
+                          <Clock className="w-4 h-4 text-muted-foreground" />
+                          <span className="font-medium">{t('leave.duration')}:</span>
+                          <span>{leave.days} {t('leave.days')}</span>
+                        </div>
+                      </div>
+                      <div className="space-y-2">
+                        <div className="flex items-start gap-2 text-sm">
+                          <FileText className="w-4 h-4 text-muted-foreground mt-0.5" />
+                          <div>
+                            <span className="font-medium">{t('leave.reason')}:</span>
+                            <p className="text-muted-foreground">{leave.reason}</p>
                           </div>
-                          {leave.rejectionReason && (
-                            <div className="flex items-start gap-2 text-sm">
-                              <FileText className="w-4 h-4 text-muted-foreground mt-0.5" />
-                              <div>
-                                <span className="font-medium">{t('leave.rejectionReason')}:</span>
-                                <p className="text-muted-foreground">{leave.rejectionReason}</p>
-                              </div>
-                            </div>
-                          )}
                         </div>
-                      )}
+                        {leave.status === "approved" && leave.approvedBy && (
+                          <div className="flex items-center gap-2 text-sm">
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            <span className="font-medium">{t('leave.approvedBy')}:</span>
+                            <span>{leave.approvedBy}</span>
+                          </div>
+                        )}
+                        {leave.status === "rejected" && leave.rejectedBy && (
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2 text-sm">
+                              <XCircle className="w-4 h-4 text-red-600" />
+                              <span className="font-medium">{t('leave.rejectedBy')}:</span>
+                              <span>{leave.rejectedBy}</span>
+                            </div>
+                            {leave.rejectionReason && (
+                              <div className="flex items-start gap-2 text-sm">
+                                <FileText className="w-4 h-4 text-muted-foreground mt-0.5" />
+                                <div>
+                                  <span className="font-medium">{t('leave.rejectionReason')}:</span>
+                                  <p className="text-muted-foreground">{leave.rejectionReason}</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
+                  </CardContent>
+                </Card>
+              ))
+            )}
           </div>
         </div>
       </div>

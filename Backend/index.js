@@ -163,6 +163,9 @@ app.use('/api', employeeController);
 const leaveRequestController = require('./api/LeaveRequestController')(AppDataSource);
 app.use('/api/leave-request', leaveRequestController);
 
+const leaveHistoryController = require('./api/LeaveHistoryController')(AppDataSource);
+app.use('/api/leave-history', leaveHistoryController);
+
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 }); 
