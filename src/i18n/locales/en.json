@@ -138,7 +138,8 @@
     "contact": "Contact Number",
     "submittedDate": "Submitted Date",
     "attachment": "Attachment",
-    "duration": "Leave Duration"
+    "duration": "Leave Duration",
+    "days": "days"
   },
   "leaveTypes": {
     "vacation": "Vacation ",

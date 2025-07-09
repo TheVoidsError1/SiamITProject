@@ -138,7 +138,8 @@
     "contact": "เบอร์ติดต่อ",
     "submittedDate": "วันที่ส่งคำขอ",
     "attachment": "ไฟล์แนบ",
-    "duration": "ระยะเวลาการลา"
+    "duration": "ระยะเวลาการลา",
+    "days":"วัน"
   },
   "leaveTypes": {
     "vacation": "ลาพักผ่อน",

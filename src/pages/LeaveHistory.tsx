@@ -99,6 +99,11 @@ const LeaveHistory = () => {
     return type; // fallback
   };
 
+  // Calculate summary statistics from leaveHistory
+  const totalLeaveDays = leaveHistory.reduce((sum, leave) => sum + (leave.days || 0), 0);
+  const approvedCount = leaveHistory.filter(leave => leave.status === "approved").length;
+  const pendingCount = leaveHistory.filter(leave => leave.status === "pending").length;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="border-b bg-white/80 backdrop-blur-sm">
@@ -125,7 +130,7 @@ const LeaveHistory = () => {
                     <Calendar className="w-5 h-5 text-blue-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">11</p>
+                    <p className="text-2xl font-bold">{totalLeaveDays}</p>
                     <p className="text-sm text-muted-foreground">{t('history.totalLeaveDays')}</p>
                   </div>
                 </div>
@@ -139,7 +144,7 @@ const LeaveHistory = () => {
                     <CheckCircle className="w-5 h-5 text-green-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">3</p>
+                    <p className="text-2xl font-bold">{approvedCount}</p>
                     <p className="text-sm text-muted-foreground">{t('history.approvedRequests')}</p>
                   </div>
                 </div>
@@ -153,7 +158,7 @@ const LeaveHistory = () => {
                     <Clock className="w-5 h-5 text-yellow-600" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold">1</p>
+                    <p className="text-2xl font-bold">{pendingCount}</p>
                     <p className="text-sm text-muted-foreground">{t('history.pendingRequests')}</p>
                   </div>
                 </div>
