@@ -4,7 +4,7 @@
    const path = require('path');
    const fs = require('fs');
    const jwt = require('jsonwebtoken');
-   const SECRET = process.env.JWT_SECRET || 'your_secret_key';
+   const SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
    // ตั้งค่าที่เก็บไฟล์
    const storage = multer.diskStorage({
