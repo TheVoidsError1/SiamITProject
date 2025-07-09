@@ -132,7 +132,7 @@ export const LeaveForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!startDate || !leaveType || !reason || !employeeType) {
+    if (!startDate || !leaveType || !reason) {
       toast({
         title: t('leave.fillAllFields'),
         description: t('leave.fillAllFieldsDesc'),
@@ -203,7 +203,6 @@ export const LeaveForm = () => {
     // --- API Integration ---
     try {
       const formData = new FormData();
-      formData.append("employeeType", employeeType);
       formData.append("leaveType", leaveType);
       if (personalLeaveType) formData.append("personalLeaveType", personalLeaveType);
       if (startDate) formData.append("startDate", startDate.toISOString().split("T")[0]);
@@ -319,25 +318,6 @@ export const LeaveForm = () => {
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
-      {/* Employee Type (เปลี่ยนเป็น Position) */}
-      <div className="space-y-2">
-        <Label htmlFor="employee-type" className="text-sm font-medium">
-          {t('leave.employeeType')} *
-        </Label>
-        <Select value={employeeType} onValueChange={setEmployeeType}>
-          <SelectTrigger>
-            <SelectValue placeholder={t('leave.selectEmployeeType')} />
-          </SelectTrigger>
-          <SelectContent>
-            {positions.map((pos) => (
-              <SelectItem key={pos.id} value={pos.position_name}>
-                {pos.position_name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
       {/* Leave Type (เปลี่ยนเป็น dynamic จาก API) */}
       <div className="space-y-2">
         <Label htmlFor="leave-type" className="text-sm font-medium">

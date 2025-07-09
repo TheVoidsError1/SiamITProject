@@ -39,14 +39,21 @@
              return res.status(401).json({ status: 'error', message: 'Invalid or expired token' });
            }
          }
+         // ดึงตำแหน่งจาก user
+         let employeeType = null;
+         if (userId) {
+           const userRepo = AppDataSource.getRepository('User');
+           const user = await userRepo.findOneBy({ id: userId });
+           employeeType = user ? user.position : null;
+         }
          const {
-           employeeType, leaveType, personalLeaveType, startDate, endDate,
+           /* employeeType, */ leaveType, personalLeaveType, startDate, endDate,
            startTime, endTime, reason, supervisor, contact
          } = req.body;
 
          const leaveData = {
            Repid: userId, // ใส่ user_id จาก JWT
-           employeeType,
+           employeeType, // ดึงจาก user.position
            leaveType,
            startDate,
            endDate,
