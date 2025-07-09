@@ -322,6 +322,7 @@
     "newPassword": "รหัสผ่านใหม่",
     "leaveHistoryDesc": "ประวัติการลาของพนักงาน",
     "noPassword": "ยังไม่ได้ตั้งรหัสผ่าน",
-    "setNewPassword": "ตั้งรหัสผ่านใหม่"
+    "setNewPassword": "ตั้งรหัสผ่านใหม่",
+    "name": "ชื่อ"
   }
 }

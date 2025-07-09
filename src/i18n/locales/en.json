@@ -300,6 +300,7 @@
     "password": "Password",
     "usedLeaveDays": "Used Leave Days",
     "noPassword": "Not set",
-    "leaveHistoryDesc": "Employee leave history"
+    "leaveHistoryDesc": "Employee leave history",
+    "name": "name"
   }
 }

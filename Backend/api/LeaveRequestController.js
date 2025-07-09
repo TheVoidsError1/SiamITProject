@@ -136,13 +136,15 @@
          const { userId } = req.query;
          let where = [
            { status: 'approved' },
-           { status: 'rejected' }
+           { status: 'rejected' },
+           { status: 'pending' }
          ];
          // ถ้ามี userId ให้ filter ตาม userId
          if (userId) {
            where = [
              { status: 'approved', Repid: userId },
-             { status: 'rejected', Repid: userId }
+             { status: 'rejected', Repid: userId },
+             { status: 'pending', Repid: userId }
            ];
          }
          // ดึงใบคำขอที่ status เป็น approved หรือ rejected (และ filter ตาม userId ถ้ามี)
