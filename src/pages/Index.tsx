@@ -36,6 +36,13 @@ const Index = () => {
             { title: t('main.pendingRequests'), value: data.data.pendingRequests, unit: t('main.requests'), icon: Users, color: "text-orange-600", bgColor: "bg-orange-50" },
             { title: t('main.approvalRate'), value: data.data.approvalRate, unit: "%", icon: TrendingUp, color: "text-purple-600", bgColor: "bg-purple-50" },
           ]);
+          // Map leaveTypeStats to leaveStats for display
+          const stats = data.data.leaveTypeStats || {};
+          setLeaveStats({
+            sick: stats["ลาป่วย"] || stats["sick"] || 0,
+            vacation: stats["ลาพักผ่อน"] || stats["vacation"] || 0,
+            business: stats["ลากิจ"] || stats["business"] || 0,
+          });
         } else {
           setErrorStats(t('error.cannotLoadStats'));
         }
