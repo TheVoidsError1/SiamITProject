@@ -28,6 +28,7 @@
        try {
          const leaveRepo = AppDataSource.getRepository('LeaveRequest');
          let userId = null;
+         let role = null;
          // ดึง userId จาก JWT
          const authHeader = req.headers.authorization;
          if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -35,16 +36,23 @@
            try {
              const decoded = jwt.verify(token, SECRET);
              userId = decoded.userId;
+             role = decoded.role;
            } catch (err) {
              return res.status(401).json({ status: 'error', message: 'Invalid or expired token' });
            }
          }
-         // ดึงตำแหน่งจาก user
+         // ดึงตำแหน่งจาก user หรือ admin
          let employeeType = null;
          if (userId) {
-           const userRepo = AppDataSource.getRepository('User');
-           const user = await userRepo.findOneBy({ id: userId });
-           employeeType = user ? user.position : null;
+           if (role === 'admin') {
+             const adminRepo = AppDataSource.getRepository('Admin');
+             const admin = await adminRepo.findOneBy({ id: userId });
+             employeeType = admin ? admin.position : null;
+           } else {
+             const userRepo = AppDataSource.getRepository('User');
+             const user = await userRepo.findOneBy({ id: userId });
+             employeeType = user ? user.position : null;
+           }
          }
          const {
            /* employeeType, */ leaveType, personalLeaveType, startDate, endDate,
@@ -93,6 +101,14 @@
            let leaveTypeObj = null;
            if (leave.Repid) {
              user = await userRepo.findOneBy({ id: leave.Repid });
+             if (!user) {
+               // ถ้าไม่เจอใน user ให้ลองหาใน admin
+               const adminRepo = AppDataSource.getRepository('Admin');
+               const admin = await adminRepo.findOneBy({ id: leave.Repid });
+               if (admin) {
+                 user = { User_name: admin.admin_name, department: admin.department, position: admin.position };
+               }
+             }
            }
            if (leave.leaveType) {
              leaveTypeObj = await leaveTypeRepo.findOneBy({ id: leave.leaveType });
@@ -126,7 +142,17 @@
          const result = await Promise.all(processedLeaves.map(async (leave) => {
            let user = null;
            let leaveTypeObj = null;
-           if (leave.Repid) user = await userRepo.findOneBy({ id: leave.Repid });
+           if (leave.Repid) {
+             user = await userRepo.findOneBy({ id: leave.Repid });
+             if (!user) {
+               // ถ้าไม่เจอใน user ให้ลองหาใน admin
+               const adminRepo = AppDataSource.getRepository('Admin');
+               const admin = await adminRepo.findOneBy({ id: leave.Repid });
+               if (admin) {
+                 user = { User_name: admin.admin_name, department: admin.department, position: admin.position };
+               }
+             }
+           }
            if (leave.leaveType) leaveTypeObj = await leaveTypeRepo.findOneBy({ id: leave.leaveType });
            return {
              ...leave,
