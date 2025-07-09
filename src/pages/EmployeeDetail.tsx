@@ -15,12 +15,14 @@ import { th } from "date-fns/locale";
 import { LeaveDetailDialog } from "@/components/dialogs/LeaveDetailDialog";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useAuth } from "@/contexts/AuthContext";
 
 const EmployeeDetail = () => {
   const { id } = useParams();
   const location = useLocation();
   const { t } = useTranslation();
   const { toast } = useToast();
+  const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [selectedLeave, setSelectedLeave] = useState(null);
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
@@ -94,9 +96,15 @@ const EmployeeDetail = () => {
         setLoading(false);
       });
 
-    // Fetch leave history for logged-in user
+    // ดึง leave history ตามสิทธิ์
     const token = localStorage.getItem('token');
-    fetch('http://localhost:3001/api/leave-request/my', {
+    let url = '';
+    if (user && user.role === 'admin' && user.id !== id) {
+      url = `http://localhost:3001/api/leave-request/history?userId=${id}`;
+    } else {
+      url = 'http://localhost:3001/api/leave-request/my';
+    }
+    fetch(url, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => res.json())
@@ -108,7 +116,7 @@ const EmployeeDetail = () => {
         }
       })
       .catch(() => setLeaveHistory([]));
-  }, [id, t]);
+  }, [id, t, user]);
 
   const handleEdit = () => {
     setEditData({
@@ -386,7 +394,7 @@ const EmployeeDetail = () => {
                 <TableBody>
                   {leaveHistory.map((leave, idx) => (
                     <TableRow key={idx}>
-                      <TableCell className="font-medium">{String(t(`leaveTypes.${leave.leaveType}`, leave.leaveType))}</TableCell>
+                      <TableCell className="font-medium">{leave.leaveTypeName || '-'}</TableCell>
                       <TableCell className="whitespace-nowrap">{leave.leaveDate}</TableCell>
                       <TableCell>{leave.duration} {leave.durationType ? t(`leave.${leave.durationType}`) : ''}</TableCell>
                       <TableCell className="max-w-[100px] truncate">{leave.reason}</TableCell>

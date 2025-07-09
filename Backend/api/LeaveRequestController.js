@@ -131,12 +131,23 @@
          const leaveRepo = AppDataSource.getRepository('LeaveRequest');
          const userRepo = AppDataSource.getRepository('User');
          const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
-         // ดึงใบคำขอที่ status เป็น approved หรือ rejected
+         const adminRepo = AppDataSource.getRepository('Admin');
+         // รับ userId จาก query param (optional)
+         const { userId } = req.query;
+         let where = [
+           { status: 'approved' },
+           { status: 'rejected' }
+         ];
+         // ถ้ามี userId ให้ filter ตาม userId
+         if (userId) {
+           where = [
+             { status: 'approved', Repid: userId },
+             { status: 'rejected', Repid: userId }
+           ];
+         }
+         // ดึงใบคำขอที่ status เป็น approved หรือ rejected (และ filter ตาม userId ถ้ามี)
          const processedLeaves = await leaveRepo.find({
-           where: [
-             { status: 'approved' },
-             { status: 'rejected' }
-           ],
+           where,
            order: { id: 'DESC' },
          });
          const result = await Promise.all(processedLeaves.map(async (leave) => {
@@ -146,18 +157,30 @@
              user = await userRepo.findOneBy({ id: leave.Repid });
              if (!user) {
                // ถ้าไม่เจอใน user ให้ลองหาใน admin
-               const adminRepo = AppDataSource.getRepository('Admin');
                const admin = await adminRepo.findOneBy({ id: leave.Repid });
                if (admin) {
                  user = { User_name: admin.admin_name, department: admin.department, position: admin.position };
                }
              }
            }
+           // join leaveType จาก database
            if (leave.leaveType) leaveTypeObj = await leaveTypeRepo.findOneBy({ id: leave.leaveType });
+           // คำนวณจำนวนวันลา
+           let duration = 1;
+           if (leave.startDate && leave.endDate) {
+             const start = new Date(leave.startDate);
+             const end = new Date(leave.endDate);
+             duration = Math.abs((end - start) / (1000*60*60*24)) + 1;
+           }
            return {
-             ...leave,
-             user: user ? { User_name: user.User_name, department: user.department, position: user.position } : null,
+             id: leave.id,
              leaveTypeName: leaveTypeObj ? leaveTypeObj.leave_type : leave.leaveType,
+             leaveDate: leave.startDate,
+             duration,
+             reason: leave.reason,
+             status: leave.status,
+             submittedDate: leave.createdAt,
+             user: user ? { User_name: user.User_name, department: user.department, position: user.position } : null,
            };
          }));
          res.json({ status: 'success', data: result });
