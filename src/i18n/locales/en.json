@@ -62,7 +62,9 @@
     "change": "Change",
     "enable": "Enable",
     "user": "User",
-    "back": "Back"
+    "back": "Back",
+    "actions": "Actions",
+    "viewDetails": "View Details"
   },
   "leave": {
     "leaveRequest": "Leave Request",
@@ -138,8 +140,9 @@
     "contact": "Contact Number",
     "submittedDate": "Submitted Date",
     "attachment": "Attachment",
-    "duration": "Leave Duration",
-    "days": "days"
+    "duration": "Duration",
+    "hour": "hour",
+    "day": "day"
   },
   "leaveTypes": {
     "vacation": "Vacation ",
@@ -285,31 +288,18 @@
   "employee": {
     "details": "Employee Details",
     "personalInfo": "Personal Information",
-    "personalInfoDesc": "View and manage the employee's personal information.",
-    "leaveHistoryDesc": "View the employee's leave history.",
+    "personalInfoDesc": "View and manage employee personal information",
     "fullName": "Full Name",
     "position": "Position",
     "department": "Department",
     "status": "Status",
+    "employee": "Employee",
+    "admin": "Admin",
+    "intern": "Intern",
     "email": "Email",
     "password": "Password",
     "usedLeaveDays": "Used Leave Days",
-    "notFound": "Employee not found.",
-    "loadError": "Failed to load employee data.",
-    "admin": "Admin",
-    "employee": "Employee",
-    "intern": "Intern",
-    "saveSuccess": "Saved successfully!",
-    "updateSuccess": "Employee information updated successfully.",
-    "saveError": "Failed to save employee information.",
-    "noProcessCheckId": "No process check ID found.",
-    "newPassword": "New Password",
-    "leaveHistoryDesc": "Employee leave history.",
     "noPassword": "Not set",
-    "setNewPassword": "Set new password"
-  },
-  "employee": {
-    "name": "Name",
-    "phone": "Phone"
+    "leaveHistoryDesc": "Employee leave history"
   }
 }

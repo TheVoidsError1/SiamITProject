@@ -94,12 +94,12 @@ const Profile = () => {
 
         // Only set form data if profile hasn't been loaded yet
         if (!profileLoaded) {
-          setFormData({
-            full_name: data.name || '',
-            email: data.email || '',
-            department: data.department || '',
-            position: data.position || '',
-          });
+        setFormData({
+          full_name: data.name || '',
+          email: data.email || '',
+          department: data.department || '',
+          position: data.position || '',
+        });
           setProfileLoaded(true);
         }
         
@@ -202,7 +202,7 @@ const Profile = () => {
         setAvatarUrl(`http://localhost:3001${response.data.avatar_url}`);
         // Update user context with new avatar URL
         updateUser({ avatar_url: response.data.avatar_url });
-        toast({ title: t('profile.uploadSuccess') });
+      toast({ title: t('profile.uploadSuccess') });
       } else {
         throw new Error(response.data.message || t('profile.uploadError'));
       }

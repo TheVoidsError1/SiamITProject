@@ -62,7 +62,9 @@
     "change": "เปลี่ยน",
     "enable": "เปิดใช้งาน",
     "user": "ผู้ใช้",
-    "back": "ย้อนกลับ"
+    "back": "ย้อนกลับ",
+    "actions": "การดำเนินการ",
+    "viewDetails": "ดูรายละเอียด"
   },
   "leave": {
     "leaveRequest": "ขอลา",
@@ -138,8 +140,9 @@
     "contact": "เบอร์ติดต่อ",
     "submittedDate": "วันที่ส่งคำขอ",
     "attachment": "ไฟล์แนบ",
-    "duration": "ระยะเวลาการลา",
-    "days":"วัน"
+    "duration": "ระยะเวลา",
+    "hour": "ชั่วโมง",
+    "day": "วัน"
   },
   "leaveTypes": {
     "vacation": "ลาพักผ่อน",

@@ -93,6 +93,21 @@ const EmployeeDetail = () => {
         setError(t('employee.loadError'));
         setLoading(false);
       });
+
+    // Fetch leave history for logged-in user
+    const token = localStorage.getItem('token');
+    fetch('http://localhost:3001/api/leave-request/my', {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(res => res.json())
+      .then(data => {
+        if (data.status === 'success') {
+          setLeaveHistory(data.data);
+        } else {
+          setLeaveHistory([]);
+        }
+      })
+      .catch(() => setLeaveHistory([]));
   }, [id, t]);
 
   const handleEdit = () => {
@@ -108,20 +123,15 @@ const EmployeeDetail = () => {
   };
 
   const handleSave = async () => {
-    if (!processCheckId) {
-      toast({ title: t('error.title'), description: t('employee.noProcessCheckId') });
-      return;
-    }
     try {
       const payload: any = {
-        User_name: editData.full_name,
+        name: editData.full_name,
         position: editData.position,
         department: editData.department,
         email: editData.email,
       };
       if (editData.password && editData.password.trim() !== '') payload.password = editData.password;
-      // role ไม่ได้อัปเดตใน backend (process_check.Role) ใน API นี้
-      const response = await fetch(`http://localhost:3001/api/profile/${processCheckId}` , {
+      const response = await fetch(`http://localhost:3001/api/employee/${id}` , {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -133,14 +143,8 @@ const EmployeeDetail = () => {
           description: t('employee.updateSuccess'),
         });
         setIsEditing(false);
-        // รีเฟรชข้อมูลใหม่
-        let url = "";
-        if (role === "admin") {
-          url = `http://localhost:3001/api/admin/${id}`;
-        } else {
-          url = `http://localhost:3001/api/users/${id}`;
-        }
-        const res = await fetch(url);
+        // Refresh profile data
+        const res = await fetch(`http://localhost:3001/api/employee/${id}`);
         const empData = await res.json();
         if (empData.success) setEmployee(empData.data);
       } else {
@@ -164,6 +168,7 @@ const EmployeeDetail = () => {
   };
 
   const handleViewLeaveDetails = (leave) => {
+    console.log('View Details clicked. leave:', leave, 'leave.id:', leave.id);
     setSelectedLeave(leave);
     setLeaveDialogOpen(true);
   };
@@ -214,6 +219,7 @@ const EmployeeDetail = () => {
                         value={editData.full_name}
                         onChange={(e) => setEditData({...editData, full_name: e.target.value})}
                         className="mt-1"
+                        placeholder={t('employee.fullName')}
                       />
                     ) : (
                       <p className="text-lg font-semibold">{employee.name}</p>
@@ -231,13 +237,13 @@ const EmployeeDetail = () => {
                             <SelectItem key={key} value={key}>
                               {key === '' || key.toLowerCase() === 'none' || key.toLowerCase() === 'no position' || key.toLowerCase() === 'noposition'
                                 ? t('positions.noPosition')
-                                : t(`positions.${key}`)}
+                                : t(`positions.${key}`, { defaultValue: key })}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     ) : (
-                      <p className="text-sm text-gray-600">{t(`positions.${employee.position}`)}</p>
+                      <p className="text-sm text-gray-600">{String(t(`positions.${employee.position}`, { defaultValue: employee.position }))}</p>
                     )}
                   </div>
                   <div>
@@ -252,13 +258,13 @@ const EmployeeDetail = () => {
                             <SelectItem key={key} value={key}>
                               {key === '' || key.toLowerCase() === 'none' || key.toLowerCase() === 'no department' || key.toLowerCase() === 'nodepartment'
                                 ? t('departments.noDepartment')
-                                : t(`departments.${key}`)}
+                                : t(`departments.${key}`, { defaultValue: key })}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     ) : (
-                      <p className="text-sm text-gray-600">{t(`departments.${employee.department}`)}</p>
+                      <p className="text-sm text-gray-600">{String(t(`departments.${employee.department}`, { defaultValue: employee.department }))}</p>
                     )}
                   </div>
                   <div>
@@ -298,6 +304,7 @@ const EmployeeDetail = () => {
                         value={editData.email}
                         onChange={(e) => setEditData({...editData, email: e.target.value})}
                         className="mt-1"
+                        placeholder={t('employee.email')}
                       />
                     ) : (
                       <div className="flex items-center gap-2 mt-1">
@@ -377,22 +384,24 @@ const EmployeeDetail = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {leaveHistory.map((leave) => (
-                    <TableRow key={leave.id}>
-                      <TableCell className="font-medium">{leave.leaveType}</TableCell>
+                  {leaveHistory.map((leave, idx) => (
+                    <TableRow key={idx}>
+                      <TableCell className="font-medium">{String(t(`leaveTypes.${leave.leaveType}`, leave.leaveType))}</TableCell>
+                      <TableCell className="whitespace-nowrap">{leave.leaveDate}</TableCell>
+                      <TableCell>{leave.duration} {leave.durationType ? t(`leave.${leave.durationType}`) : ''}</TableCell>
+                      <TableCell className="max-w-[100px] truncate">{leave.reason}</TableCell>
                       <TableCell>
-                        {leave.startDate ? format(new Date(leave.startDate), "dd MMM", { locale: th }) : ''} - {leave.endDate ? format(new Date(leave.endDate), "dd MMM yyyy", { locale: th }) : ''}
-                      </TableCell>
-                      <TableCell>{leave.days || ''} {t('leave.days')}</TableCell>
-                      <TableCell className="max-w-xs truncate">{leave.reason}</TableCell>
-                      <TableCell>
-                        <Badge className="bg-green-100 text-green-800 border-green-200">
-                          อนุมัติแล้ว
+                        <Badge
+                          className={`rounded-full px-3 py-1 text-xs font-semibold
+                            ${leave.status === 'approved' ? 'bg-green-100 text-green-800' : ''}
+                            ${leave.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : ''}
+                            ${leave.status === 'rejected' ? 'bg-red-100 text-red-800' : ''}
+                          `}
+                        >
+                          {String(t(`leave.${leave.status}`, leave.status))}
                         </Badge>
                       </TableCell>
-                      <TableCell>
-                        {leave.submittedDate ? format(new Date(leave.submittedDate), "dd MMM yyyy", { locale: th }) : ''}
-                      </TableCell>
+                      <TableCell>{leave.submittedDate ? new Date(leave.submittedDate).toLocaleDateString() : ''}</TableCell>
                       <TableCell className="text-center">
                         <Button
                           size="sm"
@@ -400,7 +409,7 @@ const EmployeeDetail = () => {
                           onClick={() => handleViewLeaveDetails(leave)}
                         >
                           <Eye className="w-4 h-4 mr-2" />
-                          {t('common.viewDetails')}
+                          {String(t('common.viewDetails'))}
                         </Button>
                       </TableCell>
                     </TableRow>

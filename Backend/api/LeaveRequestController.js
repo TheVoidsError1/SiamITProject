@@ -206,11 +206,71 @@
        }
      });
 
+     // GET /api/leave-request/my - Get all leave requests for the logged-in user
+     router.get('/my', async (req, res) => {
+       try {
+         const authHeader = req.headers.authorization;
+         if (!authHeader || !authHeader.startsWith('Bearer ')) {
+           return res.status(401).json({ status: 'error', message: 'No token provided' });
+         }
+         const token = authHeader.split(' ')[1];
+         const decoded = jwt.verify(token, SECRET);
+         const userId = decoded.userId;
+
+         const leaveRepo = AppDataSource.getRepository('LeaveRequest');
+         const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+         const leaves = await leaveRepo.find({ where: { Repid: userId }, order: { createdAt: 'DESC' } });
+
+         // Map to required fields, with leave type name
+         const result = await Promise.all(leaves.map(async l => {
+           let leaveTypeName = l.leaveType;
+           if (l.leaveType) {
+             const leaveTypeObj = await leaveTypeRepo.findOneBy({ id: l.leaveType });
+             if (leaveTypeObj) leaveTypeName = leaveTypeObj.leave_type;
+           }
+           // Calculate duration
+           let duration = '';
+           let durationType = '';
+           if (l.startTime && l.endTime) {
+             // Calculate hours (as float)
+             const [sh, sm] = l.startTime.split(':').map(Number);
+             const [eh, em] = l.endTime.split(':').map(Number);
+             let start = sh + sm / 60;
+             let end = eh + em / 60;
+             duration = (end - start).toFixed(2);
+             durationType = 'hour';
+           } else if (l.startDate && l.endDate) {
+             const start = new Date(l.startDate);
+             const end = new Date(l.endDate);
+             // Inclusive: (end - start) in days + 1
+             const diff = Math.abs((end - start) / (1000*60*60*24)) + 1;
+             duration = diff.toString();
+             durationType = 'day';
+           }
+           return {
+             id: l.id,
+             leaveType: leaveTypeName,
+             leaveDate: l.startDate || '',
+             duration,
+             durationType,
+             reason: l.reason,
+             status: l.status,
+             submittedDate: l.createdAt
+           };
+         }));
+
+         res.json({ status: 'success', data: result });
+       } catch (err) {
+         res.status(500).json({ status: 'error', message: err.message });
+       }
+     });
+
      // GET /api/leave-request/:id
      router.get('/:id', async (req, res) => {
        try {
          const leaveRepo = AppDataSource.getRepository('LeaveRequest');
          const userRepo = AppDataSource.getRepository('User');
+         const adminRepo = AppDataSource.getRepository('Admin');
          const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
          const { id } = req.params;
 
@@ -218,16 +278,118 @@
          if (!leave) return res.status(404).json({ success: false, message: 'Not found' });
 
          let user = null;
+         if (leave.Repid) {
+           console.log('Looking up Repid:', leave.Repid);
+           user = await userRepo.findOneBy({ id: leave.Repid });
+           console.log('User lookup result:', user);
+           if (!user) {
+             // Try admin
+             const admin = await adminRepo.findOneBy({ id: leave.Repid });
+             console.log('Admin lookup result:', admin);
+             if (admin) {
+               user = { User_name: admin.admin_name, department: admin.department, position: admin.position };
+             }
+           } else {
+             // Ensure user object has User_name property
+             user = { User_name: user.User_name, department: user.department, position: user.position };
+           }
+         }
          let leaveTypeObj = null;
-         if (leave.Repid) user = await userRepo.findOneBy({ id: leave.Repid });
          if (leave.leaveType) leaveTypeObj = await leaveTypeRepo.findOneBy({ id: leave.leaveType });
 
          res.json({
            success: true,
            data: {
              ...leave,
-             user,
+             user: user ? { User_name: user.User_name, department: user.department, position: user.position } : null,
              leaveTypeName: leaveTypeObj ? leaveTypeObj.leave_type : leave.leaveType,
+           }
+         });
+       } catch (err) {
+         res.status(500).json({ success: false, message: err.message });
+       }
+     });
+
+     // GET /api/leave-request/detail/:id - For dialog details
+     router.get('/detail/:id', async (req, res) => {
+       try {
+         const leaveRepo = AppDataSource.getRepository('LeaveRequest');
+         const userRepo = AppDataSource.getRepository('User');
+         const adminRepo = AppDataSource.getRepository('Admin');
+         const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+         const processRepo = AppDataSource.getRepository('ProcessCheck');
+         const { id } = req.params;
+
+         const leave = await leaveRepo.findOneBy({ id });
+         console.log('Detail API called for leave id:', id);
+         if (!leave) return res.status(404).json({ success: false, message: 'Not found' });
+         console.log('Leave row:', leave);
+
+         // Get name by looking up Repid in ProcessCheck, then correct table by role
+         let name = '-';
+         if (leave.Repid) {
+           const process = await processRepo.findOneBy({ Repid: leave.Repid });
+           console.log('Repid:', leave.Repid, 'Process:', process);
+           if (process && process.Role) {
+             if (process.Role === 'admin') {
+               const admin = await adminRepo.findOneBy({ id: leave.Repid });
+               console.log('Admin lookup:', admin);
+               if (admin && admin.admin_name) name = admin.admin_name;
+             } else {
+               const user = await userRepo.findOneBy({ id: leave.Repid });
+               console.log('User lookup:', user);
+               if (user && user.User_name) name = user.User_name;
+             }
+           }
+         }
+
+         // Get leave type name
+         let leaveTypeName = leave.leaveType;
+         if (leave.leaveType) {
+           const leaveTypeObj = await leaveTypeRepo.findOneBy({ id: leave.leaveType });
+           if (leaveTypeObj && leaveTypeObj.leave_type) leaveTypeName = leaveTypeObj.leave_type;
+         }
+
+         // Format submittedDate as DD/MM/YYYY
+         let submittedDate = '-';
+         if (leave.createdAt) {
+           const d = new Date(leave.createdAt);
+           if (!isNaN(d.getTime())) {
+             const day = String(d.getDate()).padStart(2, '0');
+             const month = String(d.getMonth() + 1).padStart(2, '0');
+             const year = d.getFullYear();
+             submittedDate = `${day}/${month}/${year}`;
+           }
+         }
+
+         // Format endDate as YYYY-MM-DD or '-'
+         let endDate = '-';
+         if (leave.endDate) {
+           const e = new Date(leave.endDate);
+           if (!isNaN(e.getTime())) {
+             endDate = e.toISOString().slice(0, 10);
+           }
+         }
+
+         // Format leaveDate (startDate) as YYYY-MM-DD or '-'
+         let leaveDate = '-';
+         if (leave.startDate) {
+           const s = new Date(leave.startDate);
+           if (!isNaN(s.getTime())) {
+             leaveDate = s.toISOString().slice(0, 10);
+           }
+         }
+
+         res.json({
+           success: true,
+           data: {
+             name,
+             status: leave.status,
+             leaveType: leaveTypeName,
+             leaveDate,
+             endDate,
+             reason: leave.reason,
+             submittedDate
            }
          });
        } catch (err) {
