@@ -59,16 +59,22 @@ module.exports = (AppDataSource) => {
           profile = await adminRepo.findOneBy({ id: proc.Repid });
           if (profile) {
             name = profile.admin_name;
-            position = profile.position;
-            department = profile.department;
+            // ดึงชื่อ position และ department
+            const posEntity = await AppDataSource.getRepository('Position').findOne({ where: { id: profile.position } });
+            const deptEntity = await AppDataSource.getRepository('Department').findOne({ where: { id: profile.department } });
+            position = posEntity ? posEntity.position_name : profile.position;
+            department = deptEntity ? deptEntity.department_name : profile.department;
             id = profile.id;
           }
         } else if (proc.Role === 'user') {
           profile = await userRepo.findOneBy({ id: proc.Repid });
           if (profile) {
             name = profile.User_name;
-            position = profile.position;
-            department = profile.department;
+            // ดึงชื่อ position และ department
+            const posEntity = await AppDataSource.getRepository('Position').findOne({ where: { id: profile.position } });
+            const deptEntity = await AppDataSource.getRepository('Department').findOne({ where: { id: profile.department } });
+            position = posEntity ? posEntity.position_name : profile.position;
+            department = deptEntity ? deptEntity.department_name : profile.department;
             id = profile.id;
           }
         }
