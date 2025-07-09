@@ -7,8 +7,8 @@ module.exports = (AppDataSource) => {
     try {
       const userId = req.user.userId;
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
-      // Fetch all leave requests for this user
-      const leaveHistory = await leaveRepo.find({ where: { supervisor: userId } });
+      // Fetch all leave requests where the current user is the requester
+      const leaveHistory = await leaveRepo.find({ where: { Repid: userId } });
       // Calculate days used
       let daysUsed = 0;
       leaveHistory.forEach(lr => {
@@ -16,7 +16,7 @@ module.exports = (AppDataSource) => {
         const end = new Date(lr.endDate);
         daysUsed += (end - start) / (1000 * 60 * 60 * 24) + 1;
       });
-      // Pending requests
+      // Pending requests for this user
       const pendingRequests = leaveHistory.filter(lr => lr.status === 'pending').length;
       // Approved requests
       const approvedRequests = leaveHistory.filter(lr => lr.status === 'approved').length;
