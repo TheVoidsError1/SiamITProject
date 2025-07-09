@@ -1,0 +1,106 @@
+[33m1c82292[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mdb_connect_kot[m[33m, [m[1;31morigin/V.1.0.0[m[33m)[m Update localization files to add "days" label in English and Thai. Enhance LeaveHistory component to calculate and display total leave days, approved requests, and pending requests dynamically.
+[33me81ee70[m Update localization files to include "Leave Duration" in English and Thai. Enhance LeaveHistory component with a translation function for leave types, ensuring proper display of localized labels.
+[33m64f1fe1[m Enhance LeaveHistory component to support additional leave types and localized labels. Update color coding for leave types including emergency leave with corresponding translations.
+[33m423dc65[m Add LeaveHistoryController and integrate leave history API into the frontend. Update LeaveHistory component to fetch and display user leave history with error handling and loading states. Include new leave upload images.
+[33mb1760f9[m แก้ไฟล์ admin+user สามารถ ส่งขอลาได้ และแสดงชื่อ admin ได้ ปรับ ให้ดึง positon มาแดสงแทน
+[33m61185b3[m แก้ฟังแบบฟ้อมของ admin
+[33m6776c97[m Refactor JWT secret handling in LeaveRequestController and authMiddleware to use environment variable. Add new leave upload images for documentation.
+[33mf3c29fe[m Update backend controllers and admin dashboard
+[33m5b90b34[m Merge remote-tracking branch 'origin/yorch_branch' into V.1.0.0
+[33mc09d906[m[33m ([m[1;31morigin/V.1.0.0-Backup[m[33m, [m[1;31morigin/V.0.9.0[m[33m)[m หน้าจักการระบบ + i18n
+[33m0b11932[m[33m ([m[1;31morigin/yorch_branch[m[33m)[m make register to save department and position in UUID
+[33m23a4544[m แก้ไขหน้า จัดการระบบเสร็จเรียบร้อย
+[33ma44d6c2[m employee detail info are showed now. make i18n for this page
+[33m60db3dd[m Update LeaveRequestController to track status change time and enhance AdminDashboard to display leave request time range in Thai. Add new leave upload image for better documentation.
+[33m0d4b6fc[m Enhance leave request rejection process by adding rejectedReason field in LeaveRequestController and updating AdminDashboard to handle rejection reasons. Implement dialog for inputting rejection reasons and ensure proper state management during the rejection process.
+[33m21630d9[m Add rejectedTime field to leave request entity and implement dashboard statistics endpoint in LeaveRequestController. Update leave status handling to include rejection time and enhance AdminDashboard to display rejection dates. Add new leave upload images.
+[33me8c9958[m Update English and Thai translations to include a new message for "noPendingRequests" in the leave request context, enhancing user feedback for pending leave requests.
+[33m0e7dd56[m Add history endpoint to LeaveRequestController for retrieving approved and rejected leave requests. Update AdminDashboard to fetch and display leave request history with improved layout and error handling. Enhance user experience with token validation and loading states.
+[33mdce57b7[m[33m ([m[1;31morigin/merge_branch[m[33m)[m merge with kot
+[33m08dab81[m merge again
+[33mf2a0250[m roel under name in sidebar apply i18n
+[33md6b2d29[m i18n for department badge and role under name in profile
+[33me39d8b2[m ลองi18n
+[33m54028fc[m Refactor AdminDashboard leave request detail dialog for improved layout and styling. Enhance information display with better formatting and additional details, including employee name, department, and contact information. Update button styling for a more cohesive user experience.
+[33mae76d73[m ลอง
+[33mfda144d[m ลองแก้
+[33mad26da1[m Enhance leave request functionality by adding approvedTime field to the leave request entity. Implement GET and PUT endpoints in LeaveRequestController for retrieving leave details and updating leave status, respectively. Update LeaveDetailDialog component to display additional leave information, including user name and approval time. Modify translations for new fields and ensure proper rendering of leave details in both English and Thai. pull ได้ แต้ leave.date i18n ไม่แปล
+[33m97e108f[m[33m ([m[1;31morigin/db_connect_kot[m[33m)[m จัดการระบบพนักงานได้แล้ว
+[33m3bbec99[m make drop down sorted as it need to be
+[33m650729b[m make drop down able to use i18n but need to change alittle in db store keys not labels
+[33m3b2ad47[m ยังบัค i18n แบะ ยังกด อนุมัต+ไม่อนุทัค+ดุรายละเอียดยังไม่ได้
+[33m1c5687d[m Update Vite configuration to change server port to 8081 and add API proxy. Refactor LeaveRequestController to use a specific route for leave requests and implement JWT authentication for user identification. Remove unused admin and user entity files, and streamline AdminDashboard component by recalculating statistics based on leave requests.
+[33m4abe6f6[m Profile for admin now work fine like user
+[33m6f07fe5[m bug profile page fixed!
+[33m836e947[m avatar image now work fine both profile and sidebar
+[33m4fe53d5[m Profile page work now. also add a little i18n for show success message eng and thai
+[33mc447fad[m Add Vite configuration for React with component tagging in development mode, and correct entity file name casing in Backend. Introduce new AdminDashboardController API file.
+[33m5f798f5[m Add translation support to LeaveForm and DateRangePicker components, updating labels and placeholders. Include new image uploads for leave requests.
+[33mcbc2f64[m Profile GET api and drop down for department and position are sorted now
+[33me826d1b[m Profile GET api
+[33m4de6a5c[m[33m ([m[1;31morigin/V.0.1.0-DB-Connect[m[33m)[m แก้หน้าจัดการระบบ
+[33m66b9e21[m หน้า แบบฟอร์มกขอลาเสร็จแล้ว pull ได้เลย
+[33m8d8de5f[m Update DateRangePicker to set minimum date to today by default and simplify date validation logic for selection
+[33m3a5ae16[m Add time validation and update LeaveForm to accept time input in HH:mm format. Change input type for start and end times to text, and implement regex validation for user input.
+[33mf0944e9[m Enhance DateRangePicker and LeaveForm components to support minimum date selection and improve field reset logic. Add calendar popover for hourly leave date selection and refactor leave type handling for better user experience.
+[33m26089c0[m Add LeaveRequest and TypeLeave controllers, update index.js for new routes, and enhance LeaveForm to fetch departments and leave types from API
+[33m8798910[m Update AppSidebar to use translation keys for navigation items and add missing translation entries for "allEmployees" in English and Thai locales.
+[33mc675a4d[m Add new translation keys for employee management, leave requests, and system errors in English and Thai locales
+[33mfceb4cb[m[33m ([m[1;31morigin/V.0.9.0-Backup[m[33m)[m Refactor components to integrate i18n support, replacing hardcoded strings with translation keys for better localization. Clean up imports and resolve merge conflicts in AppSidebar, Index, Login, and Register components.
+[33mb69d01c[m Resolve merge conflicts and add i18n support to all components
+[33m309548a[m Merge origin/db_yod with --allow-unrelated-histories
+[33mf546b00[m[33m ([m[1;31morigin/db_yod[m[33m)[m fix frontend
+[33mdd6d4f2[m แก้ให้เชื่อมกับ table ได้แล้ว
+[33m6f9cdb4[m fix index.js
+[33m57acaee[m pull ของ yorch
+[33m2b321c6[m position and department api
+[33mb48b116[m login เข้า admin และ user แยกกันได้แล้ว
+[33me754efb[m สร้างadminได้และ user
+[33m77b9ba0[m login ได้แล้ว
+[33ma544c28[m แก้ไ api
+[33m4ed9dd0[m แก้apiใหม่หมด
+[33mfad247c[m แก้ไขdatabase
+[33me8c85af[m ปรับปรุงและเพิ่มฟีเจอร์ระบบโปรไฟล์ผู้ใช้
+[33m3765a24[m แสดงข้อมลูในบุตลากรได้แล้วเหลือแต่edit
+[33m1bb5c62[m แสดงรายชื่อบุคลากร และดูลาเอียดได้แล้ว
+[33mef78ce3[m เอาหน้าแสดงข้อมูลเวลาการลามาได้แล้ว
+[33mcaac532[m merge kot
+[33m069d0a9[m merge ของ yorch เสร็จ
+[33m908c6fc[m[33m ([m[1;31morigin/V0.8.0-Backup[m[33m)[m ก่อน merge
+[33m129b42f[m[33m ([m[1;32mV.0.6.0[m[33m)[m ปรับปรุง backend และ frontend: เชื่อมต่อ API dashboard, ปรับ logic การนับสถิติ, และแก้ไข UI/UX ที่เกี่ยวข้อง
+[33m950638a[m feat: show profile image in sidebar,also show admin in employee page, fix leave duration logic, and improve leave request API
+[33m1213169[m[33m ([m[1;31morigin/V.0.6.0[m[33m)[m แก้ใขให้แสดงชื่อadminได้แล้ว
+[33m6bd5bdc[m show manament ประวัติ์และจัดการ
+[33mad33556[m now show manenment
+[33mde25dc7[m fix some bug
+[33md371085[m fix all user to also read admin
+[33m58fb1ca[m Clean fix
+[33m35582fc[m Fix more
+[33mf043d9b[m Fix: remove duplicate imports in Profile.tsx and resolve merge conflicts
+[33m4a356c6[m WIP: local changes to Backend/index.js
+[33m5732bf8[m Save local changes before merge
+[33m9726596[m style: ปรับขนาด layout และ card หน้า EmployeeManagement
+[33m53fd8ea[m[33m ([m[1;31morigin/V.0.6.0-Backup[m[33m)[m Mergeflies
+[33m5d39f53[m fix: อัปโหลดรูปโปรไฟล์และแก้ไขการบันทึก avatar_url ในฐานข้อมูล process_check
+[33mfbcbddd[m[33m ([m[1;31morigin/V.0.5.1[m[33m)[m TestMerge
+[33ma25dbe2[m Add midController for user/admin deletion and register in index.js
+[33m2208af3[m[33m ([m[1;31morigin/V.0.4.1[m[33m)[m fixmaybe
+[33m909ea5e[m bug-admin
+[33m84d52b0[m[33m ([m[1;31morigin/V.0.4.0[m[33m)[m fix
+[33m1be172d[m Admin Dashboard Controller Added
+[33m6b2d320[m[33m ([m[1;33mtag: [m[1;33mV.0.4.0-BackupFile[m[33m, [m[1;31morigin/V.0.4.0-Backup[m[33m, [m[1;31morigin/V.0.3.0[m[33m)[m add Upate Proflie
+[33m52eb2de[m fixProcess
+[33m2aed842[m Fix-leave
+[33m3149ec7[m fixRoute
+[33m6af89eb[m fix-Leave-Request
+[33m1f5028c[m[33m ([m[1;31morigin/V.0.3.0-Backup[m[33m)[m fix-leaveRequest
+[33m718fef1[m[33m ([m[1;31morigin/V.0.2.0[m[33m)[m fix regitster
+[33m145da0a[m แก้ข้อมูลบ้างส่วนได้แล้วและ run serve ได้
+[33m0dd789d[m[33m ([m[1;31morigin/V.0.2.0-Backup[m[33m)[m login User&admin but not use token
+[33m14df952[m getalluser, getbyid, update, delete.
+[33mac71870[m Test show data
+[33m36c8d4e[m add login without admin TestV.0.1
+[33m89b7ea3[m ิ่ม swagger doc ให้ /register
+[33m07756f7[m fix db table
+[33m9f903b9[m feat: DB Connect & add new entities in EntityTable
+[33m1c8805c[m[33m ([m[1;33mtag: [m[1;33mv1.0.0-backup[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/backup[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmain[m[33m)[m Initial commit: SiamIT Leave Management System
