@@ -9,10 +9,35 @@ import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const Index = () => {
   const { t } = useTranslation();
+  const [dashboardStats, setDashboardStats] = useState<any>(null);
+  const [loadingDashboardStats, setLoadingDashboardStats] = useState(true);
+  const [errorDashboardStats, setErrorDashboardStats] = useState("");
+
+  useEffect(() => {
+    setLoadingDashboardStats(true);
+    setErrorDashboardStats("");
+    const token = localStorage.getItem("token");
+    fetch("/api/dashboard-stats", {
+      headers: {
+        Authorization: token ? `Bearer ${token}` : undefined,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.status === "success") {
+          setDashboardStats(data.data);
+        } else {
+          setErrorDashboardStats(t('error.cannotLoadStats'));
+        }
+      })
+      .catch(() => setErrorDashboardStats(t('error.apiConnectionError')))
+      .finally(() => setLoadingDashboardStats(false));
+  }, [t]);
+
   const stats = [
     {
       title: t('main.daysRemaining'),
-      value: "12",
+      value: dashboardStats ? dashboardStats.remainingDays : "-",
       unit: t('common.days'),
       icon: Calendar,
       color: "text-blue-600",
@@ -20,7 +45,7 @@ const Index = () => {
     },
     {
       title: t('main.daysUsed'),
-      value: "8",
+      value: dashboardStats ? dashboardStats.daysUsed : "-",
       unit: t('common.days'),
       icon: Clock,
       color: "text-green-600",
@@ -28,7 +53,7 @@ const Index = () => {
     },
     {
       title: t('main.pendingRequests'),
-      value: "2",
+      value: dashboardStats ? dashboardStats.pendingRequests : "-",
       unit: t('main.requests'),
       icon: Users,
       color: "text-orange-600",
@@ -36,7 +61,7 @@ const Index = () => {
     },
     {
       title: t('main.approvalRate'),
-      value: "95",
+      value: dashboardStats ? dashboardStats.approvalRate : "-",
       unit: "%",
       icon: TrendingUp,
       color: "text-purple-600",
@@ -113,37 +138,43 @@ const Index = () => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <Card 
-                key={stat.title} 
-                className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 shadow-md"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className={`w-12 h-12 ${stat.bgColor} rounded-lg flex items-center justify-center`}>
-                      <Icon className={`w-6 h-6 ${stat.color}`} />
+          {loadingDashboardStats ? (
+            <div className="col-span-4 text-center py-8 text-gray-500">{t('common.loading')}</div>
+          ) : errorDashboardStats ? (
+            <div className="col-span-4 text-center py-8 text-red-500">{errorDashboardStats}</div>
+          ) : (
+            stats.map((stat, index) => {
+              const Icon = stat.icon;
+              return (
+                <Card 
+                  key={stat.title} 
+                  className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 shadow-md"
+                  style={{ animationDelay: `${index * 100}ms` }}
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between">
+                      <div className={`w-12 h-12 ${stat.bgColor} rounded-lg flex items-center justify-center`}>
+                        <Icon className={`w-6 h-6 ${stat.color}`} />
+                      </div>
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-1">
-                    <p className="text-2xl font-bold">
-                      {stat.value}
-                      <span className="text-sm font-normal text-muted-foreground ml-1">
-                        {stat.unit}
-                      </span>
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      {stat.title}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-1">
+                      <p className="text-2xl font-bold">
+                        {stat.value}
+                        <span className="text-sm font-normal text-muted-foreground ml-1">
+                          {stat.unit}
+                        </span>
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {stat.title}
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })
+          )}
         </div>
 
         {/* Quick Actions */}

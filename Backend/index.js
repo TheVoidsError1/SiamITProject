@@ -166,6 +166,9 @@ app.use('/api/leave-request', leaveRequestController);
 const leaveHistoryController = require('./api/LeaveHistoryController')(AppDataSource);
 app.use('/api/leave-history', leaveHistoryController);
 
+const dashboardIndexController = require('./api/DashboardIndexController')(AppDataSource);
+app.use('/api', dashboardIndexController);
+
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 }); 
