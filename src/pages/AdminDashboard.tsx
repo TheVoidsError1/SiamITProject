@@ -342,7 +342,7 @@ const AdminDashboard = () => {
                                   ? JSON.parse(request.user).User_name
                                   : request.user?.User_name || "-"}
                               </h3>
-                              <p className="text-sm text-gray-600">{request.leaveTypeName}</p>
+                              <p className="text-sm text-gray-600">{request.leaveTypeName ? String(t(`leaveTypes.${String(request.leaveTypeName)}`, String(request.leaveTypeName))) : '-'}</p>
                             </div>
                             <Badge variant="outline" className="text-orange-600 border-orange-200">
                               {t('admin.pending')}
@@ -460,7 +460,7 @@ const AdminDashboard = () => {
                             {/* ฝั่งซ้ายล่าง */}
                             <div className="flex-1">
                               <div className="font-bold text-lg mb-1">{request.user?.User_name || "-"}</div>
-                              <div className="text-base text-gray-700 mb-2">{request.leaveTypeName}</div>
+                              <div className="text-base text-gray-700 mb-2">{request.leaveTypeName ? String(t(`leaveTypes.${String(request.leaveTypeName)}`, String(request.leaveTypeName))) : '-'}</div>
                               <div className="text-sm text-gray-700 mb-1">
                                 {t('leave.date')}: {startStr} - {endStr} ({leaveDays} {t('leave.days')})
                               </div>
@@ -510,7 +510,7 @@ const AdminDashboard = () => {
                       <span className="font-semibold text-blue-800">{t('leave.department', 'แผนก')}:</span> {selectedRequest.user?.department || "-"}
                     </div>
                     <div>
-                      <span className="font-semibold text-blue-800">{t('leave.type', 'ประเภทการลา')}:</span> {selectedRequest.leaveTypeName}
+                      <span className="font-semibold text-blue-800">{t('leave.type', 'ประเภทการลา')}:</span> {selectedRequest.leaveTypeName ? String(t(`leaveTypes.${String(selectedRequest.leaveTypeName)}`, String(selectedRequest.leaveTypeName))) : '-'}
                     </div>
                     <div>
                       <span className="font-semibold text-blue-800">{t('leave.reason', 'เหตุผล')}:</span> {selectedRequest.reason}
