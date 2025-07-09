@@ -137,14 +137,15 @@
     "reason": "Reason",
     "contact": "Contact Number",
     "submittedDate": "Submitted Date",
-    "attachment": "Attachment"
+    "attachment": "Attachment",
+    "duration": "Leave Duration"
   },
   "leaveTypes": {
-    "vacation": "Vacation Leave",
-    "sick": "Sick Leave",
-    "personal": "Personal Leave",
-    "maternity": "Maternity Leave",
-    "emergency": "Emergency Leave"
+    "vacation": "Vacation ",
+    "sick": "Sick ",
+    "personal": "Personal ",
+    "maternity": "Maternity ",
+    "emergency": "Emergency "
   },
   "departments": {
     "itDepartment": "IT Department",

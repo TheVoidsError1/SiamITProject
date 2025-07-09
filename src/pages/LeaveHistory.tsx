@@ -80,6 +80,25 @@ const LeaveHistory = () => {
     return "text-gray-600";
   };
 
+  // ฟังก์ชันแปลประเภทการลาให้ตรงกับภาษาที่เลือก
+  const translateLeaveType = (type: string) => {
+    const typeLower = (type || '').toLowerCase();
+    // mapping: key = lower-case, value = i18n key
+    const typeMap: Record<string, string> = {
+      'vacation': 'leaveTypes.vacation',
+      'ลาพักผ่อน': 'leaveTypes.vacation',
+      'sick': 'leaveTypes.sick',
+      'ลาป่วย': 'leaveTypes.sick',
+      'personal': 'leaveTypes.personal',
+      'ลากิจ': 'leaveTypes.personal',
+      'emergency': 'leaveTypes.emergency',
+      'ลาฉุกเฉิน': 'leaveTypes.emergency',
+    };
+    const i18nKey = typeMap[typeLower];
+    if (i18nKey) return t(i18nKey);
+    return type; // fallback
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="border-b bg-white/80 backdrop-blur-sm">
@@ -155,7 +174,7 @@ const LeaveHistory = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className={`text-lg font-semibold ${getTypeColor(leave.type)}`}>
-                          {leave.type}
+                          {translateLeaveType(leave.type)}
                         </div>
                         {getStatusBadge(leave.status)}
                       </div>

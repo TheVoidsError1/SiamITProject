@@ -137,7 +137,8 @@
     "reason": "เหตุผล",
     "contact": "เบอร์ติดต่อ",
     "submittedDate": "วันที่ส่งคำขอ",
-    "attachment": "ไฟล์แนบ"
+    "attachment": "ไฟล์แนบ",
+    "duration": "ระยะเวลาการลา"
   },
   "leaveTypes": {
     "vacation": "ลาพักผ่อน",
