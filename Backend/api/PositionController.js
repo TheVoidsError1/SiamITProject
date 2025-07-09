@@ -121,39 +121,5 @@ module.exports = (AppDataSource) => {
     }
   });
 
-/**
-@swagger
-/api/positions:
-get:
-summary: Get all positions
-tags:
-Positions
-responses:
-200:
-description: A list of positions
-content:
-application/json:
-schema:
-type: object
-properties:
-status:
-type: string
-data:
-type: array
-items:
-type: object
-message:
-type: string*/
-
-  router.get('/positions', async (req, res) => {
-    try {
-      const positionRepo = AppDataSource.getRepository('Position');
-      const positions = await positionRepo.find();
-      res.json({ status: 'success', data: positions, message: 'Positions fetched successfully' });
-    } catch (err) {
-      res.status(500).json({ status: 'error', data: [], message: err.message });
-    }
-  });
-
   return router;
 };

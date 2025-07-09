@@ -121,39 +121,5 @@ module.exports = (AppDataSource) => {
     }
   });
 
-  /**
-  @swagger
-  /api/departments:
-  get:
-  summary: Get all departments
-  tags:
-  Departments
-  responses:
-  200:
-  description: A list of departments
-  content:
-  application/json:
-  schema:
-  type: object
-  properties:
-  status:
-  type: string
-  data:
-  type: array
-  items:
-  type: object
-  message:
-  type: string*/
-
-    router.get('/departments', async (req, res) => {
-      try {
-        const departmentRepo = AppDataSource.getRepository('Department');
-        const departments = await departmentRepo.find();
-        res.json({ status: 'success', data: departments, message: 'Departments fetched successfully' });
-      } catch (err) {
-        res.status(500).json({ status: 'error', data: [], message: err.message });
-      }
-    });
-
   return router;
 };

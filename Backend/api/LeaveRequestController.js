@@ -4,7 +4,7 @@
    const path = require('path');
    const fs = require('fs');
    const jwt = require('jsonwebtoken');
-   const SECRET = 'your_secret_key';
+   const SECRET = process.env.JWT_SECRET || 'your_secret_key';
 
    // ตั้งค่าที่เก็บไฟล์
    const storage = multer.diskStorage({
@@ -32,8 +32,12 @@
          const authHeader = req.headers.authorization;
          if (authHeader && authHeader.startsWith('Bearer ')) {
            const token = authHeader.split(' ')[1];
-           const decoded = jwt.verify(token, SECRET);
-           userId = decoded.userId;
+           try {
+             const decoded = jwt.verify(token, SECRET);
+             userId = decoded.userId;
+           } catch (err) {
+             return res.status(401).json({ status: 'error', message: 'Invalid or expired token' });
+           }
          }
          const {
            employeeType, leaveType, personalLeaveType, startDate, endDate,
@@ -211,22 +215,26 @@
          const authHeader = req.headers.authorization;
          if (!approverName && authHeader && authHeader.startsWith('Bearer ')) {
            const token = authHeader.split(' ')[1];
-           const decoded = jwt.verify(token, SECRET);
-           let user = await userRepo.findOneBy({ id: decoded.userId });
-           if (user) {
-             approverName = user.User_name;
-           } else {
-             // fallback หาใน process_check
-             const processRepo = AppDataSource.getRepository('ProcessCheck');
-             const processCheck = await processRepo.findOneBy({ Repid: decoded.userId });
-             if (processCheck) {
-               // หาใน admin table
-               const adminRepo = AppDataSource.getRepository('admin');
-               const admin = await adminRepo.findOneBy({ id: decoded.userId });
-               approverName = admin ? admin.admin_name : processCheck.Email;
+           try {
+             const decoded = jwt.verify(token, SECRET);
+             let user = await userRepo.findOneBy({ id: decoded.userId });
+             if (user) {
+               approverName = user.User_name;
              } else {
-               approverName = null;
+               // fallback หาใน process_check
+               const processRepo = AppDataSource.getRepository('ProcessCheck');
+               const processCheck = await processRepo.findOneBy({ Repid: decoded.userId });
+               if (processCheck) {
+                 // หาใน admin table
+                 const adminRepo = AppDataSource.getRepository('admin');
+                 const admin = await adminRepo.findOneBy({ id: decoded.userId });
+                 approverName = admin ? admin.admin_name : processCheck.Email;
+               } else {
+                 approverName = null;
+               }
              }
+           } catch (err) {
+             return res.status(401).json({ success: false, message: 'Invalid or expired token' });
            }
          }
 
