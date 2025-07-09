@@ -16,6 +16,23 @@ module.exports = (AppDataSource) => {
         const end = new Date(lr.endDate);
         daysUsed += (end - start) / (1000 * 60 * 60 * 24) + 1;
       });
+      // Only use approved leaves for stats
+      const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+      const approvedLeaves = leaveHistory.filter(lr => lr.status === 'approved');
+      // Calculate leave days by type using leaveType name
+      const leaveTypeStats = {};
+      for (const lr of approvedLeaves) {
+        let leaveTypeName = lr.leaveType;
+        if (leaveTypeName) {
+          const leaveType = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
+          leaveTypeName = leaveType ? leaveType.leave_type : leaveTypeName;
+        }
+        const start = new Date(lr.startDate);
+        const end = new Date(lr.endDate);
+        const days = (end - start) / (1000 * 60 * 60 * 24) + 1;
+        if (!leaveTypeStats[leaveTypeName]) leaveTypeStats[leaveTypeName] = 0;
+        leaveTypeStats[leaveTypeName] += days;
+      }
       // Pending requests for this user
       const pendingRequests = leaveHistory.filter(lr => lr.status === 'pending').length;
       // Approved requests
@@ -32,7 +49,8 @@ module.exports = (AppDataSource) => {
           daysUsed,
           pendingRequests,
           approvalRate,
-          remainingDays
+          remainingDays,
+          leaveTypeStats
         },
         message: 'Dashboard stats fetched successfully'
       });
