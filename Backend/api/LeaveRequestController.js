@@ -242,14 +242,9 @@
            } else if (l.startDate && l.endDate) {
              const start = new Date(l.startDate);
              const end = new Date(l.endDate);
-             // If same day, duration is 1
-             if (start.toDateString() === end.toDateString()) {
-               duration = '1';
-             } else {
-               // Duration is (end - start) in days (not inclusive of end date)
-               const diff = Math.abs((end - start) / (1000*60*60*24));
-               duration = diff.toString();
-             }
+             // Inclusive: (end - start) in days + 1
+             const diff = Math.abs((end - start) / (1000*60*60*24)) + 1;
+             duration = diff.toString();
              durationType = 'day';
            }
            return {
