@@ -68,9 +68,15 @@ const LeaveHistory = () => {
   };
 
   const getTypeColor = (type: string) => {
-    if (type === t('leaveTypes.vacation')) return "text-blue-600";
-    if (type === t('leaveTypes.sick')) return "text-red-600";
-    if (type === t('leaveTypes.personal')) return "text-green-600";
+    const tVacation = t('leaveTypes.vacation');
+    const tSick = t('leaveTypes.sick');
+    const tPersonal = t('leaveTypes.personal');
+    const tEmergency = t('leaveTypes.emergency');
+    const typeLower = (type || '').toLowerCase();
+    if (type === tVacation || typeLower === 'vacation' || typeLower === 'ลาพักผ่อน') return "text-blue-600";
+    if (type === tSick || typeLower === 'sick' || typeLower === 'ลาป่วย') return "text-red-600";
+    if (type === tPersonal || typeLower === 'personal' || typeLower === 'ลากิจ') return "text-green-600";
+    if (type === tEmergency || typeLower === 'emergency' || typeLower === 'ลาฉุกเฉิน') return "text-orange-500";
     return "text-gray-600";
   };
 
