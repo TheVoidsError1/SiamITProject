@@ -10,10 +10,12 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { User, Mail, Building, Briefcase, Shield, Calendar, Camera, Save } from 'lucide-react';
+import { User, Mail, Building, Briefcase, Shield, Calendar, Camera, Save, Bell, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../components/ui/select";
+import ChangePasswordDialog from "@/components/dialogs/ChangePasswordDialog";
+import { cn } from "@/lib/utils";
 
 const Profile = () => {
   const { t } = useTranslation();
@@ -35,6 +37,7 @@ const Profile = () => {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [positionsLoaded, setPositionsLoaded] = useState(false);
   const [departmentsLoaded, setDepartmentsLoaded] = useState(false);
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   const getKeyByLabel = (label: string, options: string[], tPrefix: string) => {
     for (const key of options) {
@@ -288,113 +291,102 @@ const Profile = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="border-b bg-white/80 backdrop-blur-sm">
-        <div className="flex h-16 items-center px-4 gap-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100">
+      <div className="border-b bg-white/80 backdrop-blur-sm shadow-sm">
+        <div className="flex h-20 items-center px-8 gap-4">
           <SidebarTrigger />
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">{t('navigation.profile')}</h1>
-            <p className="text-sm text-gray-600">{t('profile.profileTitle')}</p>
+            <h1 className="text-3xl font-bold text-blue-800 tracking-tight">{t('navigation.profile')}</h1>
+            <p className="text-base text-gray-500 font-light mt-1">{t('profile.profileTitle')}</p>
           </div>
           <LanguageSwitcher />
         </div>
       </div>
 
-      <div className="p-6 space-y-6 animate-fade-in">
+      <div className="max-w-3xl mx-auto p-6 space-y-10 animate-fade-in">
         {/* Profile Header */}
-        <Card className="border-0 shadow-lg">
-          <CardContent className="p-6">
-            <div className="flex items-center space-x-6">
-              <div className="relative">
-                <Avatar className="h-24 w-24">
-                  <AvatarImage src={avatarUrl || undefined} />
-                  <AvatarFallback className="text-lg font-semibold bg-primary text-primary-foreground">
-                    {user?.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
-                  </AvatarFallback>
-                </Avatar>
-                <button
-                  type="button"
-                  className="absolute bottom-0 right-0 p-2 bg-primary rounded-full text-white hover:bg-primary/90 transition-colors"
-                  onClick={handleCameraClick}
-                >
-                  <Camera className="h-4 w-4" />
-                </button>
-                <input
-                  type="file"
-                  accept="image/*"
-                  ref={fileInputRef}
-                  style={{ display: 'none' }}
-                  onChange={handleFileChange}
-                />
-              </div>
-              
-              <div className="flex-1">
-                <h2 className="text-2xl font-bold text-gray-900">{user?.full_name}</h2>
-                <p className="text-gray-600 mb-2">{user?.position ? t(`positions.${user.position}`) : '-'}</p>
-                <div className="flex items-center gap-4">
-                  <Badge variant={user?.role === 'admin' ? 'default' : 'secondary'} className="flex items-center gap-1">
-                    <Shield className="h-3 w-3" />
-                    {user?.role === 'admin' ? t('main.systemAdmin') : (user?.position ? t(`positions.${user.position}`) : t('main.employee'))}
-                  </Badge>
-                  <Badge variant="outline" className="flex items-center gap-1">
-                    <Building className="h-3 w-3" />
-                    {user?.department ? t(`departments.${user.department}`) : '-'}
-                  </Badge>
-                </div>
-              </div>
+        <div className="flex flex-col items-center -mt-16">
+          <div className="relative">
+            <Avatar className="h-28 w-28 shadow-lg border-4 border-white bg-white/80 backdrop-blur rounded-full">
+              <AvatarImage src={avatarUrl || undefined} />
+              <AvatarFallback className="text-2xl font-bold bg-blue-200 text-blue-900">
+                {user?.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
+              </AvatarFallback>
+            </Avatar>
+            <button
+              type="button"
+              className="absolute bottom-2 right-2 p-2 bg-blue-500 text-white rounded-full shadow-md border-2 border-white hover:bg-blue-600 transition-colors"
+              onClick={handleCameraClick}
+              aria-label="Change avatar"
+            >
+              <Camera className="h-5 w-5" />
+            </button>
+            <input
+              type="file"
+              accept="image/*"
+              ref={fileInputRef}
+              style={{ display: 'none' }}
+              onChange={handleFileChange}
+            />
+          </div>
+          <div className="mt-4 text-center">
+            <h2 className="text-2xl font-bold text-blue-900 tracking-tight">{user?.full_name}</h2>
+            <p className="text-gray-500 mb-2 text-base">{user?.position ? t(`positions.${user.position}`) : '-'}</p>
+            <div className="flex items-center justify-center gap-3 mt-2">
+              <Badge variant={user?.role === 'admin' ? 'default' : 'secondary'} className="flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 shadow-sm">
+                <Shield className="h-4 w-4" />
+                {user?.role === 'admin' ? t('main.systemAdmin') : (user?.position ? t(`positions.${user.position}`) : t('main.employee'))}
+              </Badge>
+              <Badge variant="outline" className="flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 shadow-sm">
+                <Building className="h-4 w-4" />
+                {user?.department ? t(`departments.${user.department}`) : '-'}
+              </Badge>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
-        <Tabs defaultValue="personal" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="personal">{t('profile.personalInfo')}</TabsTrigger>
-            <TabsTrigger value="leave">{t('profile.leaveRights')}</TabsTrigger>
-            <TabsTrigger value="settings">{t('profile.settings')}</TabsTrigger>
-          </TabsList>
+        <div className="bg-white/80 backdrop-blur rounded-3xl shadow-xl p-0 overflow-hidden">
+          <Tabs defaultValue="personal" className="">
+            <TabsList className="flex w-full bg-transparent border-b border-blue-100">
+              <TabsTrigger value="personal" className="flex-1 text-lg font-medium py-4 rounded-none data-[state=active]:border-b-4 data-[state=active]:border-blue-500 data-[state=active]:text-blue-700 transition-all">{t('profile.personalInfo')}</TabsTrigger>
+              <TabsTrigger value="leave" className="flex-1 text-lg font-medium py-4 rounded-none data-[state=active]:border-b-4 data-[state=active]:border-blue-400 data-[state=active]:text-blue-700 transition-all">{t('profile.leaveRights')}</TabsTrigger>
+              <TabsTrigger value="settings" className="flex-1 text-lg font-medium py-4 rounded-none data-[state=active]:border-b-4 data-[state=active]:border-blue-300 data-[state=active]:text-blue-700 transition-all">{t('profile.settings')}</TabsTrigger>
+            </TabsList>
 
-          <TabsContent value="personal" className="space-y-6">
-            <Card className="border-0 shadow-md">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5 text-primary" />
-                  {t('profile.personalInfo')}
-                </CardTitle>
-                <CardDescription>{t('profile.personalInfoDesc')}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="full_name">{t('auth.fullName')}</Label>
+            <TabsContent value="personal" className="p-8 bg-white/90 rounded-3xl">
+              <form className="space-y-6" onSubmit={e => { e.preventDefault(); handleSave(); }}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                  <div className="space-y-3">
+                    <Label htmlFor="full_name" className="text-base text-blue-900 font-medium">{t('auth.fullName')}</Label>
                     <Input
                       id="full_name"
                       value={formData.full_name}
                       onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
+                      className="input-blue"
                     />
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="email">{t('auth.email')}</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="email" className="text-base text-blue-900 font-medium">{t('auth.email')}</Label>
                     <Input
                       id="email"
                       type="email"
                       value={formData.email}
                       onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                      className="input-blue"
                     />
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="position">{t('auth.position')}</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="position" className="text-base text-blue-900 font-medium">{t('auth.position')}</Label>
                     <Select
                       value={formData.position}
                       onValueChange={(value) => setFormData(prev => ({ ...prev, position: value }))}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="input-blue">
                         <SelectValue placeholder={t('positions.selectPosition')} />
                       </SelectTrigger>
                       <SelectContent>
                         {positions.map((key) => (
-                          <SelectItem key={key} value={key}>
+                          <SelectItem key={key} value={key} className="text-blue-900">
                             {key === '' || key.toLowerCase() === 'none' || key.toLowerCase() === 'no position'
                               ? t('positions.notSpecified')
                               : t(`positions.${key}`)}
@@ -403,19 +395,18 @@ const Profile = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="department">{t('auth.department')}</Label>
+                  <div className="space-y-3">
+                    <Label htmlFor="department" className="text-base text-blue-900 font-medium">{t('auth.department')}</Label>
                     <Select
                       value={formData.department}
                       onValueChange={(value) => setFormData(prev => ({ ...prev, department: value }))}
                     >
-                      <SelectTrigger>
+                      <SelectTrigger className="input-blue">
                         <SelectValue placeholder={t('departments.selectDepartment')} />
                       </SelectTrigger>
                       <SelectContent>
                         {departments.map((key) => (
-                          <SelectItem key={key} value={key}>
+                          <SelectItem key={key} value={key} className="text-blue-900">
                             {key === '' || key.toLowerCase() === 'none' || key.toLowerCase() === 'no department'
                               ? t('departments.notSpecified', t('departments.selectDepartment'))
                               : t(`departments.${key}`)}
@@ -425,98 +416,118 @@ const Profile = () => {
                     </Select>
                   </div>
                 </div>
-                
-                <Button onClick={handleSave} disabled={saving || loading} className="w-full md:w-auto">
-                  {saving ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      {t('profile.saving')}
-                    </>
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4 mr-2" />
-                      {t('profile.saveData')}
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="leave" className="space-y-6">
-            <Card className="border-0 shadow-md">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 text-primary" />
-                  {t('profile.leaveRights')}
-                </CardTitle>
-                <CardDescription>{t('profile.leaveRightsDesc')}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {leaveStats.map((stat, index) => (
-                    <div key={index} className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">{stat.label}</span>
-                        <span className="text-sm text-gray-500">
-                          {stat.used}/{stat.total} {t('common.days')}
-                        </span>
-                      </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className={`${stat.color} h-2 rounded-full transition-all duration-500`}
-                          style={{
-                            width: `${(stat.used / stat.total) * 100}%`
-                          }}
-                        ></div>
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {t('common.remaining')} {stat.total - stat.used} {t('common.days')}
-                      </div>
-                    </div>
-                  ))}
+                <div className="flex justify-end">
+                  <Button type="submit" disabled={saving || loading} className="btn-blue px-8 py-2 text-lg">
+                    {saving ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        {t('profile.saving')}
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-5 w-5 mr-2" />
+                        {t('profile.saveData')}
+                      </>
+                    )}
+                  </Button>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </form>
+            </TabsContent>
 
-          <TabsContent value="settings" className="space-y-6">
-            <Card className="border-0 shadow-md">
-              <CardHeader>
-                <CardTitle>{t('profile.settings')}</CardTitle>
-                <CardDescription>{t('profile.settingsDesc')}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <h3 className="font-medium">{t('profile.emailNotifications')}</h3>
-                      <p className="text-sm text-gray-500">{t('profile.emailNotificationsDesc')}</p>
+            <TabsContent value="leave" className="p-8 bg-white/90 rounded-3xl">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                {leaveStats.map((stat, index) => (
+                  <div key={index} className="space-y-3">
+                    <div className="flex justify-between items-center">
+                      <span className="text-base font-medium text-blue-900">{stat.label}</span>
+                      <span className="text-base text-gray-500">
+                        {stat.used}/{stat.total} {t('common.days')}
+                      </span>
                     </div>
-                    <Button variant="outline" size="sm">{t('common.enable')}</Button>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <h3 className="font-medium">{t('profile.pushNotifications')}</h3>
-                      <p className="text-sm text-gray-500">{t('profile.pushNotificationsDesc')}</p>
+                    <div className="w-full bg-blue-100 rounded-full h-2">
+                      <div
+                        className={`${stat.color} h-2 rounded-full transition-all duration-500`}
+                        style={{ width: `${(stat.used / stat.total) * 100}%` }}
+                      ></div>
                     </div>
-                    <Button variant="outline" size="sm">{t('common.enable')}</Button>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                      <h3 className="font-medium">{t('profile.changePassword')}</h3>
-                      <p className="text-sm text-gray-500">{t('profile.changePasswordDesc')}</p>
+                    <div className="text-xs text-blue-500">
+                      {t('common.remaining')} {stat.total - stat.used} {t('common.days')}
                     </div>
-                    <Button variant="outline" size="sm">{t('common.change')}</Button>
                   </div>
+                ))}
+              </div>
+            </TabsContent>
+
+            <TabsContent value="settings" className="p-8 bg-white/90 rounded-3xl">
+              <div className="space-y-6">
+                <div className="flex items-center justify-between p-6 border rounded-2xl bg-blue-50 shadow-sm">
+                  <div>
+                    <h3 className="font-semibold text-blue-900 flex items-center gap-2"><Mail className="h-5 w-5 text-blue-400" /> {t('profile.emailNotifications')}</h3>
+                    <p className="text-sm text-gray-500 mt-1">{t('profile.emailNotificationsDesc')}</p>
+                  </div>
+                  <Button variant="outline" size="sm" className="btn-blue-outline">{t('common.enable')}</Button>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
+                <div className="flex items-center justify-between p-6 border rounded-2xl bg-blue-50 shadow-sm">
+                  <div>
+                    <h3 className="font-semibold text-blue-900 flex items-center gap-2"><Bell className="h-5 w-5 text-blue-400" /> {t('profile.pushNotifications')}</h3>
+                    <p className="text-sm text-gray-500 mt-1">{t('profile.pushNotificationsDesc')}</p>
+                  </div>
+                  <Button variant="outline" size="sm" className="btn-blue-outline">{t('common.enable')}</Button>
+                </div>
+                <div className="flex items-center justify-between p-6 border rounded-2xl bg-blue-50 shadow-sm">
+                  <div>
+                    <h3 className="font-semibold text-blue-900 flex items-center gap-2"><Lock className="h-5 w-5 text-blue-400" /> {t('profile.changePassword')}</h3>
+                    <p className="text-sm text-gray-500 mt-1">{t('profile.changePasswordDesc')}</p>
+                  </div>
+                  <Button variant="outline" size="sm" className="btn-blue-outline" onClick={() => setChangePasswordOpen(true)}>{t('common.change')}</Button>
+                </div>
+              </div>
+              <ChangePasswordDialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen} />
+            </TabsContent>
+          </Tabs>
+        </div>
       </div>
+      <style jsx>{`
+        .input-blue {
+          background: rgba(255,255,255,0.7);
+          border: 1.5px solid #bfdbfe;
+          border-radius: 1rem;
+          box-shadow: 0 1px 4px 0 rgba(31, 38, 135, 0.04);
+          padding: 0.75rem 1.25rem;
+          font-size: 1rem;
+          color: #1e293b;
+          transition: border 0.2s, box-shadow 0.2s;
+        }
+        .input-blue:focus {
+          border: 1.5px solid #3b82f6;
+          box-shadow: 0 0 0 2px #3b82f644;
+          outline: none;
+        }
+        .btn-blue {
+          background: linear-gradient(90deg, #3b82f6 0%, #60a5fa 100%);
+          color: #fff;
+          border-radius: 1rem;
+          font-weight: 600;
+          box-shadow: 0 2px 8px 0 rgba(31, 38, 135, 0.08);
+          border: none;
+        }
+        .btn-blue:hover {
+          background: linear-gradient(90deg, #2563eb 0%, #3b82f6 100%);
+          color: #fff;
+          box-shadow: 0 4px 16px 0 rgba(31, 38, 135, 0.12);
+        }
+        .btn-blue-outline {
+          border: 1.5px solid #3b82f6;
+          color: #2563eb;
+          border-radius: 1rem;
+          font-weight: 500;
+          background: transparent;
+        }
+        .btn-blue-outline:hover {
+          background: #eff6ff;
+          color: #1e293b;
+        }
+      `}</style>
     </div>
   );
 };

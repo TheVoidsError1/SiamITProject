@@ -15,6 +15,7 @@ import { th } from "date-fns/locale";
 import { LeaveDetailDialog } from "@/components/dialogs/LeaveDetailDialog";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { Avatar } from "@/components/ui/avatar";
 
 const EmployeeDetail = () => {
   const { id } = useParams();
@@ -173,8 +174,15 @@ const EmployeeDetail = () => {
   if (!employee) return <div>{t('employee.notFound')}</div>;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="border-b bg-white/80 backdrop-blur-sm">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-100 to-purple-100 relative overflow-x-hidden">
+      {/* Floating/Parallax Background Shapes */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute -top-32 -left-32 w-[350px] h-[350px] rounded-full bg-gradient-to-br from-blue-200 via-indigo-100 to-purple-100 opacity-30 blur-2xl animate-float-slow" />
+        <div className="absolute bottom-0 right-0 w-[250px] h-[250px] rounded-full bg-gradient-to-tr from-purple-200 via-blue-100 to-indigo-100 opacity-20 blur-xl animate-float-slow2" />
+        <div className="absolute top-1/2 left-1/2 w-24 h-24 rounded-full bg-blue-100 opacity-10 blur-xl animate-pulse-slow" style={{transform:'translate(-50%,-50%)'}} />
+      </div>
+      {/* Topbar */}
+      <div className="border-b bg-white/80 backdrop-blur-sm z-10 relative shadow-lg">
         <div className="flex h-16 items-center px-4 gap-4">
           <SidebarTrigger />
           <Button asChild variant="ghost" size="sm">
@@ -184,45 +192,51 @@ const EmployeeDetail = () => {
             </Link>
           </Button>
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">{t('employee.details')}</h1>
-            <p className="text-sm text-gray-600">{employee.name}</p>
+            <h1 className="text-3xl font-extrabold text-blue-900 tracking-tight drop-shadow-lg animate-slide-in-left">{t('employee.details')}</h1>
+            <p className="text-sm text-blue-500 animate-slide-in-left delay-100">{employee.name}</p>
           </div>
           <LanguageSwitcher />
         </div>
       </div>
-
       <div className="p-6 animate-fade-in">
-        <div className="max-w-4xl mx-auto space-y-6">
-          {/* Employee Info Card */}
-          <Card className="border-0 shadow-lg">
-            <CardHeader className="gradient-bg text-white rounded-t-lg">
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5" />
+        <div className="max-w-4xl mx-auto space-y-8">
+          {/* Personal Info Card */}
+          <Card className="glass shadow-2xl border-0 animate-fade-in-up">
+            <CardHeader className="bg-gradient-to-r from-blue-500 via-indigo-400 to-purple-400 text-white rounded-t-2xl p-5 shadow-lg">
+              <CardTitle className="flex items-center gap-3 text-2xl font-bold animate-slide-in-left">
+                <User className="h-6 w-6" />
                 {t('employee.personalInfo')}
               </CardTitle>
-              <CardDescription className="text-blue-100">
+              <CardDescription className="text-blue-100 text-sm animate-slide-in-left delay-100">
                 {t('employee.personalInfoDesc')}
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
+            <CardContent className="p-0">
+              <div className="flex flex-col md:flex-row gap-8 p-6 items-center md:items-start">
+                <Avatar className="w-24 h-24 shadow-xl">
+                  <span className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-200 via-indigo-200 to-purple-200 text-blue-900 font-bold text-3xl rounded-full">
+                    {employee.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}
+                  </span>
+                </Avatar>
+                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Full Name */}
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">{t('employee.fullName')}</Label>
+                    <Label className="text-sm font-medium text-blue-700">{t('employee.fullName')}</Label>
                     {isEditing ? (
                       <Input
                         value={editData.full_name}
-                        onChange={(e) => setEditData({...editData, full_name: e.target.value})}
+                        onChange={e => setEditData({ ...editData, full_name: e.target.value })}
                         className="mt-1"
                       />
                     ) : (
-                      <p className="text-lg font-semibold">{employee.name}</p>
+                      <p className="text-lg font-bold text-blue-900 mt-1">{employee.name}</p>
                     )}
                   </div>
+                  {/* Position */}
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">{t('employee.position')}</Label>
+                    <Label className="text-sm font-medium text-blue-700">{t('employee.position')}</Label>
                     {isEditing ? (
-                      <Select onValueChange={(value) => setEditData({...editData, position: value})} value={editData.position}>
+                      <Select value={editData.position} onValueChange={value => setEditData({ ...editData, position: value })}>
                         <SelectTrigger className="mt-1">
                           <SelectValue placeholder={t('positions.selectPosition')} />
                         </SelectTrigger>
@@ -237,13 +251,14 @@ const EmployeeDetail = () => {
                         </SelectContent>
                       </Select>
                     ) : (
-                      <p className="text-sm text-gray-600">{t(`positions.${employee.position}`)}</p>
+                      <p className="text-base text-blue-700 mt-1">{t(`positions.${employee.position}`)}</p>
                     )}
                   </div>
+                  {/* Department */}
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">{t('employee.department')}</Label>
+                    <Label className="text-sm font-medium text-blue-700">{t('employee.department')}</Label>
                     {isEditing ? (
-                      <Select onValueChange={(value) => setEditData({...editData, department: value})} value={editData.department}>
+                      <Select value={editData.department} onValueChange={value => setEditData({ ...editData, department: value })}>
                         <SelectTrigger className="mt-1">
                           <SelectValue placeholder={t('departments.selectDepartment')} />
                         </SelectTrigger>
@@ -258,18 +273,16 @@ const EmployeeDetail = () => {
                         </SelectContent>
                       </Select>
                     ) : (
-                      <p className="text-sm text-gray-600">{t(`departments.${employee.department}`)}</p>
+                      <p className="text-base text-blue-700 mt-1">{t(`departments.${employee.department}`)}</p>
                     )}
                   </div>
+                  {/* Status/Role */}
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">{t('employee.status')}</Label>
+                    <Label className="text-sm font-medium text-blue-700">{t('employee.status')}</Label>
                     {isEditing ? (
-                      <Select onValueChange={(value) => setEditData({...editData, role: value})}>
+                      <Select value={editData.role} onValueChange={value => setEditData({ ...editData, role: value })}>
                         <SelectTrigger className="mt-1">
-                          <SelectValue placeholder={
-                            editData.role === 'admin' ? t('employee.admin') : 
-                            editData.role === 'employee' ? t('employee.employee') : t('employee.intern')
-                          } />
+                          <SelectValue placeholder={t('employee.status')} />
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="admin">{t('employee.admin')}</SelectItem>
@@ -280,138 +293,119 @@ const EmployeeDetail = () => {
                     ) : (
                       <Badge 
                         variant={employee.role === 'admin' ? 'default' : employee.role === 'employee' ? 'secondary' : 'outline'}
-                        className="ml-2"
+                        className="ml-2 text-base px-4 py-1 rounded-full shadow"
                       >
-                        {employee.role === 'admin' ? t('employee.admin') : 
-                         employee.role === 'employee' ? t('employee.employee') : t('employee.intern')}
+                        {employee.role === 'admin' ? t('employee.admin') : employee.role === 'employee' ? t('employee.employee') : t('employee.intern')}
                       </Badge>
                     )}
                   </div>
-                </div>
-                
-                <div className="space-y-4">
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">{t('employee.email')}</Label>
+                  {/* Email */}
+                  <div className="col-span-2">
+                    <Label className="text-sm font-medium text-blue-700">{t('employee.email')}</Label>
                     {isEditing ? (
                       <Input
                         type="email"
                         value={editData.email}
-                        onChange={(e) => setEditData({...editData, email: e.target.value})}
+                        onChange={e => setEditData({ ...editData, email: e.target.value })}
                         className="mt-1"
                       />
                     ) : (
                       <div className="flex items-center gap-2 mt-1">
-                        <Mail className="w-4 h-4 text-gray-400" />
-                        <p className="text-sm text-gray-600">{employee.email}</p>
+                        <Mail className="w-4 h-4 text-blue-400" />
+                        <p className="text-base text-blue-700">{employee.email}</p>
                       </div>
                     )}
                   </div>
+                  {/* Used Leave Days */}
                   <div>
-                    <Label className="text-sm font-medium text-gray-700">{t('employee.password')}</Label>
-                    {isEditing ? (
-                      <Input
-                        type="password"
-                        placeholder={t('employee.setNewPassword')}
-                        value={editData.password || ''}
-                        onChange={(e) => setEditData({...editData, password: e.target.value})}
-                        className="mt-1"
-                      />
-                    ) : (
-                      <p className="text-sm text-gray-600 mt-1">
-                        {employee.password ? '********' : t('employee.noPassword')}
-                      </p>
-                    )}
+                    <Label className="text-sm font-medium text-blue-700">{t('employee.usedLeaveDays')}</Label>
+                    <p className={`text-lg font-bold mt-1 ${employee.usedLeaveDays && employee.totalLeaveDays && employee.usedLeaveDays > employee.totalLeaveDays * 0.8 ? 'text-red-600' : 'text-green-600'}`}>{employee.usedLeaveDays ?? '-'} / {employee.totalLeaveDays ?? '-'} {t('leave.days')}</p>
                   </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">{t('employee.usedLeaveDays')}</Label>
-                    <p className={`text-lg font-semibold mt-1 ${employee.usedLeaveDays && employee.totalLeaveDays && employee.usedLeaveDays > employee.totalLeaveDays * 0.8 ? 'text-red-600' : 'text-green-600'}`}>
-                      {employee.usedLeaveDays ?? '-'} / {employee.totalLeaveDays ?? '-'} {t('leave.days')}
-                    </p>
-                  </div>
-                  <div className="flex gap-2 mt-4">
-                    {isEditing ? (
-                      <>
-                        <Button onClick={handleSave} size="sm" className="bg-green-600 hover:bg-green-700">
-                          <Save className="w-4 h-4 mr-2" />
-                          {t('common.save')}
-                        </Button>
-                        <Button onClick={handleCancel} size="sm" variant="outline">
-                          <X className="w-4 h-4 mr-2" />
-                          {t('common.cancel')}
-                        </Button>
-                      </>
-                    ) : (
-                      <Button onClick={handleEdit} size="sm" variant="outline">
-                        <Edit className="w-4 h-4 mr-2" />
-                        {t('common.edit')}
+                </div>
+                <div className="flex flex-col gap-2 mt-6 md:mt-0 md:ml-6">
+                  {isEditing ? (
+                    <>
+                      <Button onClick={handleSave} size="sm" className="bg-green-600 hover:bg-green-700 text-white rounded-full px-4 py-2 font-bold shadow">
+                        <Save className="w-4 h-4 mr-1" />{t('common.save')}
                       </Button>
-                    )}
-                  </div>
+                      <Button onClick={handleCancel} size="sm" variant="outline" className="rounded-full px-4 py-2 font-bold border-blue-200 text-blue-700 hover:bg-blue-50 shadow">
+                        <X className="w-4 h-4 mr-1" />{t('common.cancel')}
+                      </Button>
+                    </>
+                  ) : (
+                    <Button onClick={handleEdit} size="sm" variant="outline" className="rounded-full px-4 py-2 font-bold border-blue-200 text-blue-700 hover:bg-blue-50 shadow">
+                      <Edit className="w-4 h-4 mr-1" />{t('common.edit')}
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardContent>
           </Card>
-
           {/* Leave History Card */}
-          <Card className="border-0 shadow-lg">
-            <CardHeader className="gradient-bg text-white rounded-t-lg">
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
+          <Card className="glass shadow-2xl border-0 animate-fade-in-up">
+            <CardHeader className="bg-gradient-to-r from-blue-500 via-indigo-400 to-purple-400 text-white rounded-t-2xl p-5 shadow-lg">
+              <CardTitle className="flex items-center gap-3 text-2xl font-bold animate-slide-in-left">
+                <Calendar className="h-6 w-6" />
                 {t('leave.leaveHistory')}
               </CardTitle>
-              <CardDescription className="text-blue-100">
+              <CardDescription className="text-blue-100 text-sm animate-slide-in-left delay-100">
                 {t('employee.leaveHistoryDesc')}
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-6">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('leave.type')}</TableHead>
-                    <TableHead>{t('leave.date')}</TableHead>
-                    <TableHead>{t('leave.duration')}</TableHead>
-                    <TableHead>{t('leave.reason')}</TableHead>
-                    <TableHead>{t('leave.status')}</TableHead>
-                    <TableHead>{t('leave.submittedDate')}</TableHead>
-                    <TableHead className="text-center">{t('common.actions')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {leaveHistory.map((leave) => (
-                    <TableRow key={leave.id}>
-                      <TableCell className="font-medium">{leave.leaveType}</TableCell>
-                      <TableCell>
-                        {leave.startDate ? format(new Date(leave.startDate), "dd MMM", { locale: th }) : ''} - {leave.endDate ? format(new Date(leave.endDate), "dd MMM yyyy", { locale: th }) : ''}
-                      </TableCell>
-                      <TableCell>{leave.days || ''} {t('leave.days')}</TableCell>
-                      <TableCell className="max-w-xs truncate">{leave.reason}</TableCell>
-                      <TableCell>
-                        <Badge className="bg-green-100 text-green-800 border-green-200">
-                          อนุมัติแล้ว
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {leave.submittedDate ? format(new Date(leave.submittedDate), "dd MMM yyyy", { locale: th }) : ''}
-                      </TableCell>
-                      <TableCell className="text-center">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleViewLeaveDetails(leave)}
-                        >
-                          <Eye className="w-4 h-4 mr-2" />
-                          {t('common.viewDetails')}
-                        </Button>
-                      </TableCell>
+            <CardContent className="p-0">
+              <div className="overflow-x-auto p-6">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('leave.type')}</TableHead>
+                      <TableHead>{t('leave.date')}</TableHead>
+                      <TableHead>{t('leave.duration') || 'จำนวนวัน'}</TableHead>
+                      <TableHead>{t('leave.reason')}</TableHead>
+                      <TableHead>{t('leave.status')}</TableHead>
+                      <TableHead>{t('leave.submittedDate')}</TableHead>
+                      <TableHead className="text-center">{t('common.actions') || 'การจัดการ'}</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {leaveHistory.map((leave, idx) => (
+                      <TableRow key={leave.id} className="hover:bg-blue-50/60 group animate-fade-in-up" style={{ animationDelay: `${idx * 60}ms` }}>
+                        <TableCell className="font-medium text-blue-900">{leave.leaveType}</TableCell>
+                        <TableCell className="text-blue-700">
+                          {leave.startDate ? format(new Date(leave.startDate), "dd MMM", { locale: th }) : ''} - {leave.endDate ? format(new Date(leave.endDate), "dd MMM yyyy", { locale: th }) : ''}
+                        </TableCell>
+                        <TableCell className="text-blue-700">{leave.days || ''} {t('leave.days')}</TableCell>
+                        <TableCell className="max-w-xs truncate text-blue-700">{leave.reason}</TableCell>
+                        <TableCell>
+                          <Badge className={
+                            leave.status === 'approved' ? 'bg-green-100 text-green-800 border-green-200' :
+                            leave.status === 'pending' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
+                            'bg-red-100 text-red-700 border-red-200'
+                          }>
+                            {leave.status === 'approved' ? t('leave.approved') : leave.status === 'pending' ? t('leave.pending') : t('leave.rejected')}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-blue-700">
+                          {leave.submittedDate ? format(new Date(leave.submittedDate), "dd MMM yyyy", { locale: th }) : ''}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="rounded-full px-4 py-2 font-bold border-blue-200 text-blue-700 hover:bg-blue-50 shadow"
+                            onClick={() => handleViewLeaveDetails(leave)}
+                          >
+                            <Eye className="w-4 h-4 mr-1" />{t('common.viewDetails')}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </div>
       </div>
-
       <LeaveDetailDialog
         open={leaveDialogOpen}
         onOpenChange={setLeaveDialogOpen}

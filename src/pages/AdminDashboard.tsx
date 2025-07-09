@@ -11,6 +11,7 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Avatar } from "@/components/ui/avatar";
 
 type LeaveRequest = {
   id: number;
@@ -258,136 +259,107 @@ const AdminDashboard = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="border-b bg-white/80 backdrop-blur-sm">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-100 to-purple-100 relative overflow-x-hidden">
+      {/* Floating/Parallax Background Shapes */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute -top-32 -left-32 w-[350px] h-[350px] rounded-full bg-gradient-to-br from-blue-200 via-indigo-100 to-purple-100 opacity-30 blur-2xl animate-float-slow" />
+        <div className="absolute bottom-0 right-0 w-[250px] h-[250px] rounded-full bg-gradient-to-tr from-purple-200 via-blue-100 to-indigo-100 opacity-20 blur-xl animate-float-slow2" />
+        <div className="absolute top-1/2 left-1/2 w-24 h-24 rounded-full bg-blue-100 opacity-10 blur-xl animate-pulse-slow" style={{transform:'translate(-50%,-50%)'}} />
+      </div>
+      {/* Topbar */}
+      <div className="border-b bg-white/80 backdrop-blur-sm z-10 relative shadow-lg">
         <div className="flex h-16 items-center px-4 gap-4">
           <SidebarTrigger />
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">
-              {t('navigation.adminDashboard')}
-            </h1>
-            <p className="text-sm text-gray-600">
-              {t('admin.dashboardDesc')}
-            </p>
+            <h1 className="text-3xl font-extrabold text-blue-900 tracking-tight drop-shadow-lg animate-slide-in-left">{t('navigation.adminDashboard')}</h1>
+            <p className="text-sm text-blue-500 animate-slide-in-left delay-100">{t('admin.dashboardDesc')}</p>
           </div>
           <LanguageSwitcher />
         </div>
       </div>
-
       <div className="p-6 animate-fade-in">
-        <div className="max-w-6xl mx-auto space-y-6">
+        <div className="max-w-6xl mx-auto space-y-8">
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {stats.map((stat, index) => {
               const Icon = stat.icon;
               return (
                 <Card 
                   key={stat.title} 
-                  className="border-0 shadow-md hover:shadow-lg transition-all duration-300"
-                  style={{ animationDelay: `${index * 100}ms` }}
+                  className="glass shadow-xl border-0 hover:scale-[1.03] hover:shadow-2xl transition-all duration-300 animate-fade-in-up"
+                  style={{ animationDelay: `${index * 120}ms` }}
                 >
-                  <CardContent className="p-6">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-12 h-12 ${stat.bgColor} rounded-lg flex items-center justify-center`}>
-                        <Icon className={`w-6 h-6 ${stat.color}`} />
-                      </div>
-                      <div>
-                        <p className="text-2xl font-bold">{stat.value}</p>
-                        <p className="text-sm text-muted-foreground">{stat.title}</p>
-                      </div>
+                  <CardContent className="p-7 flex items-center gap-4">
+                    <div className={`w-16 h-16 ${stat.bgColor} rounded-full flex items-center justify-center shadow-lg animate-float`}>
+                      <Icon className={`w-8 h-8 ${stat.color}`} />
+                    </div>
+                    <div>
+                      <p className="text-3xl font-extrabold text-blue-900 drop-shadow">{stat.value}</p>
+                      <p className="text-base text-blue-500 font-medium">{stat.title}</p>
                     </div>
                   </CardContent>
                 </Card>
               );
             })}
           </div>
-
           {/* Main Content */}
           <Tabs defaultValue="pending" className="space-y-6">
-            <TabsList className="grid w-full grid-cols-2 max-w-md">
-              <TabsTrigger value="pending">{t('admin.pendingRequests')}</TabsTrigger>
-              <TabsTrigger value="recent">{t('admin.recentHistory')}</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 max-w-md glass bg-white/60 backdrop-blur-lg rounded-xl shadow-lg mb-4">
+              <TabsTrigger value="pending" className="text-blue-700 font-bold text-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-400 data-[state=active]:text-white data-[state=active]:shadow-lg rounded-xl transition-all">{t('admin.pendingRequests')}</TabsTrigger>
+              <TabsTrigger value="recent" className="text-blue-700 font-bold text-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-400 data-[state=active]:text-white data-[state=active]:shadow-lg rounded-xl transition-all">{t('admin.recentHistory')}</TabsTrigger>
             </TabsList>
-
+            {/* Pending Requests */}
             <TabsContent value="pending" className="space-y-4">
-              <Card className="border-0 shadow-lg">
-                <CardHeader className="gradient-bg text-white rounded-t-lg">
-                  <CardTitle className="flex items-center gap-2">
-                    <AlertCircle className="w-5 h-5" />
+              <Card className="glass shadow-2xl border-0 animate-fade-in-up">
+                <CardHeader className="bg-gradient-to-r from-blue-500 via-indigo-400 to-purple-400 text-white rounded-t-2xl p-5 shadow-lg">
+                  <CardTitle className="flex items-center gap-3 text-2xl font-bold animate-slide-in-left">
+                    <AlertCircle className="w-6 h-6" />
                     {t('admin.pendingLeaveRequests')}
                   </CardTitle>
-                  <CardDescription className="text-blue-100">
+                  <CardDescription className="text-blue-100 text-sm animate-slide-in-left delay-100">
                     {t('admin.pendingLeaveRequestsDesc')}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="p-6">
+                <CardContent className="p-0">
                   {loading ? (
-                    <div className="text-center py-10 text-gray-500">{t('common.loading')}</div>
+                    <div className="text-lg text-center py-10">{t('common.loading')}</div>
                   ) : error ? (
-                    <div className="text-center py-10 text-red-500">{error}</div>
+                    <div className="text-lg text-center py-10 text-red-500">{error}</div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-4 p-6">
                       {pendingRequests.length === 0 && (
-                        <div className="text-center text-gray-500">{t('admin.noPendingRequests')}</div>
+                        <div className="text-center text-gray-500 text-base py-8 animate-fade-in-up">{t('admin.noPendingRequests')}</div>
                       )}
-                      {pendingRequests.map((request) => (
+                      {pendingRequests.map((request, idx) => (
                         <div 
                           key={request.id}
-                          className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow"
+                          className="glass bg-gradient-to-br from-white/80 via-blue-50/80 to-indigo-100/80 border-0 rounded-2xl p-5 shadow-md hover:shadow-xl transition-all flex flex-col md:flex-row md:items-center md:justify-between gap-4 animate-pop-in"
+                          style={{ animationDelay: `${idx * 60}ms` }}
                         >
-                          <div className="flex justify-between items-start mb-3">
-                            <div>
-                              <h3 className="font-semibold text-lg">
-                                {typeof request.user === "string"
-                                  ? JSON.parse(request.user).User_name
-                                  : request.user?.User_name || "-"}
-                              </h3>
-                              <p className="text-sm text-gray-600">{request.leaveTypeName}</p>
-                            </div>
-                            <Badge variant="outline" className="text-orange-600 border-orange-200">
-                              {t('admin.pending')}
-                            </Badge>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-bold text-lg text-blue-900 mb-1 truncate">{typeof request.user === "string" ? JSON.parse(request.user).User_name : request.user?.User_name || "-"}</div>
+                            <div className="text-base text-blue-700 mb-1">{request.leaveTypeName}</div>
+                            <div className="text-sm text-gray-700 mb-1">{t('leave.date')}: {request.startDate} - {request.endDate}</div>
                           </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                            <div>
-                              <p className="text-sm font-medium text-gray-700">{t('leave.date')}:</p>
-                              <p className="text-sm text-gray-600">
-                                {request.startDate} - {request.endDate}
-                              </p>
-                            </div>
-                            <div>
-                              <p className="text-sm font-medium text-gray-700">เวลาที่ลา:</p>
-                              <p className="text-sm text-gray-600">
-                                {request.startTime && request.endTime
-                                  ? `${request.startTime} - ${request.endTime}`
-                                  : 'ไม่มีการลาเป็น ชม.'}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="mb-4">
-                            <p className="text-sm font-medium text-gray-700">{t('leave.reason')}:</p>
-                            <p className="text-sm text-gray-600 mt-1">{request.reason}</p>
-                          </div>
-                          <div className="flex gap-3">
+                          <Badge variant="outline" className="text-xs font-bold rounded-full px-4 py-1 bg-yellow-100 text-yellow-700 border-yellow-200 shadow">{t('admin.pending')}</Badge>
+                          <div className="flex gap-2 flex-shrink-0">
                             <Button 
                               size="sm" 
-                              className="bg-green-600 hover:bg-green-700"
+                              className="rounded-full px-4 py-2 font-bold bg-gradient-to-r from-green-500 to-emerald-400 text-white shadow hover:scale-105 transition"
                               onClick={() => handleApprove(request.id, typeof request.user === "string" ? JSON.parse(request.user).User_name : request.user?.User_name || "")}
                             >
-                              <CheckCircle className="w-4 h-4 mr-2" />
-                              {t('admin.approve')}
+                              <CheckCircle className="w-4 h-4 mr-1" />{t('admin.approve')}
                             </Button>
                             <Button 
                               size="sm" 
                               variant="destructive"
+                              className="rounded-full px-4 py-2 font-bold shadow hover:scale-105 transition"
                               onClick={() => handleReject(request.id, typeof request.user === "string" ? JSON.parse(request.user).User_name : request.user?.User_name || "")}
                             >
-                              <XCircle className="w-4 h-4 mr-2" />
-                              {t('admin.reject')}
+                              <XCircle className="w-4 h-4 mr-1" />{t('admin.reject')}
                             </Button>
-                            <Button size="sm" variant="outline" onClick={() => handleViewDetails(request)}>
-                              <Eye className="w-4 h-4 mr-2" />
-                              {t('admin.viewDetails')}
+                            <Button size="sm" variant="outline" className="rounded-full px-4 py-2 font-bold border-blue-200 text-blue-700 hover:bg-blue-50 shadow" onClick={() => handleViewDetails(request)}>
+                              <Eye className="w-4 h-4 mr-1" />{t('admin.viewDetails')}
                             </Button>
                           </div>
                         </div>
@@ -397,53 +369,43 @@ const AdminDashboard = () => {
                 </CardContent>
               </Card>
             </TabsContent>
-
+            {/* History Requests */}
             <TabsContent value="recent" className="space-y-4">
-              <Card className="border-0 shadow-lg">
-                <CardHeader className="gradient-bg text-white rounded-t-lg">
-                  <CardTitle className="flex items-center gap-2">
-                    <Clock className="w-5 h-5" />
+              <Card className="glass shadow-2xl border-0 animate-fade-in-up">
+                <CardHeader className="bg-gradient-to-r from-blue-500 via-indigo-400 to-purple-400 text-white rounded-t-2xl p-5 shadow-lg">
+                  <CardTitle className="flex items-center gap-3 text-2xl font-bold animate-slide-in-left">
+                    <Clock className="w-6 h-6" />
                     {t('admin.recentApprovalHistory')}
                   </CardTitle>
-                  <CardDescription className="text-blue-100">
+                  <CardDescription className="text-blue-100 text-sm animate-slide-in-left delay-100">
                     {t('admin.recentApprovalHistoryDesc')}
                   </CardDescription>
                 </CardHeader>
-                <CardContent className="p-6">
+                <CardContent className="p-0">
                   {loading ? (
-                    <div className="text-center py-10 text-gray-500">{t('common.loading')}</div>
+                    <div className="text-lg text-center py-10">{t('common.loading')}</div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-4 p-6">
                       {historyRequests.length === 0 && (
-                        <div className="text-center text-gray-500">{t('admin.noApprovalHistory')}</div>
+                        <div className="text-center text-gray-500 text-base py-8 animate-fade-in-up">{t('admin.noApprovalHistory')}</div>
                       )}
-                      {historyRequests.map((request) => {
-                        // คำนวณจำนวนวันลา
-                        const start = new Date(request.startDate);
-                        const end = new Date(request.endDate);
-                        const leaveDays = differenceInCalendarDays(end, start) + 1;
-                        // แปลงวันที่เป็นภาษาไทย
-                        const startStr = format(start, "d MMM yyyy", { locale: th });
-                        const endStr = format(end, "d MMM yyyy", { locale: th });
-                        // วันที่อนุมัติ/ไม่อนุมัติ
-                        let statusDate = "-";
-                        if (request.status === "approved" && request.approvedTime) {
-                          statusDate = format(new Date(request.approvedTime), "d MMMM yyyy", { locale: th });
-                        } else if (request.status === "rejected" && request.rejectedTime) {
-                          statusDate = format(new Date(request.rejectedTime), "d MMMM yyyy", { locale: th });
-                        }
+                      {historyRequests.map((request, idx) => {
+                        // Format date
+                        const startStr = request.startDate;
+                        const endStr = request.endDate;
+                        const leaveDays = request.startDate && request.endDate ? differenceInCalendarDays(new Date(request.endDate), new Date(request.startDate)) + 1 : '-';
                         return (
                           <div
                             key={request.id}
-                            className="relative border border-gray-200 rounded-lg p-6 flex flex-col md:flex-row md:items-end md:justify-between"
+                            className="relative glass bg-gradient-to-br from-white/80 via-blue-50/80 to-indigo-100/80 border-0 rounded-2xl p-5 shadow-md hover:shadow-xl transition-all flex flex-col md:flex-row md:items-center md:justify-between gap-4 animate-pop-in"
+                            style={{ animationDelay: `${idx * 60}ms` }}
                           >
-                            {/* Badge มุมขวาบน */}
                             <Badge
                               className={
                                 (request.status === "approved"
                                   ? "bg-green-100 text-green-800 border-green-200"
                                   : "bg-red-100 text-red-800 border-red-200") +
-                                " flex items-center absolute right-6 top-6"
+                                " flex items-center absolute right-6 top-6 rounded-full px-3 py-1 font-bold shadow"
                               }
                             >
                               {request.status === "approved" ? (
@@ -456,24 +418,11 @@ const AdminDashboard = () => {
                                 </>
                               )}
                             </Badge>
-
-                            {/* ฝั่งซ้ายล่าง */}
-                            <div className="flex-1">
-                              <div className="font-bold text-lg mb-1">{request.user?.User_name || "-"}</div>
-                              <div className="text-base text-gray-700 mb-2">{request.leaveTypeName}</div>
-                              <div className="text-sm text-gray-700 mb-1">
-                                {t('leave.date')}: {startStr} - {endStr} ({leaveDays} {t('leave.days')})
-                              </div>
-                            </div>
-                            {/* ฝั่งขวาล่าง (วันที่อนุมัติ) */}
-                            <div className="flex flex-col items-end text-right gap-2 mt-4 md:mt-0 md:ml-8 min-w-[180px]">
-                              <div className="text-sm text-gray-700">
-                                {request.status === "approved"
-                                  ? `${t('admin.approvedWhen')} ${statusDate !== '-' ? statusDate : '-'}`
-                                  : request.status === "rejected"
-                                    ? `${t('admin.rejectedWhen')} ${statusDate !== '-' ? statusDate : '-'}`
-                                    : ''}
-                              </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="font-bold text-lg text-blue-900 mb-1 truncate">{request.user?.User_name || "-"}</div>
+                              <div className="text-base text-blue-700 mb-1">{request.leaveTypeName}</div>
+                              <div className="text-sm text-gray-700 mb-1">{t('leave.date')}: {startStr} - {endStr} ({leaveDays} {t('leave.days')})</div>
+                              <div className="text-xs text-gray-500">{t('leave.reason')}: {request.reason}</div>
                             </div>
                           </div>
                         );

@@ -93,131 +93,117 @@ const LeaveHistory = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="border-b bg-white/80 backdrop-blur-sm">
-        <div className="flex h-16 items-center px-4 gap-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100">
+      <div className="border-b bg-white/80 backdrop-blur-sm shadow-sm">
+        <div className="flex h-20 items-center px-8 gap-4">
           <SidebarTrigger />
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">{t('leave.leaveHistory')}</h1>
-            <p className="text-sm text-gray-600">
-              {t('history.leaveHistoryTitle')}
-            </p>
+            <h1 className="text-3xl font-bold text-blue-800 tracking-tight">{t('leave.leaveHistory')}</h1>
+            <p className="text-base text-gray-500 font-light mt-1">{t('history.leaveHistoryTitle')}</p>
           </div>
           <LanguageSwitcher />
         </div>
       </div>
 
       <div className="p-6 animate-fade-in">
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-4xl mx-auto space-y-10">
           {/* Summary Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-            <Card className="border-0 shadow-md">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <Calendar className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold">11</p>
-                    <p className="text-sm text-muted-foreground">{t('history.totalLeaveDays')}</p>
-                  </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-10">
+            <Card className="border-0 shadow-xl bg-white/70 backdrop-blur rounded-2xl">
+              <CardContent className="p-6 flex items-center gap-4">
+                <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center shadow">
+                  <Calendar className="w-7 h-7 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-3xl font-extrabold text-blue-800">11</p>
+                  <p className="text-base text-blue-400">{t('history.totalLeaveDays')}</p>
                 </div>
               </CardContent>
             </Card>
-            
-            <Card className="border-0 shadow-md">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                    <CheckCircle className="w-5 h-5 text-green-600" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold">3</p>
-                    <p className="text-sm text-muted-foreground">{t('history.approvedRequests')}</p>
-                  </div>
+            <Card className="border-0 shadow-xl bg-white/70 backdrop-blur rounded-2xl">
+              <CardContent className="p-6 flex items-center gap-4">
+                <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center shadow">
+                  <CheckCircle className="w-7 h-7 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-3xl font-extrabold text-green-700">3</p>
+                  <p className="text-base text-green-400">{t('history.approvedRequests')}</p>
                 </div>
               </CardContent>
             </Card>
-            
-            <Card className="border-0 shadow-md">
-              <CardContent className="p-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-yellow-600" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-bold">1</p>
-                    <p className="text-sm text-muted-foreground">{t('history.pendingRequests')}</p>
-                  </div>
+            <Card className="border-0 shadow-xl bg-white/70 backdrop-blur rounded-2xl">
+              <CardContent className="p-6 flex items-center gap-4">
+                <div className="w-14 h-14 bg-yellow-100 rounded-xl flex items-center justify-center shadow">
+                  <Clock className="w-7 h-7 text-yellow-600" />
+                </div>
+                <div>
+                  <p className="text-3xl font-extrabold text-yellow-700">1</p>
+                  <p className="text-base text-yellow-400">{t('history.pendingRequests')}</p>
                 </div>
               </CardContent>
             </Card>
           </div>
 
           {/* Leave History List */}
-          <div className="space-y-4">
+          <div className="space-y-6">
             {leaveHistory.map((leave) => (
-              <Card key={leave.id} className="border-0 shadow-md hover:shadow-lg transition-shadow">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className={`text-lg font-semibold ${getTypeColor(leave.type)}`}>
-                        {leave.type}
-                      </div>
-                      {getStatusBadge(leave.status)}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {format(leave.submittedDate, 'dd MMM yyyy', { locale: th })}
-                    </div>
+              <Card key={leave.id} className="border-0 shadow-xl bg-white/80 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all">
+                <CardHeader className="pb-2 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                  <div className="flex items-center gap-4">
+                    <div className={`text-xl font-bold ${getTypeColor(leave.type)}`}>{leave.type}</div>
+                    {getStatusBadge(leave.status)}
+                  </div>
+                  <div className="text-sm text-blue-400 font-medium md:text-right">
+                    {format(leave.submittedDate, 'dd MMM yyyy', { locale: th })}
                   </div>
                 </CardHeader>
-                <CardContent className="pt-0">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
+                <CardContent className="pt-0 pb-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-2 text-base text-blue-900">
+                        <Calendar className="w-5 h-5 text-blue-400" />
                         <span className="font-medium">{t('leave.startDate')}:</span>
                         <span>{format(leave.startDate, 'dd MMM yyyy', { locale: th })}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
+                      <div className="flex items-center gap-2 text-base text-blue-900">
+                        <Calendar className="w-5 h-5 text-blue-400" />
                         <span className="font-medium">{t('leave.endDate')}:</span>
                         <span>{format(leave.endDate, 'dd MMM yyyy', { locale: th })}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm">
-                        <Clock className="w-4 h-4 text-muted-foreground" />
+                      <div className="flex items-center gap-2 text-base text-blue-900">
+                        <Clock className="w-5 h-5 text-blue-400" />
                         <span className="font-medium">{t('leave.duration')}:</span>
                         <span>{leave.days} {t('leave.days')}</span>
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <div className="flex items-start gap-2 text-sm">
-                        <FileText className="w-4 h-4 text-muted-foreground mt-0.5" />
+                    <div className="space-y-3">
+                      <div className="flex items-start gap-2 text-base text-blue-900">
+                        <FileText className="w-5 h-5 text-blue-400 mt-0.5" />
                         <div>
                           <span className="font-medium">{t('leave.reason')}:</span>
-                          <p className="text-muted-foreground">{leave.reason}</p>
+                          <p className="text-blue-500">{leave.reason}</p>
                         </div>
                       </div>
                       {leave.status === "approved" && leave.approvedBy && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <CheckCircle className="w-4 h-4 text-green-600" />
+                        <div className="flex items-center gap-2 text-base text-green-700">
+                          <CheckCircle className="w-5 h-5 text-green-500" />
                           <span className="font-medium">{t('leave.approvedBy')}:</span>
                           <span>{leave.approvedBy}</span>
                         </div>
                       )}
                       {leave.status === "rejected" && (
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2 text-sm">
-                            <XCircle className="w-4 h-4 text-red-600" />
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 text-base text-red-700">
+                            <XCircle className="w-5 h-5 text-red-500" />
                             <span className="font-medium">{t('leave.rejectedBy')}:</span>
                             <span>{leave.rejectedBy}</span>
                           </div>
                           {leave.rejectionReason && (
-                            <div className="flex items-start gap-2 text-sm">
-                              <FileText className="w-4 h-4 text-muted-foreground mt-0.5" />
+                            <div className="flex items-start gap-2 text-base text-red-700">
+                              <FileText className="w-5 h-5 text-red-400 mt-0.5" />
                               <div>
                                 <span className="font-medium">{t('leave.rejectionReason')}:</span>
-                                <p className="text-muted-foreground">{leave.rejectionReason}</p>
+                                <p className="text-red-500">{leave.rejectionReason}</p>
                               </div>
                             </div>
                           )}
@@ -231,6 +217,16 @@ const LeaveHistory = () => {
           </div>
         </div>
       </div>
+      <style>{`
+        .glass-card-history {
+          background: rgba(255,255,255,0.8);
+          box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.10);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border-radius: 2rem;
+          border: 1px solid rgba(255,255,255,0.18);
+        }
+      `}</style>
     </div>
   );
 };

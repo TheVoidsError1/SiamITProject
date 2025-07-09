@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Send } from "lucide-react";
+import { Send, User, ClipboardList, CalendarDays, FileText, Phone, Users, ArrowLeftCircle } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { DateRangePicker } from "./DateRangePicker";
@@ -318,216 +318,233 @@ export const LeaveForm = () => {
   };
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
-      {/* Employee Type (เปลี่ยนเป็น Position) */}
-      <div className="space-y-2">
-        <Label htmlFor="employee-type" className="text-sm font-medium">
-          {t('leave.employeeType')} *
-        </Label>
-        <Select value={employeeType} onValueChange={setEmployeeType}>
-          <SelectTrigger>
-            <SelectValue placeholder={t('leave.selectEmployeeType')} />
-          </SelectTrigger>
-          <SelectContent>
-            {positions.map((pos) => (
-              <SelectItem key={pos.id} value={pos.position_name}>
-                {pos.position_name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+    <div className="max-w-2xl mx-auto my-8 animate-fade-in">
+      <div className="glass shadow-2xl rounded-3xl p-8 md:p-10 border border-blue-100 dark:border-gray-800">
+        <div className="flex items-center gap-3 mb-8">
+          <ClipboardList className="w-7 h-7 text-blue-600 dark:text-blue-400" />
+          <h2 className="text-2xl md:text-3xl font-bold gradient-text drop-shadow">{t('leave.leaveRequestForm')}</h2>
+        </div>
+        <form ref={formRef} onSubmit={handleSubmit} className="space-y-7">
+          {/* Section: ข้อมูลพนักงาน */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <User className="w-5 h-5 text-indigo-500" />
+              <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.employeeType')}</span>
+            </div>
+            <Select value={employeeType} onValueChange={setEmployeeType}>
+              <SelectTrigger className="h-12 rounded-xl border-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all">
+                <SelectValue placeholder={t('leave.selectEmployeeType')} />
+              </SelectTrigger>
+              <SelectContent>
+                {positions.map((pos) => (
+                  <SelectItem key={pos.id} value={pos.position_name}>{pos.position_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-      {/* Leave Type (เปลี่ยนเป็น dynamic จาก API) */}
-      <div className="space-y-2">
-        <Label htmlFor="leave-type" className="text-sm font-medium">
-          {t('leave.leaveType')} *
-        </Label>
-        <Select value={leaveType} onValueChange={handleLeaveTypeChange}>
-          <SelectTrigger>
-            <SelectValue placeholder={t('leave.selectLeaveType')} />
-          </SelectTrigger>
-          <SelectContent>
-            {leaveTypes.map((type) => (
-              <SelectItem key={type.id} value={type.id}>
-                {type.leave_type}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+          {/* Section: ประเภทการลา */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <CalendarDays className="w-5 h-5 text-pink-500" />
+              <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.leaveType')}</span>
+            </div>
+            <Select value={leaveType} onValueChange={handleLeaveTypeChange}>
+              <SelectTrigger className="h-12 rounded-xl border-2 focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all">
+                <SelectValue placeholder={t('leave.selectLeaveType')} />
+              </SelectTrigger>
+              <SelectContent>
+                {leaveTypes.map((type) => (
+                  <SelectItem key={type.id} value={type.id}>{type.leave_type}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
 
-      {/* Personal Leave Type Selection */}
-      {isPersonalLeave && (
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">
-            {t('leave.personalLeaveType')} *
-          </Label>
-          <Select value={personalLeaveType} onValueChange={handlePersonalLeaveTypeChange}>
-            <SelectTrigger>
-              <SelectValue placeholder={t('leave.selectPersonalLeaveType')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="day">{t('leave.dayLeave')}</SelectItem>
-              <SelectItem value="hour">{t('leave.hourLeave')}</SelectItem>
-            </SelectContent>
-          </Select>
-
-          {/* Display selected date for hourly leave (move here) */}
-          {isHourlyLeave && (
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">{t('leave.leaveDate')}</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start text-left font-normal"
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {startDate ? (
-                      startDate.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
-                    ) : (
-                      <span>{t('leave.selectDate')}</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={startDate}
-                    onSelect={setStartDate}
-                    initialFocus
-                    disabled={date => date < new Date(new Date().setHours(0,0,0,0))}
-                  />
-                </PopoverContent>
-              </Popover>
+          {/* Section: ประเภทลากิจ */}
+          {isPersonalLeave && (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <ClipboardList className="w-5 h-5 text-yellow-500" />
+                <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.personalLeaveType')}</span>
+              </div>
+              <Select value={personalLeaveType} onValueChange={handlePersonalLeaveTypeChange}>
+                <SelectTrigger className="h-12 rounded-xl border-2 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 transition-all">
+                  <SelectValue placeholder={t('leave.selectPersonalLeaveType')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="day">{t('leave.dayLeave')}</SelectItem>
+                  <SelectItem value="hour">{t('leave.hourLeave')}</SelectItem>
+                </SelectContent>
+              </Select>
+              {/* Hourly leave date picker */}
+              {isHourlyLeave && (
+                <div className="mt-4">
+                  <Label className="text-sm font-medium mb-1 block">{t('leave.leaveDate')}</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button variant="outline" className="w-full justify-start text-left font-normal h-12 rounded-xl">
+                        <CalendarIcon className="mr-2 h-5 w-5 text-blue-500" />
+                        {startDate ? (
+                          startDate.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
+                        ) : (
+                          <span>{t('leave.selectDate')}</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={startDate}
+                        onSelect={setStartDate}
+                        initialFocus
+                        disabled={date => date < new Date(new Date().setHours(0,0,0,0))}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+              )}
             </div>
           )}
-        </div>
-      )}
 
-      {/* Time Selection for Hourly Leave */}
-      {isPersonalLeave && isHourlyLeave && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">{t('leave.startTime')} *</Label>
-            <Input
-              type="text"
-              value={startTime}
-              onChange={e => setStartTime(autoFormatTimeInput(e.target.value))}
-              placeholder={t('leave.timePlaceholder')}
-              required
-              inputMode="numeric"
-              pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$"
-              maxLength={5}
+          {/* Section: เวลา (ถ้าเลือก hourly) */}
+          {isPersonalLeave && isHourlyLeave && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Label className="text-sm font-medium mb-1 block">{t('leave.startTime')} *</Label>
+                <Input
+                  type="text"
+                  value={startTime}
+                  onChange={e => setStartTime(autoFormatTimeInput(e.target.value))}
+                  placeholder={t('leave.timePlaceholder')}
+                  required
+                  inputMode="numeric"
+                  pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$"
+                  maxLength={5}
+                  className="h-12 rounded-xl border-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium mb-1 block">{t('leave.endTime')} *</Label>
+                <Input
+                  type="text"
+                  value={endTime}
+                  onChange={e => setEndTime(autoFormatTimeInput(e.target.value))}
+                  placeholder={t('leave.timePlaceholder')}
+                  required
+                  inputMode="numeric"
+                  pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$"
+                  maxLength={5}
+                  className="h-12 rounded-xl border-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                />
+              </div>
+            </div>
+          )}
+
+          {/* Section: Date Range */}
+          {(!isPersonalLeave || personalLeaveType === "day") && (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <CalendarDays className="w-5 h-5 text-green-500" />
+                <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.dateRange')}</span>
+              </div>
+              <DateRangePicker
+                startDate={startDate}
+                endDate={endDate}
+                onStartDateChange={setStartDate}
+                onEndDateChange={setEndDate}
+                disabled={isHourlyLeave}
+                minDate={isPersonalLeave && personalLeaveType === "day" ? new Date() : undefined}
+              />
+            </div>
+          )}
+
+          {/* Section: ผู้อนุมัติ */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Users className="w-5 h-5 text-purple-500" />
+              <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.supervisor')}</span>
+            </div>
+            <Select value={supervisor} onValueChange={setSupervisor}>
+              <SelectTrigger className="h-12 rounded-xl border-2 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all">
+                <SelectValue placeholder={t('leave.selectSupervisor')} />
+              </SelectTrigger>
+              <SelectContent>
+                {admins.map((admin) => (
+                  <SelectItem key={admin.id} value={admin.id}>{admin.admin_name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Section: เหตุผล */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <FileText className="w-5 h-5 text-orange-500" />
+              <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.reason')}</span>
+            </div>
+            <Textarea
+              id="reason"
+              placeholder={t('leave.reasonPlaceholder')}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              className="min-h-[100px] resize-none rounded-xl border-2 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
             />
           </div>
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">{t('leave.endTime')} *</Label>
+
+          {/* Section: แนบไฟล์ */}
+          {requiresAttachmentField && (
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <FileText className="w-5 h-5 text-pink-500" />
+                <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.attachment')}</span>
+              </div>
+              <FileUpload
+                attachments={attachments}
+                onFileUpload={handleFileUpload}
+                onRemoveAttachment={removeAttachment}
+              />
+            </div>
+          )}
+
+          {/* Section: ข้อมูลติดต่อ */}
+          <div>
+            <div className="flex items-center gap-2 mb-2">
+              <Phone className="w-5 h-5 text-blue-500" />
+              <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.contactInfo')}</span>
+            </div>
             <Input
-              type="text"
-              value={endTime}
-              onChange={e => setEndTime(autoFormatTimeInput(e.target.value))}
-              placeholder={t('leave.timePlaceholder')}
-              required
-              inputMode="numeric"
-              pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$"
-              maxLength={5}
+              id="contact"
+              placeholder={t('leave.contactPlaceholder')}
+              className="w-full h-12 rounded-xl border-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+              value={contact}
+              onChange={e => setContact(e.target.value)}
             />
           </div>
-        </div>
-      )}
 
-      {/* Date Range - Show only for day leave or non-personal leave */}
-      {(!isPersonalLeave || personalLeaveType === "day") && (
-        <DateRangePicker
-          startDate={startDate}
-          endDate={endDate}
-          onStartDateChange={setStartDate}
-          onEndDateChange={setEndDate}
-          disabled={isHourlyLeave}
-          minDate={isPersonalLeave && personalLeaveType === "day" ? new Date() : undefined}
-        />
-      )}
-
-      {/* Supervisor */}
-      <div className="space-y-2">
-        <Label htmlFor="supervisor">{t('leave.supervisor')}</Label>
-        <Select
-          value={supervisor}
-          onValueChange={setSupervisor}
-        >
-          <SelectTrigger id="supervisor">
-            <SelectValue placeholder={t('leave.selectSupervisor')} />
-          </SelectTrigger>
-          <SelectContent>
-            {admins.map((admin) => (
-              <SelectItem key={admin.id} value={admin.id}>
-                {admin.admin_name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          {/* Section: ปุ่ม */}
+          <div className="flex gap-3 pt-6">
+            <Button 
+              type="submit" 
+              className="flex-1 gradient-bg text-white font-semibold text-lg h-12 rounded-xl shadow-lg hover:scale-105 transition-transform duration-200"
+              size="lg"
+            >
+              <Send className="w-5 h-5 mr-2" />
+              {t('leave.submitLeave')}
+            </Button>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => { navigate("/"); }}
+              size="lg"
+              className="flex-1 h-12 rounded-xl border-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-lg"
+            >
+              <ArrowLeftCircle className="w-5 h-5 mr-2" />
+              {t('common.cancel')}
+            </Button>
+          </div>
+        </form>
       </div>
-
-      {/* Reason */}
-      <div className="space-y-2">
-        <Label htmlFor="reason" className="text-sm font-medium">
-          {t('leave.reason')} *
-        </Label>
-        <Textarea
-          id="reason"
-          placeholder={t('leave.reasonPlaceholder')}
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          className="min-h-[100px] resize-none"
-        />
-      </div>
-
-      {/* File Upload - Show only for certain leave types */}
-      {requiresAttachmentField && (
-        <FileUpload
-          attachments={attachments}
-          onFileUpload={handleFileUpload}
-          onRemoveAttachment={removeAttachment}
-        />
-      )}
-
-      {/* Contact Info */}
-      <div className="space-y-2">
-        <Label htmlFor="contact" className="text-sm font-medium">
-          {t('leave.contactInfo')}
-        </Label>
-        <Input
-          id="contact"
-          placeholder={t('leave.contactPlaceholder')}
-          className="w-full"
-          value={contact}
-          onChange={e => setContact(e.target.value)}
-        />
-      </div>
-
-      {/* Submit Button */}
-      <div className="flex gap-3 pt-4">
-        <Button 
-          type="submit" 
-          className="flex-1 gradient-bg text-white font-medium"
-          size="lg"
-        >
-          <Send className="w-4 h-4 mr-2" />
-          {t('leave.submitLeave')}
-        </Button>
-        <Button 
-          type="button" 
-          variant="outline" 
-          onClick={() => {
-            navigate("/"); // หรือเปลี่ยนเป็น path ที่ต้องการ เช่น "/dashboard"
-          }}
-          size="lg"
-        >
-          {t('common.cancel')}
-        </Button>
-      </div>
-    </form>
+    </div>
   );
 };

@@ -169,6 +169,20 @@
     "employee": "พนักงาน",
     "intern": "เด็กฝึกงาน"
   },
+  "month": {
+    "jan": "มกราคม",
+    "feb": "กุมภาพันธ์",
+    "mar": "มีนาคม",
+    "apr": "เมษายน",
+    "may": "พฤษภาคม",
+    "jun": "มิถุนายน",
+    "jul": "กรกฎาคม",
+    "aug": "สิงหาคม",
+    "sep": "กันยายน",
+    "oct": "ตุลาคม",
+    "nov": "พฤศจิกายน",
+    "dec": "ธันวาคม"
+  },
   "main": {
     "siamIt": "สยาม ไอที",
     "onlineLeaveSystem": "ระบบลาออนไลน์",
@@ -189,7 +203,11 @@
     "quickActionsDesc": "เข้าถึงฟังก์ชันที่ใช้บ่อย",
     "recentLeaveStats": "สถิติการลาล่าสุด",
     "recentLeaveStatsDesc": "ภาพรวมการใช้สิทธิการลา",
-    "fillCompleteInfo": "กรุณากรอกข้อมูลให้ครบถ้วน"
+    "fillCompleteInfo": "กรุณากรอกข้อมูลให้ครบถ้วน",
+    "recentNotifications": "แจ้งเตือนล่าสุด",
+    "upcomingHolidays": "วันหยุด/กิจกรรม",
+    "announcements": "ข่าวสารบริษัท",
+    "noUpcomingHolidays": "ไม่มีวันหยุดในเดือนนี้"
   },
   "profile": {
     "personalInfo": "ข้อมูลส่วนตัว",
@@ -278,7 +296,8 @@
     "days": "วัน"
   },
   "error": {
-    "apiConnectionError": "ข้อผิดพลาดการเชื่อมต่อ API"
+    "apiConnectionError": "ข้อผิดพลาดการเชื่อมต่อ API",
+    "cannotLoadStats": "ไม่สามารถโหลดสถิติได้"
   },
   "leaveDetail": {
     "details": "รายละเอียดใบลา",

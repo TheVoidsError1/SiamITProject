@@ -84,13 +84,13 @@ export function AppSidebar() {
   const allItems = user?.role === 'admin' ? [...items, ...adminItems] : items;
 
   return (
-    <Sidebar className="border-r border-border/50">
+    <Sidebar className="border-r border-border/50 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl shadow-2xl animate-slide-in-left transition-all duration-300">
       <SidebarHeader className="p-6">
         <div className="flex items-center gap-3">
           <img
             src="/lovable-uploads/IMG_4486-removebg-preview.png"
             alt="Siam IT Logo"
-            className="w-12 h-12 object-contain"
+            className="w-12 h-12 object-contain drop-shadow-lg"
           />
           <div className="flex-1">
             <h2 className="text-lg font-bold text-sidebar-foreground">
@@ -106,7 +106,7 @@ export function AppSidebar() {
       
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/70 font-medium">
+          <SidebarGroupLabel className="text-sidebar-foreground/70 font-semibold tracking-wide uppercase mb-2">
             {t('navigation.mainMenu')}
           </SidebarGroupLabel>
           <SidebarGroupContent>
@@ -116,11 +116,23 @@ export function AppSidebar() {
                   <SidebarMenuButton 
                     asChild 
                     isActive={location.pathname === item.url}
-                    className="w-full justify-start hover:bg-sidebar-accent transition-colors"
+                    className={
+                      `w-full justify-start group relative px-2 py-1.5 rounded-xl transition-all duration-200
+                      ${location.pathname === item.url ? 'bg-gradient-to-r from-blue-400/20 to-indigo-400/10 shadow-lg before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1.5 before:h-8 before:rounded-full before:bg-gradient-to-b before:from-blue-500 before:to-indigo-500' : 'hover:bg-blue-100/40 dark:hover:bg-gray-800/40'}
+                      `
+                    }
                   >
-                    <Link to={item.url} className="flex items-center gap-3">
-                      <item.icon className="w-5 h-5" />
-                      <span className="font-medium">{t(item.title)}</span>
+                    <Link to={item.url} className="flex items-center gap-3 relative z-10">
+                      <item.icon className={
+                        `w-5 h-5 transition-transform duration-200 group-hover:scale-125
+                        ${location.pathname === item.url ? 'text-blue-600 drop-shadow-glow' : 'text-gray-500 group-hover:text-blue-500'}`
+                      } />
+                      <span className={
+                        `font-medium transition-colors duration-200
+                        ${location.pathname === item.url ? 'text-blue-700 dark:text-blue-300' : 'text-sidebar-foreground group-hover:text-blue-600'}`
+                      }>
+                        {t(item.title)}
+                      </span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -133,7 +145,7 @@ export function AppSidebar() {
       <SidebarFooter className="p-6">
         <div className="space-y-4">
           <Link to="/profile" className="block">
-            <div className="flex items-center gap-3 p-3 rounded-lg bg-sidebar-accent/20 hover:bg-sidebar-accent/30 transition-colors cursor-pointer">
+            <div className="flex items-center gap-3 p-4 rounded-2xl glass bg-white/60 dark:bg-gray-900/60 backdrop-blur-md shadow-lg hover:shadow-xl transition-all cursor-pointer border border-blue-100 dark:border-gray-800">
               <Avatar className="w-8 h-8">
                 <AvatarImage src={avatarUrl || undefined} />
                 <AvatarFallback className="text-xs font-medium bg-sidebar-accent text-sidebar-foreground">
@@ -141,7 +153,7 @@ export function AppSidebar() {
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-sidebar-foreground truncate">
+                <p className="text-sm font-semibold text-sidebar-foreground truncate">
                   {user?.full_name || t('common.user')}
                 </p>
                 <p className="text-xs text-sidebar-foreground/70 truncate">
@@ -155,7 +167,7 @@ export function AppSidebar() {
             variant="ghost"
             size="sm"
             onClick={handleLogout}
-            className="w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent"
+            className="w-full justify-start text-sidebar-foreground hover:bg-blue-100/40 dark:hover:bg-gray-800/40 rounded-xl"
           >
             <LogOut className="w-4 h-4 mr-2" />
             {t('auth.logout')}
