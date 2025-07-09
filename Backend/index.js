@@ -19,7 +19,7 @@ const AppDataSource = new DataSource({
   host: 'localhost',
   port: 3306,
   username: 'root',
-  password: '', // ใส่รหัสผ่านของคุณ
+  password: 'password', // ใส่รหัสผ่านของคุณ
   database: 'siamitleave',
   synchronize: true, // dev only! จะสร้าง/อัปเดต table อัตโนมัติ
   logging: false,

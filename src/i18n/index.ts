@@ -15,8 +15,8 @@ i18n
         translation: enTranslations
       }
     },
-    lng: 'th', // default language
-    fallbackLng: 'th',
+    lng: 'en', // default language is now English
+    fallbackLng: 'en', // fallback is also English
     interpolation: {
       escapeValue: false
     }

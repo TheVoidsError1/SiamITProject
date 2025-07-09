@@ -206,6 +206,69 @@
        }
      });
 
+     // GET /api/leave-request/my - Get all leave requests for the logged-in user
+     router.get('/my', async (req, res) => {
+       try {
+         const authHeader = req.headers.authorization;
+         if (!authHeader || !authHeader.startsWith('Bearer ')) {
+           return res.status(401).json({ status: 'error', message: 'No token provided' });
+         }
+         const token = authHeader.split(' ')[1];
+         const decoded = jwt.verify(token, SECRET);
+         const userId = decoded.userId;
+
+         const leaveRepo = AppDataSource.getRepository('LeaveRequest');
+         const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+         const leaves = await leaveRepo.find({ where: { Repid: userId }, order: { createdAt: 'DESC' } });
+
+         // Map to required fields, with leave type name
+         const result = await Promise.all(leaves.map(async l => {
+           let leaveTypeName = l.leaveType;
+           if (l.leaveType) {
+             const leaveTypeObj = await leaveTypeRepo.findOneBy({ id: l.leaveType });
+             if (leaveTypeObj) leaveTypeName = leaveTypeObj.leave_type;
+           }
+           // Calculate duration
+           let duration = '';
+           let durationType = '';
+           if (l.startTime && l.endTime) {
+             // Calculate hours (as float)
+             const [sh, sm] = l.startTime.split(':').map(Number);
+             const [eh, em] = l.endTime.split(':').map(Number);
+             let start = sh + sm / 60;
+             let end = eh + em / 60;
+             duration = (end - start).toFixed(2);
+             durationType = 'hour';
+           } else if (l.startDate && l.endDate) {
+             const start = new Date(l.startDate);
+             const end = new Date(l.endDate);
+             // If same day, duration is 1
+             if (start.toDateString() === end.toDateString()) {
+               duration = '1';
+             } else {
+               // Duration is (end - start) in days (not inclusive of end date)
+               const diff = Math.abs((end - start) / (1000*60*60*24));
+               duration = diff.toString();
+             }
+             durationType = 'day';
+           }
+           return {
+             leaveType: leaveTypeName,
+             leaveDate: l.startDate || '',
+             duration,
+             durationType,
+             reason: l.reason,
+             status: l.status,
+             submittedDate: l.createdAt
+           };
+         }));
+
+         res.json({ status: 'success', data: result });
+       } catch (err) {
+         res.status(500).json({ status: 'error', message: err.message });
+       }
+     });
+
      // GET /api/leave-request/:id
      router.get('/:id', async (req, res) => {
        try {
