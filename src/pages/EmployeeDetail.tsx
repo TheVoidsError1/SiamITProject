@@ -123,20 +123,15 @@ const EmployeeDetail = () => {
   };
 
   const handleSave = async () => {
-    if (!processCheckId) {
-      toast({ title: t('error.title'), description: t('employee.noProcessCheckId') });
-      return;
-    }
     try {
       const payload: any = {
-        User_name: editData.full_name,
+        name: editData.full_name,
         position: editData.position,
         department: editData.department,
         email: editData.email,
       };
       if (editData.password && editData.password.trim() !== '') payload.password = editData.password;
-      // role ไม่ได้อัปเดตใน backend (process_check.Role) ใน API นี้
-      const response = await fetch(`http://localhost:3001/api/profile/${processCheckId}` , {
+      const response = await fetch(`http://localhost:3001/api/employee/${id}` , {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -148,14 +143,8 @@ const EmployeeDetail = () => {
           description: t('employee.updateSuccess'),
         });
         setIsEditing(false);
-        // รีเฟรชข้อมูลใหม่
-        let url = "";
-        if (role === "admin") {
-          url = `http://localhost:3001/api/admin/${id}`;
-        } else {
-          url = `http://localhost:3001/api/users/${id}`;
-        }
-        const res = await fetch(url);
+        // Refresh profile data
+        const res = await fetch(`http://localhost:3001/api/employee/${id}`);
         const empData = await res.json();
         if (empData.success) setEmployee(empData.data);
       } else {
@@ -179,6 +168,7 @@ const EmployeeDetail = () => {
   };
 
   const handleViewLeaveDetails = (leave) => {
+    console.log('View Details clicked. leave:', leave, 'leave.id:', leave.id);
     setSelectedLeave(leave);
     setLeaveDialogOpen(true);
   };
