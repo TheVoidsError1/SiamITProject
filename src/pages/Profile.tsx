@@ -512,7 +512,7 @@ const Profile = () => {
                           <div
                             className={`${stat.color} h-2 rounded-full transition-all duration-500`}
                             style={{
-                              width: `${(stat.used / stat.total) * 100}%`
+                              width: `${Math.min(100, stat.total > 0 ? (stat.used / stat.total) * 100 : 0)}%`
                             }}
                           ></div>
                         </div>
