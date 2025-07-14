@@ -6,10 +6,28 @@ import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useAuth } from "@/contexts/AuthContext";
+import i18n from "@/i18n";
+import NotificationBell from "@/components/NotificationBell";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 
 const Index = () => {
+  const { user } = useAuth();
+  
+  // Function to format date based on current language
+  const formatCurrentDate = () => {
+    const currentLanguage = i18n.language;
+    const locale = currentLanguage === 'th' ? 'th-TH' : 'en-US';
+    
+    return new Date().toLocaleDateString(locale, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      weekday: 'long'
+    });
+  };
+  
   const { t, i18n } = useTranslation();
   const [stats, setStats] = useState([
     { title: t('main.daysRemaining'), value: "-", unit: t('common.days'), icon: Calendar, color: "text-blue-600", bgColor: "bg-blue-50" },
@@ -20,6 +38,13 @@ const Index = () => {
   const [leaveStats, setLeaveStats] = useState({ sick: 0, vacation: 0, business: 0 });
   const [loadingStats, setLoadingStats] = useState(true);
   const [errorStats, setErrorStats] = useState("");
+  const [recentLeaveStats, setRecentLeaveStats] = useState({
+    sick: { days: 0, hours: 0 },
+    vacation: { days: 0, hours: 0 },
+    personal: { days: 0, hours: 0 }
+  });
+  const [loadingRecentStats, setLoadingRecentStats] = useState(true);
+  const [errorRecentStats, setErrorRecentStats] = useState("");
 
   useEffect(() => {
     setLoadingStats(true);
@@ -53,6 +78,27 @@ const Index = () => {
       .finally(() => setLoadingStats(false));
   }, [t]);
 
+  useEffect(() => {
+    setLoadingRecentStats(true);
+    setErrorRecentStats("");
+    const token = localStorage.getItem("token");
+    fetch("/api/dashboard-recent-leave-stats", {
+      headers: {
+        Authorization: token ? `Bearer ${token}` : undefined,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.status === "success" && data.data) {
+          setRecentLeaveStats(data.data);
+        } else {
+          setErrorRecentStats(t('error.cannotLoadStats'));
+        }
+      })
+      .catch(() => setErrorRecentStats(t('error.apiConnectionError')))
+      .finally(() => setLoadingRecentStats(false));
+  }, [t]);
+
   // Localized date formatter for dashboard welcome section
   const formatFullDateLocalized = (date: Date) => {
     if (i18n.language === "th") {
@@ -81,6 +127,7 @@ const Index = () => {
               {t('main.welcomeMessage')}
             </p>
           </div>
+          <NotificationBell />
           <LanguageSwitcher />
         </div>
       </div>
@@ -89,8 +136,9 @@ const Index = () => {
         {/* Welcome Section */}
         <div className="gradient-bg rounded-2xl p-8 text-white relative overflow-hidden">
           <div className="relative z-10">
-            <h2 className="text-3xl font-bold mb-2">{t('main.hello')} สมชาย ใจดี! 👋</h2>
+            <h2 className="text-3xl font-bold mb-2">{t('main.hello')} {user?.full_name || t('common.user')}! 👋</h2>
             <p className="text-blue-100 mb-6">
+              {t('main.today')} {formatCurrentDate()}
               {t('main.today')} {formatFullDateLocalized(new Date())}
             </p>
             <Link to="/leave-request">
@@ -180,23 +228,37 @@ const Index = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {loadingStats ? (
+              {loadingRecentStats ? (
                 <div className="text-center py-6 text-gray-500">{t('common.loading')}</div>
-              ) : errorStats ? (
-                <div className="text-center py-6 text-red-500">{errorStats}</div>
+              ) : errorRecentStats ? (
+                <div className="text-center py-6 text-red-500">{errorRecentStats}</div>
               ) : (
                 <div className="space-y-4">
                   <div className="flex justify-between items-center">
                     <span className="text-sm">{t('leaveTypes.sick')}</span>
-                    <span className="font-medium">{leaveStats.sick} {t('common.days')}</span>
+                    <span className="font-medium">
+                      {recentLeaveStats.sick.days} {t('common.days')}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm">{t('leaveTypes.vacation')}</span>
-                    <span className="font-medium">{leaveStats.vacation} {t('common.days')}</span>
+                    <span className="font-medium">
+                      {recentLeaveStats.vacation.days} {t('common.days')}
+                    </span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-sm">{t('leaveTypes.personal')}</span>
-                    <span className="font-medium">{leaveStats.business} {t('common.days')}</span>
+                    <span className="font-medium">
+                      {(() => {
+                        const d = recentLeaveStats.personal.days;
+                        const h = recentLeaveStats.personal.hours;
+                        const hourLabel = t('common.hour', 'ชั่วโมง');
+                        if (d > 0 && h > 0) return `${d} ${t('common.days')} ${h} ${hourLabel}`;
+                        if (d > 0) return `${d} ${t('common.days')}`;
+                        if (h > 0) return `${h} ${hourLabel}`;
+                        return `0 ${t('common.days')}`;
+                      })()}
+                    </span>
                   </div>
                 </div>
               )}

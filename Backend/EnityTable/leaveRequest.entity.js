@@ -28,5 +28,6 @@ module.exports = new EntitySchema({
     approvedTime: { type: 'timestamp', nullable: true }, // เวลาที่อนุมัติ
     rejectedTime: {type: 'timestamp', nullable: true},
     imgLeave: { type: 'varchar', nullable: true },
+    isRead: { type: 'boolean', default: false, nullable: false },
   },
 });

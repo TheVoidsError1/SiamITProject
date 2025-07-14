@@ -15,6 +15,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { format } from "date-fns";
+import { th, enUS } from "date-fns/locale";
 
 // ฟังก์ชัน validate เวลา HH:mm (24 ชั่วโมง)
 function isValidTimeFormat(timeStr: string): boolean {
@@ -367,6 +369,7 @@ export const LeaveForm = () => {
           <SelectContent>
             {leaveTypes.map((type) => (
               <SelectItem key={type.id} value={type.id}>
+                {t(`leaveTypes.${type.leave_type}`, type.leave_type)}
                 {t(`leaveTypes.${type.leave_type}`, type.leave_type)}
               </SelectItem>
             ))}

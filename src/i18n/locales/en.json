@@ -54,6 +54,7 @@
     "error": "Error",
     "success": "Success",
     "days": "days",
+    "hour": "hour",
     "date": "Date",
     "status": "Status",
     "reason": "Reason",
@@ -306,5 +307,16 @@
     "usedLeaveDays": "Used Leave Days",
     "noPassword": "Not set",
     "leaveHistoryDesc": "Employee leave history"
+  },
+  "notification": {
+    "title": "Notifications",
+    "empty": "No notifications",
+    "approved": "Request Approved",
+    "rejected": "Request Rejected",
+    "leaveDate": "Leave Date",
+    "approvedDesc": "Your request has been approved.",
+    "rejectedDesc": "Your request was rejected.",
+    "markAsRead": "Mark as Read",
+    "markAllAsRead": "Mark All as Read"
   }
 }
