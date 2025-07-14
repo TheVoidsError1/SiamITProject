@@ -588,6 +588,151 @@ module.exports = (AppDataSource) => {
     }
   });
 
+  /**
+   * @swagger
+   * /api/leave-quota/me:
+   *   get:
+   *     summary: Get leave quota for the logged-in user
+   *     description: Returns leave quota and usage for the current user.
+   *     tags: [Profile]
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: Leave quota data
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 data:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       type:
+   *                         type: string
+   *                       used:
+   *                         type: number
+   *                       total:
+   *                         type: number
+   *       401:
+   *         description: No or invalid token provided
+   *       403:
+   *         description: Invalid token
+   *       404:
+   *         description: User not found
+   *       500:
+   *         description: Internal server error
+   */
+  router.get('/leave-quota/me', async (req, res) => {
+    try {
+      // 1. Get token from Authorization header
+      const authHeader = req.headers['authorization'];
+      const token = authHeader && authHeader.split(' ')[1];
+      if (!token) {
+        return res.status(401).json({ success: false, message: 'Access token required' });
+      }
+
+      // 2. Decode token to get payload
+      let payload;
+      try {
+        payload = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+      } catch (err) {
+        return res.status(403).json({ success: false, message: 'Invalid token' });
+      }
+
+      // 3. Find user in ProcessCheck table by token
+      const processRepo = AppDataSource.getRepository('ProcessCheck');
+      const processCheck = await processRepo.findOne({ where: { Token: token } });
+      if (!processCheck) {
+        return res.status(404).json({ success: false, message: 'User not found in ProcessCheck' });
+      }
+
+      const { Repid: repid, Role: role } = processCheck;
+
+      // 4. Get positionId from user/admin
+      let positionId = null;
+      if (role === 'admin') {
+        const adminRepo = AppDataSource.getRepository('Admin');
+        const admin = await adminRepo.findOne({ where: { id: repid } });
+        if (!admin) return res.status(404).json({ success: false, message: 'Admin not found' });
+        positionId = admin.position;
+      } else {
+        const userRepo = AppDataSource.getRepository('User');
+        const user = await userRepo.findOne({ where: { id: repid } });
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+        positionId = user.position;
+      }
+      if (!positionId) return res.status(404).json({ success: false, message: 'Position not found' });
+
+      // 5. Query leaveQuota by positionId
+      const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
+      const quota = await leaveQuotaRepo.findOne({ where: { positionId } });
+      if (!quota) return res.status(404).json({ success: false, message: 'Leave quota not found for this position' });
+
+      // 6. Query approved leaveRequests for this user
+      const leaveRequestRepo = AppDataSource.getRepository('LeaveRequest');
+      const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+      const leaveRequests = await leaveRequestRepo.find({ where: { Repid: repid, status: 'approved' } });
+
+      // 7. Map leaveType id -> leave_type (string)
+      const leaveTypeIdToName = {};
+      const allLeaveTypes = await leaveTypeRepo.find();
+      allLeaveTypes.forEach(lt => {
+        leaveTypeIdToName[lt.id] = lt.leave_type;
+      });
+
+      // 8. รวมวัน/ชั่วโมงที่ใช้แต่ละประเภท
+      let used = { vacation: 0, sick: 0, personal: 0, maternity: 0 };
+      for (const lr of leaveRequests) {
+        let typeName = lr.leaveType;
+        if (leaveTypeIdToName[typeName]) typeName = leaveTypeIdToName[typeName];
+        // Normalize typeName
+        let typeKey = null;
+        if (["ลาพักผ่อน", "vacation"].includes(typeName)) typeKey = "vacation";
+        else if (["ลาป่วย", "sick"].includes(typeName)) typeKey = "sick";
+        else if (["ลากิจ", "personal"].includes(typeName)) typeKey = "personal";
+        else if (["ลาคลอด", "maternity"].includes(typeName)) typeKey = "maternity";
+        if (!typeKey) continue;
+        // คำนวณจำนวนวัน/ชั่วโมง
+        if (typeKey === "personal" && lr.startTime && lr.endTime) {
+          // แบบชั่วโมง
+          const [sh, sm] = lr.startTime.split(":").map(Number);
+          const [eh, em] = lr.endTime.split(":").map(Number);
+          let start = sh + (sm || 0) / 60;
+          let end = eh + (em || 0) / 60;
+          let diff = end - start;
+          if (diff < 0) diff += 24;
+          used.personal += diff / 9; // 9 ชั่วโมง = 1 วัน
+        } else if (lr.startDate && lr.endDate) {
+          // แบบวัน
+          const start = new Date(lr.startDate);
+          const end = new Date(lr.endDate);
+          let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+          if (days < 0 || isNaN(days)) days = 0;
+          used[typeKey] += days;
+        }
+      }
+      // ปัดเศษทศนิยม 2 ตำแหน่งสำหรับ personal
+      used.personal = Math.round(used.personal * 100) / 100;
+
+      // 9. Prepare result
+      const result = [
+        { type: 'vacation', used: used.vacation, total: quota.vacation },
+        { type: 'sick', used: used.sick, total: quota.sick },
+        { type: 'personal', used: used.personal, total: quota.personal },
+        { type: 'maternity', used: used.maternity, total: quota.maternity },
+      ];
+      return res.json({ success: true, data: result });
+    } catch (err) {
+      console.error('Leave quota error:', err);
+      return res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+  });
+
   // Test route to verify ProfileController is working
   router.get('/test', (req, res) => {
     res.json({ message: 'ProfileController is working!' });

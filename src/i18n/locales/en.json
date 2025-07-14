@@ -65,7 +65,8 @@
     "user": "User",
     "back": "Back",
     "actions": "Actions",
-    "viewDetails": "View Details"
+    "viewDetails": "View Details",
+    "hours": "hours"
   },
   "leave": {
     "leaveRequest": "Leave Request",

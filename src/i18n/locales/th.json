@@ -65,7 +65,8 @@
     "user": "ผู้ใช้",
     "back": "ย้อนกลับ",
     "actions": "การดำเนินการ",
-    "viewDetails": "ดูรายละเอียด"
+    "viewDetails": "ดูรายละเอียด",
+    "hours": "ชั่วโมง"
   },
   "leave": {
     "leaveRequest": "ขอลา",

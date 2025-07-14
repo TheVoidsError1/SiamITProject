@@ -1,19 +1,19 @@
-import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { User, Mail, Building, Briefcase, Shield, Calendar, Camera, Save } from 'lucide-react';
+import axios from 'axios';
+import { Building, Calendar, Camera, Save, Shield, User } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../components/ui/select";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 
 const Profile = () => {
   const { t } = useTranslation();
@@ -35,6 +35,8 @@ const Profile = () => {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [positionsLoaded, setPositionsLoaded] = useState(false);
   const [departmentsLoaded, setDepartmentsLoaded] = useState(false);
+  const [leaveQuota, setLeaveQuota] = useState<any[]>([]);
+  const [leaveLoading, setLeaveLoading] = useState(true);
 
   const getKeyByLabel = (label: string, options: string[], tPrefix: string) => {
     for (const key of options) {
@@ -174,6 +176,52 @@ const Profile = () => {
       .catch(() => setDepartmentsLoaded(true));
   }, []);
 
+  useEffect(() => {
+    const fetchLeaveQuota = async () => {
+      setLeaveLoading(true);
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) return;
+        const res = await axios.get('http://localhost:3001/api/leave-quota/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.data.success) {
+          setLeaveQuota(res.data.data);
+        }
+      } catch (err) {
+        setLeaveQuota([]);
+      } finally {
+        setLeaveLoading(false);
+      }
+    };
+    fetchLeaveQuota();
+  }, []);
+
+  const leaveTypeMap: Record<string, { label: string, color: string }> = {
+    vacation: { label: t('profile.vacationLeave'), color: 'bg-blue-500' },
+    sick: { label: t('profile.sickLeave'), color: 'bg-green-500' },
+    personal: { label: t('profile.personalLeave'), color: 'bg-orange-500' },
+    maternity: { label: t('profile.maternityLeave'), color: 'bg-purple-500' },
+  };
+
+  const leaveStats = leaveQuota.map(item => {
+    const usedDays = item.type === 'personal' ? Math.floor(item.used) : item.used;
+    const usedHours = item.type === 'personal' ? Math.round((item.used % 1) * 9) : 0;
+    const remaining = item.total - item.used;
+    const remainingDays = item.type === 'personal' ? Math.floor(remaining) : remaining;
+    const remainingHours = item.type === 'personal' ? Math.round((remaining % 1) * 9) : 0;
+    return {
+      label: leaveTypeMap[item.type]?.label || item.type,
+      used: usedDays,
+      usedHour: usedHours,
+      total: item.total,
+      color: leaveTypeMap[item.type]?.color || 'bg-gray-400',
+      type: item.type,
+      remaining: remainingDays,
+      remainingHour: remainingHours,
+    };
+  });
+
   const handleCameraClick = () => {
     fileInputRef.current?.click();
   };
@@ -279,13 +327,6 @@ const Profile = () => {
       setSaving(false);
     }
   };
-
-  const leaveStats = [
-    { label: t('profile.vacationLeave'), used: 8, total: 15, color: 'bg-blue-500' },
-    { label: t('profile.sickLeave'), used: 3, total: 10, color: 'bg-green-500' },
-    { label: t('profile.personalLeave'), used: 2, total: 5, color: 'bg-orange-500' },
-    { label: t('profile.maternityLeave'), used: 0, total: 90, color: 'bg-purple-500' },
-  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -453,29 +494,37 @@ const Profile = () => {
                 <CardDescription>{t('profile.leaveRightsDesc')}</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {leaveStats.map((stat, index) => (
-                    <div key={index} className="space-y-3">
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm font-medium">{stat.label}</span>
-                        <span className="text-sm text-gray-500">
-                          {stat.used}/{stat.total} {t('common.days')}
-                        </span>
+                {leaveLoading ? (
+                  <div>กำลังโหลดข้อมูล...</div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {leaveStats.map((stat, index) => (
+                      <div key={index} className="space-y-3">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">{stat.label}</span>
+                          <span className="text-sm text-gray-500">
+                            {stat.type === 'personal'
+                              ? `${stat.used} ${t('common.days')}${stat.usedHour > 0 ? ` ${stat.usedHour} ${t('common.hours')}` : ''}/${stat.total} ${t('common.days')}`
+                              : `${stat.used}/${stat.total} ${t('common.days')}`}
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className={`${stat.color} h-2 rounded-full transition-all duration-500`}
+                            style={{
+                              width: `${(stat.used / stat.total) * 100}%`
+                            }}
+                          ></div>
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {stat.type === 'personal'
+                            ? `${t('common.remaining')} ${stat.remaining} ${t('common.days')}${stat.remainingHour > 0 ? ` ${stat.remainingHour} ${t('common.hours')}` : ''}`
+                            : `${t('common.remaining')} ${stat.total - stat.used} ${t('common.days')}`}
+                        </div>
                       </div>
-                      <div className="w-full bg-gray-200 rounded-full h-2">
-                        <div
-                          className={`${stat.color} h-2 rounded-full transition-all duration-500`}
-                          style={{
-                            width: `${(stat.used / stat.total) * 100}%`
-                          }}
-                        ></div>
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {t('common.remaining')} {stat.total - stat.used} {t('common.days')}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </TabsContent>
