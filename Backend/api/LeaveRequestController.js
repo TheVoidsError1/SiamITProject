@@ -167,12 +167,22 @@
            }
            // join leaveType จาก database
            if (leave.leaveType) leaveTypeObj = await leaveTypeRepo.findOneBy({ id: leave.leaveType });
-           // คำนวณจำนวนวันลา
-           let duration = 1;
-           if (leave.startDate && leave.endDate) {
+           // คำนวณจำนวนวันหรือชั่วโมงลา
+           let duration = '';
+           let durationType = '';
+           if (leave.startTime && leave.endTime) {
+             // Calculate hours
+             const [sh, sm] = leave.startTime.split(':').map(Number);
+             const [eh, em] = leave.endTime.split(':').map(Number);
+             let start = sh + (sm || 0) / 60;
+             let end = eh + (em || 0) / 60;
+             duration = (end - start).toFixed(2);
+             durationType = 'hour';
+           } else if (leave.startDate && leave.endDate) {
              const start = new Date(leave.startDate);
              const end = new Date(leave.endDate);
              duration = Math.abs((end - start) / (1000*60*60*24)) + 1;
+             durationType = 'day';
            }
            return {
              id: leave.id,
@@ -184,6 +194,7 @@
              rejectedTime: leave.rejectedTime,
              createdAt: leave.createdAt,
              duration,
+             durationType,
              reason: leave.reason,
              status: leave.status,
              submittedDate: leave.createdAt,
