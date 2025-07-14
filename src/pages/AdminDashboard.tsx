@@ -488,9 +488,9 @@ const AdminDashboard = () => {
                         // วันที่อนุมัติ/ไม่อนุมัติ
                         let statusDate = "-";
                         if (request.status === "approved" && request.approvedTime) {
-                          statusDate = format(new Date(request.approvedTime), "d MMMM yyyy", { locale: th });
+                          statusDate = formatDateLocalized(request.approvedTime);
                         } else if (request.status === "rejected" && request.rejectedTime) {
-                          statusDate = format(new Date(request.rejectedTime), "d MMMM yyyy", { locale: th });
+                          statusDate = formatDateLocalized(request.rejectedTime);
                         }
                         return (
                           <div
