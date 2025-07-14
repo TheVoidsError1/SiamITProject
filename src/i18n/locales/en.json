@@ -279,7 +279,8 @@
     "totalEmployees": "Total Employees",
     "regularEmployees": "Regular Employees",
     "interns": "Interns",
-    "days": "days"
+    "days": "days",
+    "manageDepartment": "Manage employees and departments"
   },
   "error": {
     "apiConnectionError": "API Connection Error"

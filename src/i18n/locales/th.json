@@ -279,7 +279,8 @@
     "totalEmployees": "พนักงานทั้งหมด",
     "regularEmployees": "พนักงานประจำ",
     "interns": "เด็กฝึกงาน",
-    "days": "วัน"
+    "days": "วัน",
+    "manageDepartment": "จัดการพนักงานและแผนก"
   },
   "error": {
     "apiConnectionError": "ข้อผิดพลาดการเชื่อมต่อ API"
