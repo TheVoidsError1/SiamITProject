@@ -36,8 +36,14 @@ const AdminDashboard = () => {
   // const [averageDayOff, setAverageDayOff] = useState<number>(0);
 
   const [pendingRequests, setPendingRequests] = useState<any[]>([]);
+  // --- เพิ่ม state สำหรับ paging ---
+  const [pendingPage, setPendingPage] = useState(1);
+  const [pendingTotalPages, setPendingTotalPages] = useState(1);
   const [recentRequests, setRecentRequests] = useState<any[]>([]);
   const [historyRequests, setHistoryRequests] = useState<any[]>([]);
+  // --- เพิ่ม state สำหรับ paging ---
+  const [historyPage, setHistoryPage] = useState(1);
+  const [historyTotalPages, setHistoryTotalPages] = useState(1);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string>("");
   const [selectedRequest, setSelectedRequest] = useState<any | null>(null);
@@ -231,18 +237,24 @@ const AdminDashboard = () => {
   const fetchHistoryRequests = () => {
     setLoading(true);
     const token = localStorage.getItem('token');
-    fetch("http://localhost:3001/api/leave-request/history", {
+    // --- ส่ง page, limit ไป backend ---
+    fetch(`http://localhost:3001/api/leave-request/history?page=${historyPage}&limit=5`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => res.json())
       .then(data => {
         if (data.status === "success") {
           setHistoryRequests(data.data);
+          setHistoryTotalPages(data.totalPages || 1);
         } else {
           setHistoryRequests([]);
+          setHistoryTotalPages(1);
         }
       })
-      .catch(() => setHistoryRequests([]))
+      .catch(() => {
+        setHistoryRequests([]);
+        setHistoryTotalPages(1);
+      })
       .finally(() => setLoading(false));
   };
 
@@ -252,27 +264,33 @@ const AdminDashboard = () => {
       setLoading(true);
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch("http://localhost:3001/api/leave-request/pending", {
+        // --- ส่ง page, limit ไป backend ---
+        const res = await fetch(`http://localhost:3001/api/leave-request/pending?page=${pendingPage}&limit=4`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
         if (data.status === "success") {
           setPendingRequests(data.data);
+          setPendingTotalPages(data.totalPages || 1);
         } else {
+          setPendingRequests([]);
+          setPendingTotalPages(1);
           setError(t('admin.loadError'));
         }
       } catch (e) {
+        setPendingRequests([]);
+        setPendingTotalPages(1);
         setError(t('admin.connectionError'));
       } finally {
         setLoading(false);
       }
     };
     fetchPending();
-  }, [t]);
+  }, [t, pendingPage]);
 
   useEffect(() => {
     fetchHistoryRequests();
-  }, [t]);
+  }, [t, historyPage]);
 
   useEffect(() => {
     fetch("http://localhost:3001/api/leave-request/dashboard-stats")
@@ -452,6 +470,21 @@ const AdminDashboard = () => {
                           </div>
                         </div>
                       ))}
+                      {/* --- ปุ่มเปลี่ยนหน้า --- */}
+                      {pendingTotalPages > 1 && (
+                        <div className="flex justify-center mt-6 gap-2">
+                          {Array.from({ length: pendingTotalPages }, (_, i) => (
+                            <button
+                              key={i}
+                              onClick={() => setPendingPage(i + 1)}
+                              className={`px-3 py-1 rounded border ${pendingPage === i + 1 ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`}
+                              disabled={pendingPage === i + 1}
+                            >
+                              {i + 1}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </CardContent>
@@ -540,6 +573,21 @@ const AdminDashboard = () => {
                           </div>
                         );
                       })}
+                      {/* --- ปุ่มเปลี่ยนหน้า --- */}
+                      {historyTotalPages > 1 && (
+                        <div className="flex justify-center mt-6 gap-2">
+                          {Array.from({ length: historyTotalPages }, (_, i) => (
+                            <button
+                              key={i}
+                              onClick={() => setHistoryPage(i + 1)}
+                              className={`px-3 py-1 rounded border ${historyPage === i + 1 ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`}
+                              disabled={historyPage === i + 1}
+                            >
+                              {i + 1}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   )}
                 </CardContent>

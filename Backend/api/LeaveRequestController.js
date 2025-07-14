@@ -118,11 +118,20 @@
          const leaveRepo = AppDataSource.getRepository('LeaveRequest');
          const userRepo = AppDataSource.getRepository('User');
          const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
-         // ดึง leave requests ที่ pending
-         const pendingLeaves = await leaveRepo.find({
-           where: { status: 'pending' },
-           order: { id: 'DESC' },
-         });
+         // --- เพิ่ม paging ---
+         const page = parseInt(req.query.page) || 1;
+         const limit = parseInt(req.query.limit) || 4;
+         const skip = (page - 1) * limit;
+         // ดึง leave requests ที่ pending (paging)
+         const [pendingLeaves, total] = await Promise.all([
+           leaveRepo.find({
+             where: { status: 'pending' },
+             order: { id: 'DESC' },
+             skip,
+             take: limit
+           }),
+           leaveRepo.count({ where: { status: 'pending' } })
+         ]);
          // join user (Repid -> user.id) และ leaveType (leaveType -> LeaveType.id)
          const result = await Promise.all(pendingLeaves.map(async (leave) => {
            let user = null;
@@ -147,7 +156,7 @@
              leaveTypeName: leaveTypeObj ? leaveTypeObj.leave_type : leave.leaveType,
            };
          }));
-         res.json({ status: 'success', data: result });
+         res.json({ status: 'success', data: result, total, page, totalPages: Math.ceil(total / limit) });
        } catch (err) {
          res.status(500).json({ status: 'error', message: err.message });
        }
@@ -175,11 +184,20 @@
              { status: 'pending', Repid: userId }
            ];
          }
-         // ดึงใบคำขอที่ status เป็น approved หรือ rejected (และ filter ตาม userId ถ้ามี)
-         const processedLeaves = await leaveRepo.find({
-           where,
-           order: { id: 'DESC' },
-         });
+         // --- เพิ่ม paging ---
+         const page = parseInt(req.query.page) || 1;
+         const limit = parseInt(req.query.limit) || 5;
+         const skip = (page - 1) * limit;
+         // ดึงใบคำขอที่ status เป็น approved หรือ rejected (และ filter ตาม userId ถ้ามี) (paging)
+         const [processedLeaves, total] = await Promise.all([
+           leaveRepo.find({
+             where,
+             order: { id: 'DESC' },
+             skip,
+             take: limit
+           }),
+           leaveRepo.count({ where })
+         ]);
          const result = await Promise.all(processedLeaves.map(async (leave) => {
            let user = null;
            let leaveTypeObj = null;
@@ -233,7 +251,7 @@
              user: user ? { User_name: user.User_name, department: user.department, position: user.position } : null,
            };
          }));
-         res.json({ status: 'success', data: result });
+         res.json({ status: 'success', data: result, total, page, totalPages: Math.ceil(total / limit) });
        } catch (err) {
          res.status(500).json({ status: 'error', message: err.message });
        }
