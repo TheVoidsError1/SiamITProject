@@ -158,8 +158,8 @@ const EmployeeManagement = () => {
                         <TableRow key={employee.id}>
                           <TableCell className="font-medium text-sm">{employee.full_name}</TableCell>
                           <TableCell className="text-sm">{employee.email}</TableCell>
-                          <TableCell className="text-sm">{employee.position}</TableCell>
-                          <TableCell className="text-sm">{employee.department}</TableCell>
+                          <TableCell className="text-sm">{t('positions.' + employee.position, employee.position)}</TableCell>
+                          <TableCell className="text-sm">{t('departments.' + employee.department, employee.department)}</TableCell>
                           <TableCell>
                             <Badge 
                               variant={employee.role === 'admin' ? 'default' : 'secondary'}
