@@ -10,7 +10,7 @@ import { format } from "date-fns";
 import { th } from "date-fns/locale";
 
 const Index = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const [stats, setStats] = useState([
     { title: t('main.daysRemaining'), value: "-", unit: t('common.days'), icon: Calendar, color: "text-blue-600", bgColor: "bg-blue-50" },
     { title: t('main.daysUsed'), value: "-", unit: t('common.days'), icon: Clock, color: "text-green-600", bgColor: "bg-green-50" },

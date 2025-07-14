@@ -93,10 +93,13 @@ const LeaveHistory = () => {
       'ลากิจ': 'leaveTypes.personal',
       'emergency': 'leaveTypes.emergency',
       'ลาฉุกเฉิน': 'leaveTypes.emergency',
+      'maternity': 'leaveTypes.maternity',
+      'ลาคลอด': 'leaveTypes.maternity',
     };
     const i18nKey = typeMap[typeLower];
     if (i18nKey) return t(i18nKey);
-    return type; // fallback
+    // fallback: try t(`leaveTypes.${typeLower}`) or raw type
+    return t(`leaveTypes.${typeLower}`, type);
   };
 
   // ฟังก์ชันคำนวณชั่วโมงจากเวลาเริ่มและเวลาสิ้นสุด (string HH:mm)

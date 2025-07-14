@@ -158,14 +158,18 @@ const EmployeeManagement = () => {
                         <TableRow key={employee.id}>
                           <TableCell className="font-medium text-sm">{employee.full_name}</TableCell>
                           <TableCell className="text-sm">{employee.email}</TableCell>
-                          <TableCell className="text-sm">{employee.position}</TableCell>
-                          <TableCell className="text-sm">{employee.department}</TableCell>
+                          <TableCell className="text-sm">{t('positions.' + employee.position, employee.position)}</TableCell>
+                          <TableCell className="text-sm">{t('departments.' + employee.department, employee.department)}</TableCell>
                           <TableCell>
                             <Badge 
                               variant={employee.role === 'admin' ? 'default' : 'secondary'}
                               className="text-xs px-2 py-0.5"
                             >
-                              {employee.role === 'admin' ? 'ผู้ดูแลระบบ' : 'พนักงาน'}
+                              {employee.role === 'admin'
+                                ? t('employee.admin')
+                                : employee.role === 'intern'
+                                  ? t('employee.intern')
+                                  : t('employee.employee')}
                             </Badge>
                           </TableCell>
                           <TableCell>
