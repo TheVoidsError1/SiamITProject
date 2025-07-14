@@ -21,6 +21,16 @@ interface Employee {
   totalLeaveDays: number;
 }
 
+// เพิ่มฟังก์ชันแปลงวันลาเป็นวัน+ชั่วโมง (รองรับ i18n)
+function formatLeaveDays(days: number, t: (key: string) => string): string {
+  const fullDays = Math.floor(days);
+  const hours = Math.round((days - fullDays) * 9);
+  if (hours > 0) {
+    return `${fullDays} ${t('common.days')} ${hours} ${t('common.hour')}`;
+  }
+  return `${fullDays} ${t('common.days')}`;
+}
+
 const EmployeeManagement = () => {
   const { t } = useTranslation();
   const [employees, setEmployees] = useState<Employee[]>([]);
@@ -174,7 +184,7 @@ const EmployeeManagement = () => {
                           </TableCell>
                           <TableCell>
                             <span className={`font-medium text-sm ${employee.usedLeaveDays > employee.totalLeaveDays * 0.8 ? 'text-red-600' : 'text-green-600'}`}>
-                              {employee.usedLeaveDays}/{employee.totalLeaveDays} {t('system.days')}
+                              {formatLeaveDays(employee.usedLeaveDays, t)}/{formatLeaveDays(employee.totalLeaveDays, t)}
                             </span>
                           </TableCell>
                           <TableCell className="text-center">
