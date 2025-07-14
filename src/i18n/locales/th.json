@@ -142,7 +142,9 @@
     "attachment": "ไฟล์แนบ",
     "duration": "ระยะเวลา",
     "hour": "ชั่วโมง",
-    "day": "วัน"
+    "day": "วัน",
+    "leaveTime": "เวลาที่ลา:",
+    "noHourlyLeave": "ไม่มีการลาเป็น ชม."
   },
   "leaveTypes": {
     "vacation": "ลาพักผ่อน",
@@ -267,7 +269,8 @@
     "approvedWhen": "อนุมัติเมื่อ:",
     "rejectedWhen": "ไม่อนุมัติเมื่อ:",
     "rejected": "ไม่อนุมัติแล้ว",
-    "noApprovalHistory": "ไม่มีประวัติการอนุมัติ/ไม่อนุมัติ"
+    "noApprovalHistory": "ไม่มีประวัติการอนุมัติ/ไม่อนุมัติ",
+    "allapproved": "อนุมัติทั่งหมด"
   },
   "system": {
     "onlineLeaveSystem": "ระบบลาออนไลน์",

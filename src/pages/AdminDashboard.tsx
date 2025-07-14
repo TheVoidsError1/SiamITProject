@@ -84,7 +84,7 @@ const AdminDashboard = () => {
       bgColor: "bg-orange-50",
     },
     {
-      title: 'อนุมัติทั้งหมด',
+      title: t('admin.allapproved'),
       value: dashboardStats.approvedCount.toString(),
       icon: CheckCircle,
       color: "text-green-600",
@@ -356,11 +356,11 @@ const AdminDashboard = () => {
                               </p>
                             </div>
                             <div>
-                              <p className="text-sm font-medium text-gray-700">เวลาที่ลา:</p>
+                              <p className="text-sm font-medium text-gray-700">{t('leave.leaveTime', 'เวลาที่ลา:')}</p>
                               <p className="text-sm text-gray-600">
                                 {request.startTime && request.endTime
                                   ? `${request.startTime} - ${request.endTime}`
-                                  : 'ไม่มีการลาเป็น ชม.'}
+                                  : t('leave.noHourlyLeave', 'ไม่มีการลาเป็น ชม.')}
                               </p>
                             </div>
                           </div>
@@ -462,7 +462,7 @@ const AdminDashboard = () => {
                               <div className="font-bold text-lg mb-1">{request.user?.User_name || "-"}</div>
                               <div className="text-base text-gray-700 mb-2">{request.leaveTypeName}</div>
                               <div className="text-sm text-gray-700 mb-1">
-                                {t('leave.date')}: {startStr} - {endStr} ({leaveDays} {t('leave.days')})
+                                {t('leave.date')}: {startStr} - {endStr} ({leaveDays} {t('leave.day')})
                               </div>
                             </div>
                             {/* ฝั่งขวาล่าง (วันที่อนุมัติ) */}
@@ -525,9 +525,9 @@ const AdminDashboard = () => {
                       <span className="font-semibold text-blue-800">{t('leave.contact', 'เบอร์ติดต่อ')}:</span> {selectedRequest.contact || "-"}
                     </div>
                     <div>
-                      <span className="font-semibold text-blue-800">เวลาที่ลา:</span> {selectedRequest?.startTime && selectedRequest?.endTime
+                      <span className="font-semibold text-blue-800">{t('leave.leaveTime', 'เวลาที่ลา:')}</span> {selectedRequest?.startTime && selectedRequest?.endTime
                         ? `${selectedRequest.startTime} - ${selectedRequest.endTime}`
-                        : 'ไม่มีการลาเป็น ชม.'}
+                        : t('leave.noHourlyLeave', 'ไม่มีการลาเป็น ชม.')}
                     </div>
               
                   </div>

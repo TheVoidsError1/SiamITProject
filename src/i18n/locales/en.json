@@ -142,7 +142,9 @@
     "attachment": "Attachment",
     "duration": "Duration",
     "hour": "hour",
-    "day": "day"
+    "day": "day",
+    "leaveTime": "Leave Time:",
+    "noHourlyLeave": "No hourly leave."
   },
   "leaveTypes": {
     "vacation": "Vacation ",
@@ -267,7 +269,8 @@
     "approvedWhen": "Approved on:",
     "rejectedWhen": "Rejected on:",
     "rejected": "Rejected",
-    "noApprovalHistory": "No approval/rejection history"
+    "noApprovalHistory": "No approval/rejection history",
+    "allapproved": "All approved"
   },
   "system": {
     "onlineLeaveSystem": "Online Leave System",
