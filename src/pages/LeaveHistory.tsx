@@ -116,6 +116,18 @@ const LeaveHistory = () => {
   // กำหนดหน่วยชั่วโมงตามภาษา
   const hourUnit = i18n.language === 'th' ? 'ชม' : 'Hours';
 
+  // เพิ่มฟังก์ชันแปลงวันที่ตามภาษา
+  const formatDateLocalized = (dateStr: string) => {
+    const date = new Date(dateStr);
+    if (i18n.language === 'th') {
+      // แปลงปีเป็น พ.ศ.
+      const buddhistYear = date.getFullYear() + 543;
+      return `${date.getDate().toString().padStart(2, '0')} ${format(date, 'MMM', { locale: th })} ${buddhistYear}`;
+    }
+    // อังกฤษ: ใช้ year ปกติ
+    return format(date, 'dd MMM yyyy');
+  };
+
   // Calculate summary statistics from leaveHistory
   const totalLeaveDays = leaveHistory.reduce((sum, leave) => sum + (leave.days || 0), 0);
   const approvedCount = leaveHistory.filter(leave => leave.status === "approved").length;
@@ -201,7 +213,7 @@ const LeaveHistory = () => {
                         {getStatusBadge(leave.status)}
                       </div>
                       <div className="text-sm text-muted-foreground">
-                        {format(new Date(leave.submittedDate), 'dd MMM yyyy', { locale: th })}
+                        {formatDateLocalized(leave.submittedDate)}
                       </div>
                     </div>
                   </CardHeader>
@@ -211,12 +223,12 @@ const LeaveHistory = () => {
                         <div className="flex items-center gap-2 text-sm">
                           <Calendar className="w-4 h-4 text-muted-foreground" />
                           <span className="font-medium">{t('leave.startDate')}:</span>
-                          <span>{format(new Date(leave.startDate), 'dd MMM yyyy', { locale: th })}</span>
+                          <span>{formatDateLocalized(leave.startDate)}</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm">
                           <Calendar className="w-4 h-4 text-muted-foreground" />
                           <span className="font-medium">{t('leave.endDate')}:</span>
-                          <span>{format(new Date(leave.endDate), 'dd MMM yyyy', { locale: th })}</span>
+                          <span>{formatDateLocalized(leave.endDate)}</span>
                         </div>
                         <div className="flex items-center gap-2 text-sm">
                           <Clock className="w-4 h-4 text-muted-foreground" />
