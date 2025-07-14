@@ -204,7 +204,9 @@
              const [eh, em] = leave.endTime.split(':').map(Number);
              let start = sh + (sm || 0) / 60;
              let end = eh + (em || 0) / 60;
-             duration = (end - start).toFixed(2);
+             let diff = end - start;
+             if (diff < 0) diff += 24; // ข้ามวัน
+             duration = diff.toFixed(2);
              durationType = 'hour';
            } else if (leave.startDate && leave.endDate) {
              const start = new Date(leave.startDate);
@@ -218,6 +220,8 @@
              leaveDate: leave.startDate,
              startDate: leave.startDate,
              endDate: leave.endDate,
+             startTime: leave.startTime || null,
+             endTime: leave.endTime || null,
              approvedTime: leave.approvedTime,
              rejectedTime: leave.rejectedTime,
              createdAt: leave.createdAt,

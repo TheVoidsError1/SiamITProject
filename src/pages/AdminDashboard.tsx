@@ -25,7 +25,7 @@ type LeaveRequest = {
 };
 
 const AdminDashboard = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
 
   // ลบ state ที่ไม่ได้ใช้จริง
@@ -105,6 +105,31 @@ const AdminDashboard = () => {
       bgColor: "bg-purple-50",
     },
   ];
+
+  // --- เพิ่มฟังก์ชันแปลงวันที่ตามภาษา ---
+  const formatDateLocalized = (dateStr: string) => {
+    const date = new Date(dateStr);
+    if (i18n.language === 'th') {
+      const buddhistYear = date.getFullYear() + 543;
+      return `${date.getDate().toString().padStart(2, '0')} ${format(date, 'MMM', { locale: th })} ${buddhistYear}`;
+    }
+    return format(date, 'dd MMM yyyy');
+  };
+
+  // --- เพิ่มฟังก์ชันคำนวณชั่วโมง ---
+  const calcHours = (start: string, end: string) => {
+    if (!start || !end) return null;
+    const [sh, sm] = start.split(":").map(Number);
+    const [eh, em] = end.split(":").map(Number);
+    const startMins = sh * 60 + sm;
+    const endMins = eh * 60 + em;
+    let diff = endMins - startMins;
+    if (diff < 0) diff += 24 * 60; // ข้ามวัน
+    const hours = Math.floor(diff / 60);
+    const mins = diff % 60;
+    return `${hours}.${mins.toString().padStart(2, '0')}`;
+  };
+  const hourUnit = i18n.language === 'th' ? 'ชม' : 'Hours';
 
   const handleApprove = (id: string, employeeName: string) => {
     const token = localStorage.getItem('token');
@@ -352,7 +377,9 @@ const AdminDashboard = () => {
                             <div>
                               <p className="text-sm font-medium text-gray-700">{t('leave.date')}:</p>
                               <p className="text-sm text-gray-600">
-                                {request.startDate} - {request.endDate}
+                                {request.startTime && request.endTime
+                                  ? `${formatDateLocalized(request.startDate)} ${request.startTime} - ${formatDateLocalized(request.endDate)} ${request.endTime} (${calcHours(request.startTime, request.endTime)} ${hourUnit})`
+                                  : `${formatDateLocalized(request.startDate)} - ${formatDateLocalized(request.endDate)}`}
                               </p>
                             </div>
                             <div>
@@ -423,8 +450,8 @@ const AdminDashboard = () => {
                         const end = new Date(request.endDate);
                         const leaveDays = differenceInCalendarDays(end, start) + 1;
                         // แปลงวันที่เป็นภาษาไทย
-                        const startStr = format(start, "d MMM yyyy", { locale: th });
-                        const endStr = format(end, "d MMM yyyy", { locale: th });
+                        const startStr = formatDateLocalized(request.startDate);
+                        const endStr = formatDateLocalized(request.endDate);
                         // วันที่อนุมัติ/ไม่อนุมัติ
                         let statusDate = "-";
                         if (request.status === "approved" && request.approvedTime) {
@@ -462,7 +489,9 @@ const AdminDashboard = () => {
                               <div className="font-bold text-lg mb-1">{request.user?.User_name || "-"}</div>
                               <div className="text-base text-gray-700 mb-2">{request.leaveTypeName}</div>
                               <div className="text-sm text-gray-700 mb-1">
-                                {t('leave.date')}: {startStr} - {endStr} ({leaveDays} {t('leave.day')})
+                                {t('leave.date')}: {request.startTime && request.endTime
+                                  ? `${startStr} ${request.startTime} - ${endStr} ${request.endTime} (${calcHours(request.startTime, request.endTime)} ${hourUnit})`
+                                  : `${startStr} - ${endStr} (${leaveDays} ${t('leave.day')})`}
                               </div>
                             </div>
                             {/* ฝั่งขวาล่าง (วันที่อนุมัติ) */}
@@ -516,7 +545,9 @@ const AdminDashboard = () => {
                       <span className="font-semibold text-blue-800">{t('leave.reason', 'เหตุผล')}:</span> {selectedRequest.reason}
                     </div>
                     <div>
-                      <span className="font-semibold text-blue-800">{t('leave.date', 'วันที่ลา')}:</span> {selectedRequest.startDate} - {selectedRequest.endDate}
+                      <span className="font-semibold text-blue-800">{t('leave.date', 'วันที่ลา')}:</span> {selectedRequest.startTime && selectedRequest.endTime
+                        ? `${formatDateLocalized(selectedRequest.startDate)} ${selectedRequest.startTime} - ${formatDateLocalized(selectedRequest.endDate)} ${selectedRequest.endTime} (${calcHours(selectedRequest.startTime, selectedRequest.endTime)} ${hourUnit})`
+                        : `${formatDateLocalized(selectedRequest.startDate)} - ${formatDateLocalized(selectedRequest.endDate)}`}
                     </div>
                     <div>
                       <span className="font-semibold text-blue-800">{t('leave.submittedDate', 'วันที่ส่งคำขอ')}:</span> {selectedRequest.createdAt ? selectedRequest.createdAt.split('T')[0] : "-"}
