@@ -1,16 +1,16 @@
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { format, differenceInCalendarDays } from "date-fns";
+import { differenceInCalendarDays, format } from "date-fns";
 import { th } from "date-fns/locale";
 import { AlertCircle, CheckCircle, Clock, Eye, TrendingUp, Users, XCircle } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 type LeaveRequest = {
   id: number;
@@ -51,6 +51,8 @@ const AdminDashboard = () => {
     userCount: 0,
     averageDayOff: 0,
   });
+  const [departments, setDepartments] = useState<{ id: string; department_name: string }[]>([]);
+  const [positions, setPositions] = useState<{ id: string; position_name: string }[]>([]);
 
   // ปรับการคำนวณสถิติให้ใช้ข้อมูลจาก leave request ที่ดึงมา
   const pendingCount = pendingRequests.length;
@@ -255,6 +257,37 @@ const AdminDashboard = () => {
           setDashboardStats(data.data);
         }
       });
+  }, []);
+
+  useEffect(() => {
+    // ดึง department
+    const fetchDepartments = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('http://localhost:3001/api/departments', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (data.status === 'success' && Array.isArray(data.data)) {
+          setDepartments(data.data);
+        }
+      } catch {}
+    };
+    // ดึง position
+    const fetchPositions = async () => {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch('http://localhost:3001/api/positions', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = await res.json();
+        if (data.status === 'success' && Array.isArray(data.data)) {
+          setPositions(data.data);
+        }
+      } catch {}
+    };
+    fetchDepartments();
+    fetchPositions();
   }, []);
 
   return (
@@ -504,10 +537,22 @@ const AdminDashboard = () => {
                         : selectedRequest.user?.User_name || "-"}
                     </div>
                     <div>
-                      <span className="font-semibold text-blue-800">{t('leave.position', 'ตำแหน่ง')}:</span> {selectedRequest.employeeType || "-"}
+                      <span className="font-semibold text-blue-800">{t('leave.position', 'ตำแหน่ง')}:</span> {
+                        (() => {
+                          const posId = selectedRequest.user?.position || selectedRequest.employeeType;
+                          const pos = positions.find(p => p.id === posId);
+                          return pos ? pos.position_name : posId || "-";
+                        })()
+                      }
                     </div>
                     <div>
-                      <span className="font-semibold text-blue-800">{t('leave.department', 'แผนก')}:</span> {selectedRequest.user?.department || "-"}
+                      <span className="font-semibold text-blue-800">{t('leave.department', 'แผนก')}:</span> {
+                        (() => {
+                          const deptId = selectedRequest.user?.department;
+                          const dept = departments.find(d => d.id === deptId);
+                          return dept ? dept.department_name : deptId || "-";
+                        })()
+                      }
                     </div>
                     <div>
                       <span className="font-semibold text-blue-800">{t('leave.type', 'ประเภทการลา')}:</span> {selectedRequest.leaveTypeName ? String(t(`leaveTypes.${String(selectedRequest.leaveTypeName)}`, String(selectedRequest.leaveTypeName))) : '-'}
