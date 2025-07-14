@@ -129,6 +129,8 @@
     "status": "สถานะ",
     "type": "ประเภทการลา",
     "details": "รายละเอียดใบลา",
+    "detailDescription": "ข้อมูลรายละเอียดเกี่ยวกับคำขอลานี้",
+    "approvedTime": "เวลาที่อนุมัติ",
     "viewAttachment": "ดูไฟล์แนบ",
     "detailTitle": "รายละเอียดการลา",
     "employeeName": "ชื่อพนักงาน",

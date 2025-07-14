@@ -127,6 +127,7 @@
     "selectSupervisor": "Select supervisor",
     "timePlaceholder": "e.g. 09:00 or 17:30",
     "details": "Leave Details",
+    "detailDescription": "Detailed information about this leave request.",
     "approvedTime": "Approval Time",
     "viewAttachment": "View Attachment",
     "status": "Status",
