@@ -328,12 +328,6 @@ const EmployeeDetail = () => {
                       </p>
                     )}
                   </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">{t('employee.usedLeaveDays')}</Label>
-                    <p className={`text-lg font-semibold mt-1 ${employee.usedLeaveDays && employee.totalLeaveDays && employee.usedLeaveDays > employee.totalLeaveDays * 0.8 ? 'text-red-600' : 'text-green-600'}`}>
-                      {employee.usedLeaveDays ?? '-'} / {employee.totalLeaveDays ?? '-'} {t('leave.days')}
-                    </p>
-                  </div>
                   <div className="flex gap-2 mt-4">
                     {isEditing ? (
                       <>

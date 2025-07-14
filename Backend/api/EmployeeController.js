@@ -81,6 +81,74 @@ module.exports = (AppDataSource) => {
         }
         // ถ้าไม่มี profile ให้ข้าม
         if (!profile) continue;
+
+        // --- เพิ่มส่วนนี้ ---
+        // 1. ดึง leave quota ตาม position
+        let totalLeaveDays = 0;
+        try {
+          const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
+          const posEntity = await AppDataSource.getRepository('Position').findOne({ where: { position_name: position } });
+          let quota = null;
+          if (posEntity) {
+            quota = await leaveQuotaRepo.findOneBy({ positionId: posEntity.id });
+          }
+          if (quota) {
+            totalLeaveDays = (quota.sick || 0) + (quota.vacation || 0) + (quota.personal || 0);
+          }
+        } catch (e) { totalLeaveDays = 0; }
+
+        // 2. ดึง leaveRequest ที่อนุมัติของ user/admin นี้
+        let usedLeaveDays = 0;
+        try {
+          const leaveRepo = AppDataSource.getRepository('LeaveRequest');
+          const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+          const approvedLeaves = await leaveRepo.find({ where: { Repid: id, status: 'approved' } });
+          for (const lr of approvedLeaves) {
+            // หา leaveTypeName
+            let leaveTypeName = lr.leaveType;
+            if (leaveTypeName && leaveTypeName.length > 20) {
+              const leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
+              if (leaveTypeEntity && leaveTypeEntity.leave_type) {
+                leaveTypeName = leaveTypeEntity.leave_type;
+              }
+            }
+            // เฉพาะประเภท sick, vacation, personal
+            if (["sick", "ลาป่วย", "vacation", "ลาพักผ่อน", "personal", "ลากิจ"].includes(leaveTypeName)) {
+              if (leaveTypeName === "personal" || leaveTypeName === "ลากิจ") {
+                // personal: อาจเป็นชั่วโมงหรือวัน
+                if (lr.startTime && lr.endTime) {
+                  // ชั่วโมง
+                  const [sh, sm] = lr.startTime.split(":").map(Number);
+                  const [eh, em] = lr.endTime.split(":").map(Number);
+                  let start = sh + (sm || 0) / 60;
+                  let end = eh + (em || 0) / 60;
+                  let diff = end - start;
+                  if (diff < 0) diff += 24;
+                  usedLeaveDays += diff / 9; // 1 วัน = 9 ชม.
+                } else if (lr.startDate && lr.endDate) {
+                  // วัน
+                  const start = new Date(lr.startDate);
+                  const end = new Date(lr.endDate);
+                  let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                  if (days < 0 || isNaN(days)) days = 0;
+                  usedLeaveDays += days;
+                }
+              } else {
+                // sick, vacation: วันเท่านั้น
+                if (lr.startDate && lr.endDate) {
+                  const start = new Date(lr.startDate);
+                  const end = new Date(lr.endDate);
+                  let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                  if (days < 0 || isNaN(days)) days = 0;
+                  usedLeaveDays += days;
+                }
+              }
+            }
+          }
+        } catch (e) { usedLeaveDays = 0; }
+        usedLeaveDays = Math.round(usedLeaveDays * 100) / 100;
+        // --- จบส่วนเพิ่ม ---
+
         results.push({
           id,
           name,
@@ -88,7 +156,9 @@ module.exports = (AppDataSource) => {
           position,
           department,
           status: proc.Role,
-          role
+          role,
+          usedLeaveDays,
+          totalLeaveDays
         });
       }
       res.json({ success: true, data: results, message: 'ดึงข้อมูลผู้ใช้ทั้งหมดสำเร็จ' });

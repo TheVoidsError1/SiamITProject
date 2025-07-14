@@ -41,8 +41,8 @@ const EmployeeManagement = () => {
             position: item.position || '',
             department: item.department || '',
             role: item.role || '',
-            usedLeaveDays: 0,
-            totalLeaveDays: 20
+            usedLeaveDays: item.usedLeaveDays ?? 0,
+            totalLeaveDays: item.totalLeaveDays ?? 0
           }));
           setEmployees(employees);
         } else {
