@@ -378,7 +378,7 @@ const AdminDashboard = () => {
                               <p className="text-sm font-medium text-gray-700">{t('leave.date')}:</p>
                               <p className="text-sm text-gray-600">
                                 {request.startTime && request.endTime
-                                  ? `${formatDateLocalized(request.startDate)} ${request.startTime} - ${formatDateLocalized(request.endDate)} ${request.endTime} (${calcHours(request.startTime, request.endTime)} ${hourUnit})`
+                                  ? `${formatDateLocalized(request.startDate)} - ${formatDateLocalized(request.endDate)} (${calcHours(request.startTime, request.endTime)} ${hourUnit}, ${request.startTime} - ${request.endTime})`
                                   : `${formatDateLocalized(request.startDate)} - ${formatDateLocalized(request.endDate)}`}
                               </p>
                             </div>
@@ -489,9 +489,9 @@ const AdminDashboard = () => {
                               <div className="font-bold text-lg mb-1">{request.user?.User_name || "-"}</div>
                               <div className="text-base text-gray-700 mb-2">{request.leaveTypeName}</div>
                               <div className="text-sm text-gray-700 mb-1">
-                                {t('leave.date')}: {request.startTime && request.endTime
-                                  ? `${startStr} ${request.startTime} - ${endStr} ${request.endTime} (${calcHours(request.startTime, request.endTime)} ${hourUnit})`
-                                  : `${startStr} - ${endStr} (${leaveDays} ${t('leave.day')})`}
+                                {t('leave.date')}: {startStr} - {endStr}{request.startTime && request.endTime
+                                  ? ` (${calcHours(request.startTime, request.endTime)} ${hourUnit}, ${request.startTime} - ${request.endTime})`
+                                  : ` (${leaveDays} ${t('leave.day')})`}
                               </div>
                             </div>
                             {/* ฝั่งขวาล่าง (วันที่อนุมัติ) */}
@@ -545,9 +545,9 @@ const AdminDashboard = () => {
                       <span className="font-semibold text-blue-800">{t('leave.reason', 'เหตุผล')}:</span> {selectedRequest.reason}
                     </div>
                     <div>
-                      <span className="font-semibold text-blue-800">{t('leave.date', 'วันที่ลา')}:</span> {selectedRequest.startTime && selectedRequest.endTime
-                        ? `${formatDateLocalized(selectedRequest.startDate)} ${selectedRequest.startTime} - ${formatDateLocalized(selectedRequest.endDate)} ${selectedRequest.endTime} (${calcHours(selectedRequest.startTime, selectedRequest.endTime)} ${hourUnit})`
-                        : `${formatDateLocalized(selectedRequest.startDate)} - ${formatDateLocalized(selectedRequest.endDate)}`}
+                      <span className="font-semibold text-blue-800">{t('leave.date', 'วันที่ลา')}:</span> {formatDateLocalized(selectedRequest.startDate)} - {formatDateLocalized(selectedRequest.endDate)}{selectedRequest.startTime && selectedRequest.endTime
+                        ? ` (${calcHours(selectedRequest.startTime, selectedRequest.endTime)} ${hourUnit}, ${selectedRequest.startTime} - ${selectedRequest.endTime})`
+                        : ''}
                     </div>
                     <div>
                       <span className="font-semibold text-blue-800">{t('leave.submittedDate', 'วันที่ส่งคำขอ')}:</span> {selectedRequest.createdAt ? selectedRequest.createdAt.split('T')[0] : "-"}
