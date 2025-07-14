@@ -42,8 +42,8 @@ const EmployeeDetail = () => {
   const [leaveHistory, setLeaveHistory] = useState([]);
   // เพิ่ม state สำหรับ processCheckId
   const [processCheckId, setProcessCheckId] = useState(null);
-  const [departments, setDepartments] = useState<string[]>([]);
-  const [positions, setPositions] = useState<string[]>([]);
+  const [departments, setDepartments] = useState<{ id: string; department_name: string }[]>([]);
+  const [positions, setPositions] = useState<{ id: string; position_name: string }[]>([]);
   // --- เพิ่ม state สำหรับ paging ---
   const [leavePage, setLeavePage] = useState(1);
   const [leaveTotalPages, setLeaveTotalPages] = useState(1);
@@ -52,24 +52,14 @@ const EmployeeDetail = () => {
     fetch('http://localhost:3001/api/departments')
       .then(res => res.json())
       .then(data => {
-        let depts = data.data.map((d: any) => d.department_name);
-        const isNoDept = (d: string) => !d || d.trim() === '' || d.toLowerCase() === 'none' || d.toLowerCase() === 'no department' || d.toLowerCase() === 'nodepartment';
-        const noDept = depts.filter(isNoDept);
-        // Sort by translated label
-        const normalDepts = depts.filter(d => !isNoDept(d)).sort((a, b) => t(`departments.${a}`).localeCompare(t(`departments.${b}`)));
-        setDepartments([...normalDepts, ...noDept]);
+        setDepartments(Array.isArray(data.data) ? data.data : []);
       })
       .catch(() => setDepartments([]));
 
     fetch('http://localhost:3001/api/positions')
       .then(res => res.json())
       .then(data => {
-        let pos = data.data.map((p: any) => p.position_name);
-        const isNoPos = (p: string) => !p || p.trim() === '' || p.toLowerCase() === 'none' || p.toLowerCase() === 'no position' || p.toLowerCase() === 'noposition';
-        const noPos = pos.filter(isNoPos);
-        // Sort by translated label
-        const normalPos = pos.filter(p => !isNoPos(p)).sort((a, b) => t(`positions.${a}`).localeCompare(t(`positions.${b}`)));
-        setPositions([...normalPos, ...noPos]);
+        setPositions(Array.isArray(data.data) ? data.data : []);
       })
       .catch(() => setPositions([]));
   }, []);
@@ -118,12 +108,15 @@ const EmployeeDetail = () => {
   }, [id, t, leavePage]);
 
   const handleEdit = () => {
+    // หา id ของตำแหน่ง/แผนกจากชื่อที่ backend ส่งมา
+    const positionId = positions.find(p => p.position_name === employee?.position)?.id || '';
+    const departmentId = departments.find(d => d.department_name === employee?.department)?.id || '';
     setEditData({
       full_name: employee?.name || '',
       email: employee?.email || '',
       password: '', // Always blank when editing
-      department: employee?.department || '',
-      position: employee?.position || '',
+      department: departmentId,
+      position: positionId,
       role: employee?.role || ''
     });
     setIsEditing(true);
@@ -133,8 +126,8 @@ const EmployeeDetail = () => {
     try {
       const payload: any = {
         name: editData.full_name,
-        position: editData.position,
-        department: editData.department,
+        position: editData.position, // id
+        department: editData.department, // id
         email: editData.email,
       };
       if (editData.password && editData.password.trim() !== '') payload.password = editData.password;
@@ -240,11 +233,9 @@ const EmployeeDetail = () => {
                           <SelectValue placeholder={t('positions.selectPosition')} />
                         </SelectTrigger>
                         <SelectContent>
-                          {positions.map((key) => (
-                            <SelectItem key={key} value={key}>
-                              {key === '' || key.toLowerCase() === 'none' || key.toLowerCase() === 'no position' || key.toLowerCase() === 'noposition'
-                                ? t('positions.noPosition')
-                                : t(`positions.${key}`, { defaultValue: key })}
+                          {positions.map((pos) => (
+                            <SelectItem key={pos.id} value={pos.id}>
+                              {t(`positions.${pos.position_name}`, { defaultValue: pos.position_name })}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -261,11 +252,9 @@ const EmployeeDetail = () => {
                           <SelectValue placeholder={t('departments.selectDepartment')} />
                         </SelectTrigger>
                         <SelectContent>
-                          {departments.map((key) => (
-                            <SelectItem key={key} value={key}>
-                              {key === '' || key.toLowerCase() === 'none' || key.toLowerCase() === 'no department' || key.toLowerCase() === 'nodepartment'
-                                ? t('departments.noDepartment')
-                                : t(`departments.${key}`, { defaultValue: key })}
+                          {departments.map((dep) => (
+                            <SelectItem key={dep.id} value={dep.id}>
+                              {t(`departments.${dep.department_name}`, { defaultValue: dep.department_name })}
                             </SelectItem>
                           ))}
                         </SelectContent>
