@@ -13,9 +13,17 @@ module.exports = (AppDataSource) => {
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
       const adminRepo = AppDataSource.getRepository('Admin');
 
-      // ดึง leave request ของ user
+      // --- เพิ่ม paging ---
+      const page = parseInt(req.query.page) || 1;
+      const limit = parseInt(req.query.limit) || 6;
+      const skip = (page - 1) * limit;
+
+      // ดึง leave request ของ user (paging)
       const where = { Repid: userId };
-      const leaves = await leaveRepo.find({ where, order: { createdAt: 'DESC' } });
+      const [leaves, total] = await Promise.all([
+        leaveRepo.find({ where, order: { createdAt: 'DESC' }, skip, take: limit }),
+        leaveRepo.count({ where })
+      ]);
 
       // join leaveType, admin (approver/rejector)
       const result = await Promise.all(leaves.map(async (leave) => {
@@ -50,7 +58,7 @@ module.exports = (AppDataSource) => {
           submittedDate: leave.createdAt,
         };
       }));
-      res.json({ status: 'success', data: result });
+      res.json({ status: 'success', data: result, total, page, totalPages: Math.ceil(total / limit) });
     } catch (err) {
       res.status(500).json({ status: 'error', message: err.message });
     }

@@ -13,6 +13,9 @@ const LeaveHistory = () => {
   const [leaveHistory, setLeaveHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // --- เพิ่ม state สำหรับ paging ---
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     const fetchLeaveHistory = async () => {
@@ -21,12 +24,14 @@ const LeaveHistory = () => {
       try {
         const token = localStorage.getItem('token');
         if (!token) throw new Error('No token found, please login');
-        const res = await fetch('/api/leave-history', {
+        // --- ส่ง page, limit ไป backend ---
+        const res = await fetch(`/api/leave-history?page=${page}&limit=6`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
         if (data.status === "success") {
           setLeaveHistory(data.data);
+          setTotalPages(data.totalPages || 1);
         } else {
           setError(data.message || "Unknown error");
         }
@@ -37,7 +42,7 @@ const LeaveHistory = () => {
       }
     };
     fetchLeaveHistory();
-  }, []);
+  }, [page]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -205,82 +210,99 @@ const LeaveHistory = () => {
             ) : error ? (
               <p className="text-red-500">{error}</p>
             ) : (
-              leaveHistory.map((leave) => (
-                <Card key={leave.id} className="border-0 shadow-md hover:shadow-lg transition-shadow">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className={`text-lg font-semibold ${getTypeColor(leave.type)}`}>
-                          {translateLeaveType(leave.type)}
-                        </div>
-                        {getStatusBadge(leave.status)}
-                      </div>
-                      <div className="text-sm text-muted-foreground">
-                        {formatDateLocalized(leave.submittedDate)}
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-0">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-sm">
-                          <Calendar className="w-4 h-4 text-muted-foreground" />
-                          <span className="font-medium">{t('leave.startDate')}:</span>
-                          <span>{formatDateLocalized(leave.startDate)}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <Calendar className="w-4 h-4 text-muted-foreground" />
-                          <span className="font-medium">{t('leave.endDate')}:</span>
-                          <span>{formatDateLocalized(leave.endDate)}</span>
-                        </div>
-                        <div className="flex items-center gap-2 text-sm">
-                          <Clock className="w-4 h-4 text-muted-foreground" />
-                          <span className="font-medium">{t('leave.duration')}:</span>
-                          <span>
-                            {leave.startTime && leave.endTime
-                              ? `${leave.startTime} - ${leave.endTime} (${calcHours(leave.startTime, leave.endTime)} ${hourUnit})`
-                              : `${leave.days} ${t('leave.day')}`}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex items-start gap-2 text-sm">
-                          <FileText className="w-4 h-4 text-muted-foreground mt-0.5" />
-                          <div>
-                            <span className="font-medium">{t('leave.reason')}:</span>
-                            <p className="text-muted-foreground">{leave.reason}</p>
+              <>
+                {leaveHistory.map((leave) => (
+                  <Card key={leave.id} className="border-0 shadow-md hover:shadow-lg transition-shadow">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          <div className={`text-lg font-semibold ${getTypeColor(leave.type)}`}>
+                            {translateLeaveType(leave.type)}
                           </div>
+                          {getStatusBadge(leave.status)}
                         </div>
-                        {leave.status === "approved" && leave.approvedBy && (
+                        <div className="text-sm text-muted-foreground">
+                          {formatDateLocalized(leave.submittedDate)}
+                        </div>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
                           <div className="flex items-center gap-2 text-sm">
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-                            <span className="font-medium">{t('leave.approvedBy')}:</span>
-                            <span>{leave.approvedBy}</span>
+                            <Calendar className="w-4 h-4 text-muted-foreground" />
+                            <span className="font-medium">{t('leave.startDate')}:</span>
+                            <span>{formatDateLocalized(leave.startDate)}</span>
                           </div>
-                        )}
-                        {leave.status === "rejected" && leave.rejectedBy && (
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2 text-sm">
-                              <XCircle className="w-4 h-4 text-red-600" />
-                              <span className="font-medium">{t('leave.rejectedBy')}:</span>
-                              <span>{leave.rejectedBy}</span>
+                          <div className="flex items-center gap-2 text-sm">
+                            <Calendar className="w-4 h-4 text-muted-foreground" />
+                            <span className="font-medium">{t('leave.endDate')}:</span>
+                            <span>{formatDateLocalized(leave.endDate)}</span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <Clock className="w-4 h-4 text-muted-foreground" />
+                            <span className="font-medium">{t('leave.duration')}:</span>
+                            <span>
+                              {leave.startTime && leave.endTime
+                                ? `${leave.startTime} - ${leave.endTime} (${calcHours(leave.startTime, leave.endTime)} ${hourUnit})`
+                                : `${leave.days} ${t('leave.day')}`}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <div className="flex items-start gap-2 text-sm">
+                            <FileText className="w-4 h-4 text-muted-foreground mt-0.5" />
+                            <div>
+                              <span className="font-medium">{t('leave.reason')}:</span>
+                              <p className="text-muted-foreground">{leave.reason}</p>
                             </div>
-                            {leave.rejectionReason && (
-                              <div className="flex items-start gap-2 text-sm">
-                                <FileText className="w-4 h-4 text-muted-foreground mt-0.5" />
-                                <div>
-                                  <span className="font-medium">{t('leave.rejectionReason')}:</span>
-                                  <p className="text-muted-foreground">{leave.rejectionReason}</p>
-                                </div>
-                              </div>
-                            )}
                           </div>
-                        )}
+                          {leave.status === "approved" && leave.approvedBy && (
+                            <div className="flex items-center gap-2 text-sm">
+                              <CheckCircle className="w-4 h-4 text-green-600" />
+                              <span className="font-medium">{t('leave.approvedBy')}:</span>
+                              <span>{leave.approvedBy}</span>
+                            </div>
+                          )}
+                          {leave.status === "rejected" && leave.rejectedBy && (
+                            <div className="space-y-1">
+                              <div className="flex items-center gap-2 text-sm">
+                                <XCircle className="w-4 h-4 text-red-600" />
+                                <span className="font-medium">{t('leave.rejectedBy')}:</span>
+                                <span>{leave.rejectedBy}</span>
+                              </div>
+                              {leave.rejectionReason && (
+                                <div className="flex items-start gap-2 text-sm">
+                                  <FileText className="w-4 h-4 text-muted-foreground mt-0.5" />
+                                  <div>
+                                    <span className="font-medium">{t('leave.rejectionReason')}:</span>
+                                    <p className="text-muted-foreground">{leave.rejectionReason}</p>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
+                    </CardContent>
+                  </Card>
+                ))}
+                {/* --- ปุ่มเปลี่ยนหน้า --- */}
+                {totalPages > 1 && (
+                  <div className="flex justify-center mt-6 gap-2">
+                    {Array.from({ length: totalPages }, (_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setPage(i + 1)}
+                        className={`px-3 py-1 rounded border ${page === i + 1 ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`}
+                        disabled={page === i + 1}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

@@ -44,6 +44,9 @@ const EmployeeDetail = () => {
   const [processCheckId, setProcessCheckId] = useState(null);
   const [departments, setDepartments] = useState<string[]>([]);
   const [positions, setPositions] = useState<string[]>([]);
+  // --- เพิ่ม state สำหรับ paging ---
+  const [leavePage, setLeavePage] = useState(1);
+  const [leaveTotalPages, setLeaveTotalPages] = useState(1);
 
   useEffect(() => {
     fetch('http://localhost:3001/api/departments')
@@ -96,18 +99,23 @@ const EmployeeDetail = () => {
         setLoading(false);
       });
 
-    // Fetch leave history for this employee by id
-    fetch(`http://localhost:3001/api/leave-request/user/${id}`)
+    // Fetch leave history for this employee by id (paging)
+    fetch(`http://localhost:3001/api/leave-request/user/${id}?page=${leavePage}&limit=6`)
       .then(res => res.json())
       .then(data => {
         if (data.status === 'success') {
           setLeaveHistory(data.data);
+          setLeaveTotalPages(data.totalPages || 1);
         } else {
           setLeaveHistory([]);
+          setLeaveTotalPages(1);
         }
       })
-      .catch(() => setLeaveHistory([]));
-  }, [id, t]);
+      .catch(() => {
+        setLeaveHistory([]);
+        setLeaveTotalPages(1);
+      });
+  }, [id, t, leavePage]);
 
   const handleEdit = () => {
     setEditData({
@@ -415,6 +423,21 @@ const EmployeeDetail = () => {
                   ))}
                 </TableBody>
               </Table>
+              {/* --- ปุ่มเปลี่ยนหน้า --- */}
+              {leaveTotalPages > 1 && (
+                <div className="flex justify-center mt-4 gap-1">
+                  {Array.from({ length: leaveTotalPages }, (_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setLeavePage(i + 1)}
+                      className={`px-2 py-1 rounded border text-sm ${leavePage === i + 1 ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-300'} transition`}
+                      disabled={leavePage === i + 1}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

@@ -346,8 +346,15 @@
          const userRepo = AppDataSource.getRepository('User');
          const adminRepo = AppDataSource.getRepository('Admin');
          const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
-         // ดึง leave requests ของ user ตาม id
-         const leaves = await leaveRepo.find({ where: { Repid: id }, order: { createdAt: 'DESC' } });
+         // --- เพิ่ม paging ---
+         const page = parseInt(req.query.page) || 1;
+         const limit = parseInt(req.query.limit) || 6;
+         const skip = (page - 1) * limit;
+         // ดึง leave requests ของ user ตาม id (paging)
+         const [leaves, total] = await Promise.all([
+           leaveRepo.find({ where: { Repid: id }, order: { createdAt: 'DESC' }, skip, take: limit }),
+           leaveRepo.count({ where: { Repid: id } })
+         ]);
          const result = await Promise.all(leaves.map(async (leave) => {
            let user = null;
            let leaveTypeObj = null;
@@ -369,8 +376,8 @@
            let durationType = '';
            if (leave.startTime && leave.endTime) {
              // Calculate hours
-             const [sh, sm] = leave.startTime.split(':').map(Number);
-             const [eh, em] = leave.endTime.split(':').map(Number);
+             const [sh, sm] = leave.startTime.split(":").map(Number);
+             const [eh, em] = leave.endTime.split(":").map(Number);
              let start = sh + (sm || 0) / 60;
              let end = eh + (em || 0) / 60;
              let diff = end - start;
@@ -402,7 +409,7 @@
              user: user ? { User_name: user.User_name, department: user.department, position: user.position } : null,
            };
          }));
-         res.json({ status: 'success', data: result });
+         res.json({ status: 'success', data: result, total, page, totalPages: Math.ceil(total / limit) });
        } catch (err) {
          res.status(500).json({ status: 'error', message: err.message });
        }
