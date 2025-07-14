@@ -138,7 +138,6 @@ const Index = () => {
           <div className="relative z-10">
             <h2 className="text-3xl font-bold mb-2">{t('main.hello')} {user?.full_name || t('common.user')}! 👋</h2>
             <p className="text-blue-100 mb-6">
-              {t('main.today')} {formatCurrentDate()}
               {t('main.today')} {formatFullDateLocalized(new Date())}
             </p>
             <Link to="/leave-request">
