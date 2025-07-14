@@ -45,6 +45,14 @@ const Index = () => {
   });
   const [loadingRecentStats, setLoadingRecentStats] = useState(true);
   const [errorRecentStats, setErrorRecentStats] = useState("");
+  // Days remaining state
+  const [daysRemaining, setDaysRemaining] = useState<{ days: number, hours: number } | null>(null);
+  const [loadingDaysRemaining, setLoadingDaysRemaining] = useState(true);
+  const [errorDaysRemaining, setErrorDaysRemaining] = useState("");
+  // Days used state
+  const [daysUsed, setDaysUsed] = useState<{ days: number, hours: number } | null>(null);
+  const [loadingDaysUsed, setLoadingDaysUsed] = useState(true);
+  const [errorDaysUsed, setErrorDaysUsed] = useState("");
 
   useEffect(() => {
     setLoadingStats(true);
@@ -97,6 +105,48 @@ const Index = () => {
       })
       .catch(() => setErrorRecentStats(t('error.apiConnectionError')))
       .finally(() => setLoadingRecentStats(false));
+  }, [t]);
+
+  useEffect(() => {
+    setLoadingDaysRemaining(true);
+    setErrorDaysRemaining("");
+    const token = localStorage.getItem("token");
+    fetch("/api/leave-days-remaining", {
+      headers: {
+        Authorization: token ? `Bearer ${token}` : undefined,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.status === "success" && data.data) {
+          setDaysRemaining(data.data);
+        } else {
+          setErrorDaysRemaining(t('error.cannotLoadStats'));
+        }
+      })
+      .catch(() => setErrorDaysRemaining(t('error.apiConnectionError')))
+      .finally(() => setLoadingDaysRemaining(false));
+  }, [t]);
+
+  useEffect(() => {
+    setLoadingDaysUsed(true);
+    setErrorDaysUsed("");
+    const token = localStorage.getItem("token");
+    fetch("/api/day-used", {
+      headers: {
+        Authorization: token ? `Bearer ${token}` : undefined,
+      },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.status === "success" && data.data) {
+          setDaysUsed(data.data);
+        } else {
+          setErrorDaysUsed(t('error.cannotLoadStats'));
+        }
+      })
+      .catch(() => setErrorDaysUsed(t('error.apiConnectionError')))
+      .finally(() => setLoadingDaysUsed(false));
   }, [t]);
 
   // Localized date formatter for dashboard welcome section
@@ -155,7 +205,82 @@ const Index = () => {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {stats.map((stat, index) => {
+          {/* Days Remaining Card (API-connected) */}
+          <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 shadow-md">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
+                  <Calendar className="w-6 h-6 text-blue-600" />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-1">
+                <p className="text-2xl font-bold">
+                  {loadingDaysRemaining ? (
+                    <span>{t('common.loading')}</span>
+                  ) : errorDaysRemaining ? (
+                    <span className="text-red-500">{errorDaysRemaining}</span>
+                  ) : daysRemaining ? (
+                    <>
+                      <span className="font-bold">{daysRemaining.days}</span>
+                      <span className="text-sm font-normal text-muted-foreground ml-1">{t('common.days')}</span>
+                      {daysRemaining.hours > 0 && (
+                        <>
+                          <span className="font-bold ml-2">{daysRemaining.hours}</span>
+                          <span className="text-sm font-normal text-muted-foreground ml-1">{t('common.hour')}</span>
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <span>-</span>
+                  )}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {t('main.daysRemaining')}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+          {/* Days Used Card (API-connected) */}
+          <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 shadow-md">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
+                  <Clock className="w-6 h-6 text-green-600" />
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-1">
+                <p className="text-2xl font-bold">
+                  {loadingDaysUsed ? (
+                    <span>{t('common.loading')}</span>
+                  ) : errorDaysUsed ? (
+                    <span className="text-red-500">{errorDaysUsed}</span>
+                  ) : daysUsed ? (
+                    <>
+                      <span className="font-bold">{daysUsed.days}</span>
+                      <span className="text-sm font-normal text-muted-foreground ml-1">{t('common.days')}</span>
+                      {daysUsed.hours > 0 && (
+                        <>
+                          <span className="font-bold ml-2">{daysUsed.hours}</span>
+                          <span className="text-sm font-normal text-muted-foreground ml-1">{t('common.hour')}</span>
+                        </>
+                      )}
+                    </>
+                  ) : (
+                    <span>-</span>
+                  )}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {t('main.daysUsed')}
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+          {/* Other stats cards (skip days remaining and days used from stats array) */}
+          {stats.slice(2).map((stat, index) => {
             const Icon = stat.icon;
             return (
               <Card 
