@@ -6,9 +6,11 @@ import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { format } from "date-fns";
+import { th } from "date-fns/locale";
 
 const Index = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [stats, setStats] = useState([
     { title: t('main.daysRemaining'), value: "-", unit: t('common.days'), icon: Calendar, color: "text-blue-600", bgColor: "bg-blue-50" },
     { title: t('main.daysUsed'), value: "-", unit: t('common.days'), icon: Clock, color: "text-green-600", bgColor: "bg-green-50" },
@@ -51,6 +53,21 @@ const Index = () => {
       .finally(() => setLoadingStats(false));
   }, [t]);
 
+  // Localized date formatter for dashboard welcome section
+  const formatFullDateLocalized = (date: Date) => {
+    if (i18n.language === "th") {
+      // วันจันทร์ที่ 14 กรกฎาคม 2568
+      const weekday = format(date, "EEEE", { locale: th });
+      const day = date.getDate();
+      const month = format(date, "MMMM", { locale: th });
+      const year = date.getFullYear() + 543;
+      return `วัน${weekday}ที่ ${day} ${month} ${year}`;
+    } else {
+      // Monday, July 14, 2025
+      return format(date, "EEEE, MMMM d, yyyy");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="border-b bg-white/80 backdrop-blur-sm">
@@ -74,12 +91,7 @@ const Index = () => {
           <div className="relative z-10">
             <h2 className="text-3xl font-bold mb-2">{t('main.hello')} สมชาย ใจดี! 👋</h2>
             <p className="text-blue-100 mb-6">
-              {t('main.today')} {new Date().toLocaleDateString('th-TH', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                weekday: 'long'
-              })}
+              {t('main.today')} {formatFullDateLocalized(new Date())}
             </p>
             <Link to="/leave-request">
               <Button 
