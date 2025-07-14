@@ -165,7 +165,11 @@ const EmployeeManagement = () => {
                               variant={employee.role === 'admin' ? 'default' : 'secondary'}
                               className="text-xs px-2 py-0.5"
                             >
-                              {employee.role === 'admin' ? 'ผู้ดูแลระบบ' : 'พนักงาน'}
+                              {employee.role === 'admin'
+                                ? t('employee.admin')
+                                : employee.role === 'intern'
+                                  ? t('employee.intern')
+                                  : t('employee.employee')}
                             </Badge>
                           </TableCell>
                           <TableCell>
