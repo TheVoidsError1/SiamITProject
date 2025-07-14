@@ -54,6 +54,7 @@
     "error": "Error",
     "success": "Success",
     "days": "days",
+    "hour": "hour",
     "date": "Date",
     "status": "Status",
     "reason": "Reason",
