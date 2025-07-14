@@ -402,7 +402,9 @@ export const LeaveForm = () => {
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {startDate ? (
-                      startDate.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
+                      i18n.language.startsWith('en')
+                        ? startDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                        : startDate.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
                     ) : (
                       <span>{t('leave.selectDate')}</span>
                     )}
