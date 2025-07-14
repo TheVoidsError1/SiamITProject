@@ -8,6 +8,7 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 const cors = require('cors');
 const path = require('path');
+const leaveQuota = require('./EnityTable/leaveQuota.js');
 
 
 const app = express();
@@ -30,7 +31,8 @@ const AppDataSource = new DataSource({
     require('./EnityTable/leaveRequest.entity.js'),
     require('./EnityTable/position.js'),
     require('./EnityTable/leaveType.js'),
-    require('./EnityTable/department.js')
+    require('./EnityTable/department.js'),
+    require('./EnityTable/leaveQuota.js')
   ],
 });
 
@@ -171,6 +173,9 @@ app.use('/api', dashboardIndexController);
 
 const notificationBellController = require('./api/NotificationBellController')(AppDataSource);
 app.use('/api', notificationBellController);
+
+const leaveQuotaController = require('./api/LeaveQuotaController')(AppDataSource);
+app.use('/api/leave-quota', leaveQuotaController);
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);

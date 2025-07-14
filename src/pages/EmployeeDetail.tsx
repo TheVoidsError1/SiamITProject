@@ -96,11 +96,8 @@ const EmployeeDetail = () => {
         setLoading(false);
       });
 
-    // Fetch leave history for logged-in user
-    const token = localStorage.getItem('token');
-    fetch('http://localhost:3001/api/leave-request/my', {
-      headers: { Authorization: `Bearer ${token}` }
-    })
+    // Fetch leave history for this employee by id
+    fetch(`http://localhost:3001/api/leave-request/user/${id}`)
       .then(res => res.json())
       .then(data => {
         if (data.status === 'success') {
@@ -388,7 +385,13 @@ const EmployeeDetail = () => {
                 <TableBody>
                   {leaveHistory.map((leave, idx) => (
                     <TableRow key={idx}>
-                      <TableCell className="font-medium">{String(t(`leaveTypes.${leave.leaveType}`, leave.leaveType))}</TableCell>
+                      <TableCell className="font-medium">{
+                        leave.leaveTypeName
+                          ? String(t(`leaveTypes.${leave.leaveTypeName}`, leave.leaveTypeName))
+                          : leave.leaveType
+                            ? String(t(`leaveTypes.${leave.leaveType}`, leave.leaveType))
+                            : '-'
+                      }</TableCell>
                       <TableCell className="whitespace-nowrap">{leave.leaveDate}</TableCell>
                       <TableCell>{leave.duration} {leave.durationType ? t(`leave.${leave.durationType}`) : ''}</TableCell>
                       <TableCell className="max-w-[100px] truncate">{leave.reason}</TableCell>

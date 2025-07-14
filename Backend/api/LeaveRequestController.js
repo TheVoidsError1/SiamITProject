@@ -338,6 +338,76 @@
        }
      });
 
+     // GET /api/leave-request/user/:id - Get all leave requests for a specific user by id
+     router.get('/user/:id', async (req, res) => {
+       try {
+         const { id } = req.params;
+         const leaveRepo = AppDataSource.getRepository('LeaveRequest');
+         const userRepo = AppDataSource.getRepository('User');
+         const adminRepo = AppDataSource.getRepository('Admin');
+         const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+         // ดึง leave requests ของ user ตาม id
+         const leaves = await leaveRepo.find({ where: { Repid: id }, order: { createdAt: 'DESC' } });
+         const result = await Promise.all(leaves.map(async (leave) => {
+           let user = null;
+           let leaveTypeObj = null;
+           if (leave.Repid) {
+             user = await userRepo.findOneBy({ id: leave.Repid });
+             if (!user) {
+               // ถ้าไม่เจอใน user ให้ลองหาใน admin
+               const admin = await adminRepo.findOneBy({ id: leave.Repid });
+               if (admin) {
+                 user = { User_name: admin.admin_name, department: admin.department, position: admin.position };
+               }
+             } else {
+               user = { User_name: user.User_name, department: user.department, position: user.position };
+             }
+           }
+           if (leave.leaveType) leaveTypeObj = await leaveTypeRepo.findOneBy({ id: leave.leaveType });
+           // คำนวณจำนวนวันหรือชั่วโมงลา
+           let duration = '';
+           let durationType = '';
+           if (leave.startTime && leave.endTime) {
+             // Calculate hours
+             const [sh, sm] = leave.startTime.split(':').map(Number);
+             const [eh, em] = leave.endTime.split(':').map(Number);
+             let start = sh + (sm || 0) / 60;
+             let end = eh + (em || 0) / 60;
+             let diff = end - start;
+             if (diff < 0) diff += 24; // ข้ามวัน
+             duration = diff.toFixed(2);
+             durationType = 'hour';
+           } else if (leave.startDate && leave.endDate) {
+             const start = new Date(leave.startDate);
+             const end = new Date(leave.endDate);
+             duration = Math.abs((end - start) / (1000*60*60*24)) + 1;
+             durationType = 'day';
+           }
+           return {
+             id: leave.id,
+             leaveTypeName: leaveTypeObj ? leaveTypeObj.leave_type : leave.leaveType,
+             leaveDate: leave.startDate,
+             startDate: leave.startDate,
+             endDate: leave.endDate,
+             startTime: leave.startTime || null,
+             endTime: leave.endTime || null,
+             approvedTime: leave.approvedTime,
+             rejectedTime: leave.rejectedTime,
+             createdAt: leave.createdAt,
+             duration,
+             durationType,
+             reason: leave.reason,
+             status: leave.status,
+             submittedDate: leave.createdAt,
+             user: user ? { User_name: user.User_name, department: user.department, position: user.position } : null,
+           };
+         }));
+         res.json({ status: 'success', data: result });
+       } catch (err) {
+         res.status(500).json({ status: 'error', message: err.message });
+       }
+     });
+
      // GET /api/leave-request/:id
      router.get('/:id', async (req, res) => {
        try {
