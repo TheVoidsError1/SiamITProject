@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
-import { th } from "date-fns/locale";
+import { th, enUS } from "date-fns/locale";
 import { useTranslation } from "react-i18next";
 
 interface DateRangePickerProps {
@@ -25,11 +25,13 @@ export const DateRangePicker = ({
   disabled = false,
   minDate,
 }: DateRangePickerProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   // กำหนด minDate เป็นวันนี้ (เวลา 00:00:00) เสมอ
   const today = new Date();
   today.setHours(0,0,0,0);
   const minDateToUse = minDate || today;
+  // Dynamic locale
+  const currentLocale = i18n.language === 'th' ? th : enUS;
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div className="space-y-2">
@@ -43,7 +45,7 @@ export const DateRangePicker = ({
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
               {startDate ? (
-                format(startDate, "dd MMMM yyyy", { locale: th })
+                format(startDate, "dd MMMM yyyy", { locale: currentLocale })
               ) : (
                 <span>{t('leave.selectDate')}</span>
               )}
@@ -72,7 +74,7 @@ export const DateRangePicker = ({
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
               {endDate ? (
-                format(endDate, "dd MMMM yyyy", { locale: th })
+                format(endDate, "dd MMMM yyyy", { locale: currentLocale })
               ) : (
                 <span>{t('leave.selectDate')}</span>
               )}

@@ -15,6 +15,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { CalendarIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { format } from "date-fns";
+import { th, enUS } from "date-fns/locale";
 
 // ฟังก์ชัน validate เวลา HH:mm (24 ชั่วโมง)
 function isValidTimeFormat(timeStr: string): boolean {
@@ -32,7 +34,7 @@ function autoFormatTimeInput(value: string) {
 }
 
 export const LeaveForm = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [leaveType, setLeaveType] = useState("");
@@ -365,7 +367,7 @@ export const LeaveForm = () => {
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
                     {startDate ? (
-                      startDate.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
+                      format(startDate, "dd MMMM yyyy", { locale: i18n.language === 'th' ? th : enUS })
                     ) : (
                       <span>{t('leave.selectDate')}</span>
                     )}
