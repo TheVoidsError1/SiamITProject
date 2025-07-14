@@ -32,7 +32,7 @@ function autoFormatTimeInput(value: string) {
 }
 
 export const LeaveForm = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [leaveType, setLeaveType] = useState("");
@@ -52,6 +52,7 @@ export const LeaveForm = () => {
   const [positions, setPositions] = useState<{ id: string; position_name: string }[]>([]);
   const [admins, setAdmins] = useState<{ id: string; admin_name: string }[]>([]);
   const { user } = useAuth();
+  const [timeError, setTimeError] = useState("");
 
   useEffect(() => {
     // ดึงข้อมูล department จาก API
@@ -129,8 +130,18 @@ export const LeaveForm = () => {
     fetchAdmins();
   }, []);
 
+  const isTimeInRange = (time: string) => {
+    if (!isValidTimeFormat(time)) return false;
+    const [h, m] = time.split(":").map(Number);
+    const minutes = h * 60 + m;
+    const min = 9 * 60; // 09:00
+    const max = 18 * 60; // 18:00
+    return minutes >= min && minutes <= max;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setTimeError("");
     
     if (!startDate || !leaveType || !reason) {
       toast({
@@ -167,6 +178,26 @@ export const LeaveForm = () => {
             title: 'รูปแบบเวลาไม่ถูกต้อง',
             description: 'กรุณากรอกเวลาเป็น HH:mm เช่น 09:00, 17:30',
             variant: "destructive",
+          });
+          return;
+        }
+        // ตรวจสอบห้ามเวลาเริ่ม = เวลาสิ้นสุด
+        if (startTime === endTime) {
+          setTimeError('เวลาเริ่มต้นและเวลาสิ้นสุดต้องไม่เหมือนกัน');
+          toast({
+            title: 'เวลาเริ่มต้นและเวลาสิ้นสุดต้องไม่เหมือนกัน',
+            description: 'กรุณาเลือกเวลาให้แตกต่างกัน',
+            variant: 'destructive',
+          });
+          return;
+        }
+        // ตรวจสอบช่วงเวลา 09:00-18:00
+        if (!isTimeInRange(startTime) || !isTimeInRange(endTime)) {
+          setTimeError('สามารถลาได้เฉพาะช่วงเวลาทำงาน 09:00 ถึง 18:00 เท่านั้น');
+          toast({
+            title: 'เวลานอกช่วงเวลาทำงาน',
+            description: 'กรุณากรอกเวลาในช่วงเวลาทำงาน 09:00 ถึง 18:00 เท่านั้น',
+            variant: 'destructive',
           });
           return;
         }
@@ -231,7 +262,13 @@ export const LeaveForm = () => {
       });
       const data = await response.json();
       if (!response.ok) {
-        throw new Error(data.error || t('leave.submitError'));
+        // ถ้ามี message จาก backend ให้แสดงใน toast
+        toast({
+          title: i18n.language.startsWith('en') ? 'Error' : 'เกิดข้อผิดพลาด',
+          description: data.message || t('leave.submitError'),
+          variant: "destructive",
+        });
+        return;
       }
       toast({
         title: t('leave.leaveRequestSuccess'),
@@ -415,6 +452,9 @@ export const LeaveForm = () => {
               maxLength={5}
             />
           </div>
+          {timeError && (
+            <div className="col-span-2 text-red-500 text-sm mt-1">{timeError}</div>
+          )}
         </div>
       )}
 

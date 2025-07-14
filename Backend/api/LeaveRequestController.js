@@ -59,6 +59,34 @@
            startTime, endTime, reason, supervisor, contact
          } = req.body;
 
+         // ตรวจสอบภาษา
+         const lang = (req.headers['accept-language'] || '').toLowerCase().startsWith('en') ? 'en' : 'th';
+
+         // ฟังก์ชันตรวจสอบเวลาในช่วง 09:00-18:00
+         function isTimeInRange(timeStr) {
+           if (!/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(timeStr)) return false;
+           const [h, m] = timeStr.split(':').map(Number);
+           const minutes = h * 60 + m;
+           return minutes >= 9 * 60 && minutes <= 18 * 60;
+         }
+         // ตรวจสอบเฉพาะกรณีมี startTime/endTime
+         if (startTime && endTime) {
+           if (startTime === endTime) {
+             return res.status(400).json({
+               status: 'error',
+               message: lang === 'en' ? 'Start time and end time must not be the same.' : 'เวลาเริ่มต้นและเวลาสิ้นสุดต้องไม่เหมือนกัน'
+             });
+           }
+           if (!isTimeInRange(startTime) || !isTimeInRange(endTime)) {
+             return res.status(400).json({
+               status: 'error',
+               message: lang === 'en'
+                 ? 'You can request leave only during working hours: 09:00 to 18:00.'
+                 : 'สามารถลาได้เฉพาะช่วงเวลาทำงาน 09:00 ถึง 18:00 เท่านั้น'
+             });
+           }
+         }
+
          const leaveData = {
            Repid: userId, // ใส่ user_id จาก JWT
            employeeType, // ดึงจาก user.position
