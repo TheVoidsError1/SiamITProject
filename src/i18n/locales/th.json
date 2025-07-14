@@ -324,5 +324,16 @@
     "leaveHistoryDesc": "ประวัติการลาของพนักงาน",
     "noPassword": "ยังไม่ได้ตั้งรหัสผ่าน",
     "setNewPassword": "ตั้งรหัสผ่านใหม่"
+  },
+  "notification": {
+    "title": "การแจ้งเตือน",
+    "empty": "ไม่มีการแจ้งเตือน",
+    "approved": "คำขอได้รับการอนุมัติ",
+    "rejected": "คำขอถูกปฏิเสธ",
+    "leaveDate": "วันที่ลา",
+    "approvedDesc": "คำขอของคุณได้รับการอนุมัติแล้ว",
+    "rejectedDesc": "คำขอของคุณถูกปฏิเสธ",
+    "markAsRead": "อ่านแล้ว",
+    "markAllAsRead": "อ่านทั้งหมด"
   }
 }

@@ -169,6 +169,9 @@ app.use('/api/leave-history', leaveHistoryController);
 const dashboardIndexController = require('./api/DashboardIndexController')(AppDataSource);
 app.use('/api', dashboardIndexController);
 
+const notificationBellController = require('./api/NotificationBellController')(AppDataSource);
+app.use('/api', notificationBellController);
+
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 }); 

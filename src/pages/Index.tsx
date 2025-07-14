@@ -8,6 +8,7 @@ import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useAuth } from "@/contexts/AuthContext";
 import i18n from "@/i18n";
+import NotificationBell from "@/components/NotificationBell";
 
 const Index = () => {
   const { t } = useTranslation();
@@ -109,6 +110,7 @@ const Index = () => {
               {t('main.welcomeMessage')}
             </p>
           </div>
+          <NotificationBell />
           <LanguageSwitcher />
         </div>
       </div>
