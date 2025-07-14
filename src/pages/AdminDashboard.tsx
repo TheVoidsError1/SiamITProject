@@ -507,10 +507,10 @@ const AdminDashboard = () => {
                     <div className="text-center py-10 text-gray-500">{t('common.loading')}</div>
                   ) : (
                     <div className="space-y-4">
-                      {historyRequests.length === 0 && (
+                      {historyRequests.filter(request => request.status !== "pending").length === 0 && (
                         <div className="text-center text-gray-500">{t('admin.noApprovalHistory')}</div>
                       )}
-                      {historyRequests.map((request) => {
+                      {historyRequests.filter(request => request.status !== "pending").map((request) => {
                         // คำนวณจำนวนวันลา
                         const start = new Date(request.startDate);
                         const end = new Date(request.endDate);

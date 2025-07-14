@@ -211,7 +211,7 @@ const LeaveHistory = () => {
               <p className="text-red-500">{error}</p>
             ) : (
               <>
-                {leaveHistory.map((leave) => (
+                {leaveHistory.filter(leave => leave.status !== "pending").map((leave) => (
                   <Card key={leave.id} className="border-0 shadow-md hover:shadow-lg transition-shadow">
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">

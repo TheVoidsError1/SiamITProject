@@ -370,7 +370,6 @@ export const LeaveForm = () => {
             {leaveTypes.map((type) => (
               <SelectItem key={type.id} value={type.id}>
                 {t(`leaveTypes.${type.leave_type}`, type.leave_type)}
-                {t(`leaveTypes.${type.leave_type}`, type.leave_type)}
               </SelectItem>
             ))}
           </SelectContent>
