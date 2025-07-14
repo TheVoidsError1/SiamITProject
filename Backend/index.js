@@ -130,6 +130,40 @@ const swaggerOptions = {
       title: 'SiamITLeave API',
       version: '1.0.0',
     },
+    tags: [
+      {
+        name: 'Departments',
+        description: 'จัดการข้อมูล Departments'
+      },
+      {
+        name: 'LeaveQuota',
+        description: 'จัดการโควต้าการลาตามตำแหน่ง'
+      },
+      {
+        name: 'Users',
+        description: 'จัดการข้อมูล User'
+      },
+      {
+        name: 'Admins',
+        description: 'จัดการข้อมูล Admin'
+      },
+      {
+        name: 'Employees',
+        description: 'จัดการข้อมูล Employees'
+      },
+      {
+        name: 'Positions',
+        description: 'จัดการข้อมูล Positions'
+      },
+      {
+        name: 'Profile',
+        description: 'จัดการข้อมูล Profile'
+      },
+      {
+        name: 'LeaveTypes',
+        description: 'จัดการข้อมูลประเภทการลา'
+      }
+    ]
   },
   apis: ['./api/*.js'],
 };
