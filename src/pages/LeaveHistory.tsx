@@ -9,7 +9,7 @@ import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useEffect, useState } from "react";
 
 const LeaveHistory = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [leaveHistory, setLeaveHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -98,6 +98,23 @@ const LeaveHistory = () => {
     if (i18nKey) return t(i18nKey);
     return type; // fallback
   };
+
+  // ฟังก์ชันคำนวณชั่วโมงจากเวลาเริ่มและเวลาสิ้นสุด (string HH:mm)
+  const calcHours = (start: string, end: string) => {
+    if (!start || !end) return null;
+    const [sh, sm] = start.split(":").map(Number);
+    const [eh, em] = end.split(":").map(Number);
+    const startMins = sh * 60 + sm;
+    const endMins = eh * 60 + em;
+    let diff = endMins - startMins;
+    if (diff < 0) diff += 24 * 60; // ข้ามวัน
+    const hours = Math.floor(diff / 60);
+    const mins = diff % 60;
+    // แสดงเป็น ชั่วโมง.นาที (1.20)
+    return `${hours}.${mins.toString().padStart(2, '0')}`;
+  };
+  // กำหนดหน่วยชั่วโมงตามภาษา
+  const hourUnit = i18n.language === 'th' ? 'ชม' : 'Hours';
 
   // Calculate summary statistics from leaveHistory
   const totalLeaveDays = leaveHistory.reduce((sum, leave) => sum + (leave.days || 0), 0);
@@ -204,7 +221,11 @@ const LeaveHistory = () => {
                         <div className="flex items-center gap-2 text-sm">
                           <Clock className="w-4 h-4 text-muted-foreground" />
                           <span className="font-medium">{t('leave.duration')}:</span>
-                          <span>{leave.days} {t('leave.days')}</span>
+                          <span>
+                            {leave.startTime && leave.endTime
+                              ? `${leave.startTime} - ${leave.endTime} (${calcHours(leave.startTime, leave.endTime)} ${hourUnit})`
+                              : `${leave.days} ${t('leave.day')}`}
+                          </span>
                         </div>
                       </div>
                       <div className="space-y-2">

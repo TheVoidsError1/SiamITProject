@@ -39,6 +39,8 @@ module.exports = (AppDataSource) => {
           type: leaveTypeName,
           startDate: leave.startDate,
           endDate: leave.endDate,
+          startTime: leave.startTime, // เพิ่มบรรทัดนี้
+          endTime: leave.endTime,     // เพิ่มบรรทัดนี้
           days: leave.startDate && leave.endDate ? (Math.floor((new Date(leave.endDate) - new Date(leave.startDate)) / (1000*60*60*24)) + 1) : 1,
           reason: leave.reason,
           status: leave.status,
