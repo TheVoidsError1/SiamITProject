@@ -11,9 +11,15 @@ import i18n from "@/i18n";
 import NotificationBell from "@/components/NotificationBell";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
+import { fetchWithAuth } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
+import { useNavigate } from "react-router-dom";
 
 const Index = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
   
   // Function to format date based on current language
   const formatCurrentDate = () => {
@@ -54,17 +60,28 @@ const Index = () => {
   const [loadingDaysUsed, setLoadingDaysUsed] = useState(true);
   const [errorDaysUsed, setErrorDaysUsed] = useState("");
 
+  const showSessionExpiredToast = () => {
+    toast({
+      title: t('auth.sessionExpired'),
+      description: t('auth.pleaseLoginAgain'),
+      variant: "destructive",
+      action: (
+        <ToastAction altText={t('common.ok')} onClick={() => { logout(); navigate("/login"); }}>{t('common.ok')}</ToastAction>
+      ),
+    });
+  };
+
   useEffect(() => {
     setLoadingStats(true);
     const token = localStorage.getItem("token");
-    fetch("/api/dashboard-stats", {
+    fetchWithAuth("/api/dashboard-stats", {
       headers: {
         Authorization: token ? `Bearer ${token}` : undefined,
       },
-    })
-      .then((res) => res.json())
+    }, undefined, showSessionExpiredToast)
+      ?.then((res) => res && res.json())
       .then((data) => {
-        if (data.status === "success" && data.data) {
+        if (data && data.status === "success" && data.data) {
           setStats([
             { title: t('main.daysRemaining'), value: data.data.remainingDays, unit: t('common.days'), icon: Calendar, color: "text-blue-600", bgColor: "bg-blue-50" },
             { title: t('main.daysUsed'), value: data.data.daysUsed, unit: t('common.days'), icon: Clock, color: "text-green-600", bgColor: "bg-green-50" },
@@ -84,18 +101,18 @@ const Index = () => {
       })
       .catch(() => setErrorStats(t('error.apiConnectionError')))
       .finally(() => setLoadingStats(false));
-  }, [t]);
+  }, [t, logout]);
 
   useEffect(() => {
     setLoadingRecentStats(true);
     setErrorRecentStats("");
     const token = localStorage.getItem("token");
-    fetch("/api/dashboard-recent-leave-stats", {
+    fetchWithAuth("/api/dashboard-recent-leave-stats", {
       headers: {
         Authorization: token ? `Bearer ${token}` : undefined,
       },
-    })
-      .then((res) => res.json())
+    }, logout)
+      .then((res) => res && res.json())
       .then((data) => {
         if (data.status === "success" && data.data) {
           setRecentLeaveStats(data.data);
@@ -105,18 +122,18 @@ const Index = () => {
       })
       .catch(() => setErrorRecentStats(t('error.apiConnectionError')))
       .finally(() => setLoadingRecentStats(false));
-  }, [t]);
+  }, [t, logout]);
 
   useEffect(() => {
     setLoadingDaysRemaining(true);
     setErrorDaysRemaining("");
     const token = localStorage.getItem("token");
-    fetch("/api/leave-days-remaining", {
+    fetchWithAuth("/api/leave-days-remaining", {
       headers: {
         Authorization: token ? `Bearer ${token}` : undefined,
       },
-    })
-      .then((res) => res.json())
+    }, logout)
+      .then((res) => res && res.json())
       .then((data) => {
         if (data.status === "success" && data.data) {
           setDaysRemaining(data.data);
@@ -126,18 +143,18 @@ const Index = () => {
       })
       .catch(() => setErrorDaysRemaining(t('error.apiConnectionError')))
       .finally(() => setLoadingDaysRemaining(false));
-  }, [t]);
+  }, [t, logout]);
 
   useEffect(() => {
     setLoadingDaysUsed(true);
     setErrorDaysUsed("");
     const token = localStorage.getItem("token");
-    fetch("/api/day-used", {
+    fetchWithAuth("/api/day-used", {
       headers: {
         Authorization: token ? `Bearer ${token}` : undefined,
       },
-    })
-      .then((res) => res.json())
+    }, logout)
+      .then((res) => res && res.json())
       .then((data) => {
         if (data.status === "success" && data.data) {
           setDaysUsed(data.data);
@@ -147,7 +164,7 @@ const Index = () => {
       })
       .catch(() => setErrorDaysUsed(t('error.apiConnectionError')))
       .finally(() => setLoadingDaysUsed(false));
-  }, [t]);
+  }, [t, logout]);
 
   // Localized date formatter for dashboard welcome section
   const formatFullDateLocalized = (date: Date) => {

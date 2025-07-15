@@ -25,6 +25,18 @@ module.exports = (AppDataSource) => {
         leaveRepo.count({ where })
       ]);
 
+      // --- ดึง leave request ทั้งหมดของ user เพื่อคำนวณ summary ---
+      const allLeaves = await leaveRepo.find({ where });
+      // คำนวณ summary
+      const totalLeaveDays = allLeaves.reduce((sum, leave) => {
+        if (leave.startDate && leave.endDate) {
+          return sum + (Math.floor((new Date(leave.endDate) - new Date(leave.startDate)) / (1000*60*60*24)) + 1);
+        }
+        return sum + 1;
+      }, 0);
+      const approvedCount = allLeaves.filter(l => l.status === 'approved').length;
+      const pendingCount = allLeaves.filter(l => l.status === 'pending').length;
+
       // join leaveType, admin (approver/rejector)
       const result = await Promise.all(leaves.map(async (leave) => {
         let leaveTypeName = null;
@@ -58,7 +70,18 @@ module.exports = (AppDataSource) => {
           submittedDate: leave.createdAt,
         };
       }));
-      res.json({ status: 'success', data: result, total, page, totalPages: Math.ceil(total / limit) });
+      res.json({
+        status: 'success',
+        data: result,
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+        summary: {
+          totalLeaveDays,
+          approvedCount,
+          pendingCount
+        }
+      });
     } catch (err) {
       res.status(500).json({ status: 'error', message: err.message });
     }

@@ -29,7 +29,9 @@
     "currentPassword": "Current Password",
     "newPassword": "New Password",
     "passwordMismatch": "Passwords do not match",
-    "passwordTooShort": "Password must be at least 6 characters"
+    "passwordTooShort": "Password must be at least 6 characters",
+    "sessionExpired": "Session expired, please login again",
+    "pleaseLoginAgain": "Please login again"
   },
   "navigation": {
     "home": "Home",
@@ -66,7 +68,8 @@
     "back": "Back",
     "actions": "Actions",
     "viewDetails": "View Details",
-    "hours": "hours"
+    "hours": "hours",
+    "ok": "OK"
   },
   "leave": {
     "leaveRequest": "Leave Request",
@@ -239,7 +242,7 @@
     "totalLeaveDays": "Total Leave Days",
     "approvedRequests": "Approved Requests",
     "pendingRequests": "Pending Requests",
-    "pendingApproval": "Pending Approval",
+    "pendingApproval": "Pending",
     "submittedOn": "Submitted on",
     "approvedBy": "Approved by",
     "rejectedBy": "Rejected by",

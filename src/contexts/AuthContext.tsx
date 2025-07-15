@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface User {
   id: string;
@@ -29,9 +30,27 @@ export const useAuth = () => {
   return context;
 };
 
+function parseJwt(token: string) {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return null;
+  }
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const logoutTimer = useRef<NodeJS.Timeout | null>(null);
+  const { t } = useTranslation();
 
   useEffect(() => {
     // Check if user is logged in from localStorage
@@ -46,6 +65,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkUser();
   }, []);
 
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const payload = parseJwt(token);
+    if (!payload || !payload.exp) return;
+
+    const exp = payload.exp * 1000; // JWT exp เป็นวินาที, JS ต้อง ms
+    const now = Date.now();
+
+    if (exp <= now) {
+      logout();
+      return;
+    }
+
+    // ตั้ง timer auto logout
+    const timeout = exp - now;
+    logoutTimer.current = setTimeout(() => {
+      logout();
+      alert(t('auth.sessionExpired'));
+      window.location.href = '/login'; // หรือใช้ navigate('/login')
+    }, timeout);
+
+    // cleanup timer
+    return () => {
+      if (logoutTimer.current) clearTimeout(logoutTimer.current);
+    };
+  }, [user, t]);
+
   const login = async (email: string, password: string) => {
     const response = await fetch('http://localhost:3001/api/login', {
       method: 'POST',
@@ -55,7 +103,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const data = await response.json();
 
     if (!response.ok || !data.success) {
-      throw new Error(data.message || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+      throw new Error(data.message || t('auth.loginError'));
     }
 
     // Initial user info from login
@@ -132,7 +180,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || 'สมัครสมาชิกไม่สำเร็จ');
+      throw new Error(data.error || t('auth.registerError'));
     }
     // สมัครสมาชิกสำเร็จ ไม่ต้อง login อัตโนมัติ ให้ user ไป login เอง
   };

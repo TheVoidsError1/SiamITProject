@@ -16,6 +16,8 @@ const LeaveHistory = () => {
   // --- เพิ่ม state สำหรับ paging ---
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  // --- เพิ่ม state สำหรับ summary ---
+  const [summary, setSummary] = useState<{ totalLeaveDays: number; approvedCount: number; pendingCount: number } | null>(null);
 
   useEffect(() => {
     const fetchLeaveHistory = async () => {
@@ -32,6 +34,7 @@ const LeaveHistory = () => {
         if (data.status === "success") {
           setLeaveHistory(data.data);
           setTotalPages(data.totalPages || 1);
+          setSummary(data.summary || null); // <-- set summary
         } else {
           setError(data.message || "Unknown error");
         }
@@ -137,9 +140,9 @@ const LeaveHistory = () => {
   };
 
   // Calculate summary statistics from leaveHistory
-  const totalLeaveDays = leaveHistory.reduce((sum, leave) => sum + (leave.days || 0), 0);
-  const approvedCount = leaveHistory.filter(leave => leave.status === "approved").length;
-  const pendingCount = leaveHistory.filter(leave => leave.status === "pending").length;
+  const totalLeaveDays = summary ? summary.totalLeaveDays : 0;
+  const approvedCount = summary ? summary.approvedCount : 0;
+  const pendingCount = summary ? summary.pendingCount : 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -211,7 +214,7 @@ const LeaveHistory = () => {
               <p className="text-red-500">{error}</p>
             ) : (
               <>
-                {leaveHistory.filter(leave => leave.status !== "pending").map((leave) => (
+                {leaveHistory.map((leave) => (
                   <Card key={leave.id} className="border-0 shadow-md hover:shadow-lg transition-shadow">
                     <CardHeader className="pb-3">
                       <div className="flex items-center justify-between">
