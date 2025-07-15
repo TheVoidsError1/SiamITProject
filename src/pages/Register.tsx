@@ -28,6 +28,7 @@ const Register = () => {
   const [positions, setPositions] = useState<string[]>([]);
   const [newDepartment, setNewDepartment] = useState('');
   const [newPosition, setNewPosition] = useState('');
+  const [error, setError] = useState<{ email?: string; full_name?: string; general?: string }>({});
   
   const { signup } = useAuth();
   const { toast } = useToast();
@@ -90,6 +91,7 @@ const Register = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError({});
     
     if (formData.password !== formData.confirmPassword) {
       toast({
@@ -119,9 +121,22 @@ const Register = () => {
       });
       navigate('/login');
     } catch (error: any) {
+      let errMsg = error.message || t('common.error');
+      console.log('Registration error object:', error);
+      console.log('Registration error message:', errMsg);
+      let newError: { email?: string; full_name?: string; general?: string } = {};
+      const lowerMsg = errMsg.toLowerCase();
+      if (lowerMsg.includes('user') || lowerMsg.includes('ชื่อผู้ใช')) {
+        newError.full_name = errMsg;
+      } else if (lowerMsg.includes('email')) {
+        newError.email = errMsg;
+      } else {
+        newError.general = errMsg;
+      }
+      setError(newError);
       toast({
         title: t('auth.registerError'),
-        description: error.message || t('common.error'),
+        description: errMsg,
         variant: "destructive",
       });
     } finally {
@@ -150,16 +165,11 @@ const Register = () => {
         </div>
 
         <Card className="shadow-lg border-0">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-xl text-center">{t('auth.register')}</CardTitle>
-            <CardDescription className="text-center">
-              {t('auth.registerDesc')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+          {/* Removed duplicate Register title and description in the card header */}
+          <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="full_name">{t('auth.fullName')}</Label>
+              <div className="space-y-2 mb-4 mt-4">
+                <Label htmlFor="full_name" className="mb-2 block">{t('auth.fullName')}</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
@@ -171,10 +181,11 @@ const Register = () => {
                     required
                   />
                 </div>
+                {error.full_name && <div className="text-red-500 text-xs mt-1">{error.full_name}</div>}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="position">{t('auth.position')}</Label>
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="position" className="mb-2 block">{t('auth.position')}</Label>
                 <Select onValueChange={(value) => setFormData(prev => ({ ...prev, position: value }))}>
                   <SelectTrigger>
                     <SelectValue placeholder={t('positions.selectPosition')} />
@@ -191,8 +202,8 @@ const Register = () => {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="department">{t('auth.department')}</Label>
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="department" className="mb-2 block">{t('auth.department')}</Label>
                 <Select onValueChange={(value) => setFormData(prev => ({ ...prev, department: value }))}>
                   <SelectTrigger>
                     <SelectValue placeholder={t('departments.selectDepartment')} />
@@ -209,8 +220,8 @@ const Register = () => {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email">{t('auth.email')}</Label>
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="email" className="mb-2 block">{t('auth.email')}</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
@@ -223,10 +234,11 @@ const Register = () => {
                     required
                   />
                 </div>
+                {error.email && <div className="text-red-500 text-xs mt-1">{error.email}</div>}
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="password">{t('auth.password')}</Label>
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="password" className="mb-2 block">{t('auth.password')}</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
@@ -248,8 +260,8 @@ const Register = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">{t('auth.confirmPassword')}</Label>
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="confirmPassword" className="mb-2 block">{t('auth.confirmPassword')}</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
@@ -279,7 +291,7 @@ const Register = () => {
                 )}
               </Button>
             </form>
-
+            {error.general && <div className="text-red-500 text-xs mt-2 text-center">{error.general}</div>}
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
                 {t('auth.alreadyHaveAccount')}{' '}

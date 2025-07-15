@@ -29,7 +29,8 @@
     "currentPassword": "Current Password",
     "newPassword": "New Password",
     "passwordMismatch": "Passwords do not match",
-    "passwordTooShort": "Password must be at least 6 characters"
+    "passwordTooShort": "Password must be at least 6 characters",
+    "checkEmailVerification": "You can now log in with this user."
   },
   "navigation": {
     "home": "Home",
