@@ -147,6 +147,17 @@ const Index = () => {
       .finally(() => setLoadingDaysUsed(false));
   }, [t]);
 
+  useEffect(() => {
+    // ป้องกันการ scroll เมื่อเข้า Index
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      // คืนค่าเดิมเมื่อออกจากหน้า Index
+      document.body.style.overflow = "";
+      document.documentElement.style.overflow = "";
+    };
+  }, []);
+
   // Localized date formatter for dashboard welcome section
   const formatFullDateLocalized = (date: Date) => {
     if (i18n.language === "th") {
@@ -179,9 +190,10 @@ const Index = () => {
         </div>
       </div>
 
-      <div className="p-6 space-y-6 animate-fade-in">
+      {/* ลด mt ของ Welcome Section และเพิ่ม pb ของ container หลัก */}
+      <div className="p-4 pb-24 space-y-4 animate-fade-in">
         {/* Welcome Section */}
-        <div className="gradient-bg rounded-2xl p-8 text-white relative overflow-hidden">
+        <div className="gradient-bg rounded-2xl p-8 text-white relative overflow-hidden mt-0">
           <div className="relative z-10">
             <h2 className="text-3xl font-bold mb-2">{t('main.hello')} {user?.full_name || t('common.user')}! 👋</h2>
             <p className="text-blue-100 mb-6">
