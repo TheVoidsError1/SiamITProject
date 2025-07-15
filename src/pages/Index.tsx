@@ -197,19 +197,19 @@ const Index = () => {
       </div>
 
       {/* ลด mt ของ Welcome Section และเพิ่ม pb ของ container หลัก */}
-      <div className="p-2 pb-8 space-y-2 animate-fade-in">
+      <div className="p-6 pb-8 space-y-6 animate-fade-in">
         {/* Welcome Section */}
         <div className="gradient-bg rounded-2xl p-4 text-white relative overflow-hidden mt-0">
           <div className="relative z-10">
             <h2 className="text-2xl font-bold mb-1">{t('main.hello')} {user?.full_name || t('common.user')}! 👋</h2>
-            <p className="text-blue-100 mb-3">
+            <p className="text-base text-blue-100 mb-3">
               {t('main.today')} {formatFullDateLocalized(new Date())}
             </p>
             <Link to="/leave-request">
               <Button 
                 size="sm" 
                 variant="secondary"
-                className="bg-white text-blue-600 hover:bg-blue-50 font-medium px-4 py-2"
+                className="bg-white text-blue-600 hover:bg-blue-50 font-medium px-6 py-4 text-base"
               >
                 {t('main.newLeaveRequest')}
               </Button>
@@ -231,7 +231,7 @@ const Index = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-0.5">
-                <p className="text-xl font-bold">
+                <p className="text-2xl font-bold">
                   {loadingDaysRemaining ? (
                     <span>{t('common.loading')}</span>
                   ) : errorDaysRemaining ? (
@@ -239,11 +239,11 @@ const Index = () => {
                   ) : daysRemaining ? (
                     <>
                       <span className="font-bold">{daysRemaining.days}</span>
-                      <span className="text-xs font-normal text-muted-foreground ml-1">{t('common.days')}</span>
+                      <span className="text-base font-normal text-muted-foreground ml-1">{t('common.days')}</span>
                       {daysRemaining.hours > 0 && (
                         <>
                           <span className="font-bold ml-2">{daysRemaining.hours}</span>
-                          <span className="text-xs font-normal text-muted-foreground ml-1">{t('common.hour')}</span>
+                          <span className="text-base font-normal text-muted-foreground ml-1">{t('common.hour')}</span>
                         </>
                       )}
                     </>
@@ -251,7 +251,7 @@ const Index = () => {
                     <span>-</span>
                   )}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-base text-muted-foreground">
                   {t('main.daysRemaining')}
                 </p>
               </div>
@@ -268,7 +268,7 @@ const Index = () => {
             </CardHeader>
             <CardContent>
               <div className="space-y-0.5">
-                <p className="text-xl font-bold">
+                <p className="text-2xl font-bold">
                   {loadingDaysUsed ? (
                     <span>{t('common.loading')}</span>
                   ) : errorDaysUsed ? (
@@ -276,11 +276,11 @@ const Index = () => {
                   ) : daysUsed ? (
                     <>
                       <span className="font-bold">{daysUsed.days}</span>
-                      <span className="text-xs font-normal text-muted-foreground ml-1">{t('common.days')}</span>
+                      <span className="text-base font-normal text-muted-foreground ml-1">{t('common.days')}</span>
                       {daysUsed.hours > 0 && (
                         <>
                           <span className="font-bold ml-2">{daysUsed.hours}</span>
-                          <span className="text-xs font-normal text-muted-foreground ml-1">{t('common.hour')}</span>
+                          <span className="text-base font-normal text-muted-foreground ml-1">{t('common.hour')}</span>
                         </>
                       )}
                     </>
@@ -288,7 +288,7 @@ const Index = () => {
                     <span>-</span>
                   )}
                 </p>
-                <p className="text-xs text-muted-foreground">
+                <p className="text-base text-muted-foreground">
                   {t('main.daysUsed')}
                 </p>
               </div>
@@ -312,13 +312,13 @@ const Index = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-0.5">
-                    <p className="text-xl font-bold">
+                    <p className="text-2xl font-bold">
                       {stat.value}
-                      <span className="text-xs font-normal text-muted-foreground ml-1">
+                      <span className="text-base font-normal text-muted-foreground ml-1">
                         {stat.unit}
                       </span>
                     </p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-base text-muted-foreground">
                       {stat.title}
                     </p>
                   </div>
@@ -332,23 +332,23 @@ const Index = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <Card className="border-0 shadow-md p-2">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
+              <CardTitle className="flex items-center gap-2 text-lg font-bold">
                 <Calendar className="w-4 h-4 text-blue-600" />
                 {t('main.quickActions')}
               </CardTitle>
-              <CardDescription className="text-xs">
+              <CardDescription className="text-base">
                 {t('main.quickActionsDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               <Link to="/leave-request">
-                <Button className="w-full justify-start text-sm px-2 py-1" variant="outline">
+                <Button className="w-full justify-start text-base px-2 py-1" variant="outline">
                   <Calendar className="w-4 h-4 mr-2" />
                   {t('main.newLeaveRequest')}
                 </Button>
               </Link>
               <Link to="/leave-history">
-                <Button className="w-full justify-start text-sm px-2 py-1" variant="outline">
+                <Button className="w-full justify-start text-base px-2 py-1" variant="outline">
                   <Clock className="w-4 h-4 mr-2" />
                   {t('leave.leaveHistory')}
                 </Button>
@@ -358,36 +358,36 @@ const Index = () => {
 
           <Card className="border-0 shadow-md p-2">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-base">
+              <CardTitle className="flex items-center gap-2 text-lg font-bold">
                 <TrendingUp className="w-4 h-4 text-green-600" />
                 {t('main.recentLeaveStats')}
               </CardTitle>
-              <CardDescription className="text-xs">
+              <CardDescription className="text-base">
                 {t('main.recentLeaveStatsDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               {loadingRecentStats ? (
-                <div className="text-center py-3 text-gray-500 text-sm">{t('common.loading')}</div>
+                <div className="text-center py-3 text-gray-500 text-base">{t('common.loading')}</div>
               ) : errorRecentStats ? (
-                <div className="text-center py-3 text-red-500 text-sm">{errorRecentStats}</div>
+                <div className="text-center py-3 text-red-500 text-base">{errorRecentStats}</div>
               ) : (
                 <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-xs">{t('leaveTypes.sick')}</span>
-                    <span className="font-medium text-sm">
+                    <span className="text-base">{t('leaveTypes.sick')}</span>
+                    <span className="font-medium text-base">
                       {recentLeaveStats.sick.days} {t('common.days')}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-xs">{t('leaveTypes.vacation')}</span>
-                    <span className="font-medium text-sm">
+                    <span className="text-base">{t('leaveTypes.vacation')}</span>
+                    <span className="font-medium text-base">
                       {recentLeaveStats.vacation.days} {t('common.days')}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-xs">{t('leaveTypes.personal')}</span>
-                    <span className="font-medium text-sm">
+                    <span className="text-base">{t('leaveTypes.personal')}</span>
+                    <span className="font-medium text-base">
                       {(() => {
                         const d = recentLeaveStats.personal.days;
                         const h = recentLeaveStats.personal.hours;
