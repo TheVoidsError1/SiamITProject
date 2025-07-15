@@ -8,6 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { format } from 'date-fns';
 import { th, enUS } from 'date-fns/locale';
 import { useTranslation } from 'react-i18next';
+import { usePushNotification } from "@/contexts/PushNotificationContext";
 
 interface Notification {
   id: string;
@@ -21,6 +22,7 @@ const NotificationBell = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const { enabled: pushNotificationEnabled } = usePushNotification();
 
   // Fetch notifications on mount
   useEffect(() => {
@@ -37,6 +39,15 @@ const NotificationBell = () => {
       setLoading(false);
     };
     fetchNotifications();
+  }, []);
+
+  useEffect(() => {
+    const handler = () => {
+      const stored = localStorage.getItem("pushNotificationEnabled");
+      // This useEffect is no longer needed as pushNotificationEnabled is managed by context
+    };
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
   }, []);
 
   // Remove mark all as read logic
@@ -72,7 +83,7 @@ const NotificationBell = () => {
       <PopoverTrigger asChild>
         <Button variant="ghost" size="sm" className="relative">
           <Bell className="h-5 w-5" />
-          {unreadCount > 0 && (
+          {unreadCount > 0 && pushNotificationEnabled && (
             <Badge className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
               {unreadCount}
             </Badge>

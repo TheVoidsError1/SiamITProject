@@ -131,7 +131,7 @@
     "dayLeave": "Daily Leave",
     "selectDate": "Select date",
     "selectSupervisor": "Select supervisor",
-    "timePlaceholder": "e.g. 09:00 or 17:30",
+    "timePlaceholder": "e.g. 09:00 or 18:00",
     "details": "Leave Details",
     "detailDescription": "Detailed information about this leave request.",
     "approvedTime": "Approval Time",

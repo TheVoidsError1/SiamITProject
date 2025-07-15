@@ -19,6 +19,7 @@ import EmployeeManagement from "./pages/EmployeeManagement";
 import EmployeeDetail from "./pages/EmployeeDetail";
 import NotFound from "./pages/NotFound";
 import '@/i18n';
+import { PushNotificationProvider } from "@/contexts/PushNotificationContext";
 
 const queryClient = new QueryClient();
 
@@ -100,7 +101,9 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <AppContent />
+            <PushNotificationProvider>
+              <AppContent />
+            </PushNotificationProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

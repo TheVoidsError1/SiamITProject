@@ -14,6 +14,8 @@ import { Building, Calendar, Camera, Save, Shield, User } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { usePushNotification } from "@/contexts/PushNotificationContext";
 
 const Profile = () => {
   const { t } = useTranslation();
@@ -37,6 +39,7 @@ const Profile = () => {
   const [departmentsLoaded, setDepartmentsLoaded] = useState(false);
   const [leaveQuota, setLeaveQuota] = useState<any[]>([]);
   const [leaveLoading, setLeaveLoading] = useState(true);
+  const { enabled: pushNotificationEnabled, setEnabled: setPushNotificationEnabled } = usePushNotification();
 
   const getKeyByLabel = (label: string, options: string[], tPrefix: string) => {
     for (const key of options) {
@@ -196,6 +199,10 @@ const Profile = () => {
     };
     fetchLeaveQuota();
   }, []);
+
+  useEffect(() => {
+    // This effect is no longer needed as pushNotificationEnabled is managed by usePushNotification
+  }, [pushNotificationEnabled]);
 
   const leaveTypeMap: Record<string, { label: string, color: string }> = {
     vacation: { label: t('profile.vacationLeave'), color: 'bg-blue-500' },
@@ -550,7 +557,11 @@ const Profile = () => {
                       <h3 className="font-medium">{t('profile.pushNotifications')}</h3>
                       <p className="text-sm text-gray-500">{t('profile.pushNotificationsDesc')}</p>
                     </div>
-                    <Button variant="outline" size="sm">{t('common.enable')}</Button>
+                    <Switch
+                      checked={pushNotificationEnabled}
+                      onCheckedChange={setPushNotificationEnabled}
+                      id="push-notification-switch"
+                    />
                   </div>
                   
                   <div className="flex items-center justify-between p-4 border rounded-lg">
