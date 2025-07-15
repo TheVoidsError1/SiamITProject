@@ -1,16 +1,14 @@
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Users, TrendingUp } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from "@/contexts/AuthContext";
-import i18n from "@/i18n";
-import NotificationBell from "@/components/NotificationBell";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
+import { Calendar, Clock, TrendingUp, Users } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 
 const Index = () => {
   const { user } = useAuth();
@@ -177,7 +175,6 @@ const Index = () => {
               {t('main.welcomeMessage')}
             </p>
           </div>
-          <NotificationBell />
           <LanguageSwitcher />
         </div>
       </div>
