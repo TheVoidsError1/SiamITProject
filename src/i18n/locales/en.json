@@ -246,7 +246,9 @@
     "submittedOn": "Submitted on",
     "approvedBy": "Approved by",
     "rejectedBy": "Rejected by",
-    "reasonForRejection": "Reason for rejection"
+    "reasonForRejection": "Reason for rejection",
+    "showMore": "show More",
+    "showLess": "Less"
   },
   "admin": {
     "pendingRequests": "Pending Requests",

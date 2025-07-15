@@ -247,7 +247,9 @@
     "submittedOn": "ส่งคำขอเมื่อ",
     "approvedBy": "อนุมัติโดย",
     "rejectedBy": "ไม่อนุมัติโดย",
-    "reasonForRejection": "เหตุผลที่ไม่อนุมัติ"
+    "reasonForRejection": "เหตุผลที่ไม่อนุมัติ",
+    "showMore": "เพิมเติม",
+    "showLess": "ย่อ"
   },
   "admin": {
     "pendingRequests": "คำขอรออนุมัติ",
