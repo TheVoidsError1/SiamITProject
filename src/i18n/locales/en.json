@@ -30,6 +30,7 @@
     "newPassword": "New Password",
     "passwordMismatch": "Passwords do not match",
     "passwordTooShort": "Password must be at least 6 characters",
+    "checkEmailVerification": "You can now log in with this user.",
     "sessionExpired": "Session expired, please login again",
     "pleaseLoginAgain": "Please login again"
   },

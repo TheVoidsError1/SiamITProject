@@ -11,7 +11,10 @@ module.exports = new EntitySchema({
       length: 36,
       generated: 'uuid',
     },
-    Email: { type: 'varchar' },
+    Email: {
+      type: 'varchar',
+      unique: true,
+    },
     Password: { type: 'varchar' },
     Token: { type: 'varchar', default: null },
     Role: { type: 'varchar', default: 'user' },

@@ -13,6 +13,12 @@ module.exports = (AppDataSource) => {
       const departmentRepo = AppDataSource.getRepository('department');
       const positionRepo = AppDataSource.getRepository('position');
 
+      // ตรวจสอบชื่อซ้ำ
+      const nameExist = await userRepo.findOneBy({ User_name });
+      if (nameExist) {
+        return res.status(400).json({ success: false, data: null, message: 'ชื่อผู้ใช้นี้ถูกใช้ไปแล้ว' });
+      }
+
       // ตรวจสอบ email ซ้ำ
       const exist = await processRepo.findOneBy({ Email: email });
       if (exist) {
@@ -76,6 +82,13 @@ module.exports = (AppDataSource) => {
         message: 'Register successful'
       });
     } catch (err) {
+      // Handle unique constraint errors
+      if (err.code === 'ER_DUP_ENTRY' && err.message.includes('Email')) {
+        return res.status(400).json({ success: false, data: null, message: 'Email นี้ถูกใช้ไปแล้ว' });
+      }
+      if (err.code === 'ER_DUP_ENTRY' && err.message.includes('User_name')) {
+        return res.status(400).json({ success: false, data: null, message: 'ชื่อผู้ใช้นี้ถูกใช้ไปแล้ว' });
+      }
       res.status(500).json({ success: false, data: null, message: err.message });
     }
   });

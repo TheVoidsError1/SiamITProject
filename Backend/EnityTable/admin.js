@@ -13,6 +13,7 @@ module.exports = new EntitySchema({
       },
       admin_name: {
         type: 'varchar',
+        unique: true,
       },
       department: {
         type: 'varchar',

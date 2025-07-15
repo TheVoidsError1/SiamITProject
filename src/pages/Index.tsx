@@ -194,7 +194,6 @@ const Index = () => {
               {t('main.welcomeMessage')}
             </p>
           </div>
-          <NotificationBell />
           <LanguageSwitcher />
         </div>
       </div>

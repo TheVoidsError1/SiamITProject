@@ -180,7 +180,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || t('auth.registerError'));
+      throw new Error(data.message || data.error || 'สมัครสมาชิกไม่สำเร็จ');
     }
     // สมัครสมาชิกสำเร็จ ไม่ต้อง login อัตโนมัติ ให้ user ไป login เอง
   };
