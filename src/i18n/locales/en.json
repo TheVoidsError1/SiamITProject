@@ -152,7 +152,9 @@
     "day": "day",
     "leaveTime": "Leave Time:",
     "noHourlyLeave": "No hourly leave.",
-    "required": "Fill in all information."
+    "required": "Fill in all information.",
+    "attachmentLabel": "Attachment",
+    "attachmentHint": "(Medical certificate, supporting document, etc.)"
   },
   "leaveTypes": {
     "vacation": "Vacation ",

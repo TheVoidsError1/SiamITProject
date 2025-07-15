@@ -431,7 +431,7 @@ export const LeaveForm = () => {
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
-      {/* Leave Type (เปลี่ยนเป็น dynamic จาก API) */}
+      {/* Leave Type (แสดงเสมอ) */}
       <div className="space-y-2">
         <Label htmlFor="leave-type" className="text-sm font-medium">
           {t('leave.leaveType')}{submitted && !leaveType && <span className="text-red-500">*</span>}
@@ -451,169 +451,181 @@ export const LeaveForm = () => {
         {errors.leaveType && <p className="text-red-500 text-xs mt-1">{errors.leaveType}</p>}
       </div>
 
-      {/* Personal Leave Type Selection */}
-      {isPersonalLeave && (
-        <div className="space-y-2">
-          <Label className="text-sm font-medium">
-            {t('leave.personalLeaveType')} <span className="text-red-500">*</span>
-          </Label>
-          <Select value={personalLeaveType} onValueChange={handlePersonalLeaveTypeChange}>
-            <SelectTrigger>
-              <SelectValue placeholder={t('leave.selectPersonalLeaveType')} />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="day">{t('leave.dayLeave')}</SelectItem>
-              <SelectItem value="hour">{t('leave.hourLeave')}</SelectItem>
-            </SelectContent>
-          </Select>
-          {errors.personalLeaveType && <p className="text-red-500 text-xs mt-1">{errors.personalLeaveType}</p>}
-
-          {/* Display selected date for hourly leave (move here) */}
-          {isHourlyLeave && (
+      {/* เงื่อนไข: แสดงฟิลด์ที่เหลือเมื่อเลือก Leave Type แล้ว */}
+      {leaveType && (
+        <>
+          {/* Personal Leave Type Selection */}
+          {isPersonalLeave && (
             <div className="space-y-2">
-              <Label className="text-sm font-medium">{t('leave.leaveDate')}</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-full justify-start text-left font-normal"
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {startDate ? (
-                      i18n.language.startsWith('en')
-                        ? startDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-                        : startDate.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
-                    ) : (
-                      <span>{t('leave.selectDate')}</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={startDate}
-                    onSelect={setStartDate}
-                    initialFocus
-                    disabled={date => date < new Date(new Date().setHours(0,0,0,0))}
-                  />
-                </PopoverContent>
-              </Popover>
-              {errors.startDate && <p className="text-red-500 text-xs mt-1">{errors.startDate}</p>}
-              {errors.endDate && <p className="text-red-500 text-xs mt-1">{errors.endDate}</p>}
+              <Label className="text-sm font-medium">
+                {t('leave.personalLeaveType')}{submitted && !personalLeaveType && <span className="text-red-500">*</span>}
+              </Label>
+              <Select value={personalLeaveType} onValueChange={handlePersonalLeaveTypeChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t('leave.selectPersonalLeaveType')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="day">{t('leave.dayLeave')}</SelectItem>
+                  <SelectItem value="hour">{t('leave.hourLeave')}</SelectItem>
+                </SelectContent>
+              </Select>
+              {errors.personalLeaveType && <p className="text-red-500 text-xs mt-1">{errors.personalLeaveType}</p>}
+              {/* Display selected date for hourly leave (move here) */}
+              {isHourlyLeave && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">{t('leave.leaveDate')}</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {startDate ? (
+                          i18n.language.startsWith('en')
+                            ? startDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                            : startDate.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
+                        ) : (
+                          <span>{t('leave.selectDate')}</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <Calendar
+                        mode="single"
+                        selected={startDate}
+                        onSelect={setStartDate}
+                        initialFocus
+                        disabled={date => date < new Date(new Date().setHours(0,0,0,0))}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                  {errors.startDate && <p className="text-red-500 text-xs mt-1">{errors.startDate}</p>}
+                  {errors.endDate && <p className="text-red-500 text-xs mt-1">{errors.endDate}</p>}
+                </div>
+              )}
             </div>
           )}
-        </div>
-      )}
 
-      {/* Time Selection for Hourly Leave */}
-      {isPersonalLeave && isHourlyLeave && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">{t('leave.startTime')} <span className="text-red-500">*</span></Label>
-            <Input
-              type="text"
-              value={startTime}
-              onChange={e => setStartTime(autoFormatTimeInput(e.target.value))}
-              placeholder={t('leave.timePlaceholder')}
-              required
-              inputMode="numeric"
-              pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$"
-              maxLength={5}
-            />
-            {errors.startTime && <p className="text-red-500 text-xs mt-1">{errors.startTime}</p>}
-          </div>
-          <div className="space-y-2">
-            <Label className="text-sm font-medium">{t('leave.endTime')} <span className="text-red-500">*</span></Label>
-            <Input
-              type="text"
-              value={endTime}
-              onChange={e => setEndTime(autoFormatTimeInput(e.target.value))}
-              placeholder={t('leave.timePlaceholder')}
-              required
-              inputMode="numeric"
-              pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$"
-              maxLength={5}
-            />
-            {errors.endTime && <p className="text-red-500 text-xs mt-1">{errors.endTime}</p>}
-          </div>
-          {timeError && (
-            <div className="col-span-2 text-red-500 text-sm mt-1">{timeError}</div>
+          {/* Time Selection for Hourly Leave */}
+          {isPersonalLeave && isHourlyLeave && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">{t('leave.startTime')}{submitted && !startTime && <span className="text-red-500">*</span>}</Label>
+                <Input
+                  type="text"
+                  value={startTime}
+                  onChange={e => setStartTime(autoFormatTimeInput(e.target.value))}
+                  placeholder={t('leave.timePlaceholder')}
+                  required
+                  inputMode="numeric"
+                  pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$"
+                  maxLength={5}
+                />
+                {errors.startTime && <p className="text-red-500 text-xs mt-1">{errors.startTime}</p>}
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">{t('leave.endTime')}{submitted && !endTime && <span className="text-red-500">*</span>}</Label>
+                <Input
+                  type="text"
+                  value={endTime}
+                  onChange={e => setEndTime(autoFormatTimeInput(e.target.value))}
+                  placeholder={t('leave.timePlaceholder')}
+                  required
+                  inputMode="numeric"
+                  pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$"
+                  maxLength={5}
+                />
+                {errors.endTime && <p className="text-red-500 text-xs mt-1">{errors.endTime}</p>}
+              </div>
+              {timeError && (
+                <div className="col-span-2 text-red-500 text-sm mt-1">{timeError}</div>
+              )}
+            </div>
           )}
-        </div>
+
+          {/* Date Range - Show only for day leave or non-personal leave */}
+          {(!isPersonalLeave || personalLeaveType === "day") && (
+            <DateRangePicker
+              startDate={startDate}
+              endDate={endDate}
+              onStartDateChange={setStartDate}
+              onEndDateChange={setEndDate}
+              disabled={isHourlyLeave}
+              minDate={isPersonalLeave && personalLeaveType === "day" ? new Date() : undefined}
+              submitted={submitted}
+            />
+          )}
+
+          {/* Supervisor */}
+          <div className="space-y-2">
+            <Label htmlFor="supervisor">{t('leave.supervisor')}{submitted && !supervisor && <span className="text-red-500">*</span>}</Label>
+            <Select
+              value={supervisor}
+              onValueChange={setSupervisor}
+            >
+              <SelectTrigger id="supervisor">
+                <SelectValue placeholder={t('leave.selectSupervisor')} />
+              </SelectTrigger>
+              <SelectContent>
+                {admins.map((admin) => (
+                  <SelectItem key={admin.id} value={admin.id}>
+                    {admin.admin_name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.supervisor && <p className="text-red-500 text-xs mt-1">{errors.supervisor}</p>}
+          </div>
+
+          {/* Reason */}
+          <div className="space-y-2">
+            <Label htmlFor="reason" className="text-sm font-medium">
+              {t('leave.reason')}{submitted && !reason && <span className="text-red-500">*</span>}
+            </Label>
+            <Textarea
+              id="reason"
+              placeholder={t('leave.reasonPlaceholder')}
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              className="min-h-[100px] resize-none"
+            />
+            {errors.reason && <p className="text-red-500 text-xs mt-1">{errors.reason}</p>}
+          </div>
+
+          {/* File Upload - Show only for certain leave types */}
+          {requiresAttachmentField && (
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">
+                {t('leave.attachmentLabel')} <span className="text-red-500">*</span> <span className="text-gray-400 text-xs">{t('leave.attachmentHint')}</span>
+              </Label>
+              <FileUpload
+                attachments={attachments}
+                onFileUpload={handleFileUpload}
+                onRemoveAttachment={removeAttachment}
+              />
+              {submitted && attachments.length === 0 && (
+                <p className="text-red-500 text-xs mt-1">{t('leave.attachmentRequired') || 'กรุณาแนบไฟล์หลักฐาน'} </p>
+              )}
+            </div>
+          )}
+
+          {/* Contact Info */}
+          <div className="space-y-2">
+            <Label htmlFor="contact" className="text-sm font-medium">
+              {t('leave.contactInfo')}{submitted && !contact && <span className="text-red-500">*</span>}
+            </Label>
+            <Input
+              id="contact"
+              placeholder={t('leave.contactPlaceholder')}
+              className="w-full"
+              value={contact}
+              onChange={e => setContact(e.target.value)}
+            />
+            {errors.contact && <p className="text-red-500 text-xs mt-1">{errors.contact}</p>}
+          </div>
+        </>
       )}
-
-      {/* Date Range - Show only for day leave or non-personal leave */}
-      {(!isPersonalLeave || personalLeaveType === "day") && (
-        <DateRangePicker
-          startDate={startDate}
-          endDate={endDate}
-          onStartDateChange={setStartDate}
-          onEndDateChange={setEndDate}
-          disabled={isHourlyLeave}
-          minDate={isPersonalLeave && personalLeaveType === "day" ? new Date() : undefined}
-          submitted={submitted}
-        />
-      )}
-
-      {/* Supervisor */}
-      <div className="space-y-2">
-        <Label htmlFor="supervisor">{t('leave.supervisor')} <span className="text-red-500">*</span></Label>
-        <Select
-          value={supervisor}
-          onValueChange={setSupervisor}
-        >
-          <SelectTrigger id="supervisor">
-            <SelectValue placeholder={t('leave.selectSupervisor')} />
-          </SelectTrigger>
-          <SelectContent>
-            {admins.map((admin) => (
-              <SelectItem key={admin.id} value={admin.id}>
-                {admin.admin_name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {errors.supervisor && <p className="text-red-500 text-xs mt-1">{errors.supervisor}</p>}
-      </div>
-
-      {/* Reason */}
-      <div className="space-y-2">
-        <Label htmlFor="reason" className="text-sm font-medium">
-          {t('leave.reason')} <span className="text-red-500">*</span>
-        </Label>
-        <Textarea
-          id="reason"
-          placeholder={t('leave.reasonPlaceholder')}
-          value={reason}
-          onChange={(e) => setReason(e.target.value)}
-          className="min-h-[100px] resize-none"
-        />
-        {errors.reason && <p className="text-red-500 text-xs mt-1">{errors.reason}</p>}
-      </div>
-
-      {/* File Upload - Show only for certain leave types */}
-      {requiresAttachmentField && (
-        <FileUpload
-          attachments={attachments}
-          onFileUpload={handleFileUpload}
-          onRemoveAttachment={removeAttachment}
-        />
-      )}
-
-      {/* Contact Info */}
-      <div className="space-y-2">
-        <Label htmlFor="contact" className="text-sm font-medium">
-          {t('leave.contactInfo')} <span className="text-red-500">*</span>
-        </Label>
-        <Input
-          id="contact"
-          placeholder={t('leave.contactPlaceholder')}
-          className="w-full"
-          value={contact}
-          onChange={e => setContact(e.target.value)}
-        />
-        {errors.contact && <p className="text-red-500 text-xs mt-1">{errors.contact}</p>}
-      </div>
 
       {/* Submit Button */}
       <div className="flex gap-3 pt-4">

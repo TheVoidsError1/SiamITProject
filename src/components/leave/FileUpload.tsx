@@ -31,12 +31,6 @@ export const FileUpload = ({
 
   return (
     <div className="space-y-2">
-      <Label className="text-sm font-medium">
-        แนบหลักฐาน *
-        <span className="text-xs text-gray-500 ml-2">
-          (ใบรับรองแพทย์, เอกสารรับรอง ฯลฯ)
-        </span>
-      </Label>
       <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
         <input
           type="file"
