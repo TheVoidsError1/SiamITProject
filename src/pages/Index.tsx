@@ -1,16 +1,14 @@
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Users, TrendingUp } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from "@/contexts/AuthContext";
-import i18n from "@/i18n";
-import NotificationBell from "@/components/NotificationBell";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
+import { Calendar, Clock, TrendingUp, Users } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Link } from "react-router-dom";
 import { fetchWithAuth } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { ToastAction } from "@/components/ui/toast";
@@ -198,9 +196,10 @@ const Index = () => {
         </div>
       </div>
 
-      <div className="p-6 space-y-6 animate-fade-in">
+      {/* ลด mt ของ Welcome Section และเพิ่ม pb ของ container หลัก */}
+      <div className="p-4 pb-24 space-y-4 animate-fade-in">
         {/* Welcome Section */}
-        <div className="gradient-bg rounded-2xl p-8 text-white relative overflow-hidden">
+        <div className="gradient-bg rounded-2xl p-8 text-white relative overflow-hidden mt-0">
           <div className="relative z-10">
             <h2 className="text-3xl font-bold mb-2">{t('main.hello')} {user?.full_name || t('common.user')}! 👋</h2>
             <p className="text-blue-100 mb-6">

@@ -1,15 +1,14 @@
-import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
-import DemoCredentials from '@/components/DemoCredentials';
+import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 const Login = () => {
   const { t } = useTranslation();
@@ -57,9 +56,9 @@ const Login = () => {
       <div className="absolute top-4 right-4">
         <LanguageSwitcher />
       </div>
-      <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in">
+      <div className="w-full max-w-md flex flex-col justify-center items-center animate-fade-in">
         {/* Login Form */}
-        <div className="space-y-8">
+        <div className="space-y-8 w-full">
           <div className="text-center">
             <img
               src="/lovable-uploads/IMG_4486-removebg-preview.png"
@@ -149,18 +148,6 @@ const Login = () => {
                   </Link>
                 </p>
               </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Demo Credentials */}
-        <div className="lg:mt-24">
-          <Card className="shadow-lg border-0">
-            <CardHeader>
-              <CardTitle className="text-center">{t('auth.demoCredentials')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <DemoCredentials />
             </CardContent>
           </Card>
         </div>

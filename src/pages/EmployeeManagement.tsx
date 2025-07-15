@@ -76,9 +76,7 @@ const EmployeeManagement = () => {
     },
     {
       title: t('system.regularEmployees'),
-      value: employees.filter(
-        emp => emp.role === 'admin' || emp.role === 'employee' || emp.role === 'user'
-      ).length.toString(),
+      value: employees.filter(emp => emp.position?.toLowerCase() === 'employee').length.toString(),
       icon: User,
       color: "text-green-600",
       bgColor: "bg-green-50",
