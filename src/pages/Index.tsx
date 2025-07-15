@@ -197,41 +197,41 @@ const Index = () => {
       </div>
 
       {/* ลด mt ของ Welcome Section และเพิ่ม pb ของ container หลัก */}
-      <div className="p-4 pb-24 space-y-4 animate-fade-in">
+      <div className="p-2 pb-8 space-y-2 animate-fade-in">
         {/* Welcome Section */}
-        <div className="gradient-bg rounded-2xl p-8 text-white relative overflow-hidden mt-0">
+        <div className="gradient-bg rounded-2xl p-4 text-white relative overflow-hidden mt-0">
           <div className="relative z-10">
-            <h2 className="text-3xl font-bold mb-2">{t('main.hello')} {user?.full_name || t('common.user')}! 👋</h2>
-            <p className="text-blue-100 mb-6">
+            <h2 className="text-2xl font-bold mb-1">{t('main.hello')} {user?.full_name || t('common.user')}! 👋</h2>
+            <p className="text-blue-100 mb-3">
               {t('main.today')} {formatFullDateLocalized(new Date())}
             </p>
             <Link to="/leave-request">
               <Button 
-                size="lg" 
+                size="sm" 
                 variant="secondary"
-                className="bg-white text-blue-600 hover:bg-blue-50 font-medium"
+                className="bg-white text-blue-600 hover:bg-blue-50 font-medium px-4 py-2"
               >
                 {t('main.newLeaveRequest')}
               </Button>
             </Link>
           </div>
-          <div className="absolute top-0 right-0 w-64 h-64 rounded-full rainbow-gradient opacity-20 -translate-y-1/2 translate-x-1/2"></div>
+          <div className="absolute top-0 right-0 w-40 h-40 rounded-full rainbow-gradient opacity-20 -translate-y-1/2 translate-x-1/2"></div>
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {/* Days Remaining Card (API-connected) */}
-          <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 shadow-md">
-            <CardHeader className="pb-3">
+          <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 shadow-md p-2">
+            <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
-                  <Calendar className="w-6 h-6 text-blue-600" />
+                <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-blue-600" />
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-1">
-                <p className="text-2xl font-bold">
+              <div className="space-y-0.5">
+                <p className="text-xl font-bold">
                   {loadingDaysRemaining ? (
                     <span>{t('common.loading')}</span>
                   ) : errorDaysRemaining ? (
@@ -239,11 +239,11 @@ const Index = () => {
                   ) : daysRemaining ? (
                     <>
                       <span className="font-bold">{daysRemaining.days}</span>
-                      <span className="text-sm font-normal text-muted-foreground ml-1">{t('common.days')}</span>
+                      <span className="text-xs font-normal text-muted-foreground ml-1">{t('common.days')}</span>
                       {daysRemaining.hours > 0 && (
                         <>
                           <span className="font-bold ml-2">{daysRemaining.hours}</span>
-                          <span className="text-sm font-normal text-muted-foreground ml-1">{t('common.hour')}</span>
+                          <span className="text-xs font-normal text-muted-foreground ml-1">{t('common.hour')}</span>
                         </>
                       )}
                     </>
@@ -251,24 +251,24 @@ const Index = () => {
                     <span>-</span>
                   )}
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {t('main.daysRemaining')}
                 </p>
               </div>
             </CardContent>
           </Card>
           {/* Days Used Card (API-connected) */}
-          <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 shadow-md">
-            <CardHeader className="pb-3">
+          <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 shadow-md p-2">
+            <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
-                  <Clock className="w-6 h-6 text-green-600" />
+                <div className="w-10 h-10 bg-green-50 rounded-lg flex items-center justify-center">
+                  <Clock className="w-5 h-5 text-green-600" />
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="space-y-1">
-                <p className="text-2xl font-bold">
+              <div className="space-y-0.5">
+                <p className="text-xl font-bold">
                   {loadingDaysUsed ? (
                     <span>{t('common.loading')}</span>
                   ) : errorDaysUsed ? (
@@ -276,11 +276,11 @@ const Index = () => {
                   ) : daysUsed ? (
                     <>
                       <span className="font-bold">{daysUsed.days}</span>
-                      <span className="text-sm font-normal text-muted-foreground ml-1">{t('common.days')}</span>
+                      <span className="text-xs font-normal text-muted-foreground ml-1">{t('common.days')}</span>
                       {daysUsed.hours > 0 && (
                         <>
                           <span className="font-bold ml-2">{daysUsed.hours}</span>
-                          <span className="text-sm font-normal text-muted-foreground ml-1">{t('common.hour')}</span>
+                          <span className="text-xs font-normal text-muted-foreground ml-1">{t('common.hour')}</span>
                         </>
                       )}
                     </>
@@ -288,7 +288,7 @@ const Index = () => {
                     <span>-</span>
                   )}
                 </p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-xs text-muted-foreground">
                   {t('main.daysUsed')}
                 </p>
               </div>
@@ -300,25 +300,25 @@ const Index = () => {
             return (
               <Card 
                 key={stat.title} 
-                className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 shadow-md"
+                className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 shadow-md p-2"
                 style={{ animationDelay: `${index * 100}ms` }}
               >
-                <CardHeader className="pb-3">
+                <CardHeader className="pb-2">
                   <div className="flex items-center justify-between">
-                    <div className={`w-12 h-12 ${stat.bgColor} rounded-lg flex items-center justify-center`}>
-                      <Icon className={`w-6 h-6 ${stat.color}`} />
+                    <div className={`w-10 h-10 ${stat.bgColor} rounded-lg flex items-center justify-center`}>
+                      <Icon className={`w-5 h-5 ${stat.color}`} />
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-1">
-                    <p className="text-2xl font-bold">
+                  <div className="space-y-0.5">
+                    <p className="text-xl font-bold">
                       {stat.value}
-                      <span className="text-sm font-normal text-muted-foreground ml-1">
+                      <span className="text-xs font-normal text-muted-foreground ml-1">
                         {stat.unit}
                       </span>
                     </p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-xs text-muted-foreground">
                       {stat.title}
                     </p>
                   </div>
@@ -329,26 +329,26 @@ const Index = () => {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card className="border-0 shadow-md">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <Card className="border-0 shadow-md p-2">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="w-5 h-5 text-blue-600" />
+              <CardTitle className="flex items-center gap-2 text-base">
+                <Calendar className="w-4 h-4 text-blue-600" />
                 {t('main.quickActions')}
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs">
                 {t('main.quickActionsDesc')}
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-2">
               <Link to="/leave-request">
-                <Button className="w-full justify-start" variant="outline">
+                <Button className="w-full justify-start text-sm px-2 py-1" variant="outline">
                   <Calendar className="w-4 h-4 mr-2" />
                   {t('main.newLeaveRequest')}
                 </Button>
               </Link>
               <Link to="/leave-history">
-                <Button className="w-full justify-start" variant="outline">
+                <Button className="w-full justify-start text-sm px-2 py-1" variant="outline">
                   <Clock className="w-4 h-4 mr-2" />
                   {t('leave.leaveHistory')}
                 </Button>
@@ -356,38 +356,38 @@ const Index = () => {
             </CardContent>
           </Card>
 
-          <Card className="border-0 shadow-md">
+          <Card className="border-0 shadow-md p-2">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="w-5 h-5 text-green-600" />
+              <CardTitle className="flex items-center gap-2 text-base">
+                <TrendingUp className="w-4 h-4 text-green-600" />
                 {t('main.recentLeaveStats')}
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-xs">
                 {t('main.recentLeaveStatsDesc')}
               </CardDescription>
             </CardHeader>
             <CardContent>
               {loadingRecentStats ? (
-                <div className="text-center py-6 text-gray-500">{t('common.loading')}</div>
+                <div className="text-center py-3 text-gray-500 text-sm">{t('common.loading')}</div>
               ) : errorRecentStats ? (
-                <div className="text-center py-6 text-red-500">{errorRecentStats}</div>
+                <div className="text-center py-3 text-red-500 text-sm">{errorRecentStats}</div>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-sm">{t('leaveTypes.sick')}</span>
-                    <span className="font-medium">
+                    <span className="text-xs">{t('leaveTypes.sick')}</span>
+                    <span className="font-medium text-sm">
                       {recentLeaveStats.sick.days} {t('common.days')}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm">{t('leaveTypes.vacation')}</span>
-                    <span className="font-medium">
+                    <span className="text-xs">{t('leaveTypes.vacation')}</span>
+                    <span className="font-medium text-sm">
                       {recentLeaveStats.vacation.days} {t('common.days')}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-sm">{t('leaveTypes.personal')}</span>
-                    <span className="font-medium">
+                    <span className="text-xs">{t('leaveTypes.personal')}</span>
+                    <span className="font-medium text-sm">
                       {(() => {
                         const d = recentLeaveStats.personal.days;
                         const h = recentLeaveStats.personal.hours;

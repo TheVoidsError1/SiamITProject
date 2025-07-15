@@ -280,7 +280,7 @@
     "rejectedWhen": "ไม่อนุมัติเมื่อ:",
     "rejected": "ไม่อนุมัติแล้ว",
     "noApprovalHistory": "ไม่มีประวัติการอนุมัติ/ไม่อนุมัติ",
-    "allapproved": "อนุมัติทั่งหมด"
+    "allapproved": "อนุมัติทั้งหมด"
   },
   "system": {
     "onlineLeaveSystem": "ระบบลาออนไลน์",
