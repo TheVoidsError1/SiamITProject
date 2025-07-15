@@ -146,7 +146,8 @@ export const LeaveForm = () => {
   }, []);
 
   const isTimeInRange = (time: string) => {
-    if (!isValidTimeFormat(time)) return false;
+    // รองรับ input type="time" (HH:mm)
+    if (!/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(time)) return false;
     const [h, m] = time.split(":").map(Number);
     const minutes = h * 60 + m;
     const min = 9 * 60; // 09:00
@@ -200,6 +201,7 @@ export const LeaveForm = () => {
         newErrors.endTime = t('leave.timeNotSame');
         hasError = true;
       }
+      // ตรวจสอบช่วงเวลา 09:00-18:00
       if ((startTime && !isTimeInRange(startTime)) || (endTime && !isTimeInRange(endTime))) {
         newErrors.startTime = t('leave.timeRangeError');
         newErrors.endTime = t('leave.timeRangeError');
@@ -513,28 +515,18 @@ export const LeaveForm = () => {
               <div className="space-y-2">
                 <Label className="text-sm font-medium">{t('leave.startTime')}{submitted && !startTime && <span className="text-red-500">*</span>}</Label>
                 <Input
-                  type="text"
+                  type="time"
                   value={startTime}
-                  onChange={e => setStartTime(autoFormatTimeInput(e.target.value))}
-                  placeholder={t('leave.timePlaceholder')}
-                  required
-                  inputMode="numeric"
-                  pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$"
-                  maxLength={5}
+                  onChange={e => setStartTime(e.target.value)}
                 />
                 {errors.startTime && <p className="text-red-500 text-xs mt-1">{errors.startTime}</p>}
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium">{t('leave.endTime')}{submitted && !endTime && <span className="text-red-500">*</span>}</Label>
                 <Input
-                  type="text"
+                  type="time"
                   value={endTime}
-                  onChange={e => setEndTime(autoFormatTimeInput(e.target.value))}
-                  placeholder={t('leave.timePlaceholder')}
-                  required
-                  inputMode="numeric"
-                  pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$"
-                  maxLength={5}
+                  onChange={e => setEndTime(e.target.value)}
                 />
                 {errors.endTime && <p className="text-red-500 text-xs mt-1">{errors.endTime}</p>}
               </div>
