@@ -161,6 +161,7 @@ const AdminDashboard = () => {
           toast({ title: t('admin.approveSuccess'), description: `${t('admin.approveSuccessDesc')} ${employeeName}` });
           setPendingRequests(prev => prev.filter(r => r.id !== id));
           fetchHistoryRequests();
+          refreshLeaveRequests(); // <-- เพิ่มบรรทัดนี้
         } else {
           toast({ title: t('admin.rejectError'), description: data.message, variant: "destructive" });
         }
@@ -194,6 +195,7 @@ const AdminDashboard = () => {
           toast({ title: t('admin.rejectSuccess'), description: `${t('admin.rejectSuccessDesc')} ${rejectingRequest.employeeName}`, variant: "destructive" });
           setPendingRequests(prev => prev.filter(r => r.id !== rejectingRequest.id));
           fetchHistoryRequests();
+          refreshLeaveRequests(); // <-- เพิ่มบรรทัดนี้
         } else {
           toast({ title: t('admin.rejectError'), description: data.message, variant: "destructive" });
         }

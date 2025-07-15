@@ -263,32 +263,6 @@ const EmployeeDetail = () => {
                       <p className="text-sm text-gray-600">{String(t(`departments.${employee.department}`, { defaultValue: employee.department }))}</p>
                     )}
                   </div>
-                  <div>
-                    <Label className="text-sm font-medium text-gray-700">{t('employee.status')}</Label>
-                    {isEditing ? (
-                      <Select onValueChange={(value) => setEditData({...editData, role: value})}>
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder={
-                            editData.role === 'admin' ? t('employee.admin') : 
-                            editData.role === 'employee' ? t('employee.employee') : t('employee.intern')
-                          } />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="admin">{t('employee.admin')}</SelectItem>
-                          <SelectItem value="employee">{t('employee.employee')}</SelectItem>
-                          <SelectItem value="intern">{t('employee.intern')}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <Badge 
-                        variant={employee.role === 'admin' ? 'default' : employee.role === 'employee' ? 'secondary' : 'outline'}
-                        className="ml-2"
-                      >
-                        {employee.role === 'admin' ? t('employee.admin') : 
-                         employee.role === 'employee' ? t('employee.employee') : t('employee.intern')}
-                      </Badge>
-                    )}
-                  </div>
                 </div>
                 
                 <div className="space-y-4">
