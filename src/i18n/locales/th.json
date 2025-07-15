@@ -32,7 +32,8 @@
     "passwordTooShort": "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร",
     "checkEmailVerification": "ตอนนี้คุณสามารถเข้าสู่ระบบด้วยผู้ใช้นี้ได้แล้ว",
     "sessionExpired": "เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่",
-    "pleaseLoginAgain": "กรุณาเข้าสู่ระบบใหม่"
+    "pleaseLoginAgain": "กรุณาเข้าสู่ระบบใหม่",
+    "passwordRequired": "กรุณากรอกรหัสผ่านใหม่ และ กรุณายืนยันรหัสผ่าน"
   },
   "navigation": {
     "home": "หน้าหลัก",
@@ -294,7 +295,11 @@
     "regularEmployees": "พนักงานประจำ",
     "interns": "เด็กฝึกงาน",
     "days": "วัน",
-    "manageDepartment": "จัดการพนักงานและแผนก"
+    "manageDepartment": "จัดการพนักงานและแผนก",
+    "changePasswordDesc": "เปลี่ยนรหัสผ่านของคุณ",
+    "changePassword": "เปลี่ยนรหัสผ่าน",
+    "cancel":"ยกเลิก",
+    "change":"เปลี่ยน"
   },
   "error": {
     "apiConnectionError": "ข้อผิดพลาดการเชื่อมต่อ API"

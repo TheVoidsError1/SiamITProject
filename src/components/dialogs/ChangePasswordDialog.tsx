@@ -38,10 +38,10 @@ export default function ChangePasswordDialog({ open, onOpenChange }: ChangePassw
       return;
     }
 
-    if (formData.newPassword.length < 6) {
+    if (!formData.newPassword.trim() || !formData.confirmPassword.trim()) {
       toast({
         title: t('system.error'),
-        description: t('auth.passwordTooShort'),
+        description: t('auth.passwordRequired'),
         variant: "destructive",
       });
       return;
@@ -49,14 +49,23 @@ export default function ChangePasswordDialog({ open, onOpenChange }: ChangePassw
 
     setLoading(true);
     try {
-      // Mock password change - would update Supabase in real implementation
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/profile', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': token ? `Bearer ${token}` : undefined,
+        },
+        body: JSON.stringify({ password: formData.newPassword })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || t('system.updateErrorDesc'));
+      }
       toast({
         title: t('system.updateSuccess'),
         description: t('system.passwordChanged'),
       });
-      
       setFormData({
         currentPassword: '',
         newPassword: '',
@@ -66,7 +75,7 @@ export default function ChangePasswordDialog({ open, onOpenChange }: ChangePassw
     } catch (error) {
       toast({
         title: t('system.updateError'),
-        description: t('system.updateErrorDesc'),
+        description: error.message || t('system.updateErrorDesc'),
         variant: "destructive",
       });
     } finally {

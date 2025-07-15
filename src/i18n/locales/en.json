@@ -293,7 +293,11 @@
     "regularEmployees": "Regular Employees",
     "interns": "Interns",
     "days": "days",
-    "manageDepartment": "Manage employees and departments"
+    "manageDepartment": "Manage employees and departments",
+    "changePasswordDesc": "Change your password",
+    "changePassword": "Change Password",
+    "cancel":"Cancel",
+    "change":"Change"
   },
   "error": {
     "apiConnectionError": "API Connection Error"

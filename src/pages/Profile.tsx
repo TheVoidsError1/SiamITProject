@@ -16,6 +16,7 @@ import { useTranslation } from 'react-i18next';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { usePushNotification } from "@/contexts/PushNotificationContext";
+import ChangePasswordDialog from "@/components/dialogs/ChangePasswordDialog";
 
 const Profile = () => {
   const { t } = useTranslation();
@@ -40,6 +41,7 @@ const Profile = () => {
   const [leaveQuota, setLeaveQuota] = useState<any[]>([]);
   const [leaveLoading, setLeaveLoading] = useState(true);
   const { enabled: pushNotificationEnabled, setEnabled: setPushNotificationEnabled } = usePushNotification();
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   const getKeyByLabel = (label: string, options: string[], tPrefix: string) => {
     for (const key of options) {
@@ -569,7 +571,7 @@ const Profile = () => {
                       <h3 className="font-medium">{t('profile.changePassword')}</h3>
                       <p className="text-sm text-gray-500">{t('profile.changePasswordDesc')}</p>
                     </div>
-                    <Button variant="outline" size="sm">{t('common.change')}</Button>
+                    <Button variant="outline" size="sm" onClick={() => setChangePasswordOpen(true)}>{t('common.change')}</Button>
                   </div>
                 </div>
               </CardContent>
@@ -577,6 +579,7 @@ const Profile = () => {
           </TabsContent>
         </Tabs>
       </div>
+      <ChangePasswordDialog open={changePasswordOpen} onOpenChange={setChangePasswordOpen} />
     </div>
   );
 };
