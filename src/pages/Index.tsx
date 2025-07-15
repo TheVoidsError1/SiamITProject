@@ -2,17 +2,16 @@ import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { ToastAction } from "@/components/ui/toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { fetchWithAuth } from "@/lib/utils";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import { Calendar, Clock, TrendingUp, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router-dom";
-import { fetchWithAuth } from "@/lib/utils";
-import { useToast } from "@/hooks/use-toast";
-import { ToastAction } from "@/components/ui/toast";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 const Index = () => {
   const { user, logout } = useAuth();
@@ -199,7 +198,7 @@ const Index = () => {
       {/* ลด mt ของ Welcome Section และเพิ่ม pb ของ container หลัก */}
       <div className="p-6 pb-8 space-y-6 animate-fade-in">
         {/* Welcome Section */}
-        <div className="gradient-bg rounded-2xl p-4 text-white relative overflow-hidden mt-0">
+        <div className="gradient-bg rounded-2xl p-6 text-white relative overflow-hidden mt-0">
           <div className="relative z-10">
             <h2 className="text-2xl font-bold mb-1">{t('main.hello')} {user?.full_name || t('common.user')}! 👋</h2>
             <p className="text-base text-blue-100 mb-3">
