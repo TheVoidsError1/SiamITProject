@@ -55,6 +55,19 @@ export const LeaveForm = () => {
   const [admins, setAdmins] = useState<{ id: string; admin_name: string }[]>([]);
   const { user } = useAuth();
   const [timeError, setTimeError] = useState("");
+  // เพิ่ม state สำหรับ error ของแต่ละฟิลด์
+  const [errors, setErrors] = useState({
+    leaveType: '',
+    personalLeaveType: '',
+    startDate: '',
+    endDate: '',
+    startTime: '',
+    endTime: '',
+    reason: '',
+    supervisor: '',
+    contact: '',
+  });
+  const [submitted, setSubmitted] = useState(false);
 
   useEffect(() => {
     // ดึงข้อมูล department จาก API
@@ -143,13 +156,74 @@ export const LeaveForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitted(true);
     setTimeError("");
-    
-    if (!startDate || !leaveType || !reason) {
+    let newErrors = {
+      leaveType: '',
+      personalLeaveType: '',
+      startDate: '',
+      endDate: '',
+      startTime: '',
+      endTime: '',
+      reason: '',
+      supervisor: '',
+      contact: '',
+    };
+    let hasError = false;
+    if (!leaveType) {
+      newErrors.leaveType = t('leave.required');
+      hasError = true;
+    }
+    if (isPersonalLeave && !personalLeaveType) {
+      newErrors.personalLeaveType = t('leave.required');
+      hasError = true;
+    }
+    if (!startDate) {
+      newErrors.startDate = t('leave.required');
+      hasError = true;
+    }
+    if ((!isPersonalLeave || personalLeaveType === 'day') && !endDate) {
+      newErrors.endDate = t('leave.required');
+      hasError = true;
+    }
+    if (isPersonalLeave && personalLeaveType === 'hour') {
+      if (!startTime) {
+        newErrors.startTime = t('leave.required');
+        hasError = true;
+      }
+      if (!endTime) {
+        newErrors.endTime = t('leave.required');
+        hasError = true;
+      }
+      if (startTime && endTime && startTime === endTime) {
+        newErrors.startTime = t('leave.timeNotSame');
+        newErrors.endTime = t('leave.timeNotSame');
+        hasError = true;
+      }
+      if ((startTime && !isTimeInRange(startTime)) || (endTime && !isTimeInRange(endTime))) {
+        newErrors.startTime = t('leave.timeRangeError');
+        newErrors.endTime = t('leave.timeRangeError');
+        hasError = true;
+      }
+    }
+    if (!reason) {
+      newErrors.reason = t('leave.required');
+      hasError = true;
+    }
+    if (!supervisor) {
+      newErrors.supervisor = t('leave.required');
+      hasError = true;
+    }
+    if (!contact) {
+      newErrors.contact = t('leave.required');
+      hasError = true;
+    }
+    setErrors(newErrors);
+    if (hasError) {
       toast({
         title: t('leave.fillAllFields'),
         description: t('leave.fillAllFieldsDesc'),
-        variant: "destructive",
+        variant: 'destructive',
       });
       return;
     }
@@ -360,7 +434,7 @@ export const LeaveForm = () => {
       {/* Leave Type (เปลี่ยนเป็น dynamic จาก API) */}
       <div className="space-y-2">
         <Label htmlFor="leave-type" className="text-sm font-medium">
-          {t('leave.leaveType')} *
+          {t('leave.leaveType')}{submitted && !leaveType && <span className="text-red-500">*</span>}
         </Label>
         <Select value={leaveType} onValueChange={handleLeaveTypeChange}>
           <SelectTrigger>
@@ -374,13 +448,14 @@ export const LeaveForm = () => {
             ))}
           </SelectContent>
         </Select>
+        {errors.leaveType && <p className="text-red-500 text-xs mt-1">{errors.leaveType}</p>}
       </div>
 
       {/* Personal Leave Type Selection */}
       {isPersonalLeave && (
         <div className="space-y-2">
           <Label className="text-sm font-medium">
-            {t('leave.personalLeaveType')} *
+            {t('leave.personalLeaveType')} <span className="text-red-500">*</span>
           </Label>
           <Select value={personalLeaveType} onValueChange={handlePersonalLeaveTypeChange}>
             <SelectTrigger>
@@ -391,6 +466,7 @@ export const LeaveForm = () => {
               <SelectItem value="hour">{t('leave.hourLeave')}</SelectItem>
             </SelectContent>
           </Select>
+          {errors.personalLeaveType && <p className="text-red-500 text-xs mt-1">{errors.personalLeaveType}</p>}
 
           {/* Display selected date for hourly leave (move here) */}
           {isHourlyLeave && (
@@ -422,6 +498,8 @@ export const LeaveForm = () => {
                   />
                 </PopoverContent>
               </Popover>
+              {errors.startDate && <p className="text-red-500 text-xs mt-1">{errors.startDate}</p>}
+              {errors.endDate && <p className="text-red-500 text-xs mt-1">{errors.endDate}</p>}
             </div>
           )}
         </div>
@@ -431,7 +509,7 @@ export const LeaveForm = () => {
       {isPersonalLeave && isHourlyLeave && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <Label className="text-sm font-medium">{t('leave.startTime')} *</Label>
+            <Label className="text-sm font-medium">{t('leave.startTime')} <span className="text-red-500">*</span></Label>
             <Input
               type="text"
               value={startTime}
@@ -442,9 +520,10 @@ export const LeaveForm = () => {
               pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$"
               maxLength={5}
             />
+            {errors.startTime && <p className="text-red-500 text-xs mt-1">{errors.startTime}</p>}
           </div>
           <div className="space-y-2">
-            <Label className="text-sm font-medium">{t('leave.endTime')} *</Label>
+            <Label className="text-sm font-medium">{t('leave.endTime')} <span className="text-red-500">*</span></Label>
             <Input
               type="text"
               value={endTime}
@@ -455,6 +534,7 @@ export const LeaveForm = () => {
               pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$"
               maxLength={5}
             />
+            {errors.endTime && <p className="text-red-500 text-xs mt-1">{errors.endTime}</p>}
           </div>
           {timeError && (
             <div className="col-span-2 text-red-500 text-sm mt-1">{timeError}</div>
@@ -471,12 +551,13 @@ export const LeaveForm = () => {
           onEndDateChange={setEndDate}
           disabled={isHourlyLeave}
           minDate={isPersonalLeave && personalLeaveType === "day" ? new Date() : undefined}
+          submitted={submitted}
         />
       )}
 
       {/* Supervisor */}
       <div className="space-y-2">
-        <Label htmlFor="supervisor">{t('leave.supervisor')}</Label>
+        <Label htmlFor="supervisor">{t('leave.supervisor')} <span className="text-red-500">*</span></Label>
         <Select
           value={supervisor}
           onValueChange={setSupervisor}
@@ -492,12 +573,13 @@ export const LeaveForm = () => {
             ))}
           </SelectContent>
         </Select>
+        {errors.supervisor && <p className="text-red-500 text-xs mt-1">{errors.supervisor}</p>}
       </div>
 
       {/* Reason */}
       <div className="space-y-2">
         <Label htmlFor="reason" className="text-sm font-medium">
-          {t('leave.reason')} *
+          {t('leave.reason')} <span className="text-red-500">*</span>
         </Label>
         <Textarea
           id="reason"
@@ -506,6 +588,7 @@ export const LeaveForm = () => {
           onChange={(e) => setReason(e.target.value)}
           className="min-h-[100px] resize-none"
         />
+        {errors.reason && <p className="text-red-500 text-xs mt-1">{errors.reason}</p>}
       </div>
 
       {/* File Upload - Show only for certain leave types */}
@@ -520,7 +603,7 @@ export const LeaveForm = () => {
       {/* Contact Info */}
       <div className="space-y-2">
         <Label htmlFor="contact" className="text-sm font-medium">
-          {t('leave.contactInfo')}
+          {t('leave.contactInfo')} <span className="text-red-500">*</span>
         </Label>
         <Input
           id="contact"
@@ -529,6 +612,7 @@ export const LeaveForm = () => {
           value={contact}
           onChange={e => setContact(e.target.value)}
         />
+        {errors.contact && <p className="text-red-500 text-xs mt-1">{errors.contact}</p>}
       </div>
 
       {/* Submit Button */}

@@ -15,6 +15,7 @@ interface DateRangePickerProps {
   onEndDateChange: (date: Date | undefined) => void;
   disabled?: boolean;
   minDate?: Date;
+  submitted?: boolean;
 }
 
 export const DateRangePicker = ({
@@ -24,6 +25,7 @@ export const DateRangePicker = ({
   onEndDateChange,
   disabled = false,
   minDate,
+  submitted = false,
 }: DateRangePickerProps) => {
   const { t, i18n } = useTranslation();
   // กำหนด minDate เป็นวันนี้ (เวลา 00:00:00) เสมอ
@@ -35,7 +37,7 @@ export const DateRangePicker = ({
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div className="space-y-2">
-        <Label className="text-sm font-medium">{t('leave.startDate')} *</Label>
+        <Label className="text-sm font-medium">{t('leave.startDate')}{submitted && !startDate && <span className="text-red-500">*</span>}</Label>
         <Popover>
           <PopoverTrigger asChild>
             <Button
@@ -64,7 +66,7 @@ export const DateRangePicker = ({
       </div>
 
       <div className="space-y-2">
-        <Label className="text-sm font-medium">{t('leave.endDate')} *</Label>
+        <Label className="text-sm font-medium">{t('leave.endDate')}{submitted && !endDate && <span className="text-red-500">*</span>}</Label>
         <Popover>
           <PopoverTrigger asChild>
             <Button

@@ -151,7 +151,8 @@
     "hour": "hour",
     "day": "day",
     "leaveTime": "Leave Time:",
-    "noHourlyLeave": "No hourly leave."
+    "noHourlyLeave": "No hourly leave.",
+    "required": "Fill in all information."
   },
   "leaveTypes": {
     "vacation": "Vacation ",
