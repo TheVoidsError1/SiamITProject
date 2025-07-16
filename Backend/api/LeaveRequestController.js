@@ -161,15 +161,21 @@
          const page = parseInt(req.query.page) || 1;
          const limit = parseInt(req.query.limit) || 4;
          const skip = (page - 1) * limit;
+         // --- เพิ่ม filter leaveType ---
+         const leaveType = req.query.leaveType || null;
+         let where = { status: 'pending' };
+         if (leaveType) {
+           where = { ...where, leaveType };
+         }
          // ดึง leave requests ที่ pending (paging)
          const [pendingLeaves, total] = await Promise.all([
            leaveRepo.find({
-             where: { status: 'pending' },
-             order: { createdAt: 'DESC' }, // เปลี่ยนจาก id: 'DESC' เป็น createdAt: 'DESC'
+             where,
+             order: { createdAt: 'DESC' },
              skip,
              take: limit
            }),
-           leaveRepo.count({ where: { status: 'pending' } })
+           leaveRepo.count({ where })
          ]);
          // join user (Repid -> user.id) และ leaveType (leaveType -> LeaveType.id)
          const result = await Promise.all(pendingLeaves.map(async (leave) => {
@@ -208,41 +214,68 @@
          const userRepo = AppDataSource.getRepository('User');
          const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
          const adminRepo = AppDataSource.getRepository('Admin');
-         const { userId } = req.query;
+         const { userId, status } = req.query;
          // --- เพิ่ม filter เดือน/ปี ---
          const month = req.query.month ? parseInt(req.query.month) : null;
          const year = req.query.year ? parseInt(req.query.year) : null;
-         let where = [
-           { status: 'approved' },
-           { status: 'rejected' },
-           { status: 'pending' }
-         ];
-         // ถ้ามี userId ให้ filter ตาม userId
-         if (userId) {
+         let where;
+         const { Between } = require('typeorm');
+         if (status) {
+           // กรองเฉพาะ status ที่เลือก
+           where = [{ status }];
+           if (userId) where = [{ status, Repid: userId }];
+           if (month && year) {
+             const startOfMonth = new Date(year, month - 1, 1);
+             const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
+             where = [{ status, createdAt: Between(startOfMonth, endOfMonth) }];
+             if (userId) where = [{ status, Repid: userId, createdAt: Between(startOfMonth, endOfMonth) }];
+           } else if (year) {
+             const startOfYear = new Date(year, 0, 1);
+             const endOfYear = new Date(year, 11, 31, 23, 59, 59, 999);
+             where = [{ status, createdAt: Between(startOfYear, endOfYear) }];
+             if (userId) where = [{ status, Repid: userId, createdAt: Between(startOfYear, endOfYear) }];
+           }
+         } else {
+           // ไม่ได้กรอง status (default: approved, rejected, pending)
            where = [
-             { status: 'approved', Repid: userId },
-             { status: 'rejected', Repid: userId },
-             { status: 'pending', Repid: userId }
+             { status: 'approved' },
+             { status: 'rejected' },
+             { status: 'pending' }
            ];
-         } else if (month && year) {
-           // ถ้าไม่มี userId และมี month/year ให้ filter createdAt
-           const { Between } = require('typeorm');
-           const startOfMonth = new Date(year, month - 1, 1);
-           const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
-           where = [
-             { status: 'approved', createdAt: Between(startOfMonth, endOfMonth) },
-             { status: 'rejected', createdAt: Between(startOfMonth, endOfMonth) },
-             { status: 'pending', createdAt: Between(startOfMonth, endOfMonth) }
-           ];
-         } else if (year) {
-           const { Between } = require('typeorm');
-           const startOfYear = new Date(year, 0, 1);
-           const endOfYear = new Date(year, 11, 31, 23, 59, 59, 999);
-           where = [
-             { status: 'approved', createdAt: Between(startOfYear, endOfYear) },
-             { status: 'rejected', createdAt: Between(startOfYear, endOfYear) },
-             { status: 'pending', createdAt: Between(startOfYear, endOfYear) }
-           ];
+           if (userId) {
+             where = [
+               { status: 'approved', Repid: userId },
+               { status: 'rejected', Repid: userId },
+               { status: 'pending', Repid: userId }
+             ];
+           }
+           if (month && year) {
+             const startOfMonth = new Date(year, month - 1, 1);
+             const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
+             where = [
+               { status: 'approved', createdAt: Between(startOfMonth, endOfMonth) },
+               { status: 'rejected', createdAt: Between(startOfMonth, endOfMonth) },
+               { status: 'pending', createdAt: Between(startOfMonth, endOfMonth) }
+             ];
+             if (userId) where = [
+               { status: 'approved', Repid: userId, createdAt: Between(startOfMonth, endOfMonth) },
+               { status: 'rejected', Repid: userId, createdAt: Between(startOfMonth, endOfMonth) },
+               { status: 'pending', Repid: userId, createdAt: Between(startOfMonth, endOfMonth) }
+             ];
+           } else if (year) {
+             const startOfYear = new Date(year, 0, 1);
+             const endOfYear = new Date(year, 11, 31, 23, 59, 59, 999);
+             where = [
+               { status: 'approved', createdAt: Between(startOfYear, endOfYear) },
+               { status: 'rejected', createdAt: Between(startOfYear, endOfYear) },
+               { status: 'pending', createdAt: Between(startOfYear, endOfYear) }
+             ];
+             if (userId) where = [
+               { status: 'approved', Repid: userId, createdAt: Between(startOfYear, endOfYear) },
+               { status: 'rejected', Repid: userId, createdAt: Between(startOfYear, endOfYear) },
+               { status: 'pending', Repid: userId, createdAt: Between(startOfYear, endOfYear) }
+             ];
+           }
          }
          // --- เพิ่ม paging ---
          const page = parseInt(req.query.page) || 1;

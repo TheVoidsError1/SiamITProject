@@ -71,6 +71,11 @@ const AdminDashboard = () => {
   // --- เพิ่ม state สำหรับ items per page ---
   const [historyLimit, setHistoryLimit] = useState(5);
   const [pendingLimit, setPendingLimit] = useState(4);
+  const [pendingLeaveTypes, setPendingLeaveTypes] = useState<{ id: string; leave_type: string }[]>([]);
+  const [pendingLeaveTypesLoading, setPendingLeaveTypesLoading] = useState(false);
+  const [pendingLeaveTypesError, setPendingLeaveTypesError] = useState<string | null>(null);
+  const [pendingFilterLeaveType, setPendingFilterLeaveType] = useState('');
+  const [historyStatusFilter, setHistoryStatusFilter] = useState('');
 
   // ปรับการคำนวณสถิติให้ใช้ข้อมูลจาก leave request ที่ดึงมา
   const pendingCount = pendingRequests.length;
@@ -261,10 +266,11 @@ const AdminDashboard = () => {
   const fetchHistoryRequests = () => {
     setLoading(true);
     const token = localStorage.getItem('token');
-    // --- ส่ง page, limit, month, year ไป backend ---
+    // --- ส่ง page, limit, month, year, status ไป backend ---
     let url = `http://localhost:3001/api/leave-request/history?page=${historyPage}&limit=${historyLimit}`;
     if (filterMonth) url += `&month=${filterMonth}`;
     if (filterYear) url += `&year=${filterYear}`;
+    if (historyStatusFilter) url += `&status=${historyStatusFilter}`;
     fetch(url, {
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -292,7 +298,9 @@ const AdminDashboard = () => {
       try {
         const token = localStorage.getItem('token');
         // --- ส่ง page, limit ไป backend ---
-        const res = await fetch(`http://localhost:3001/api/leave-request/pending?page=${pendingPage}&limit=${pendingLimit}`, {
+        let url = `http://localhost:3001/api/leave-request/pending?page=${pendingPage}&limit=${pendingLimit}`;
+        if (pendingFilterLeaveType) url += `&leaveType=${pendingFilterLeaveType}`;
+        const res = await fetch(url, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
@@ -313,11 +321,11 @@ const AdminDashboard = () => {
       }
     };
     fetchPending();
-  }, [t, pendingPage, pendingLimit]);
+  }, [t, pendingPage, pendingLimit, pendingFilterLeaveType]);
 
   useEffect(() => {
     fetchHistoryRequests();
-  }, [t, historyPage, filterMonth, filterYear, historyLimit]);
+  }, [t, historyPage, filterMonth, filterYear, historyLimit, historyStatusFilter]);
 
   useEffect(() => {
     let url = "http://localhost:3001/api/leave-request/dashboard-stats";
@@ -369,6 +377,30 @@ const AdminDashboard = () => {
   const monthNames = i18n.language === 'th'
     ? ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม']
     : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
+  // Fetch leave types for pending filter
+  useEffect(() => {
+    const fetchLeaveTypes = async () => {
+      setPendingLeaveTypesLoading(true);
+      setPendingLeaveTypesError(null);
+      try {
+        const res = await fetch('/api/leave-types');
+        const data = await res.json();
+        if (data.success) {
+          setPendingLeaveTypes(data.data);
+        } else {
+          setPendingLeaveTypes([]);
+          setPendingLeaveTypesError(data.message || 'Failed to fetch leave types');
+        }
+      } catch (err: any) {
+        setPendingLeaveTypes([]);
+        setPendingLeaveTypesError(err.message || 'Failed to fetch leave types');
+      } finally {
+        setPendingLeaveTypesLoading(false);
+      }
+    };
+    fetchLeaveTypes();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -434,6 +466,27 @@ const AdminDashboard = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-6">
+                  <div className="flex flex-wrap gap-4 items-center mb-6">
+                    <label className="text-sm font-medium">{t('leave.type')}</label>
+                    {pendingLeaveTypesLoading ? (
+                      <span className="text-gray-500 text-sm">{t('common.loading')}</span>
+                    ) : pendingLeaveTypesError ? (
+                      <span className="text-red-500 text-sm">{pendingLeaveTypesError}</span>
+                    ) : (
+                      <select
+                        className="border rounded px-2 py-1"
+                        value={pendingFilterLeaveType}
+                        onChange={e => { setPendingFilterLeaveType(e.target.value); setPendingPage(1); }}
+                      >
+                        <option value="">{t('leave.allTypes')}</option>
+                        {pendingLeaveTypes.map((lt) => (
+                          <option key={lt.id} value={lt.id}>
+                            {t(`leaveTypes.${lt.leave_type}`, lt.leave_type)}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
                   {loading ? (
                     <div className="text-center py-10 text-gray-500">{t('common.loading')}</div>
                   ) : error ? (
@@ -571,43 +624,6 @@ const AdminDashboard = () => {
             </TabsContent>
 
             <TabsContent value="recent" className="space-y-4">
-              {/* --- Filter เดือน/ปี --- */}
-              <div className="flex flex-wrap gap-4 items-center mb-6">
-                <label className="text-sm font-medium">{t('history.filterByMonthYear')}</label>
-                <select
-                  className="border rounded px-2 py-1"
-                  value={filterMonth}
-                  onChange={e => {
-                    const value = e.target.value ? Number(e.target.value) : '';
-                    setFilterMonth(value);
-                    if (value && !filterYear) {
-                      const currentYear = new Date().getFullYear();
-                      setFilterYear(currentYear);
-                    }
-                  }}
-                >
-                  <option value="">{t('history.allMonths')}</option>
-                  {monthNames.map((name, i) => (
-                    <option key={i+1} value={i+1}>{name}</option>
-                  ))}
-                </select>
-                <input
-                  type="number"
-                  className="border rounded px-2 py-1 w-24"
-                  placeholder={t('history.year')}
-                  value={filterYear}
-                  min={2000}
-                  max={2100}
-                  onChange={e => setFilterYear(e.target.value ? Number(e.target.value) : '')}
-                />
-                <button
-                  className="ml-2 px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm"
-                  onClick={() => { setFilterMonth(''); setFilterYear(''); }}
-                  type="button"
-                >
-                  {t('history.clearFilter')}
-                </button>
-              </div>
               <Card className="border-0 shadow-lg">
                 <CardHeader className="gradient-bg text-white rounded-t-lg">
                   <CardTitle className="flex items-center gap-2">
@@ -619,6 +635,51 @@ const AdminDashboard = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-6">
+                  <div className="flex flex-wrap gap-4 items-center mb-6">
+                    <label className="text-sm font-medium">{t('history.filterByMonthYear')}</label>
+                    <select
+                      className="border rounded px-2 py-1"
+                      value={filterMonth}
+                      onChange={e => {
+                        const value = e.target.value ? Number(e.target.value) : '';
+                        setFilterMonth(value);
+                        if (value && !filterYear) {
+                          const currentYear = new Date().getFullYear();
+                          setFilterYear(currentYear);
+                        }
+                      }}
+                    >
+                      <option value="">{t('history.allMonths')}</option>
+                      {monthNames.map((name, i) => (
+                        <option key={i+1} value={i+1}>{name}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      className="border rounded px-2 py-1 w-24"
+                      placeholder={t('history.year')}
+                      value={filterYear}
+                      min={2000}
+                      max={2100}
+                      onChange={e => setFilterYear(e.target.value ? Number(e.target.value) : '')}
+                    />
+                    <select
+                      className="border rounded px-2 py-1"
+                      value={historyStatusFilter}
+                      onChange={e => { setHistoryStatusFilter(e.target.value); setHistoryPage(1); }}
+                    >
+                      <option value="">{t('admin.allStatuses', 'ทุกสถานะ')}</option>
+                      <option value="approved">{t('leave.approved')}</option>
+                      <option value="rejected">{t('leave.rejected')}</option>
+                    </select>
+                    <button
+                      className="ml-2 px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm"
+                      onClick={() => { setFilterMonth(''); setFilterYear(''); setHistoryStatusFilter(''); }}
+                      type="button"
+                    >
+                      {t('history.clearFilter')}
+                    </button>
+                  </div>
                   {loading ? (
                     <div className="text-center py-10 text-gray-500">{t('common.loading')}</div>
                   ) : historyRequests.filter(request => request.status !== "pending").length === 0 ? (
