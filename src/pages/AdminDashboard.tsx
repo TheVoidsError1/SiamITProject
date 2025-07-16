@@ -745,74 +745,77 @@ const AdminDashboard = () => {
                                   : ` (${leaveDays} ${t('leave.day')})`}
                               </div>
                             </div>
-                            {/* กล่องสถานะการอนุมัติ/ไม่อนุมัติ ย้ายมาอยู่ด้านล่าง */}
-                            <div className="w-fit p-3 bg-gray-50 rounded-lg border border-gray-200 shadow-sm">
-                              <div className="flex items-center gap-2 text-sm text-gray-700">
-                                {request.status === "approved" ? (
-                                  <>
-                                    <CheckCircle className="w-4 h-4 text-green-500" />
-                                    <span>{t('admin.approvedWhen')} {statusDate !== '-' ? statusDate : '-'}</span>
-                                  </>
-                                ) : request.status === "rejected" ? (
-                                  <>
-                                    <XCircle className="w-4 h-4 text-red-500" />
-                                    <span>{t('admin.rejectedWhen')} {statusDate !== '-' ? statusDate : '-'}</span>
-                                  </>
-                                ) : null}
-                              </div>
-                              {/* ชื่อ admin ที่อนุมัติ/ไม่อนุมัติ */}
-                              {request.status === "approved" && request.approvedBy && (
-                                <div className="flex items-center gap-1 text-xs text-green-700 mt-1">
-                                  <span className="font-semibold">{t('admin.by')}</span>
-                                  <span>{request.approvedBy}</span>
+                            {/* กล่องล่าง: สถานะซ้าย, ปุ่มขวา */}
+                            <div className="flex flex-row justify-between items-end mt-2 gap-2">
+                              {/* กล่องสถานะซ้ายล่าง */}
+                              <div className="w-fit p-3 bg-gray-50 rounded-lg border border-gray-200 shadow-sm">
+                                <div className="flex items-center gap-2 text-sm text-gray-700">
+                                  {request.status === "approved" ? (
+                                    <>
+                                      <CheckCircle className="w-4 h-4 text-green-500" />
+                                      <span>{t('admin.approvedWhen')} {statusDate !== '-' ? statusDate : '-'}</span>
+                                    </>
+                                  ) : request.status === "rejected" ? (
+                                    <>
+                                      <XCircle className="w-4 h-4 text-red-500" />
+                                      <span>{t('admin.rejectedWhen')} {statusDate !== '-' ? statusDate : '-'}</span>
+                                    </>
+                                  ) : null}
                                 </div>
-                              )}
-                              {request.status === "rejected" && request.rejectedBy && (
-                                <div className="flex items-center gap-1 text-xs text-red-700 mt-1">
-                                  <span className="font-semibold">{t('admin.by')}</span>
-                                  <span>{request.rejectedBy}</span>
-                                </div>
-                              )}
-                              {/* เหตุผลที่ไม่อนุมัติ */}
-                              {request.status === "rejected" && request.rejectionReason && (
-                                <div className="flex items-start gap-2 text-xs text-red-500 mt-2">
-                                  <FileText className="w-4 h-4 mt-0.5" />
-                                  <div className="max-w-xs">
-                                    <span className="font-semibold">{t('leave.rejectionReason')}:</span>
-                                    <span className="ml-1">
-                                      <span
-                                        className={
-                                          expandedRejection[request.id]
-                                            ? ''
-                                            : 'line-clamp-3 block max-h-[4.5em] overflow-hidden'
-                                        }
-                                        style={{ whiteSpace: 'pre-line' }}
-                                      >
-                                        {request.rejectionReason}
-                                      </span>
-                                      {request.rejectionReason.length > 80 && (
-                                        <button
-                                          className="ml-2 text-blue-600 underline cursor-pointer"
-                                          onClick={() => setExpandedRejection(prev => ({ ...prev, [request.id]: !prev[request.id] }))}
-                                        >
-                                          {expandedRejection[request.id]
-                                            ? t('common.showLess', 'ย่อ')
-                                            : t('common.showMore', 'ดูเพิ่มเติม')}
-                                        </button>
-                                      )}
-                                    </span>
+                                {/* ชื่อ admin ที่อนุมัติ/ไม่อนุมัติ */}
+                                {request.status === "approved" && request.approvedBy && (
+                                  <div className="flex items-center gap-1 text-xs text-green-700 mt-1">
+                                    <span className="font-semibold">{t('admin.by')}</span>
+                                    <span>{request.approvedBy}</span>
                                   </div>
-                                </div>
-                              )}
-                            </div>
-                            {/* ปุ่มดูรายละเอียด มุมขวาล่าง */}
-                            <div className="flex justify-end mt-2">
-                              <button
-                                className="px-4 py-1 rounded border border-blue-500 text-blue-600 hover:bg-blue-50 text-xs font-medium transition"
-                                onClick={() => handleViewDetails(request)}
-                              >
-                                <Eye className="w-4 h-4 inline mr-1" /> {t('admin.viewDetails', 'ดูรายละเอียด')}
-                              </button>
+                                )}
+                                {request.status === "rejected" && request.rejectedBy && (
+                                  <div className="flex items-center gap-1 text-xs text-red-700 mt-1">
+                                    <span className="font-semibold">{t('admin.by')}</span>
+                                    <span>{request.rejectedBy}</span>
+                                  </div>
+                                )}
+                                {/* เหตุผลที่ไม่อนุมัติ */}
+                                {request.status === "rejected" && request.rejectionReason && (
+                                  <div className="flex items-start gap-2 text-xs text-red-500 mt-2">
+                                    <FileText className="w-4 h-4 mt-0.5" />
+                                    <div className="max-w-xs">
+                                      <span className="font-semibold">{t('leave.rejectionReason')}:</span>
+                                      <span className="ml-1">
+                                        <span
+                                          className={
+                                            expandedRejection[request.id]
+                                              ? ''
+                                              : 'line-clamp-3 block max-h-[4.5em] overflow-hidden'
+                                          }
+                                          style={{ whiteSpace: 'pre-line' }}
+                                        >
+                                          {request.rejectionReason}
+                                        </span>
+                                        {request.rejectionReason.length > 80 && (
+                                          <button
+                                            className="ml-2 text-blue-600 underline cursor-pointer"
+                                            onClick={() => setExpandedRejection(prev => ({ ...prev, [request.id]: !prev[request.id] }))}
+                                          >
+                                            {expandedRejection[request.id]
+                                              ? t('common.showLess', 'ย่อ')
+                                              : t('common.showMore', 'ดูเพิ่มเติม')}
+                                          </button>
+                                        )}
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                              {/* ปุ่มดูรายละเอียด ขวาล่าง */}
+                              <div className="flex justify-end">
+                                <button
+                                  className="px-4 py-1 rounded border border-blue-500 text-blue-600 hover:bg-blue-50 text-xs font-medium transition"
+                                  onClick={() => handleViewDetails(request)}
+                                >
+                                  <Eye className="w-4 h-4 inline mr-1" /> {t('admin.viewDetails', 'ดูรายละเอียด')}
+                                </button>
+                              </div>
                             </div>
                           </div>
                         );
