@@ -27,6 +27,8 @@ const LeaveHistory = () => {
   const [filterYear, setFilterYear] = useState<number | ''>('');
   const [selectedLeave, setSelectedLeave] = useState<any | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
+  // --- เพิ่ม state สำหรับ items per page ---
+  const [limit, setLimit] = useState(6);
 
   useEffect(() => {
     const fetchLeaveHistory = async () => {
@@ -36,7 +38,7 @@ const LeaveHistory = () => {
         const token = localStorage.getItem('token');
         if (!token) throw new Error('No token found, please login');
         // --- ส่ง page, limit, month, year ไป backend ---
-        let url = `/api/leave-history?page=${page}&limit=6`;
+        let url = `/api/leave-history?page=${page}&limit=${limit}`;
         if (filterMonth) url += `&month=${filterMonth}`;
         if (filterYear) url += `&year=${filterYear}`;
         const res = await fetch(url, {
@@ -57,7 +59,7 @@ const LeaveHistory = () => {
       }
     };
     fetchLeaveHistory();
-  }, [page, filterMonth, filterYear]);
+  }, [page, filterMonth, filterYear, limit]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -393,21 +395,52 @@ const LeaveHistory = () => {
                     </CardContent>
                   </Card>
                 ))}
-                {/* --- ปุ่มเปลี่ยนหน้า --- */}
-                {totalPages > 1 && (
-                  <div className="flex justify-center mt-6 gap-2">
-                    {Array.from({ length: totalPages }, (_, i) => (
-                      <button
-                        key={i}
-                        onClick={() => setPage(i + 1)}
-                        className={`px-3 py-1 rounded border ${page === i + 1 ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`}
-                        disabled={page === i + 1}
-                      >
-                        {i + 1}
-                      </button>
+                {/* --- Pagination bar: always show, even if only 1 page --- */}
+                <div className="flex flex-wrap justify-center mt-6 gap-2 items-center">
+                  {/* --- Pagination with ellipsis --- */}
+                  {(() => {
+                    const pages = [];
+                    const maxPageButtons = 5;
+                    let start = Math.max(1, page - 2);
+                    let end = Math.min(totalPages, start + maxPageButtons - 1);
+                    if (end - start < maxPageButtons - 1) {
+                      start = Math.max(1, end - maxPageButtons + 1);
+                    }
+                    if (start > 1) {
+                      pages.push(
+                        <button key={1} onClick={() => setPage(1)} className={`px-3 py-1 rounded border ${page === 1 ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`}>1</button>
+                      );
+                      if (start > 2) pages.push(<span key="start-ellipsis">...</span>);
+                    }
+                    for (let i = start; i <= end; i++) {
+                      pages.push(
+                        <button key={i} onClick={() => setPage(i)} className={`px-3 py-1 rounded border ${page === i ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`} disabled={page === i}>{i}</button>
+                      );
+                    }
+                    if (end < totalPages) {
+                      if (end < totalPages - 1) pages.push(<span key="end-ellipsis">...</span>);
+                      pages.push(
+                        <button key={totalPages} onClick={() => setPage(totalPages)} className={`px-3 py-1 rounded border ${page === totalPages ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`}>{totalPages}</button>
+                      );
+                    }
+                    return pages;
+                  })()}
+                  {/* --- Items per page select --- */}
+                  <select
+                    className="ml-4 border rounded px-2 py-1 text-sm"
+                    value={limit}
+                    onChange={e => {
+                      setLimit(Number(e.target.value));
+                      setPage(1);
+                    }}
+                  >
+                    {[5, 10, 20, 50].map(n => (
+                      <option key={n} value={n}>{n}</option>
                     ))}
-                  </div>
-                )}
+                  </select>
+                  <span className="ml-2 text-sm text-gray-500">{t('admin.itemsPerPage', 'Items per page')}</span>
+                  <span className="ml-2 text-sm text-gray-500">{t('admin.pageInfo', `${page} of ${totalPages} pages`)} </span>
+                </div>
               </>
             )}
           </div>

@@ -290,7 +290,9 @@
     "rejected": "ไม่อนุมัติแล้ว",
     "noApprovalHistory": "ไม่มีประวัติการอนุมัติ/ไม่อนุมัติ",
     "allapproved": "อนุมัติทั้งหมด",
-    "by": "โดย"
+    "by": "โดย",
+    "itemsPerPage": "จำนวนรายการต่อหน้า",
+    "pageInfo": "หน้า {{page}} จาก {{totalPages}} หน้า"
   },
   "system": {
     "onlineLeaveSystem": "ระบบลาออนไลน์",

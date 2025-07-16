@@ -68,6 +68,8 @@ const AdminDashboard = () => {
   // --- เพิ่ม state สำหรับ filter เดือน/ปี ---
   const [filterMonth, setFilterMonth] = useState<number | ''>('');
   const [filterYear, setFilterYear] = useState<number | ''>('');
+  // --- เพิ่ม state สำหรับ items per page ---
+  const [historyLimit, setHistoryLimit] = useState(5);
 
   // ปรับการคำนวณสถิติให้ใช้ข้อมูลจาก leave request ที่ดึงมา
   const pendingCount = pendingRequests.length;
@@ -259,7 +261,7 @@ const AdminDashboard = () => {
     setLoading(true);
     const token = localStorage.getItem('token');
     // --- ส่ง page, limit, month, year ไป backend ---
-    let url = `http://localhost:3001/api/leave-request/history?page=${historyPage}&limit=5`;
+    let url = `http://localhost:3001/api/leave-request/history?page=${historyPage}&limit=${historyLimit}`;
     if (filterMonth) url += `&month=${filterMonth}`;
     if (filterYear) url += `&year=${filterYear}`;
     fetch(url, {
@@ -314,7 +316,7 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     fetchHistoryRequests();
-  }, [t, historyPage, filterMonth, filterYear]);
+  }, [t, historyPage, filterMonth, filterYear, historyLimit]);
 
   useEffect(() => {
     let url = "http://localhost:3001/api/leave-request/dashboard-stats";
@@ -695,20 +697,51 @@ const AdminDashboard = () => {
                         );
                       })}
                       {/* --- ปุ่มเปลี่ยนหน้า --- */}
-                      {historyTotalPages > 1 && (
-                        <div className="flex justify-center mt-6 gap-2">
-                          {Array.from({ length: historyTotalPages }, (_, i) => (
-                            <button
-                              key={i}
-                              onClick={() => setHistoryPage(i + 1)}
-                              className={`px-3 py-1 rounded border ${historyPage === i + 1 ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`}
-                              disabled={historyPage === i + 1}
-                            >
-                              {i + 1}
-                            </button>
+                      <div className="flex flex-wrap justify-center mt-6 gap-2 items-center">
+                        {/* --- Pagination with ellipsis --- */}
+                        {(() => {
+                          const pages = [];
+                          const maxPageButtons = 5;
+                          let start = Math.max(1, historyPage - 2);
+                          let end = Math.min(historyTotalPages, start + maxPageButtons - 1);
+                          if (end - start < maxPageButtons - 1) {
+                            start = Math.max(1, end - maxPageButtons + 1);
+                          }
+                          if (start > 1) {
+                            pages.push(
+                              <button key={1} onClick={() => setHistoryPage(1)} className={`px-3 py-1 rounded border ${historyPage === 1 ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`}>1</button>
+                            );
+                            if (start > 2) pages.push(<span key="start-ellipsis">...</span>);
+                          }
+                          for (let i = start; i <= end; i++) {
+                            pages.push(
+                              <button key={i} onClick={() => setHistoryPage(i)} className={`px-3 py-1 rounded border ${historyPage === i ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`} disabled={historyPage === i}>{i}</button>
+                            );
+                          }
+                          if (end < historyTotalPages) {
+                            if (end < historyTotalPages - 1) pages.push(<span key="end-ellipsis">...</span>);
+                            pages.push(
+                              <button key={historyTotalPages} onClick={() => setHistoryPage(historyTotalPages)} className={`px-3 py-1 rounded border ${historyPage === historyTotalPages ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`}>{historyTotalPages}</button>
+                            );
+                          }
+                          return pages;
+                        })()}
+                        {/* --- Items per page select --- */}
+                        <select
+                          className="ml-4 border rounded px-2 py-1 text-sm"
+                          value={historyLimit}
+                          onChange={e => {
+                            setHistoryLimit(Number(e.target.value));
+                            setHistoryPage(1);
+                          }}
+                        >
+                          {[5, 10, 20, 50].map(n => (
+                            <option key={n} value={n}>{n}</option>
                           ))}
-                        </div>
-                      )}
+                        </select>
+                        <span className="ml-2 text-sm text-gray-500">{t('admin.itemsPerPage')}</span>
+                        <span className="ml-2 text-sm text-gray-500">{t('admin.pageInfo', { page: historyPage, totalPages: historyTotalPages })}</span>
+                      </div>
                     </div>
                   )}
                 </CardContent>

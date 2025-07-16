@@ -289,7 +289,9 @@
     "rejected": "Rejected",
     "noApprovalHistory": "No approval/rejection history",
     "allapproved": "All approved",
-    "by": "by"
+    "by": "by",
+    "itemsPerPage": "Items per page",
+    "pageInfo": "{{page}} of {{totalPages}} pages"
   },
   "system": {
     "onlineLeaveSystem": "Online Leave System",
