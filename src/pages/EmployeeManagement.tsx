@@ -8,6 +8,7 @@ import { Eye, User, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
 
 // เพิ่ม type สำหรับข้อมูลพนักงาน
 interface Employee {
@@ -33,6 +34,7 @@ function formatLeaveDays(days: number, t: (key: string) => string): string {
 
 const EmployeeManagement = () => {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -162,39 +164,48 @@ const EmployeeManagement = () => {
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {paginatedEmployees.map((employee) => (
-                        <TableRow key={employee.id}>
-                          <TableCell className="font-medium text-sm">{employee.full_name}</TableCell>
-                          <TableCell className="text-sm">{employee.email}</TableCell>
-                          <TableCell className="text-sm">{t('positions.' + employee.position, employee.position)}</TableCell>
-                          <TableCell className="text-sm">{t('departments.' + employee.department, employee.department)}</TableCell>
-                          <TableCell>
-                            <Badge 
-                              variant={employee.role === 'admin' ? 'default' : 'secondary'}
-                              className="text-xs px-2 py-0.5"
-                            >
-                              {employee.role === 'admin'
-                                ? t('employee.admin')
-                                : employee.role === 'intern'
-                                  ? t('employee.intern')
-                                  : t('employee.employee')}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <span className={`font-medium text-sm ${employee.usedLeaveDays > employee.totalLeaveDays * 0.8 ? 'text-red-600' : 'text-green-600'}`}>
-                              {formatLeaveDays(employee.usedLeaveDays, t)}/{formatLeaveDays(employee.totalLeaveDays, t)}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Button asChild size="sm" variant="outline" className="text-xs px-2 py-1">
-                              <Link to={`/admin/employees/${employee.id}?role=${employee.role}`}>
-                                <Eye className="w-3 h-3 mr-1" />
-                                {t('system.seeDetails')}
-                              </Link>
-                            </Button>
-                          </TableCell>
-                        </TableRow>
-                      ))}
+                      {paginatedEmployees.map((employee) => {
+                        // Determine badge and row style
+                        let badgeColor = "";
+                        let badgeText = "";
+                        if (employee.role === "superadmin") {
+                          badgeColor = "bg-purple-100 text-purple-800 border border-purple-300";
+                          badgeText = t("employee.superadmin", "Superadmin");
+                        } else if (employee.role === "admin") {
+                          badgeColor = "bg-blue-100 text-blue-800 border border-blue-300";
+                          badgeText = t("employee.admin");
+                        } else if (employee.role === "intern") {
+                          badgeColor = "bg-orange-100 text-orange-800 border border-orange-300";
+                          badgeText = t("employee.intern");
+                        } else {
+                          badgeColor = "bg-gray-100 text-gray-800 border border-gray-300";
+                          badgeText = t("employee.employee");
+                        }
+                        // Highlight current user
+                        const isMe = user && (user.id === employee.id || user.email === employee.email);
+                        return (
+                          <TableRow key={employee.id} className={isMe ? "bg-blue-50" : undefined}>
+                            <TableCell className="font-medium text-sm">{employee.full_name}{isMe && <span className="ml-2 text-xs text-blue-600 font-bold">(me)</span>}</TableCell>
+                            <TableCell className="text-sm">{employee.email}</TableCell>
+                            <TableCell className="text-sm">{t('positions.' + employee.position, employee.position)}</TableCell>
+                            <TableCell className="text-sm">{t('departments.' + employee.department, employee.department)}</TableCell>
+                            <TableCell>
+                              <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${badgeColor}`}>{badgeText}</span>
+                            </TableCell>
+                            <TableCell>
+                              <span className={`font-medium text-sm ${employee.usedLeaveDays > employee.totalLeaveDays * 0.8 ? 'text-red-600' : 'text-green-600'}`}>{formatLeaveDays(employee.usedLeaveDays, t)}/{formatLeaveDays(employee.totalLeaveDays, t)}</span>
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Button asChild size="sm" variant="outline" className="text-xs px-2 py-1">
+                                <Link to={`/admin/employees/${employee.id}?role=${employee.role}`}>
+                                  <Eye className="w-3 h-3 mr-1" />
+                                  {t('system.seeDetails')}
+                                </Link>
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
                     </TableBody>
                   </Table>
                   {/* Pagination */}

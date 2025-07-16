@@ -175,6 +175,17 @@ module.exports = (AppDataSource) => {
         profile.name = admin.admin_name;
         profile.position = position ? position.position_name : '';
         profile.department = department ? department.department_name : '';
+      } else if (role === 'superadmin') {
+        const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+        const superadmin = await superadminRepo.findOne({ where: { id: repid } });
+        if (!superadmin) {
+          return res.status(404).json({ success: false, message: 'SuperAdmin not found' });
+        }
+        const department = superadmin.department ? await departmentRepo.findOne({ where: { id: superadmin.department } }) : null;
+        const position = superadmin.position ? await positionRepo.findOne({ where: { id: superadmin.position } }) : null;
+        profile.name = superadmin.superadmin_name;
+        profile.position = position ? position.position_name : '';
+        profile.department = department ? department.department_name : '';
       } else {
         const userRepo = AppDataSource.getRepository('User');
         const user = await userRepo.findOne({ where: { id: repid } });
@@ -285,6 +296,22 @@ module.exports = (AppDataSource) => {
         admin.position = positionEntity ? positionEntity.id : admin.position;
         if (hashedPassword) admin.password = hashedPassword;
         updated = await adminRepo.save(admin);
+      } else if (role === 'superadmin') {
+        const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+        const superadmin = await superadminRepo.findOne({ where: { id: repid } });
+        if (!superadmin) {
+          return res.status(404).json({ success: false, message: 'SuperAdmin not found' });
+        }
+        let departmentEntity = null;
+        let positionEntity = null;
+        if (department) departmentEntity = await departmentRepo.findOne({ where: { department_name: department } });
+        if (position) positionEntity = await positionRepo.findOne({ where: { position_name: position } });
+        superadmin.superadmin_name = name || superadmin.superadmin_name;
+        superadmin.email = newEmail || superadmin.email;
+        superadmin.department = departmentEntity ? departmentEntity.id : superadmin.department;
+        superadmin.position = positionEntity ? positionEntity.id : superadmin.position;
+        if (hashedPassword) superadmin.password = hashedPassword;
+        updated = await superadminRepo.save(superadmin);
       } else {
         const userRepo = AppDataSource.getRepository('User');
         const user = await userRepo.findOne({ where: { id: repid } });
@@ -311,6 +338,10 @@ module.exports = (AppDataSource) => {
       let profile = { email: updated.email || email };
       if (role === 'admin') {
         profile.name = updated.admin_name;
+        profile.position = updated.position ? (await positionRepo.findOne({ where: { id: updated.position } }))?.position_name : '';
+        profile.department = updated.department ? (await departmentRepo.findOne({ where: { id: updated.department } }))?.department_name : '';
+      } else if (role === 'superadmin') {
+        profile.name = updated.superadmin_name;
         profile.position = updated.position ? (await positionRepo.findOne({ where: { id: updated.position } }))?.position_name : '';
         profile.department = updated.department ? (await departmentRepo.findOne({ where: { id: updated.department } }))?.department_name : '';
       } else {
@@ -660,6 +691,11 @@ module.exports = (AppDataSource) => {
         const admin = await adminRepo.findOne({ where: { id: repid } });
         if (!admin) return res.status(404).json({ success: false, message: 'Admin not found' });
         positionId = admin.position;
+      } else if (role === 'superadmin') {
+        const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+        const superadmin = await superadminRepo.findOne({ where: { id: repid } });
+        if (!superadmin) return res.status(404).json({ success: false, message: 'SuperAdmin not found' });
+        positionId = superadmin.position;
       } else {
         const userRepo = AppDataSource.getRepository('User');
         const user = await userRepo.findOne({ where: { id: repid } });

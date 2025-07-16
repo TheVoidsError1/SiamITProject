@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import axios from 'axios';
-import { Building, Calendar, Camera, Save, Shield, User } from 'lucide-react';
+import { Building, Calendar, Camera, Save, Shield, User, Crown } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
@@ -384,10 +384,12 @@ const Profile = () => {
                 <h2 className="text-2xl font-bold text-gray-900">{user?.full_name}</h2>
                 <p className="text-gray-600 mb-2">{user?.position ? t(`positions.${user.position}`) : '-'}</p>
                 <div className="flex items-center gap-4">
-                  <Badge variant={user?.role === 'admin' ? 'default' : 'secondary'} className="flex items-center gap-1">
-                    <Shield className="h-3 w-3" />
-                    {user?.role === 'admin' ? t('main.systemAdmin') : (user?.position ? t(`positions.${user.position}`) : t('main.employee'))}
-                  </Badge>
+                  {user?.role === 'superadmin' && (
+                    <Badge className="flex items-center gap-1 bg-purple-100 text-purple-800 border border-purple-300">
+                      <Crown className="h-3 w-3" />
+                      {t('employee.superadmin', 'Superadmin')}
+                    </Badge>
+                  )}
                   <Badge variant="outline" className="flex items-center gap-1">
                     <Building className="h-3 w-3" />
                     {user?.department ? t(`departments.${user.department}`) : '-'}

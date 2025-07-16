@@ -108,6 +108,15 @@ const EmployeeDetail = () => {
   }, [id, t, leavePage]);
 
   const handleEdit = () => {
+    // Prevent admin from editing superadmin
+    if (user?.role === 'admin' && (employee?.role === 'superadmin' || role === 'superadmin')) {
+      toast({
+        title: t('error.title'),
+        description: t('employee.adminCannotEditSuperadmin', 'Admins cannot edit superadmin information.'),
+        variant: 'destructive',
+      });
+      return;
+    }
     // หา id ของตำแหน่ง/แผนกจากชื่อที่ backend ส่งมา
     const positionId = positions.find(p => p.position_name === employee?.position)?.id || '';
     const departmentId = departments.find(d => d.department_name === employee?.department)?.id || '';

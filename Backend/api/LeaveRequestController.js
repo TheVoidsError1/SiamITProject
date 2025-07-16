@@ -48,6 +48,10 @@
              const adminRepo = AppDataSource.getRepository('Admin');
              const admin = await adminRepo.findOneBy({ id: userId });
              employeeType = admin ? admin.position : null;
+           } else if (role === 'superadmin') {
+             const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+             const superadmin = await superadminRepo.findOneBy({ id: userId });
+             employeeType = superadmin ? superadmin.position : null;
            } else {
              const userRepo = AppDataSource.getRepository('User');
              const user = await userRepo.findOneBy({ id: userId });
@@ -144,7 +148,16 @@
                const admin = await adminRepo.findOneBy({ id: leave.Repid });
                if (admin) {
                  user = { User_name: admin.admin_name, department: admin.department, position: admin.position };
+               } else {
+                 // ถ้าไม่เจอใน admin ให้ลองหาใน superadmin
+                 const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+                 const superadmin = await superadminRepo.findOneBy({ id: leave.Repid });
+                 if (superadmin) {
+                   user = { User_name: superadmin.superadmin_name, department: superadmin.department, position: superadmin.position };
+                 }
                }
+             } else {
+               user = { User_name: user.User_name, department: user.department, position: user.position };
              }
            }
            if (leave.leaveType) {
@@ -208,7 +221,16 @@
                const admin = await adminRepo.findOneBy({ id: leave.Repid });
                if (admin) {
                  user = { User_name: admin.admin_name, department: admin.department, position: admin.position };
+               } else {
+                 // ถ้าไม่เจอใน admin ให้ลองหาใน superadmin
+                 const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+                 const superadmin = await superadminRepo.findOneBy({ id: leave.Repid });
+                 if (superadmin) {
+                   user = { User_name: superadmin.superadmin_name, department: superadmin.department, position: superadmin.position };
+                 }
                }
+             } else {
+               user = { User_name: user.User_name, department: user.department, position: user.position };
              }
            }
            // join leaveType จาก database
@@ -383,6 +405,13 @@
                const admin = await adminRepo.findOneBy({ id: leave.Repid });
                if (admin) {
                  user = { User_name: admin.admin_name, department: admin.department, position: admin.position };
+               } else {
+                 // ถ้าไม่เจอใน admin ให้ลองหาใน superadmin
+                 const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+                 const superadmin = await superadminRepo.findOneBy({ id: leave.Repid });
+                 if (superadmin) {
+                   user = { User_name: superadmin.superadmin_name, department: superadmin.department, position: superadmin.position };
+                 }
                }
              } else {
                user = { User_name: user.User_name, department: user.department, position: user.position };
@@ -447,18 +476,21 @@
 
          let user = null;
          if (leave.Repid) {
-           console.log('Looking up Repid:', leave.Repid);
            user = await userRepo.findOneBy({ id: leave.Repid });
-           console.log('User lookup result:', user);
            if (!user) {
              // Try admin
              const admin = await adminRepo.findOneBy({ id: leave.Repid });
-             console.log('Admin lookup result:', admin);
              if (admin) {
                user = { User_name: admin.admin_name, department: admin.department, position: admin.position };
+             } else {
+               // Try superadmin
+               const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+               const superadmin = await superadminRepo.findOneBy({ id: leave.Repid });
+               if (superadmin) {
+                 user = { User_name: superadmin.superadmin_name, department: superadmin.department, position: superadmin.position };
+               }
              }
            } else {
-             // Ensure user object has User_name property
              user = { User_name: user.User_name, department: user.department, position: user.position };
            }
          }
@@ -503,6 +535,10 @@
                const admin = await adminRepo.findOneBy({ id: leave.Repid });
                console.log('Admin lookup:', admin);
                if (admin && admin.admin_name) name = admin.admin_name;
+             } else if (process.Role === 'superadmin') {
+               const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+               const superadmin = await superadminRepo.findOneBy({ id: leave.Repid });
+               if (superadmin && superadmin.superadmin_name) name = superadmin.superadmin_name;
              } else {
                const user = await userRepo.findOneBy({ id: leave.Repid });
                console.log('User lookup:', user);
@@ -591,7 +627,15 @@
                  // หาใน admin table
                  const adminRepo = AppDataSource.getRepository('admin');
                  const admin = await adminRepo.findOneBy({ id: decoded.userId });
-                 approverName = admin ? admin.admin_name : processCheck.Email;
+                 if (admin) {
+                   approverName = admin.admin_name;
+                 } else if (processCheck.Role === 'superadmin') {
+                   const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+                   const superadmin = await superadminRepo.findOneBy({ id: decoded.userId });
+                   approverName = superadmin ? superadmin.superadmin_name : processCheck.Email;
+                 } else {
+                   approverName = processCheck.Email;
+                 }
                } else {
                  approverName = null;
                }

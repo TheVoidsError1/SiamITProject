@@ -28,6 +28,7 @@ const AppDataSource = new DataSource({
     require('./EnityTable/user.js'),
     require('./EnityTable/ProcessCheck.entity.js'),
     require('./EnityTable/admin.js'),
+    require('./EnityTable/superadmin.js'),
     require('./EnityTable/leaveRequest.entity.js'),
     require('./EnityTable/position.js'),
     require('./EnityTable/leaveType.js'),
@@ -210,6 +211,9 @@ app.use('/api', notificationBellController);
 
 const leaveQuotaController = require('./api/LeaveQuotaController')(AppDataSource);
 app.use('/api/leave-quota', leaveQuotaController);
+
+const superAdminController = require('./api/SuperAdminController')(AppDataSource);
+app.use('/api', superAdminController);
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);

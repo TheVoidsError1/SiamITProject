@@ -1,5 +1,5 @@
 
-import { Calendar, Home, Clock, Settings, User, LogOut, Users } from "lucide-react";
+import { Calendar, Home, Clock, Settings, User, LogOut, Users, Building } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import {
@@ -57,6 +57,57 @@ const adminItems = [
   },
 ];
 
+const superadminItems = [
+  {
+    title: "SuperAdmin Dashboard",
+    url: "/superadmin",
+    icon: Settings,
+  },
+  {
+    title: "Manage SuperAdmins",
+    url: "/superadmin/superadmins",
+    icon: User,
+  },
+  {
+    title: "Manage Positions",
+    url: "/superadmin/positions",
+    icon: Users,
+  },
+  {
+    title: "Manage Departments",
+    url: "/superadmin/departments",
+    icon: Building,
+  },
+  {
+    title: "Manage Leave Types",
+    url: "/superadmin/leavetypes",
+    icon: Clock,
+  },
+];
+
+const superadminExtraItems = [
+  {
+    title: "Manage SuperAdmins",
+    url: "/superadmin/superadmins",
+    icon: User,
+  },
+  {
+    title: "Manage Positions",
+    url: "/superadmin/positions",
+    icon: Users,
+  },
+  {
+    title: "Manage Departments",
+    url: "/superadmin/departments",
+    icon: Building,
+  },
+  {
+    title: "Manage Leave Types",
+    url: "/superadmin/leavetypes",
+    icon: Clock,
+  },
+];
+
 export function AppSidebar() {
   const { t } = useTranslation();
   const location = useLocation();
@@ -81,7 +132,11 @@ export function AppSidebar() {
     }
   };
 
-  const allItems = user?.role === 'admin' ? [...items, ...adminItems] : items;
+  const allItems = user?.role === 'superadmin'
+    ? [...items, ...adminItems, ...superadminExtraItems]
+    : user?.role === 'admin'
+      ? [...items, ...adminItems]
+      : items;
 
   return (
     <Sidebar className="border-r border-border/50">
