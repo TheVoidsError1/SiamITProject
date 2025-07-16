@@ -668,64 +668,65 @@ module.exports = (AppDataSource) => {
       }
       if (!positionId) return res.status(404).json({ success: false, message: 'Position not found' });
 
-      // 5. Query leaveQuota by positionId
+      // 5. Query all leaveQuota rows for this position
       const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
-      const quota = await leaveQuotaRepo.findOne({ where: { positionId } });
-      if (!quota) return res.status(404).json({ success: false, message: 'Leave quota not found for this position' });
-
-      // 6. Query approved leaveRequests for this user
-      const leaveRequestRepo = AppDataSource.getRepository('LeaveRequest');
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+      const leaveRequestRepo = AppDataSource.getRepository('LeaveRequest');
+      const quotas = await leaveQuotaRepo.find({ where: { positionId } });
+      const leaveTypes = await leaveTypeRepo.find();
       const leaveRequests = await leaveRequestRepo.find({ where: { Repid: repid, status: 'approved' } });
 
-      // 7. Map leaveType id -> leave_type (string)
-      const leaveTypeIdToName = {};
-      const allLeaveTypes = await leaveTypeRepo.find();
-      allLeaveTypes.forEach(lt => {
-        leaveTypeIdToName[lt.id] = lt.leave_type;
-      });
-
-      // 8. รวมวัน/ชั่วโมงที่ใช้แต่ละประเภท
-      let used = { vacation: 0, sick: 0, personal: 0, maternity: 0 };
-      for (const lr of leaveRequests) {
-        let typeName = lr.leaveType;
-        if (leaveTypeIdToName[typeName]) typeName = leaveTypeIdToName[typeName];
-        // Normalize typeName
-        let typeKey = null;
-        if (["ลาพักผ่อน", "vacation"].includes(typeName)) typeKey = "vacation";
-        else if (["ลาป่วย", "sick"].includes(typeName)) typeKey = "sick";
-        else if (["ลากิจ", "personal"].includes(typeName)) typeKey = "personal";
-        else if (["ลาคลอด", "maternity"].includes(typeName)) typeKey = "maternity";
-        if (!typeKey) continue;
-        // คำนวณจำนวนวัน/ชั่วโมง
-        if (typeKey === "personal" && lr.startTime && lr.endTime) {
-          // แบบชั่วโมง
-          const [sh, sm] = lr.startTime.split(":").map(Number);
-          const [eh, em] = lr.endTime.split(":").map(Number);
-          let start = sh + (sm || 0) / 60;
-          let end = eh + (em || 0) / 60;
-          let diff = end - start;
-          if (diff < 0) diff += 24;
-          used.personal += diff / 9; // 9 ชั่วโมง = 1 วัน
-        } else if (lr.startDate && lr.endDate) {
-          // แบบวัน
-          const start = new Date(lr.startDate);
-          const end = new Date(lr.endDate);
-          let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-          if (days < 0 || isNaN(days)) days = 0;
-          used[typeKey] += days;
+      // 6. For each leave type, calculate quota and used (sick, personal, vacation, maternity)
+      const allowedTypes = ['sick', 'personal', 'vacation', 'maternity', 'ลาป่วย', 'ลากิจ', 'ลาพักผ่อน', 'ลาคลอด'];
+      const result = [];
+      for (const leaveType of leaveTypes) {
+        if (!allowedTypes.includes(leaveType.leave_type)) continue;
+        // Find quota for this leave type
+        const quotaRow = quotas.find(q => q.leaveTypeId === leaveType.id);
+        const quota = quotaRow ? quotaRow.quota : 0;
+        // Calculate used leave for this type
+        let used = 0;
+        for (const lr of leaveRequests) {
+          let leaveTypeName = lr.leaveType;
+          if (leaveTypeName && leaveTypeName.length > 20) {
+            const leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
+            if (leaveTypeEntity && leaveTypeEntity.leave_type) {
+              leaveTypeName = leaveTypeEntity.leave_type;
+            }
+          }
+          if (leaveTypeName === leaveType.leave_type) {
+            // Personal leave: may be by hour or day
+            if (leaveTypeName === 'personal' || leaveTypeName === 'ลากิจ') {
+              if (lr.startTime && lr.endTime) {
+                const [sh, sm] = lr.startTime.split(":").map(Number);
+                const [eh, em] = lr.endTime.split(":").map(Number);
+                let start = sh + (sm || 0) / 60;
+                let end = eh + (em || 0) / 60;
+                let diff = end - start;
+                if (diff < 0) diff += 24;
+                used += diff / 9; // 1 day = 9 hours
+              } else if (lr.startDate && lr.endDate) {
+                const start = new Date(lr.startDate);
+                const end = new Date(lr.endDate);
+                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                if (days < 0 || isNaN(days)) days = 0;
+                used += days;
+              }
+            } else {
+              // Other types: by day
+              if (lr.startDate && lr.endDate) {
+                const start = new Date(lr.startDate);
+                const end = new Date(lr.endDate);
+                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                if (days < 0 || isNaN(days)) days = 0;
+                used += days;
+              }
+            }
+          }
         }
+        const remaining = Math.max(0, quota - used);
+        result.push({ type: leaveType.leave_type, used: Math.round(used * 100) / 100, quota, remaining });
       }
-      // ปัดเศษทศนิยม 2 ตำแหน่งสำหรับ personal
-      used.personal = Math.round(used.personal * 100) / 100;
-
-      // 9. Prepare result
-      const result = [
-        { type: 'vacation', used: used.vacation, total: quota.vacation },
-        { type: 'sick', used: used.sick, total: quota.sick },
-        { type: 'personal', used: used.personal, total: quota.personal },
-        { type: 'maternity', used: used.maternity, total: quota.maternity },
-      ];
       return res.json({ success: true, data: result });
     } catch (err) {
       console.error('Leave quota error:', err);

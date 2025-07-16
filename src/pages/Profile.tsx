@@ -216,14 +216,16 @@ const Profile = () => {
   const leaveStats = leaveQuota.map(item => {
     const usedDays = item.type === 'personal' ? Math.floor(item.used) : item.used;
     const usedHours = item.type === 'personal' ? Math.round((item.used % 1) * 9) : 0;
-    const remaining = item.total - item.used;
+    // Use backend-provided quota and remaining
+    const quota = item.quota;
+    const remaining = item.remaining;
     const remainingDays = item.type === 'personal' ? Math.floor(remaining) : remaining;
     const remainingHours = item.type === 'personal' ? Math.round((remaining % 1) * 9) : 0;
     return {
       label: leaveTypeMap[item.type]?.label || item.type,
       used: usedDays,
       usedHour: usedHours,
-      total: item.total,
+      quota,
       color: leaveTypeMap[item.type]?.color || 'bg-gray-400',
       type: item.type,
       remaining: remainingDays,
@@ -513,22 +515,22 @@ const Profile = () => {
                           <span className="text-sm font-medium">{stat.label}</span>
                           <span className="text-sm text-gray-500">
                             {stat.type === 'personal'
-                              ? `${stat.used} ${t('common.days')}${stat.usedHour > 0 ? ` ${stat.usedHour} ${t('common.hours')}` : ''}/${stat.total} ${t('common.days')}`
-                              : `${stat.used}/${stat.total} ${t('common.days')}`}
+                              ? `${stat.used} ${t('common.days')}${stat.usedHour > 0 ? ` ${stat.usedHour} ${t('common.hours')}` : ''}/${stat.quota} ${t('common.days')}`
+                              : `${stat.used}/${stat.quota} ${t('common.days')}`}
                           </span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
                           <div
                             className={`${stat.color} h-2 rounded-full transition-all duration-500`}
                             style={{
-                              width: `${Math.min(100, stat.total > 0 ? (stat.used / stat.total) * 100 : 0)}%`
+                              width: `${Math.min(100, stat.quota > 0 ? (stat.used / stat.quota) * 100 : 0)}%`
                             }}
                           ></div>
                         </div>
                         <div className="text-xs text-gray-500">
                           {stat.type === 'personal'
                             ? `${t('common.remaining')} ${stat.remaining} ${t('common.days')}${stat.remainingHour > 0 ? ` ${stat.remainingHour} ${t('common.hours')}` : ''}`
-                            : `${t('common.remaining')} ${stat.total - stat.used} ${t('common.days')}`}
+                            : `${t('common.remaining')} ${stat.remaining} ${t('common.days')}`}
                         </div>
                       </div>
                     ))}

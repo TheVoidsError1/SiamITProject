@@ -4,7 +4,7 @@ const express = require('express');
  * @swagger
  * tags:
  *   name: LeaveQuota
- *   description: จัดการโควต้าการลาตามตำแหน่ง
+ *   description: จัดการโควต้าการลาตามตำแหน่งและประเภทการลา
  */
 
 /**
@@ -22,13 +22,9 @@ const express = require('express');
  *             properties:
  *               positionId:
  *                 type: string
- *               sick:
- *                 type: integer
- *               vacation:
- *                 type: integer
- *               personal:
- *                 type: integer
- *               maternity:
+ *               leaveTypeId:
+ *                 type: string
+ *               quota:
  *                 type: integer
  *     responses:
  *       200:
@@ -68,9 +64,9 @@ const express = require('express');
 
 /**
  * @swagger
- * /api/leave-quota/{positionId}:
+ * /api/leave-quota/position/{positionId}:
  *   get:
- *     summary: ดึง leave quota ตาม positionId
+ *     summary: ดึง leave quota ทั้งหมดตาม positionId
  *     tags: [LeaveQuota]
  *     parameters:
  *       - in: path
@@ -90,7 +86,7 @@ const express = require('express');
  *                 status:
  *                   type: string
  *                 data:
- *                   type: object
+ *                   type: array
  *                 message:
  *                   type: string
  */
@@ -115,13 +111,11 @@ const express = require('express');
  *           schema:
  *             type: object
  *             properties:
- *               sick:
- *                 type: integer
- *               vacation:
- *                 type: integer
- *               personal:
- *                 type: integer
- *               maternity:
+ *               positionId:
+ *                 type: string
+ *               leaveTypeId:
+ *                 type: string
+ *               quota:
  *                 type: integer
  *     responses:
  *       200:
@@ -167,60 +161,60 @@ module.exports = (AppDataSource) => {
   const router = express.Router();
   const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
 
-  // สร้าง leave quota ใหม่ (id อัตโนมัติ)
+  // Create a new leave quota
   router.post('/', async (req, res) => {
     try {
-      const { positionId, sick, vacation, personal, maternity } = req.body;
-      if (!positionId) return res.status(400).json({ status: 'error', data: null, message: 'positionId is required' });
-      const quota = leaveQuotaRepo.create({ positionId, sick, vacation, personal, maternity });
-      await leaveQuotaRepo.save(quota);
-      res.json({ status: 'success', data: quota, message: 'Created leave quota successfully' });
+      const { positionId, leaveTypeId, quota } = req.body;
+      if (!positionId || !leaveTypeId || quota === undefined) {
+        return res.status(400).json({ status: 'error', data: null, message: 'positionId, leaveTypeId, and quota are required' });
+      }
+      const newQuota = leaveQuotaRepo.create({ positionId, leaveTypeId, quota });
+      await leaveQuotaRepo.save(newQuota);
+      res.json({ status: 'success', data: newQuota, message: 'Created leave quota successfully' });
     } catch (err) {
       res.status(500).json({ status: 'error', data: null, message: err.message });
     }
   });
 
-  // ดึง leave quota ทั้งหมด
+  // Get all leave quotas
   router.get('/', async (req, res) => {
     try {
       const quotas = await leaveQuotaRepo.find();
-      res.json({ status: 'success', data: quotas, message: 'Fetched all leave quota' });
+      res.json({ status: 'success', data: quotas, message: 'Fetched all leave quotas' });
     } catch (err) {
       res.status(500).json({ status: 'error', data: null, message: err.message });
     }
   });
 
-  // ดึง leave quota ตาม positionId
-  router.get('/:positionId', async (req, res) => {
+  // Get all leave quotas by positionId
+  router.get('/position/:positionId', async (req, res) => {
     try {
       const { positionId } = req.params;
-      const quota = await leaveQuotaRepo.findOneBy({ positionId });
-      if (!quota) return res.status(404).json({ status: 'error', data: null, message: 'Not found' });
-      res.json({ status: 'success', data: quota, message: 'Fetched leave quota by positionId' });
+      const quotas = await leaveQuotaRepo.find({ where: { positionId } });
+      res.json({ status: 'success', data: quotas, message: 'Fetched leave quotas by positionId' });
     } catch (err) {
       res.status(500).json({ status: 'error', data: null, message: err.message });
     }
   });
 
-  // แก้ไข leave quota ตาม id
+  // Update leave quota by id
   router.put('/:id', async (req, res) => {
     try {
       const { id } = req.params;
-      const { sick, vacation, personal, maternity } = req.body;
-      const quota = await leaveQuotaRepo.findOneBy({ id });
-      if (!quota) return res.status(404).json({ status: 'error', data: null, message: 'Not found' });
-      if (sick !== undefined) quota.sick = sick;
-      if (vacation !== undefined) quota.vacation = vacation;
-      if (personal !== undefined) quota.personal = personal;
-      if (maternity !== undefined) quota.maternity = maternity;
-      await leaveQuotaRepo.save(quota);
-      res.json({ status: 'success', data: quota, message: 'Updated leave quota successfully' });
+      const { positionId, leaveTypeId, quota } = req.body;
+      const quotaObj = await leaveQuotaRepo.findOneBy({ id });
+      if (!quotaObj) return res.status(404).json({ status: 'error', data: null, message: 'Not found' });
+      if (positionId !== undefined) quotaObj.positionId = positionId;
+      if (leaveTypeId !== undefined) quotaObj.leaveTypeId = leaveTypeId;
+      if (quota !== undefined) quotaObj.quota = quota;
+      await leaveQuotaRepo.save(quotaObj);
+      res.json({ status: 'success', data: quotaObj, message: 'Updated leave quota successfully' });
     } catch (err) {
       res.status(500).json({ status: 'error', data: null, message: err.message });
     }
   });
 
-  // ลบ leave quota ตาม id
+  // Delete leave quota by id
   router.delete('/:id', async (req, res) => {
     try {
       const { id } = req.params;

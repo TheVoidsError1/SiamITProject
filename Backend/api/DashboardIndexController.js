@@ -160,6 +160,7 @@ module.exports = (AppDataSource) => {
       const adminRepo = AppDataSource.getRepository('Admin');
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
       const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
+      const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
 
       // Get user and their position (check both User and Admin tables)
       let user = await userRepo.findOneBy({ id: userId });
@@ -169,74 +170,70 @@ module.exports = (AppDataSource) => {
       if (!user || !user.position) {
         return res.status(404).json({ status: 'error', message: 'User or position not found' });
       }
+      const positionId = user.position;
 
-      // Get leave quota for this position
-      const quota = await leaveQuotaRepo.findOneBy({ positionId: user.position });
-      if (!quota) {
-        return res.status(404).json({ status: 'error', message: 'Leave quota not found for this position' });
-      }
-      // Sum sick, vacation, personal (in hours)
-      const totalQuotaHours = ((quota.sick || 0) + (quota.vacation || 0) + (quota.personal || 0)) * 9;
-
+      // Get all leave quotas for this position
+      const quotas = await leaveQuotaRepo.find({ where: { positionId } });
+      const leaveTypes = await leaveTypeRepo.find();
       // Get all approved leave requests for this user
       const approvedLeaves = await leaveRepo.find({ where: { Repid: userId, status: 'approved' } });
-      // Helper to normalize type
-      const normalizeType = (type) => {
-        if (!type) return null;
-        if (["sick", "ลาป่วย"].includes(type)) return "sick";
-        if (["vacation", "ลาพักผ่อน"].includes(type)) return "vacation";
-        if (["personal", "ลากิจ"].includes(type)) return "personal";
-        return null;
-      };
-      // Calculate used leave in hours
-      let usedHours = 0;
-      const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
-      function parseTimeToMinutes(t) {
-        if (!t) return 0;
-        const [h, m] = t.split(':').map(Number);
-        return h * 60 + (m || 0);
-      }
-      for (const lr of approvedLeaves) {
-        let leaveTypeName = lr.leaveType;
-        if (leaveTypeName && leaveTypeName.length > 20) {
-          const leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
-          if (leaveTypeEntity && leaveTypeEntity.leave_type) {
-            leaveTypeName = leaveTypeEntity.leave_type;
+
+      // For each leave type, calculate remaining (only sick, personal, vacation)
+      let totalRemaining = 0;
+      const allowedTypes = ['sick', 'personal', 'vacation', 'ลาป่วย', 'ลากิจ', 'ลาพักผ่อน'];
+      for (const leaveType of leaveTypes) {
+        if (!allowedTypes.includes(leaveType.leave_type)) continue;
+        // Find quota for this leave type
+        const quotaRow = quotas.find(q => q.leaveTypeId === leaveType.id);
+        const quota = quotaRow ? quotaRow.quota : 0;
+        // Calculate used leave for this type
+        let used = 0;
+        for (const lr of approvedLeaves) {
+          let leaveTypeName = lr.leaveType;
+          if (leaveTypeName && leaveTypeName.length > 20) {
+            const leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
+            if (leaveTypeEntity && leaveTypeEntity.leave_type) {
+              leaveTypeName = leaveTypeEntity.leave_type;
+            }
+          }
+          if (leaveTypeName === leaveType.leave_type) {
+            // Personal leave: may be by hour or day
+            if (leaveTypeName === 'personal' || leaveTypeName === 'ลากิจ') {
+              if (lr.startTime && lr.endTime) {
+                const [sh, sm] = lr.startTime.split(":").map(Number);
+                const [eh, em] = lr.endTime.split(":").map(Number);
+                let start = sh + (sm || 0) / 60;
+                let end = eh + (em || 0) / 60;
+                let diff = end - start;
+                if (diff < 0) diff += 24;
+                used += diff / 9; // 1 day = 9 hours
+              } else if (lr.startDate && lr.endDate) {
+                const start = new Date(lr.startDate);
+                const end = new Date(lr.endDate);
+                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                if (days < 0 || isNaN(days)) days = 0;
+                used += days;
+              }
+            } else {
+              // Other types: by day
+              if (lr.startDate && lr.endDate) {
+                const start = new Date(lr.startDate);
+                const end = new Date(lr.endDate);
+                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                if (days < 0 || isNaN(days)) days = 0;
+                used += days;
+              }
+            }
           }
         }
-        const leaveType = normalizeType(leaveTypeName);
-        if (!leaveType) continue;
-        if (leaveType === "personal") {
-          if (lr.startTime && lr.endTime) {
-            const startMinutes = parseTimeToMinutes(lr.startTime);
-            const endMinutes = parseTimeToMinutes(lr.endTime);
-            let durationHours = (endMinutes - startMinutes) / 60;
-            if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
-            usedHours += durationHours;
-          } else if (lr.startDate && lr.endDate) {
-            const start = new Date(lr.startDate);
-            const end = new Date(lr.endDate);
-            let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-            if (days < 0 || isNaN(days)) days = 0;
-            usedHours += days * 9;
-          }
-        } else if (leaveType === "sick" || leaveType === "vacation") {
-          if (lr.startDate && lr.endDate) {
-            const start = new Date(lr.startDate);
-            const end = new Date(lr.endDate);
-            let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-            if (days < 0 || isNaN(days)) days = 0;
-            usedHours += days * 9;
-          }
-        }
+        let remaining = quota - used;
+        if (remaining < 0) remaining = 0;
+        totalRemaining += remaining;
       }
-      // Calculate remaining
-      let remaining = totalQuotaHours - usedHours;
-      if (remaining < 0) remaining = 0;
-      res.json({ status: 'success', data: {
-        days: Math.floor(remaining / 9),
-        hours: Math.round(remaining % 9)
-      }});
+      // Convert to days and hours (1 day = 9 hours)
+      const days = Math.floor(totalRemaining);
+      const hours = Math.round((totalRemaining - days) * 9);
+      res.json({ status: 'success', data: { days, hours } });
     } catch (err) {
       res.status(500).json({ status: 'error', message: err.message });
     }

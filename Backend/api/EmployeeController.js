@@ -176,6 +176,9 @@ module.exports = (AppDataSource) => {
       const userRepo = AppDataSource.getRepository('User');
       const departmentRepo = AppDataSource.getRepository('Department');
       const positionRepo = AppDataSource.getRepository('Position');
+      const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
+      const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+      const leaveRequestRepo = AppDataSource.getRepository('LeaveRequest');
 
       // Try to find in admin first
       let profile = await adminRepo.findOne({ where: { id } });
@@ -195,6 +198,7 @@ module.exports = (AppDataSource) => {
       // Get department and position names (i18n key or readable)
       let department = '';
       let position = '';
+      let positionId = '';
       if (profile.department) {
         const deptEntity = await departmentRepo.findOne({ where: { id: profile.department } });
         department = deptEntity ? deptEntity.department_name : profile.department;
@@ -202,10 +206,69 @@ module.exports = (AppDataSource) => {
       if (profile.position) {
         const posEntity = await positionRepo.findOne({ where: { id: profile.position } });
         position = posEntity ? posEntity.position_name : profile.position;
+        positionId = profile.position;
       }
 
       // Password field (for future editing)
       const password = processCheck ? processCheck.Password : '';
+
+      // --- New: Leave quota and usage summary ---
+      let leaveSummary = [];
+      if (positionId) {
+        // 1. Get all leave types
+        const leaveTypes = await leaveTypeRepo.find();
+        // 2. Get all quotas for this position
+        const quotas = await leaveQuotaRepo.find({ where: { positionId } });
+        // 3. Get all approved leave requests for this user
+        const approvedLeaves = await leaveRequestRepo.find({ where: { Repid: id, status: 'approved' } });
+        for (const leaveType of leaveTypes) {
+          // Find quota for this leave type
+          const quotaRow = quotas.find(q => q.leaveTypeId === leaveType.id);
+          const quota = quotaRow ? quotaRow.quota : 0;
+          // Calculate used leave for this type
+          let used = 0;
+          for (const lr of approvedLeaves) {
+            let leaveTypeName = lr.leaveType;
+            if (leaveTypeName && leaveTypeName.length > 20) {
+              const leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
+              if (leaveTypeEntity && leaveTypeEntity.leave_type) {
+                leaveTypeName = leaveTypeEntity.leave_type;
+              }
+            }
+            if (leaveTypeName === leaveType.leave_type) {
+              // Personal leave: may be by hour or day
+              if (leaveTypeName === 'personal' || leaveTypeName === 'ลากิจ') {
+                if (lr.startTime && lr.endTime) {
+                  const [sh, sm] = lr.startTime.split(":").map(Number);
+                  const [eh, em] = lr.endTime.split(":").map(Number);
+                  let start = sh + (sm || 0) / 60;
+                  let end = eh + (em || 0) / 60;
+                  let diff = end - start;
+                  if (diff < 0) diff += 24;
+                  used += diff / 9; // 1 day = 9 hours
+                } else if (lr.startDate && lr.endDate) {
+                  const start = new Date(lr.startDate);
+                  const end = new Date(lr.endDate);
+                  let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                  if (days < 0 || isNaN(days)) days = 0;
+                  used += days;
+                }
+              } else {
+                // Other types: by day
+                if (lr.startDate && lr.endDate) {
+                  const start = new Date(lr.startDate);
+                  const end = new Date(lr.endDate);
+                  let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                  if (days < 0 || isNaN(days)) days = 0;
+                  used += days;
+                }
+              }
+            }
+          }
+          leaveSummary.push({ type: leaveType.leave_type, quota, used: Math.round(used * 100) / 100 });
+        }
+      }
+      // --- End leave summary ---
 
       res.json({
         success: true,
@@ -217,8 +280,7 @@ module.exports = (AppDataSource) => {
           position,
           department,
           role,
-          usedLeaveDays: null,
-          totalLeaveDays: null
+          leaveSummary
         }
       });
     } catch (err) {
