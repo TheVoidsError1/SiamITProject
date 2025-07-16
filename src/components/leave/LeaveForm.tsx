@@ -33,6 +33,20 @@ function autoFormatTimeInput(value: string) {
   return digits;
 }
 
+const isValidPhoneNumber = (input: string) => {
+  // เฉพาะตัวเลข, 9-10 หลัก, ขึ้นต้น 0, ไม่ใช่เลขซ้ำหมด เช่น 0000000000
+  if (!/^[0-9]{9,10}$/.test(input)) return false;
+  if (!input.startsWith('0')) return false;
+  if (/^(\d)\1{8,9}$/.test(input)) return false; // เช่น 0000000000, 1111111111
+  // อาจเพิ่ม blacklist เพิ่มเติมได้
+  return true;
+};
+
+const isValidEmail = (input: string) => {
+  // เช็ค email format พื้นฐาน
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input);
+};
+
 export const LeaveForm = () => {
   const { t, i18n } = useTranslation();
   const [startDate, setStartDate] = useState<Date>();
@@ -219,6 +233,17 @@ export const LeaveForm = () => {
     if (!contact) {
       newErrors.contact = t('leave.required');
       hasError = true;
+    } else if (/^[0-9]+$/.test(contact)) {
+      // ถ้ากรอกเป็นตัวเลข ต้องเป็นเบอร์โทรจริง
+      if (!isValidPhoneNumber(contact)) {
+        newErrors.contact = t('leave.invalidPhone', 'กรุณากรอกเบอร์โทรศัพท์ที่ถูกต้อง เช่น 0653909024');
+        hasError = true;
+      }
+    } else if (contact.includes('@') || contact.includes('.')) {
+      if (!isValidEmail(contact)) {
+        newErrors.contact = t('leave.invalidEmail', 'กรุณากรอกอีเมลที่ถูกต้อง เช่น example@email.com');
+        hasError = true;
+      }
     }
     setErrors(newErrors);
     if (hasError) {
@@ -321,10 +346,10 @@ export const LeaveForm = () => {
       formData.append("reason", reason);
       formData.append("supervisor", supervisor);
       formData.append("contact", contact);
-      // แนบไฟล์ imgLeave (เอาไฟล์แรก)
-      if (attachments.length > 0) {
-        formData.append("imgLeave", attachments[0]);
-      }
+      // แนบไฟล์ทุกประเภทใน attachments array
+      attachments.forEach(file => {
+        formData.append('attachments', file);
+      });
       // เพิ่ม repid (id ของ user ปัจจุบัน)
       if (user?.id) {
         formData.append("repid", user.id);
@@ -613,7 +638,27 @@ export const LeaveForm = () => {
               placeholder={t('leave.contactPlaceholder')}
               className="w-full"
               value={contact}
-              onChange={e => setContact(e.target.value)}
+              onChange={e => {
+                setContact(e.target.value);
+                // validate ทันทีที่พิมพ์
+                const val = e.target.value;
+                let err = '';
+                if (!val) {
+                  err = t('leave.required');
+                } else if (/^[0-9]+$/.test(val)) {
+                  if (!isValidPhoneNumber(val)) {
+                    err = t('leave.invalidPhone', 'กรุณากรอกเบอร์โทรศัพท์ที่ถูกต้อง เช่น 0912456147');
+                  }
+                } else if (/[a-zA-Z@.]/.test(val)) {
+                  // ถ้าเริ่มพิมพ์เป็นตัวอักษรหรือมี @ . ให้ validate เป็นอีเมลเท่านั้น
+                  if (!isValidEmail(val)) {
+                    err = t('leave.invalidEmail', 'กรุณากรอกอีเมลที่ถูกต้อง เช่น example@email.com');
+                  }
+                } else {
+                  err = t('leave.invalidEmail', 'กรุณากรอกอีเมลที่ถูกต้อง เช่น example@email.com');
+                }
+                setErrors(prev => ({ ...prev, contact: err }));
+              }}
             />
             {errors.contact && <p className="text-red-500 text-xs mt-1">{errors.contact}</p>}
           </div>

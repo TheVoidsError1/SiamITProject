@@ -81,6 +81,8 @@ const AdminDashboard = () => {
   const [historyStatusFilter, setHistoryStatusFilter] = useState('');
   // --- เพิ่ม state สำหรับ show more/less ของแต่ละ request ---
   const [expandedRejection, setExpandedRejection] = useState<{ [id: string]: boolean }>({});
+  const [showApproveDialog, setShowApproveDialog] = useState(false);
+  const [approvingRequest, setApprovingRequest] = useState<any | null>(null);
 
   // ปรับการคำนวณสถิติให้ใช้ข้อมูลจาก leave request ที่ดึงมา
   const pendingCount = pendingRequests.length;
@@ -134,13 +136,6 @@ const AdminDashboard = () => {
       color: "text-blue-600",
       bgColor: "bg-blue-50",
     },
-    {
-      title: t('admin.averageLeaveDays'),
-      value: dashboardStats.averageDayOff.toString(),
-      icon: TrendingUp,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50",
-    },
   ];
 
   // --- เพิ่มฟังก์ชันแปลงวันที่ตามภาษา ---
@@ -172,14 +167,19 @@ const AdminDashboard = () => {
   const hourUnit = i18n.language === 'th' ? 'ชม' : 'Hours';
 
   const handleApprove = (id: string, employeeName: string) => {
+    setApprovingRequest({ id, employeeName });
+    setShowApproveDialog(true);
+  };
+
+  const confirmApprove = () => {
+    if (!approvingRequest) return;
     const token = localStorage.getItem('token');
     if (!token) {
       toast({ title: "ไม่พบ token", description: "กรุณาเข้าสู่ระบบใหม่", variant: "destructive" });
       return;
     }
-    const approverName = localStorage.getItem('user_name'); // สมมติว่าเก็บชื่อไว้
-
-    fetch(`http://localhost:3001/api/leave-request/${id}/status`, {
+    const approverName = localStorage.getItem('user_name');
+    fetch(`http://localhost:3001/api/leave-request/${approvingRequest.id}/status`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -190,13 +190,17 @@ const AdminDashboard = () => {
       .then(res => res.json())
       .then(data => {
         if (data.success) {
-          toast({ title: t('admin.approveSuccess'), description: `${t('admin.approveSuccessDesc')} ${employeeName}` });
-          setPendingRequests(prev => prev.filter(r => r.id !== id));
+          toast({ title: t('admin.approveSuccess'), description: `${t('admin.approveSuccessDesc')} ${approvingRequest.employeeName}` });
+          setPendingRequests(prev => prev.filter(r => r.id !== approvingRequest.id));
           fetchHistoryRequests();
-          refreshLeaveRequests(); // <-- เพิ่มบรรทัดนี้
+          refreshLeaveRequests();
         } else {
           toast({ title: t('admin.rejectError'), description: data.message, variant: "destructive" });
         }
+      })
+      .finally(() => {
+        setShowApproveDialog(false);
+        setApprovingRequest(null);
       });
   };
 
@@ -892,22 +896,20 @@ const AdminDashboard = () => {
                         : selectedRequest.user?.User_name || "-"}
                     </div>
                     <div>
-                      <span className="font-semibold text-blue-800">{t('leave.position', 'ตำแหน่ง')}:</span> {
-                        (() => {
-                          const posId = selectedRequest.user?.position || selectedRequest.employeeType;
-                          const pos = positions.find(p => p.id === posId);
-                          return pos ? pos.position_name : posId || "-";
-                        })()
-                      }
+                      <span className="font-semibold text-blue-800">{t('leave.position', 'ตำแหน่ง')}:</span> {(() => {
+                        const posId = selectedRequest.user?.position || selectedRequest.employeeType;
+                        const pos = positions.find(p => p.id === posId);
+                        const posName = pos ? pos.position_name : posId || "-";
+                        return String(t(`positions.${posName}`, posName)) || String(posName) || '';
+                      })()}
                     </div>
                     <div>
-                      <span className="font-semibold text-blue-800">{t('leave.department', 'แผนก')}:</span> {
-                        (() => {
-                          const deptId = selectedRequest.user?.department;
-                          const dept = departments.find(d => d.id === deptId);
-                          return dept ? dept.department_name : deptId || "-";
-                        })()
-                      }
+                      <span className="font-semibold text-blue-800">{t('leave.department', 'แผนก')}:</span> {(() => {
+                        const deptId = selectedRequest.user?.department;
+                        const dept = departments.find(d => d.id === deptId);
+                        const deptName = dept ? dept.department_name : deptId || "-";
+                        return String(t(`departments.${deptName}`, deptName)) || String(deptName) || '';
+                      })()}
                     </div>
                     <div>
                       <span className="font-semibold text-blue-800">{t('leave.type', 'ประเภทการลา')}:</span> {selectedRequest.leaveTypeName ? String(t(`leaveTypes.${String(selectedRequest.leaveTypeName)}`, String(selectedRequest.leaveTypeName))) : '-'}
@@ -933,7 +935,37 @@ const AdminDashboard = () => {
                     </div>
               
                   </div>
-                  {selectedRequest.imgLeave && (
+                  {(Array.isArray(selectedRequest.attachments) && selectedRequest.attachments.length > 0) ? (
+                    <div className="flex flex-col items-center mt-4">
+                      <span className="font-semibold mb-2 text-blue-800">{t('leave.attachment', 'ไฟล์แนบ')}:</span>
+                      <div className="flex flex-wrap gap-4 justify-center">
+                        {selectedRequest.attachments.map((file: string, idx: number) => {
+                          const ext = file.split('.').pop()?.toLowerCase();
+                          const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext || '');
+                          return isImage ? (
+                            <img
+                              key={file}
+                              src={`/leave-uploads/${file}`}
+                              alt={`แนบไฟล์ ${idx + 1}`}
+                              className="rounded-xl border-2 border-blue-200 shadow max-w-xs bg-white"
+                              style={{ marginTop: 8 }}
+                            />
+                          ) : (
+                            <a
+                              key={file}
+                              href={`/leave-uploads/${file}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-2 px-3 py-2 border rounded bg-gray-50 hover:bg-gray-100 text-blue-700"
+                              style={{ marginTop: 8 }}
+                            >
+                              <span role="img" aria-label="file">📄</span> {file}
+                            </a>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : selectedRequest.imgLeave && (
                     <div className="flex flex-col items-center mt-4">
                       <span className="font-semibold mb-2 text-blue-800">{t('leave.attachment', 'ไฟล์แนบ')}:</span>
                       <img
@@ -972,6 +1004,22 @@ const AdminDashboard = () => {
           <DialogFooter className="flex gap-2 justify-end mt-4">
             <Button variant="outline" onClick={() => setShowRejectDialog(false)}>ย้อนกลับ</Button>
             <Button variant="destructive" onClick={confirmReject} disabled={!rejectReason.trim()}>ยืนยัน</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog สำหรับยืนยันการอนุมัติ */}
+      <Dialog open={showApproveDialog} onOpenChange={setShowApproveDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('admin.confirmApproveTitle', 'ยืนยันการอนุมัติ')}</DialogTitle>
+            <DialogDescription>
+              {t('admin.confirmApproveDesc', 'คุณต้องการอนุมัติคำขอนี้ใช่หรือไม่?')}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 justify-end mt-4">
+            <Button variant="outline" onClick={() => setShowApproveDialog(false)}>{t('common.cancel', 'ยกเลิก')}</Button>
+            <Button className="bg-green-600 hover:bg-green-700" onClick={confirmApprove}>{t('common.confirm', 'ยืนยัน')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

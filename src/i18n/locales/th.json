@@ -156,7 +156,9 @@
     "required": "กรุณากรอกข้อมูลให้ครบถ้วน",
     "attachmentLabel": "แนบหลักฐาน",
     "allTypes": "ทั้งหมด",
-    "attachmentHint": "(ใบรับรองแพทย์, เอกสารรับรอง ฯลฯ)"
+    "attachmentHint": "(ใบรับรองแพทย์, เอกสารรับรอง ฯลฯ)",
+    "invalidPhone": "กรุณากรอกเบอร์โทรศัพท์ที่ถูกต้อง เช่น 0912456147",
+    "invalidEmail": "กรุณากรอกอีเมลที่ถูกต้อง เช่น example@email.com"
   },
   "leaveTypes": {
     "vacation": "ลาพักร้อน",
@@ -166,7 +168,7 @@
     "emergency": "ลาฉุกเฉิน"
   },
   "departments": {
-    "itDepartment": "แผนกไอที",
+    "itDepartment": "ฝ่ายไอที",
     "humanResources": "แผนกทรัพยากรบุคคล",
     "marketing": "แผนกการตลาด",
     "sales": "แผนกขาย",

@@ -155,7 +155,9 @@
     "required": "Fill in all information.",
     "attachmentLabel": "Attachment",
     "attachmentHint": "(Medical certificate, supporting document, etc.)",
-    "allTypes": "All types"
+    "allTypes": "All types",
+    "invalidPhone": "Please enter a valid phone number, e.g. 0912456147",
+    "invalidEmail": "Please enter a valid email address, e.g. example@email.com"
   },
   "leaveTypes": {
     "vacation": "Vacation ",

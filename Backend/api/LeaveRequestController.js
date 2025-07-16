@@ -20,11 +20,22 @@
    });
    const upload = multer({ storage: storage });
 
+   // ใช้ฟังก์ชัน parseAttachments ปลอดภัย
+   function parseAttachments(val) {
+     if (!val) return [];
+     try {
+       return JSON.parse(val);
+     } catch (e) {
+       console.error('Invalid attachments JSON:', val, e);
+       return [];
+     }
+   }
+
    module.exports = (AppDataSource) => {
      const router = express.Router();
 
      // POST /api/leave-request
-     router.post('/', upload.single('imgLeave'), async (req, res) => {
+     router.post('/', upload.array('attachments', 10), async (req, res) => {
        try {
          const leaveRepo = AppDataSource.getRepository('LeaveRequest');
          let userId = null;
@@ -126,6 +137,7 @@
            }
          }
 
+         const attachmentsArr = req.files ? req.files.map(f => f.filename) : [];
          const leaveData = {
            Repid: userId, // ใส่ user_id จาก JWT
            employeeType, // ดึงจาก user.position
@@ -137,7 +149,8 @@
            reason,
            supervisor,
            contact,
-           imgLeave: req.file ? req.file.filename : null,
+           imgLeave: attachmentsArr.length === 1 ? attachmentsArr[0] : null, // backward compatible
+           attachments: attachmentsArr.length > 0 ? JSON.stringify(attachmentsArr) : null,
            status: 'pending',
          };
 
@@ -199,6 +212,7 @@
              ...leave,
              user: user ? { User_name: user.User_name, department: user.department, position: user.position } : null,
              leaveTypeName: leaveTypeObj ? leaveTypeObj.leave_type : leave.leaveType,
+             attachments: parseAttachments(leave.attachments),
            };
          }));
          res.json({ status: 'success', data: result, total, page, totalPages: Math.ceil(total / limit) });
@@ -358,6 +372,7 @@
              approvedBy,
              rejectedBy,
              rejectionReason: leave.rejectedReason || null,
+             attachments: parseAttachments(leave.attachments),
            };
          }));
          res.json({ status: 'success', data: result, total, page, totalPages: Math.ceil(total / limit) });
@@ -562,6 +577,7 @@
              status: leave.status,
              submittedDate: leave.createdAt,
              user: user ? { User_name: user.User_name, department: user.department, position: user.position } : null,
+             attachments: parseAttachments(leave.attachments),
            };
          }));
          res.json({ status: 'success', data: result, total, page, totalPages: Math.ceil(total / limit) });
@@ -608,6 +624,7 @@
              ...leave,
              user: user ? { User_name: user.User_name, department: user.department, position: user.position } : null,
              leaveTypeName: leaveTypeObj ? leaveTypeObj.leave_type : leave.leaveType,
+             attachments: parseAttachments(leave.attachments),
            }
          });
        } catch (err) {
@@ -694,7 +711,8 @@
              leaveDate,
              endDate,
              reason: leave.reason,
-             submittedDate
+             submittedDate,
+             attachments: parseAttachments(leave.attachments),
            }
          });
        } catch (err) {
