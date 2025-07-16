@@ -208,8 +208,10 @@
          const userRepo = AppDataSource.getRepository('User');
          const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
          const adminRepo = AppDataSource.getRepository('Admin');
-         // รับ userId จาก query param (optional)
          const { userId } = req.query;
+         // --- เพิ่ม filter เดือน/ปี ---
+         const month = req.query.month ? parseInt(req.query.month) : null;
+         const year = req.query.year ? parseInt(req.query.year) : null;
          let where = [
            { status: 'approved' },
            { status: 'rejected' },
@@ -222,12 +224,31 @@
              { status: 'rejected', Repid: userId },
              { status: 'pending', Repid: userId }
            ];
+         } else if (month && year) {
+           // ถ้าไม่มี userId และมี month/year ให้ filter createdAt
+           const { Between } = require('typeorm');
+           const startOfMonth = new Date(year, month - 1, 1);
+           const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
+           where = [
+             { status: 'approved', createdAt: Between(startOfMonth, endOfMonth) },
+             { status: 'rejected', createdAt: Between(startOfMonth, endOfMonth) },
+             { status: 'pending', createdAt: Between(startOfMonth, endOfMonth) }
+           ];
+         } else if (year) {
+           const { Between } = require('typeorm');
+           const startOfYear = new Date(year, 0, 1);
+           const endOfYear = new Date(year, 11, 31, 23, 59, 59, 999);
+           where = [
+             { status: 'approved', createdAt: Between(startOfYear, endOfYear) },
+             { status: 'rejected', createdAt: Between(startOfYear, endOfYear) },
+             { status: 'pending', createdAt: Between(startOfYear, endOfYear) }
+           ];
          }
          // --- เพิ่ม paging ---
          const page = parseInt(req.query.page) || 1;
          const limit = parseInt(req.query.limit) || 5;
          const skip = (page - 1) * limit;
-         // ดึงใบคำขอที่ status เป็น approved หรือ rejected (และ filter ตาม userId ถ้ามี) (paging)
+         // ดึงใบคำขอที่ status เป็น approved หรือ rejected (และ filter ตาม userId/เดือน/ปี ถ้ามี) (paging)
          const [processedLeaves, total] = await Promise.all([
            leaveRepo.find({
              where,

@@ -59,6 +59,9 @@ const AdminDashboard = () => {
   });
   const [departments, setDepartments] = useState<{ id: string; department_name: string }[]>([]);
   const [positions, setPositions] = useState<{ id: string; position_name: string }[]>([]);
+  // --- เพิ่ม state สำหรับ filter เดือน/ปี ---
+  const [filterMonth, setFilterMonth] = useState<number | ''>('');
+  const [filterYear, setFilterYear] = useState<number | ''>('');
 
   // ปรับการคำนวณสถิติให้ใช้ข้อมูลจาก leave request ที่ดึงมา
   const pendingCount = pendingRequests.length;
@@ -242,8 +245,11 @@ const AdminDashboard = () => {
   const fetchHistoryRequests = () => {
     setLoading(true);
     const token = localStorage.getItem('token');
-    // --- ส่ง page, limit ไป backend ---
-    fetch(`http://localhost:3001/api/leave-request/history?page=${historyPage}&limit=5`, {
+    // --- ส่ง page, limit, month, year ไป backend ---
+    let url = `http://localhost:3001/api/leave-request/history?page=${historyPage}&limit=5`;
+    if (filterMonth) url += `&month=${filterMonth}`;
+    if (filterYear) url += `&year=${filterYear}`;
+    fetch(url, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then(res => res.json())
@@ -295,7 +301,7 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     fetchHistoryRequests();
-  }, [t, historyPage]);
+  }, [t, historyPage, filterMonth, filterYear]);
 
   useEffect(() => {
     fetch("http://localhost:3001/api/leave-request/dashboard-stats")
@@ -337,6 +343,11 @@ const AdminDashboard = () => {
     fetchDepartments();
     fetchPositions();
   }, []);
+
+  // รายชื่อเดือนรองรับ i18n
+  const monthNames = i18n.language === 'th'
+    ? ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม']
+    : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -506,6 +517,43 @@ const AdminDashboard = () => {
             </TabsContent>
 
             <TabsContent value="recent" className="space-y-4">
+              {/* --- Filter เดือน/ปี --- */}
+              <div className="flex flex-wrap gap-4 items-center mb-6">
+                <label className="text-sm font-medium">{t('history.filterByMonthYear')}</label>
+                <select
+                  className="border rounded px-2 py-1"
+                  value={filterMonth}
+                  onChange={e => {
+                    const value = e.target.value ? Number(e.target.value) : '';
+                    setFilterMonth(value);
+                    if (value && !filterYear) {
+                      const currentYear = new Date().getFullYear();
+                      setFilterYear(currentYear);
+                    }
+                  }}
+                >
+                  <option value="">{t('history.allMonths')}</option>
+                  {monthNames.map((name, i) => (
+                    <option key={i+1} value={i+1}>{name}</option>
+                  ))}
+                </select>
+                <input
+                  type="number"
+                  className="border rounded px-2 py-1 w-24"
+                  placeholder={t('history.year')}
+                  value={filterYear}
+                  min={2000}
+                  max={2100}
+                  onChange={e => setFilterYear(e.target.value ? Number(e.target.value) : '')}
+                />
+                <button
+                  className="ml-2 px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm"
+                  onClick={() => { setFilterMonth(''); setFilterYear(''); }}
+                  type="button"
+                >
+                  {t('history.clearFilter')}
+                </button>
+              </div>
               <Card className="border-0 shadow-lg">
                 <CardHeader className="gradient-bg text-white rounded-t-lg">
                   <CardTitle className="flex items-center gap-2">

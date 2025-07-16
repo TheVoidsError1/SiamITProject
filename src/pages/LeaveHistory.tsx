@@ -225,7 +225,14 @@ const LeaveHistory = () => {
             <select
               className="border rounded px-2 py-1"
               value={filterMonth}
-              onChange={e => setFilterMonth(e.target.value ? Number(e.target.value) : '')}
+              onChange={e => {
+                const value = e.target.value ? Number(e.target.value) : '';
+                setFilterMonth(value);
+                if (value && !filterYear) {
+                  const currentYear = new Date().getFullYear();
+                  setFilterYear(currentYear);
+                }
+              }}
             >
               <option value="">{t('history.allMonths')}</option>
               {monthNames.map((name, i) => (
