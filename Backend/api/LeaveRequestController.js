@@ -62,6 +62,45 @@
          // ตรวจสอบภาษา
          const lang = (req.headers['accept-language'] || '').toLowerCase().startsWith('en') ? 'en' : 'th';
 
+         // --- Contact Validation ---
+         const contactValidationMessages = {
+           invalidEmail: {
+             en: 'Contact must be a valid email address and not start with special characters.',
+             th: 'ข้อมูลติดต่อ ต้องเป็นอีเมลที่ถูกต้องและต้องไม่ขึ้นต้นด้วยอักขระพิเศษ'
+           },
+           invalidPhone: {
+             en: 'Contact must contain only numbers (no special characters allowed).',
+             th: 'ข้อมูลติดต่อ ต้องเป็นตัวเลขเท่านั้น (ห้ามมีอักขระพิเศษ)'
+           }
+         };
+         function isValidEmail(email) {
+           // Basic email regex, disallow starting with special chars
+           return /^[a-zA-Z0-9][a-zA-Z0-9_.+-]*@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/.test(email);
+         }
+         function isValidPhone(phone) {
+           // Only digits allowed
+           return /^\d+$/.test(phone);
+         }
+         if (contact) {
+           if (contact.includes('@')) {
+             // Email
+             if (!isValidEmail(contact)) {
+               return res.status(400).json({
+                 status: 'error',
+                 message: contactValidationMessages.invalidEmail[lang]
+               });
+             }
+           } else {
+             // Phone number
+             if (!isValidPhone(contact)) {
+               return res.status(400).json({
+                 status: 'error',
+                 message: contactValidationMessages.invalidPhone[lang]
+               });
+             }
+           }
+         }
+
          // ฟังก์ชันตรวจสอบเวลาในช่วง 09:00-18:00
          function isTimeInRange(timeStr) {
            if (!/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(timeStr)) return false;

@@ -571,6 +571,13 @@ const AdminDashboard = () => {
                                   ? ` (${calcHours(request.startTime, request.endTime)} ${hourUnit}, ${request.startTime} - ${request.endTime})`
                                   : ` (${leaveDays} ${t('leave.day')})`}
                               </div>
+                              {/* ปุ่มดูรายละเอียด */}
+                              <button
+                                className="mt-3 px-4 py-1 rounded border border-blue-500 text-blue-600 hover:bg-blue-50 text-xs font-medium transition"
+                                onClick={() => handleViewDetails(request)}
+                              >
+                                <Eye className="w-4 h-4 inline mr-1" /> {t('admin.viewDetails', 'ดูรายละเอียด')}
+                              </button>
                             </div>
                             {/* กล่องสถานะการอนุมัติ/ไม่อนุมัติ ย้ายไปมุมขวา และเพิ่ม margin-top ให้เว้นจาก badge */}
                             <div className="flex flex-col items-end justify-between min-w-[240px] ml-6">

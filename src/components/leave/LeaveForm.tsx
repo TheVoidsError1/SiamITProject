@@ -336,6 +336,7 @@ export const LeaveForm = () => {
         body: formData,
         headers: {
           Authorization: `Bearer ${token}`,
+          'Accept-Language': i18n.language // เพิ่ม header นี้เพื่อให้ backend ส่งข้อความตามภาษา
         },
       });
       const data = await response.json();
