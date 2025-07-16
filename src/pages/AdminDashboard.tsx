@@ -51,7 +51,13 @@ const AdminDashboard = () => {
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [rejectingRequest, setRejectingRequest] = useState<any | null>(null);
-  const [dashboardStats, setDashboardStats] = useState({
+  const [dashboardStats, setDashboardStats] = useState<{
+    pendingCount: number;
+    approvedCount: number;
+    userCount: number;
+    averageDayOff: number;
+    rejectedCount?: number;
+  }>({
     pendingCount: 0,
     approvedCount: 0,
     userCount: 0,
@@ -100,6 +106,13 @@ const AdminDashboard = () => {
       icon: CheckCircle,
       color: "text-green-600",
       bgColor: "bg-green-50",
+    },
+    {
+      title: t('admin.rejected'),
+      value: dashboardStats.rejectedCount?.toString() || '0',
+      icon: XCircle,
+      color: "text-red-600",
+      bgColor: "bg-red-50",
     },
     {
       title: t('admin.totalEmployees'),
@@ -304,14 +317,19 @@ const AdminDashboard = () => {
   }, [t, historyPage, filterMonth, filterYear]);
 
   useEffect(() => {
-    fetch("http://localhost:3001/api/leave-request/dashboard-stats")
+    let url = "http://localhost:3001/api/leave-request/dashboard-stats";
+    const params = [];
+    if (filterMonth) params.push(`month=${filterMonth}`);
+    if (filterYear) params.push(`year=${filterYear}`);
+    if (params.length > 0) url += `?${params.join("&")}`;
+    fetch(url)
       .then(res => res.json())
       .then(data => {
         if (data.status === "success") {
           setDashboardStats(data.data);
         }
       });
-  }, []);
+  }, [filterMonth, filterYear]);
 
   useEffect(() => {
     // ดึง department
@@ -567,11 +585,14 @@ const AdminDashboard = () => {
                 <CardContent className="p-6">
                   {loading ? (
                     <div className="text-center py-10 text-gray-500">{t('common.loading')}</div>
+                  ) : historyRequests.filter(request => request.status !== "pending").length === 0 ? (
+                    <div className="text-center text-gray-500 py-10">
+                      {filterMonth || filterYear
+                        ? t('admin.noDataForSelectedMonthYear', 'ไม่พบข้อมูลในเดือน/ปีที่เลือก')
+                        : t('admin.noApprovalHistory')}
+                    </div>
                   ) : (
                     <div className="space-y-4">
-                      {historyRequests.filter(request => request.status !== "pending").length === 0 && (
-                        <div className="text-center text-gray-500">{t('admin.noApprovalHistory')}</div>
-                      )}
                       {historyRequests.filter(request => request.status !== "pending").map((request) => {
                         // คำนวณจำนวนวันลา
                         const start = new Date(request.startDate);

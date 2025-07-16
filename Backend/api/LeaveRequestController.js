@@ -337,15 +337,42 @@
      router.get('/dashboard-stats', async (req, res) => {
        try {
          const leaveRepo = AppDataSource.getRepository('LeaveRequest');
+         const { month, year } = req.query;
+         let wherePending = { status: 'pending' };
+         let whereApproved = { status: 'approved' };
+         let whereRejected = { status: 'rejected' };
+         let whereAll = {};
+         if (month && year) {
+           const { Between } = require('typeorm');
+           const m = parseInt(month);
+           const y = parseInt(year);
+           const startOfMonth = new Date(y, m - 1, 1);
+           const endOfMonth = new Date(y, m, 0, 23, 59, 59, 999);
+           wherePending = { status: 'pending', createdAt: Between(startOfMonth, endOfMonth) };
+           whereApproved = { status: 'approved', createdAt: Between(startOfMonth, endOfMonth) };
+           whereRejected = { status: 'rejected', createdAt: Between(startOfMonth, endOfMonth) };
+           whereAll = { createdAt: Between(startOfMonth, endOfMonth) };
+         } else if (year) {
+           const { Between } = require('typeorm');
+           const y = parseInt(year);
+           const startOfYear = new Date(y, 0, 1);
+           const endOfYear = new Date(y, 11, 31, 23, 59, 59, 999);
+           wherePending = { status: 'pending', createdAt: Between(startOfYear, endOfYear) };
+           whereApproved = { status: 'approved', createdAt: Between(startOfYear, endOfYear) };
+           whereRejected = { status: 'rejected', createdAt: Between(startOfYear, endOfYear) };
+           whereAll = { createdAt: Between(startOfYear, endOfYear) };
+         }
          // 1. Pending count
-         const pendingCount = await leaveRepo.count({ where: { status: 'pending' } });
-         // 2. Approved count (นับจำนวนใบลาที่ status = 'approved')
-         const approvedCount = await leaveRepo.count({ where: { status: 'approved' } });
-         // 3. User count (unique Repid in leave requests)
-         const allLeaves = await leaveRepo.find();
+         const pendingCount = await leaveRepo.count({ where: wherePending });
+         // 2. Approved count
+         const approvedCount = await leaveRepo.count({ where: whereApproved });
+         // 3. Rejected count
+         const rejectedCount = await leaveRepo.count({ where: whereRejected });
+         // 4. User count (unique Repid in leave requests)
+         const allLeaves = await leaveRepo.find({ where: whereAll });
          const userIds = Array.from(new Set(allLeaves.map(l => l.Repid)));
          const userCount = userIds.length;
-         // 4. Average leave days (เฉพาะที่อนุมัติ)
+         // 5. Average leave days (approved)
          const approvedLeaves = allLeaves.filter(l => l.status === 'approved');
          let averageDayOff = 0;
          if (approvedLeaves.length > 0) {
@@ -364,6 +391,7 @@
            data: {
              pendingCount,
              approvedCount,
+             rejectedCount,
              userCount,
              averageDayOff
            }
