@@ -7,6 +7,8 @@ import { th } from "date-fns/locale";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useEffect, useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 const LeaveHistory = () => {
   const { t, i18n } = useTranslation();
@@ -17,12 +19,14 @@ const LeaveHistory = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   // --- เพิ่ม state สำหรับ summary ---
-  const [summary, setSummary] = useState<{ totalLeaveDays: number; approvedCount: number; pendingCount: number } | null>(null);
+  const [summary, setSummary] = useState<{ totalLeaveDays: number; approvedCount: number; pendingCount: number; rejectedCount?: number } | null>(null);
   // --- เพิ่ม state สำหรับ show more/less ---
   const [expandedReason, setExpandedReason] = useState<string | null>(null);
   const [expandedReject, setExpandedReject] = useState<string | null>(null);
   const [filterMonth, setFilterMonth] = useState<number | ''>('');
   const [filterYear, setFilterYear] = useState<number | ''>('');
+  const [selectedLeave, setSelectedLeave] = useState<any | null>(null);
+  const [showDetailDialog, setShowDetailDialog] = useState(false);
 
   useEffect(() => {
     const fetchLeaveHistory = async () => {
@@ -151,6 +155,7 @@ const LeaveHistory = () => {
   const totalLeaveDays = summary ? summary.totalLeaveDays : 0;
   const approvedCount = summary ? summary.approvedCount : 0;
   const pendingCount = summary ? summary.pendingCount : 0;
+  const rejectedCount = summary && typeof summary.rejectedCount === 'number' ? summary.rejectedCount : 0;
 
   // รายชื่อเดือนรองรับ i18n
   const monthNames = i18n.language === 'th'
@@ -175,7 +180,7 @@ const LeaveHistory = () => {
       <div className="p-6 animate-fade-in">
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Summary Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
             <Card className="border-0 shadow-md">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
@@ -213,6 +218,19 @@ const LeaveHistory = () => {
                   <div>
                     <p className="text-2xl font-bold">{pendingCount}</p>
                     <p className="text-sm text-muted-foreground">{t('history.pendingRequests')}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-0 shadow-md">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-red-100 rounded-lg flex items-center justify-center">
+                    <XCircle className="w-5 h-5 text-red-600" />
+                  </div>
+                  <div>
+                    <p className="text-2xl font-bold">{rejectedCount}</p>
+                    <p className="text-sm text-muted-foreground">{t('history.rejectedRequests')}</p>
                   </div>
                 </div>
               </CardContent>
@@ -367,6 +385,11 @@ const LeaveHistory = () => {
                           )}
                         </div>
                       )}
+                      <div className="flex justify-end mt-4">
+                        <Button size="sm" variant="outline" onClick={() => { setSelectedLeave(leave); setShowDetailDialog(true); }}>
+                          {t('common.viewDetails')}
+                        </Button>
+                      </div>
                     </CardContent>
                   </Card>
                 ))}
@@ -390,6 +413,42 @@ const LeaveHistory = () => {
           </div>
         </div>
       </div>
+      {/* Dialog แสดงรายละเอียดใบลา */}
+      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{t('leave.detailTitle', 'รายละเอียดการลา')}</DialogTitle>
+            <DialogDescription>
+              {selectedLeave && (
+                <div className="space-y-2 text-gray-700">
+                  <div><b>{t('leave.type')}:</b> {translateLeaveType(selectedLeave.type)}</div>
+                  <div><b>{t('leave.status')}:</b> {getStatusBadge(selectedLeave.status)}</div>
+                  <div><b>{t('leave.startDate')}:</b> {formatDateLocalized(selectedLeave.startDate)}</div>
+                  <div><b>{t('leave.endDate')}:</b> {formatDateLocalized(selectedLeave.endDate)}</div>
+                  {selectedLeave.startTime && selectedLeave.endTime && (
+                    <div><b>{t('leave.leaveTime')}:</b> {selectedLeave.startTime} - {selectedLeave.endTime} ({calcHours(selectedLeave.startTime, selectedLeave.endTime)} {hourUnit})</div>
+                  )}
+                  <div><b>{t('leave.duration')}:</b> {selectedLeave.days} {t('leave.day')}</div>
+                  <div><b>{t('leave.reason')}:</b> {selectedLeave.reason}</div>
+                  {selectedLeave.approvedBy && (
+                    <div><b>{t('leave.approvedBy')}:</b> {selectedLeave.approvedBy}</div>
+                  )}
+                  {selectedLeave.rejectedBy && (
+                    <div><b>{t('leave.rejectedBy')}:</b> {selectedLeave.rejectedBy}</div>
+                  )}
+                  {selectedLeave.rejectionReason && (
+                    <div><b>{t('leave.rejectionReason')}:</b> {selectedLeave.rejectionReason}</div>
+                  )}
+                  <div><b>{t('leave.submittedDate')}:</b> {formatDateLocalized(selectedLeave.submittedDate)}</div>
+                </div>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex justify-center mt-4">
+            <Button onClick={() => setShowDetailDialog(false)}>{t('common.ok')}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

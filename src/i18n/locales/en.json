@@ -257,7 +257,8 @@
     "allMonths": "All months",
     "year": "Year",
     "clearFilter": "Clear filter",
-    "noData": "No leave history found for this period."
+    "noData": "No leave history found for this period.",
+    "rejectedRequests": "Rejected Requests"
   },
   "admin": {
     "pendingRequests": "Pending Requests",

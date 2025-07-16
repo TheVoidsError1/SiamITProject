@@ -68,6 +68,7 @@ module.exports = (AppDataSource) => {
       }, 0);
       const approvedCount = allLeaves.filter(l => l.status === 'approved').length;
       const pendingCount = allLeaves.filter(l => l.status === 'pending').length;
+      const rejectedCount = allLeaves.filter(l => l.status === 'rejected').length;
 
       // join leaveType, admin (approver/rejector)
       const result = await Promise.all(leaves.map(async (leave) => {
@@ -111,7 +112,8 @@ module.exports = (AppDataSource) => {
         summary: {
           totalLeaveDays,
           approvedCount,
-          pendingCount
+          pendingCount,
+          rejectedCount
         },
         message: lang === 'th' ? 'ดึงข้อมูลสำเร็จ' : 'Fetch success'
       });
