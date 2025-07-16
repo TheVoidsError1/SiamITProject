@@ -157,7 +157,6 @@ const EmployeeManagement = () => {
                         <TableHead className="text-sm">{t('auth.position')}</TableHead>
                         <TableHead className="text-sm">{t('auth.department')}</TableHead>
                         <TableHead className="text-sm">{t('common.status')}</TableHead>
-                        <TableHead className="text-sm">{t('system.usedTotal')}</TableHead>
                         <TableHead className="text-center text-sm">{t('system.management')}</TableHead>
                       </TableRow>
                     </TableHeader>
@@ -179,11 +178,6 @@ const EmployeeManagement = () => {
                                   ? t('employee.intern')
                                   : t('employee.employee')}
                             </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <span className={`font-medium text-sm ${employee.usedLeaveDays > employee.totalLeaveDays * 0.8 ? 'text-red-600' : 'text-green-600'}`}>
-                              {formatLeaveDays(employee.usedLeaveDays, t)}/{formatLeaveDays(employee.totalLeaveDays, t)}
-                            </span>
                           </TableCell>
                           <TableCell className="text-center">
                             <Button asChild size="sm" variant="outline" className="text-xs px-2 py-1">

@@ -1,26 +1,24 @@
-import { useState, useEffect } from "react";
-import { useParams, Link, useLocation } from "react-router-dom";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { LeaveDetailDialog } from "@/components/dialogs/LeaveDetailDialog";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, User, Mail, Calendar, Edit, Save, X, Eye } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
-import { th } from "date-fns/locale";
-import { LeaveDetailDialog } from "@/components/dialogs/LeaveDetailDialog";
-import { useTranslation } from "react-i18next";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { ArrowLeft, Calendar, Edit, Eye, Mail, Save, User, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Link, useLocation, useParams } from "react-router-dom";
 
 const EmployeeDetail = () => {
   const { id } = useParams();
   const location = useLocation();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const { user } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
@@ -47,6 +45,94 @@ const EmployeeDetail = () => {
   // --- เพิ่ม state สำหรับ paging ---
   const [leavePage, setLeavePage] = useState(1);
   const [leaveTotalPages, setLeaveTotalPages] = useState(1);
+
+  // --- State สำหรับ Filter ---
+  // state สำหรับค่าที่เลือกในฟิลเตอร์ (pending)
+  const [pendingFilterType, setPendingFilterType] = useState("all");
+  const [pendingFilterMonth, setPendingFilterMonth] = useState("all");
+  const [pendingFilterYear, setPendingFilterYear] = useState("all");
+  const [pendingFilterStatus, setPendingFilterStatus] = useState("all");
+  // state สำหรับค่าฟิลเตอร์ที่ใช้งานจริง (active)
+  const [filterType, setFilterType] = useState("all");
+  const [filterMonth, setFilterMonth] = useState("all");
+  const [filterYear, setFilterYear] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
+  // state สำหรับ error ของ filter
+  const [filterError, setFilterError] = useState("");
+  // state สำหรับแสดง * สีแดงแต่ละ filter
+  const [showTypeError, setShowTypeError] = useState(false);
+  const [showMonthError, setShowMonthError] = useState(false);
+  const [showYearError, setShowYearError] = useState(false);
+  const [showStatusError, setShowStatusError] = useState(false);
+
+  // --- สร้างรายการปี (ย้อนหลัง 3 ปี) ---
+  const currentYear = new Date().getFullYear();
+  const yearOptions = [currentYear, currentYear-1, currentYear-2];
+
+  // --- กรอง leaveHistory ตาม filter ---
+  // ลบ useMemo เดิมออก ไม่ต้อง filter ฝั่ง frontend แล้ว
+
+  // useEffect สำหรับ fetch leaveHistory เฉพาะเมื่อ filter จริง (active) เปลี่ยน
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    setError(null);
+    fetch(`http://localhost:3001/api/employee/${id}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setEmployee(data.data);
+        } else {
+          setEmployee(null);
+          setError(t('employee.notFound'));
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        setEmployee(null);
+        setError(t('employee.loadError'));
+        setLoading(false);
+      });
+
+    // --- ดึง leave history ตาม filter (active) ---
+    let params = [];
+    if (filterType && filterType !== "all") params.push(`leaveType=${filterType}`);
+    if (filterMonth && filterMonth !== "all" && filterYear && filterYear !== "all") {
+      params.push(`month=${filterMonth}`);
+      params.push(`year=${filterYear}`);
+    } else if (filterYear && filterYear !== "all") {
+      params.push(`year=${filterYear}`);
+    }
+    if (filterStatus && filterStatus !== "all") params.push(`status=${filterStatus}`);
+    const query = params.length > 0 ? `?${params.join("&")}` : "";
+    fetch(`http://localhost:3001/api/employee/${id}/leave-history${query}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setLeaveHistory(data.data);
+        } else {
+          setLeaveHistory([]);
+        }
+      })
+      .catch(() => {
+        setLeaveHistory([]);
+      });
+  }, [id, t, filterType, filterMonth, filterYear, filterStatus, leavePage]);
+
+  // filteredLeaveHistory = leaveHistory (ไม่ต้อง filter ฝั่ง frontend)
+  const filteredLeaveHistory = leaveHistory;
+
+  const resetFilters = () => {
+    setPendingFilterType("all");
+    setPendingFilterMonth("all");
+    setPendingFilterYear("all");
+    setPendingFilterStatus("all");
+    setShowTypeError(false);
+    setShowMonthError(false);
+    setShowYearError(false);
+    setShowStatusError(false);
+    setFilterError("");
+  };
 
   useEffect(() => {
     fetch('http://localhost:3001/api/departments')
@@ -197,7 +283,7 @@ const EmployeeDetail = () => {
       </div>
 
       <div className="p-6 animate-fade-in">
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-6xl mx-auto space-y-6">
           {/* Employee Info Card */}
           <Card className="border-0 shadow-lg">
             <CardHeader className="gradient-bg text-white rounded-t-lg">
@@ -334,6 +420,116 @@ const EmployeeDetail = () => {
                 {t('employee.leaveHistoryDesc')}
               </CardDescription>
             </CardHeader>
+            {/* Filter + วันลาที่ใช้ไปแล้ว (flex row) */}
+            <div className="flex flex-wrap items-center justify-between px-6 mt-4 gap-2">
+              <div className="flex flex-wrap gap-4 items-center">
+                <div className="flex flex-col relative">
+                  <Select value={pendingFilterType} onValueChange={v => { setPendingFilterType(v); setShowTypeError(false); }}>
+                    <SelectTrigger className="w-40">{pendingFilterType && pendingFilterType !== "all" ? t(`leaveTypes.${pendingFilterType}`) : t('leave.type')}</SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t('months.all')}</SelectItem>
+                      <SelectItem value="sick">{t('leaveTypes.sick')}</SelectItem>
+                      <SelectItem value="vacation">{t('leaveTypes.vacation')}</SelectItem>
+                      <SelectItem value="personal">{t('leaveTypes.personal')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {showTypeError && <span className="text-red-500 text-xs absolute right-2 top-0">*</span>}
+                </div>
+                <div className="flex flex-col relative">
+                  <Select value={pendingFilterMonth} onValueChange={v => { setPendingFilterMonth(v); setShowMonthError(false); }}>
+                    <SelectTrigger className="w-32">{pendingFilterMonth && pendingFilterMonth !== "all" ? t(`months.${pendingFilterMonth}`) : t('common.month')}</SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t('months.all')}</SelectItem>
+                      <SelectItem value="1">{t('months.1')}</SelectItem>
+                      <SelectItem value="2">{t('months.2')}</SelectItem>
+                      <SelectItem value="3">{t('months.3')}</SelectItem>
+                      <SelectItem value="4">{t('months.4')}</SelectItem>
+                      <SelectItem value="5">{t('months.5')}</SelectItem>
+                      <SelectItem value="6">{t('months.6')}</SelectItem>
+                      <SelectItem value="7">{t('months.7')}</SelectItem>
+                      <SelectItem value="8">{t('months.8')}</SelectItem>
+                      <SelectItem value="9">{t('months.9')}</SelectItem>
+                      <SelectItem value="10">{t('months.10')}</SelectItem>
+                      <SelectItem value="11">{t('months.11')}</SelectItem>
+                      <SelectItem value="12">{t('months.12')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {showMonthError && <span className="text-red-500 text-xs absolute right-2 top-0">*</span>}
+                </div>
+                <div className="flex flex-col relative">
+                  <Select value={pendingFilterYear} onValueChange={v => { setPendingFilterYear(v); setShowYearError(false); }}>
+                    <SelectTrigger className="w-28">{pendingFilterYear && pendingFilterYear !== "all" ?
+                      i18n.language === 'th' ? (parseInt(pendingFilterYear) + 543) : pendingFilterYear
+                    : t('common.year')}</SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t('months.all')}</SelectItem>
+                      {yearOptions.map(y => (
+                        <SelectItem key={y} value={String(y)}>
+                          {i18n.language === 'th' ? y + 543 : y}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {showYearError && <span className="text-red-500 text-xs absolute right-2 top-0">*</span>}
+                </div>
+                <div className="flex flex-col relative">
+                  <Select value={pendingFilterStatus} onValueChange={v => { setPendingFilterStatus(v); setShowStatusError(false); }}>
+                    <SelectTrigger className="w-36">{pendingFilterStatus && pendingFilterStatus !== "all" ? t(`leave.${pendingFilterStatus}`) : t('common.status')}</SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">{t('months.all')}</SelectItem>
+                      <SelectItem value="approved">{t('leave.approved')}</SelectItem>
+                      <SelectItem value="pending">{t('leave.pending')}</SelectItem>
+                      <SelectItem value="rejected">{t('leave.rejected')}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  {showStatusError && <span className="text-red-500 text-xs absolute right-2 top-0">*</span>}
+                </div>
+                <Button variant="outline" onClick={resetFilters}>{t('common.reset') || 'รีเซ็ต'}</Button>
+                <Button
+                  onClick={() => {
+                    // ถ้าเลือกเดือนแต่ไม่เลือกปี
+                    if (pendingFilterMonth !== "all" && (pendingFilterYear === "all" || !pendingFilterYear)) {
+                      setFilterError(t('leave.pleaseSelectYear') || "กรุณาเลือกปีให้ครบก่อนกดยืนยัน");
+                      return;
+                    }
+                    // ถ้าไม่ได้เลือก filter ใดเลย (ทุกอันเป็น all)
+                    if (
+                      pendingFilterType === "all" &&
+                      pendingFilterMonth === "all" &&
+                      pendingFilterYear === "all" &&
+                      pendingFilterStatus === "all"
+                    ) {
+                      setFilterError(t('leave.pleaseSelectAtLeastOne') || "โปรดเลือกอย่างน้อย 1 ตัวเลือก");
+                      return;
+                    }
+                    setShowTypeError(false);
+                    setShowMonthError(false);
+                    setShowYearError(false);
+                    setShowStatusError(false);
+                    setFilterError("");
+                    setFilterType(pendingFilterType);
+                    setFilterMonth(pendingFilterMonth);
+                    setFilterYear(pendingFilterYear);
+                    setFilterStatus(pendingFilterStatus);
+                  }}
+                  className="bg-blue-500 hover:bg-blue-600 text-white"
+                >{t('common.confirm') || 'ยืนยัน'}</Button>
+              </div>
+              {employee && typeof employee.usedLeaveDays === 'number' && (
+                <div className="text-sm font-medium">
+                  <span className={
+                    employee.totalLeaveDays && employee.usedLeaveDays > employee.totalLeaveDays * 0.8
+                      ? 'text-red-600'
+                      : 'text-green-600'
+                  }>
+                    วันลาที่ใช้ไปแล้ว: {employee.usedLeaveDays} วัน
+                  </span>
+                </div>
+              )}
+            </div>
+            {filterError && (
+              <div className="text-red-600 text-sm px-6 mt-1">{filterError}</div>
+            )}
             <CardContent className="p-6">
               <Table>
                 <TableHeader>
@@ -348,7 +544,7 @@ const EmployeeDetail = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {leaveHistory.map((leave, idx) => (
+                  {filteredLeaveHistory.map((leave, idx) => (
                     <TableRow key={idx}>
                       <TableCell className="font-medium">{
                         leave.leaveTypeName
@@ -358,7 +554,7 @@ const EmployeeDetail = () => {
                             : '-'
                       }</TableCell>
                       <TableCell className="whitespace-nowrap">{leave.leaveDate}</TableCell>
-                      <TableCell>{leave.duration} {leave.durationType ? t(`leave.${leave.durationType}`) : ''}</TableCell>
+                      <TableCell>{leave.durationType === 'hour' ? parseInt(leave.duration) : leave.duration} {leave.durationType === 'hour' ? t('leave.durationHour') : leave.durationType === 'day' ? t('leave.durationDay') : ''}</TableCell>
                       <TableCell className="max-w-[100px] truncate">{leave.reason}</TableCell>
                       <TableCell>
                         <Badge
@@ -368,7 +564,7 @@ const EmployeeDetail = () => {
                             ${leave.status === 'rejected' ? 'bg-red-100 text-red-800' : ''}
                           `}
                         >
-                          {String(t(`leave.${leave.status}`, leave.status))}
+                          {leave.status === 'approved' ? t('leave.approved') : leave.status === 'pending' ? t('leave.pending') : leave.status === 'rejected' ? t('leave.rejected') : leave.status}
                         </Badge>
                       </TableCell>
                       <TableCell>{leave.submittedDate ? new Date(leave.submittedDate).toLocaleDateString() : ''}</TableCell>
