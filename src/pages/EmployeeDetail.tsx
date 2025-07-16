@@ -132,6 +132,10 @@ const EmployeeDetail = () => {
     setShowYearError(false);
     setShowStatusError(false);
     setFilterError("");
+    setFilterType("all");
+    setFilterMonth("all");
+    setFilterYear("all");
+    setFilterStatus("all");
   };
 
   useEffect(() => {
