@@ -252,7 +252,11 @@
     "rejectedBy": "Rejected by",
     "reasonForRejection": "Reason for rejection",
     "showMore": "show More",
-    "showLess": "Less"
+    "showLess": "Less",
+    "filterByMonthYear": "Filter by month/year",
+    "allMonths": "All months",
+    "year": "Year",
+    "clearFilter": "Clear filter"
   },
   "admin": {
     "pendingRequests": "Pending Requests",

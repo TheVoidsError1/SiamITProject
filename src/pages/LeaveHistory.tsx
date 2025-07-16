@@ -21,6 +21,8 @@ const LeaveHistory = () => {
   // --- เพิ่ม state สำหรับ show more/less ---
   const [expandedReason, setExpandedReason] = useState<string | null>(null);
   const [expandedReject, setExpandedReject] = useState<string | null>(null);
+  const [filterMonth, setFilterMonth] = useState<number | ''>('');
+  const [filterYear, setFilterYear] = useState<number | ''>('');
 
   useEffect(() => {
     const fetchLeaveHistory = async () => {
@@ -29,8 +31,11 @@ const LeaveHistory = () => {
       try {
         const token = localStorage.getItem('token');
         if (!token) throw new Error('No token found, please login');
-        // --- ส่ง page, limit ไป backend ---
-        const res = await fetch(`/api/leave-history?page=${page}&limit=6`, {
+        // --- ส่ง page, limit, month, year ไป backend ---
+        let url = `/api/leave-history?page=${page}&limit=6`;
+        if (filterMonth) url += `&month=${filterMonth}`;
+        if (filterYear) url += `&year=${filterYear}`;
+        const res = await fetch(url, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
@@ -48,7 +53,7 @@ const LeaveHistory = () => {
       }
     };
     fetchLeaveHistory();
-  }, [page]);
+  }, [page, filterMonth, filterYear]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -147,6 +152,11 @@ const LeaveHistory = () => {
   const approvedCount = summary ? summary.approvedCount : 0;
   const pendingCount = summary ? summary.pendingCount : 0;
 
+  // รายชื่อเดือนรองรับ i18n
+  const monthNames = i18n.language === 'th'
+    ? ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม']
+    : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="border-b bg-white/80 backdrop-blur-sm">
@@ -210,6 +220,35 @@ const LeaveHistory = () => {
           </div>
 
           {/* Leave History List */}
+          <div className="flex flex-wrap gap-4 items-center mb-6">
+            <label className="text-sm font-medium">{t('history.filterByMonthYear')}</label>
+            <select
+              className="border rounded px-2 py-1"
+              value={filterMonth}
+              onChange={e => setFilterMonth(e.target.value ? Number(e.target.value) : '')}
+            >
+              <option value="">{t('history.allMonths')}</option>
+              {monthNames.map((name, i) => (
+                <option key={i+1} value={i+1}>{name}</option>
+              ))}
+            </select>
+            <input
+              type="number"
+              className="border rounded px-2 py-1 w-24"
+              placeholder={t('history.year')}
+              value={filterYear}
+              min={2000}
+              max={2100}
+              onChange={e => setFilterYear(e.target.value ? Number(e.target.value) : '')}
+            />
+            <button
+              className="ml-2 px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm"
+              onClick={() => { setFilterMonth(''); setFilterYear(''); }}
+              type="button"
+            >
+              {t('history.clearFilter')}
+            </button>
+          </div>
           <div className="space-y-4">
             {loading ? (
               <p>{t('history.loadingLeaveHistory')}</p>

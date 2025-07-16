@@ -1,5 +1,6 @@
 const express = require('express');
 const authMiddleware = require('../middleware/authMiddleware');
+const { Between } = require('typeorm');
 
 module.exports = (AppDataSource) => {
   const router = express.Router();
@@ -7,8 +8,16 @@ module.exports = (AppDataSource) => {
   // GET /api/leave-history (ต้องแนบ JWT)
   router.get('/', authMiddleware, async (req, res) => {
     try {
+      // --- i18n: ตรวจจับภาษา ---
+      let lang = req.headers['accept-language'] || req.query.lang || 'th';
+      lang = lang.split(',')[0].toLowerCase().startsWith('en') ? 'en' : 'th';
       const userId = req.user && req.user.userId; // ดึง userId จาก JWT
-      if (!userId) return res.status(401).json({ status: 'error', message: 'Unauthorized' });
+      if (!userId) {
+        return res.status(401).json({
+          status: 'error',
+          message: lang === 'th' ? 'ไม่ได้รับอนุญาต' : 'Unauthorized'
+        });
+      }
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
       const adminRepo = AppDataSource.getRepository('Admin');
@@ -18,8 +27,31 @@ module.exports = (AppDataSource) => {
       const limit = parseInt(req.query.limit) || 6;
       const skip = (page - 1) * limit;
 
+      // --- เพิ่ม filter เดือนและปี ---
+      const month = req.query.month ? parseInt(req.query.month) : null;
+      const year = req.query.year ? parseInt(req.query.year) : null;
+      
+      // ดึง leave request ของ user (paging) พร้อม filter เดือน/ปี (ใช้ createdAt)
+      let where = { Repid: userId };
+      if (month && year) {
+        // กรอง createdAt ให้อยู่ในเดือน/ปีที่เลือก
+        const startOfMonth = new Date(year, month - 1, 1);
+        const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
+        where = {
+          ...where,
+          createdAt: Between(startOfMonth, endOfMonth)
+        };
+      } else if (year) {
+        // ถ้าเลือกแค่ปี
+        const startOfYear = new Date(year, 0, 1);
+        const endOfYear = new Date(year, 11, 31, 23, 59, 59, 999);
+        where = {
+          ...where,
+          createdAt: Between(startOfYear, endOfYear)
+        };
+      }
+
       // ดึง leave request ของ user (paging)
-      const where = { Repid: userId };
       const [leaves, total] = await Promise.all([
         leaveRepo.find({ where, order: { createdAt: 'DESC' }, skip, take: limit }),
         leaveRepo.count({ where })
@@ -80,10 +112,14 @@ module.exports = (AppDataSource) => {
           totalLeaveDays,
           approvedCount,
           pendingCount
-        }
+        },
+        message: lang === 'th' ? 'ดึงข้อมูลสำเร็จ' : 'Fetch success'
       });
     } catch (err) {
-      res.status(500).json({ status: 'error', message: err.message });
+      res.status(500).json({
+        status: 'error',
+        message: lang === 'th' ? 'เกิดข้อผิดพลาด: ' + err.message : 'Error: ' + err.message
+      });
     }
   });
 

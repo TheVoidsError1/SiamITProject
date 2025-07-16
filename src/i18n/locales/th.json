@@ -253,7 +253,11 @@
     "rejectedBy": "ไม่อนุมัติโดย",
     "reasonForRejection": "เหตุผลที่ไม่อนุมัติ",
     "showMore": "เพิมเติม",
-    "showLess": "ย่อ"
+    "showLess": "ย่อ",
+    "filterByMonthYear": "กรองตามเดือน/ปี",
+    "allMonths": "ทุกเดือน",
+    "year": "ปี",
+    "clearFilter": "ล้างตัวกรอง"
   },
   "admin": {
     "pendingRequests": "คำขอรออนุมัติ",
