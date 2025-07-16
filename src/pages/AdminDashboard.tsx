@@ -8,7 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { differenceInCalendarDays, format } from "date-fns";
 import { th } from "date-fns/locale";
-import { AlertCircle, CheckCircle, Clock, Eye, TrendingUp, Users, XCircle } from "lucide-react";
+import { AlertCircle, CheckCircle, Clock, Eye, TrendingUp, Users, XCircle, FileText } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -562,7 +562,7 @@ const AdminDashboard = () => {
                               )}
                             </Badge>
 
-                            {/* ฝั่งซ้ายล่าง */}
+                            {/* ฝั่งซ้ายล่าง: ข้อมูล leave หลัก */}
                             <div className="flex-1">
                               <div className="font-bold text-lg mb-1">{request.user?.User_name || "-"}</div>
                               <div className="text-base text-gray-700 mb-2">{request.leaveTypeName ? String(t(`leaveTypes.${String(request.leaveTypeName)}`, String(request.leaveTypeName))) : '-'}</div>
@@ -572,14 +572,45 @@ const AdminDashboard = () => {
                                   : ` (${leaveDays} ${t('leave.day')})`}
                               </div>
                             </div>
-                            {/* ฝั่งขวาล่าง (วันที่อนุมัติ) */}
-                            <div className="flex flex-col items-end text-right gap-2 mt-4 md:mt-0 md:ml-8 min-w-[180px]">
-                              <div className="text-sm text-gray-700">
-                                {request.status === "approved"
-                                  ? `${t('admin.approvedWhen')} ${statusDate !== '-' ? statusDate : '-'}`
-                                  : request.status === "rejected"
-                                    ? `${t('admin.rejectedWhen')} ${statusDate !== '-' ? statusDate : '-'}`
-                                    : ''}
+                            {/* กล่องสถานะการอนุมัติ/ไม่อนุมัติ ย้ายไปมุมขวา และเพิ่ม margin-top ให้เว้นจาก badge */}
+                            <div className="flex flex-col items-end justify-between min-w-[240px] ml-6">
+                              <div className="w-fit p-3 bg-gray-50 rounded-lg border border-gray-200 shadow-sm mt-8">
+                                <div className="flex items-center gap-2 text-sm text-gray-700">
+                                  {request.status === "approved" ? (
+                                    <>
+                                      <CheckCircle className="w-4 h-4 text-green-500" />
+                                      <span>{t('admin.approvedWhen')} {statusDate !== '-' ? statusDate : '-'}</span>
+                                    </>
+                                  ) : request.status === "rejected" ? (
+                                    <>
+                                      <XCircle className="w-4 h-4 text-red-500" />
+                                      <span>{t('admin.rejectedWhen')} {statusDate !== '-' ? statusDate : '-'}</span>
+                                    </>
+                                  ) : null}
+                                </div>
+                                {/* ชื่อ admin ที่อนุมัติ/ไม่อนุมัติ */}
+                                {request.status === "approved" && request.approvedBy && (
+                                  <div className="flex flex-col gap-0.5 text-xs text-green-700 mt-1">
+                                    <span className="font-semibold">{t('admin.approvedBy', 'โดย')}:</span>
+                                    <span>{request.approvedBy}</span>
+                                  </div>
+                                )}
+                                {request.status === "rejected" && request.rejectedBy && (
+                                  <div className="flex flex-col gap-0.5 text-xs text-red-700 mt-1">
+                                    <span className="font-semibold">{t('admin.rejectedBy', 'โดย')}:</span>
+                                    <span>{request.rejectedBy}</span>
+                                  </div>
+                                )}
+                                {/* เหตุผลที่ไม่อนุมัติ */}
+                                {request.status === "rejected" && request.rejectionReason && (
+                                  <div className="flex items-start gap-2 text-xs text-red-500 mt-2">
+                                    <FileText className="w-4 h-4 mt-0.5" />
+                                    <div>
+                                      <span className="font-semibold">{t('leave.rejectionReason', 'เหตุผลที่ไม่อนุมัติ')}:</span>
+                                      <span className="ml-1">{request.rejectionReason}</span>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </div>

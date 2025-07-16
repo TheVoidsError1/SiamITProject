@@ -158,7 +158,7 @@
     "attachmentHint": "(ใบรับรองแพทย์, เอกสารรับรอง ฯลฯ)"
   },
   "leaveTypes": {
-    "vacation": "ลาพักผ่อน",
+    "vacation": "ลาพักร้อน",
     "sick": "ลาป่วย", 
     "personal": "ลากิจ",
     "maternity": "ลาคลอด",

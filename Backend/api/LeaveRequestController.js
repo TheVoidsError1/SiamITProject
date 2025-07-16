@@ -209,6 +209,8 @@
                if (admin) {
                  user = { User_name: admin.admin_name, department: admin.department, position: admin.position };
                }
+             } else {
+               user = { User_name: user.User_name, department: user.department, position: user.position };
              }
            }
            // join leaveType จาก database
@@ -232,6 +234,17 @@
              duration = Math.abs((end - start) / (1000*60*60*24)) + 1;
              durationType = 'day';
            }
+           // เพิ่มดึงชื่อ admin ที่อนุมัติ/ไม่อนุมัติ
+           let approvedBy = null;
+           let rejectedBy = null;
+           if (leave.statusBy && leave.status === 'approved') {
+             const admin = await adminRepo.findOneBy({ id: leave.statusBy });
+             approvedBy = admin ? admin.admin_name : leave.statusBy;
+           }
+           if (leave.statusBy && leave.status === 'rejected') {
+             const admin = await adminRepo.findOneBy({ id: leave.statusBy });
+             rejectedBy = admin ? admin.admin_name : leave.statusBy;
+           }
            return {
              id: leave.id,
              leaveTypeName: leaveTypeObj ? leaveTypeObj.leave_type : leave.leaveType,
@@ -249,6 +262,9 @@
              status: leave.status,
              submittedDate: leave.createdAt,
              user: user ? { User_name: user.User_name, department: user.department, position: user.position } : null,
+             approvedBy,
+             rejectedBy,
+             rejectionReason: leave.rejectedReason || null,
            };
          }));
          res.json({ status: 'success', data: result, total, page, totalPages: Math.ceil(total / limit) });

@@ -1,7 +1,7 @@
 
 export const leaveTypes = [
   { value: "sick", label: "ลาป่วย", requiresAttachment: true },
-  { value: "vacation", label: "ลาพักผ่อน", requiresAttachment: false },
+  { value: "vacation", label: "ลาพักร้อน", requiresAttachment: false },
   { value: "personal", label: "ลากิจ", requiresAttachment: false, hasTimeOption: true },
   { value: "maternity", label: "ลาคลอด", requiresAttachment: true },
   { value: "emergency", label: "ลาฉุกเฉิน", requiresAttachment: true },
