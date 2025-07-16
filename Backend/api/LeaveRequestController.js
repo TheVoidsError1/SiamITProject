@@ -126,7 +126,7 @@
          const [pendingLeaves, total] = await Promise.all([
            leaveRepo.find({
              where: { status: 'pending' },
-             order: { id: 'DESC' },
+             order: { createdAt: 'DESC' }, // เปลี่ยนจาก id: 'DESC' เป็น createdAt: 'DESC'
              skip,
              take: limit
            }),

@@ -117,11 +117,14 @@ const AdminDashboard = () => {
   // --- เพิ่มฟังก์ชันแปลงวันที่ตามภาษา ---
   const formatDateLocalized = (dateStr: string) => {
     const date = new Date(dateStr);
+    // แปลงเป็นเวลาท้องถิ่นไทย
     if (i18n.language === 'th') {
       const buddhistYear = date.getFullYear() + 543;
-      return `${date.getDate().toString().padStart(2, '0')} ${format(date, 'MMM', { locale: th })} ${buddhistYear}`;
+      const time = date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false });
+      return `${date.getDate().toString().padStart(2, '0')} ${format(date, 'MMM', { locale: th })} ${buddhistYear}, ${time}`;
     }
-    return format(date, 'dd MMM yyyy');
+    // ภาษาอื่น
+    return format(date, 'dd MMM yyyy, HH:mm');
   };
 
   // --- เพิ่มฟังก์ชันคำนวณชั่วโมง ---
@@ -447,6 +450,13 @@ const AdminDashboard = () => {
                           <div className="mb-4">
                             <p className="text-sm font-medium text-gray-700">{t('leave.reason')}:</p>
                             <p className="text-sm text-gray-600 mt-1">{request.reason}</p>
+                          </div>
+                          {/* เพิ่มแสดงวันที่ส่งคำขอ */}
+                          <div className="mb-4">
+                            <p className="text-sm font-medium text-gray-700">{t('leave.submittedDate', 'วันที่ส่งคำขอ')}:</p>
+                            <p className="text-sm text-gray-600 mt-1">
+                              {request.createdAt ? formatDateLocalized(request.createdAt) : '-'}
+                            </p>
                           </div>
                           <div className="flex gap-3">
                             <Button 
