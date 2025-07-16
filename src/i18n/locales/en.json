@@ -160,7 +160,8 @@
     "attachmentHint": "(Medical certificate, supporting document, etc.)",
     "pleaseSelectYear": "Please select a year before confirming",
     "durationDay": "day",
-    "durationHour": "hour"
+    "durationHour": "hour",
+    "pleaseSelectAtLeastOne": "Please select at least one option"
   },
   "leaveTypes": {
     "vacation": "Vacation ",

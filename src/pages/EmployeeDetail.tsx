@@ -127,6 +127,11 @@ const EmployeeDetail = () => {
     setPendingFilterMonth("all");
     setPendingFilterYear("all");
     setPendingFilterStatus("all");
+    setShowTypeError(false);
+    setShowMonthError(false);
+    setShowYearError(false);
+    setShowStatusError(false);
+    setFilterError("");
   };
 
   useEffect(() => {
@@ -482,16 +487,25 @@ const EmployeeDetail = () => {
                 <Button variant="outline" onClick={resetFilters}>{t('common.reset') || 'รีเซ็ต'}</Button>
                 <Button
                   onClick={() => {
-                    let hasError = false;
-                    if (pendingFilterType === "all") { setShowTypeError(true); hasError = true; }
-                    if (pendingFilterMonth === "all") { setShowMonthError(true); hasError = true; }
-                    if (pendingFilterYear === "all") { setShowYearError(true); hasError = true; }
-                    if (pendingFilterStatus === "all") { setShowStatusError(true); hasError = true; }
+                    // ถ้าเลือกเดือนแต่ไม่เลือกปี
                     if (pendingFilterMonth !== "all" && (pendingFilterYear === "all" || !pendingFilterYear)) {
                       setFilterError(t('leave.pleaseSelectYear') || "กรุณาเลือกปีให้ครบก่อนกดยืนยัน");
-                      hasError = true;
+                      return;
                     }
-                    if (hasError) return;
+                    // ถ้าไม่ได้เลือก filter ใดเลย (ทุกอันเป็น all)
+                    if (
+                      pendingFilterType === "all" &&
+                      pendingFilterMonth === "all" &&
+                      pendingFilterYear === "all" &&
+                      pendingFilterStatus === "all"
+                    ) {
+                      setFilterError(t('leave.pleaseSelectAtLeastOne') || "โปรดเลือกอย่างน้อย 1 ตัวเลือก");
+                      return;
+                    }
+                    setShowTypeError(false);
+                    setShowMonthError(false);
+                    setShowYearError(false);
+                    setShowStatusError(false);
                     setFilterError("");
                     setFilterType(pendingFilterType);
                     setFilterMonth(pendingFilterMonth);

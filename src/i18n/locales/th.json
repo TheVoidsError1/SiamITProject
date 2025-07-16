@@ -103,7 +103,8 @@
     "pending": "รอการอนุมัติ",
     "rejected": "ไม่อนุมัติ",
     "durationDay": "วัน",
-    "durationHour": "ชั่วโมง"
+    "durationHour": "ชั่วโมง",
+    "pleaseSelectAtLeastOne": "โปรดเลือกอย่างน้อย 1 ตัวเลือก"
   },
   "leaveTypes": {
     "vacation": "ลาพักผ่อน",
