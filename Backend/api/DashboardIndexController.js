@@ -158,14 +158,18 @@ module.exports = (AppDataSource) => {
       const userId = req.user.userId;
       const userRepo = AppDataSource.getRepository('User');
       const adminRepo = AppDataSource.getRepository('Admin');
+      const superadminRepo = AppDataSource.getRepository('SuperAdmin');
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
       const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
 
-      // Get user and their position (check both User and Admin tables)
+      // Get user and their position (check User, Admin, SuperAdmin tables)
       let user = await userRepo.findOneBy({ id: userId });
       if (!user) {
         user = await adminRepo.findOneBy({ id: userId });
+      }
+      if (!user) {
+        user = await superadminRepo.findOneBy({ id: userId });
       }
       if (!user || !user.position) {
         return res.status(404).json({ status: 'error', message: 'User or position not found' });
@@ -180,13 +184,10 @@ module.exports = (AppDataSource) => {
 
       // For each leave type, calculate remaining (only sick, personal, vacation)
       let totalRemaining = 0;
-      const allowedTypes = ['sick', 'personal', 'vacation', 'ลาป่วย', 'ลากิจ', 'ลาพักผ่อน'];
       for (const leaveType of leaveTypes) {
-        if (!allowedTypes.includes(leaveType.leave_type)) continue;
-        // Find quota for this leave type
+        if (!['sick', 'personal', 'vacation', 'ลาป่วย', 'ลากิจ', 'ลาพักผ่อน'].includes(leaveType.leave_type)) continue;
         const quotaRow = quotas.find(q => q.leaveTypeId === leaveType.id);
         const quota = quotaRow ? quotaRow.quota : 0;
-        // Calculate used leave for this type
         let used = 0;
         for (const lr of approvedLeaves) {
           let leaveTypeName = lr.leaveType;
@@ -245,12 +246,16 @@ module.exports = (AppDataSource) => {
       const userId = req.user.userId;
       const userRepo = AppDataSource.getRepository('User');
       const adminRepo = AppDataSource.getRepository('Admin');
+      const superadminRepo = AppDataSource.getRepository('SuperAdmin');
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
 
-      // Get user (check both User and Admin tables)
+      // Get user (check User, Admin, SuperAdmin tables)
       let user = await userRepo.findOneBy({ id: userId });
       if (!user) {
         user = await adminRepo.findOneBy({ id: userId });
+      }
+      if (!user) {
+        user = await superadminRepo.findOneBy({ id: userId });
       }
       if (!user) {
         return res.status(404).json({ status: 'error', message: 'User not found' });
@@ -259,6 +264,12 @@ module.exports = (AppDataSource) => {
       // Get all leave requests for this user
       const leaves = await leaveRepo.find({ where: { Repid: userId } });
       // Helper to normalize type
+      const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+      function parseTimeToMinutes(t) {
+        if (!t) return 0;
+        const [h, m] = t.split(':').map(Number);
+        return h * 60 + (m || 0);
+      }
       const normalizeType = (type) => {
         if (!type) return null;
         if (["sick", "ลาป่วย"].includes(type)) return "sick";
@@ -268,12 +279,6 @@ module.exports = (AppDataSource) => {
       };
       // Calculate total used leave in hours
       let totalHours = 0;
-      const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
-      function parseTimeToMinutes(t) {
-        if (!t) return 0;
-        const [h, m] = t.split(':').map(Number);
-        return h * 60 + (m || 0);
-      }
       for (const lr of leaves) {
         let leaveTypeName = lr.leaveType;
         if (leaveTypeName && leaveTypeName.length > 20) {
