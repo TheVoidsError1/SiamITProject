@@ -1,21 +1,19 @@
-import { useState, useEffect } from "react";
-import { useParams, Link, useLocation } from "react-router-dom";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { LeaveDetailDialog } from "@/components/dialogs/LeaveDetailDialog";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, User, Mail, Calendar, Edit, Save, X, Eye } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
-import { th } from "date-fns/locale";
-import { LeaveDetailDialog } from "@/components/dialogs/LeaveDetailDialog";
-import { useTranslation } from "react-i18next";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
+import { ArrowLeft, Calendar, Edit, Eye, Mail, Save, User, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Link, useLocation, useParams } from "react-router-dom";
 
 const EmployeeDetail = () => {
   const { id } = useParams();
@@ -47,6 +45,77 @@ const EmployeeDetail = () => {
   // --- เพิ่ม state สำหรับ paging ---
   const [leavePage, setLeavePage] = useState(1);
   const [leaveTotalPages, setLeaveTotalPages] = useState(1);
+
+  // --- State สำหรับ Filter ---
+  const [filterType, setFilterType] = useState("all");
+  const [filterMonth, setFilterMonth] = useState("all");
+  const [filterYear, setFilterYear] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
+
+  // --- สร้างรายการปี (ย้อนหลัง 3 ปี) ---
+  const currentYear = new Date().getFullYear();
+  const yearOptions = [currentYear, currentYear-1, currentYear-2];
+
+  // --- กรอง leaveHistory ตาม filter ---
+  // ลบ useMemo เดิมออก ไม่ต้อง filter ฝั่ง frontend แล้ว
+
+  // --- ดึง leaveHistory ใหม่เมื่อ filter เปลี่ยน ---
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    setError(null);
+    fetch(`http://localhost:3001/api/employee/${id}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setEmployee(data.data);
+        } else {
+          setEmployee(null);
+          setError(t('employee.notFound'));
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        setEmployee(null);
+        setError(t('employee.loadError'));
+        setLoading(false);
+      });
+
+    // --- ดึง leave history ตาม filter ---
+    // ถ้าเลือก month ต้องเลือก year ด้วย
+    let params = [];
+    if (filterType && filterType !== "all") params.push(`leaveType=${filterType}`);
+    if (filterMonth && filterMonth !== "all" && filterYear && filterYear !== "all") {
+      params.push(`month=${filterMonth}`);
+      params.push(`year=${filterYear}`);
+    } else if (filterYear && filterYear !== "all") {
+      params.push(`year=${filterYear}`);
+    }
+    if (filterStatus && filterStatus !== "all") params.push(`status=${filterStatus}`);
+    const query = params.length > 0 ? `?${params.join("&")}` : "";
+    fetch(`http://localhost:3001/api/employee/${id}/leave-history${query}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setLeaveHistory(data.data);
+        } else {
+          setLeaveHistory([]);
+        }
+      })
+      .catch(() => {
+        setLeaveHistory([]);
+      });
+  }, [id, t, filterType, filterMonth, filterYear, filterStatus, leavePage]);
+
+  // filteredLeaveHistory = leaveHistory (ไม่ต้อง filter ฝั่ง frontend)
+  const filteredLeaveHistory = leaveHistory;
+
+  const resetFilters = () => {
+    setFilterType("all");
+    setFilterMonth("all");
+    setFilterYear("all");
+    setFilterStatus("all");
+  };
 
   useEffect(() => {
     fetch('http://localhost:3001/api/departments')
@@ -197,7 +266,7 @@ const EmployeeDetail = () => {
       </div>
 
       <div className="p-6 animate-fade-in">
-        <div className="max-w-4xl mx-auto space-y-6">
+        <div className="max-w-6xl mx-auto space-y-6">
           {/* Employee Info Card */}
           <Card className="border-0 shadow-lg">
             <CardHeader className="gradient-bg text-white rounded-t-lg">
@@ -334,6 +403,66 @@ const EmployeeDetail = () => {
                 {t('employee.leaveHistoryDesc')}
               </CardDescription>
             </CardHeader>
+            {/* Filter + วันลาที่ใช้ไปแล้ว (flex row) */}
+            <div className="flex flex-wrap items-center justify-between px-6 mt-4 gap-2">
+              <div className="flex flex-wrap gap-4 items-center">
+                <Select value={filterType} onValueChange={setFilterType}>
+                  <SelectTrigger className="w-40">{filterType && filterType !== "all" ? t(`leaveTypes.${filterType}`) : "ประเภทการลา"}</SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">ทั้งหมด</SelectItem>
+                    <SelectItem value="sick">{t('leaveTypes.sick')}</SelectItem>
+                    <SelectItem value="vacation">{t('leaveTypes.vacation')}</SelectItem>
+                    <SelectItem value="personal">{t('leaveTypes.personal')}</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={filterMonth} onValueChange={setFilterMonth}>
+                  <SelectTrigger className="w-32">{filterMonth && filterMonth !== "all" ? t(`months.${filterMonth}`) : "เดือน"}</SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">ทั้งหมด</SelectItem>
+                    <SelectItem value="1">มกราคม</SelectItem>
+                    <SelectItem value="2">กุมภาพันธ์</SelectItem>
+                    <SelectItem value="3">มีนาคม</SelectItem>
+                    <SelectItem value="4">เมษายน</SelectItem>
+                    <SelectItem value="5">พฤษภาคม</SelectItem>
+                    <SelectItem value="6">มิถุนายน</SelectItem>
+                    <SelectItem value="7">กรกฎาคม</SelectItem>
+                    <SelectItem value="8">สิงหาคม</SelectItem>
+                    <SelectItem value="9">กันยายน</SelectItem>
+                    <SelectItem value="10">ตุลาคม</SelectItem>
+                    <SelectItem value="11">พฤศจิกายน</SelectItem>
+                    <SelectItem value="12">ธันวาคม</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={filterYear} onValueChange={setFilterYear}>
+                  <SelectTrigger className="w-28">{filterYear && filterYear !== "all" ? filterYear : "ปี"}</SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">ทั้งหมด</SelectItem>
+                    {yearOptions.map(y => <SelectItem key={y} value={String(y)}>{y+543}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="w-36">{filterStatus && filterStatus !== "all" ? t(`leave.${filterStatus}`) : "สถานะ"}</SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">ทั้งหมด</SelectItem>
+                    <SelectItem value="approved">อนุมัติแล้ว</SelectItem>
+                    <SelectItem value="pending">รออนุมัติ</SelectItem>
+                    <SelectItem value="rejected">ไม่อนุมัติ</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button variant="outline" onClick={resetFilters}>รีเซ็ต</Button>
+              </div>
+              {employee && typeof employee.usedLeaveDays === 'number' && (
+                <div className="text-sm font-medium">
+                  <span className={
+                    employee.totalLeaveDays && employee.usedLeaveDays > employee.totalLeaveDays * 0.8
+                      ? 'text-red-600'
+                      : 'text-green-600'
+                  }>
+                    วันลาที่ใช้ไปแล้ว: {employee.usedLeaveDays} วัน
+                  </span>
+                </div>
+              )}
+            </div>
             <CardContent className="p-6">
               <Table>
                 <TableHeader>
@@ -348,7 +477,7 @@ const EmployeeDetail = () => {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {leaveHistory.map((leave, idx) => (
+                  {filteredLeaveHistory.map((leave, idx) => (
                     <TableRow key={idx}>
                       <TableCell className="font-medium">{
                         leave.leaveTypeName
@@ -358,7 +487,7 @@ const EmployeeDetail = () => {
                             : '-'
                       }</TableCell>
                       <TableCell className="whitespace-nowrap">{leave.leaveDate}</TableCell>
-                      <TableCell>{leave.duration} {leave.durationType ? t(`leave.${leave.durationType}`) : ''}</TableCell>
+                      <TableCell>{leave.durationType === 'hour' ? parseInt(leave.duration) : leave.duration} {leave.durationType ? t(`leave.${leave.durationType}`) : ''}</TableCell>
                       <TableCell className="max-w-[100px] truncate">{leave.reason}</TableCell>
                       <TableCell>
                         <Badge

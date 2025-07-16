@@ -207,6 +207,71 @@ module.exports = (AppDataSource) => {
       // Password field (for future editing)
       const password = processCheck ? processCheck.Password : '';
 
+      // --- เพิ่มส่วนนี้: คำนวณ usedLeaveDays/totalLeaveDays ---
+      let totalLeaveDays = 0;
+      try {
+        const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
+        const posEntity = await AppDataSource.getRepository('Position').findOne({ where: { position_name: position } });
+        let quota = null;
+        if (posEntity) {
+          quota = await leaveQuotaRepo.findOneBy({ positionId: posEntity.id });
+        }
+        if (quota) {
+          totalLeaveDays = (quota.sick || 0) + (quota.vacation || 0) + (quota.personal || 0);
+        }
+      } catch (e) { totalLeaveDays = 0; }
+
+      let usedLeaveDays = 0;
+      try {
+        const leaveRepo = AppDataSource.getRepository('LeaveRequest');
+        const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+        const approvedLeaves = await leaveRepo.find({ where: { Repid: id, status: 'approved' } });
+        for (const lr of approvedLeaves) {
+          // หา leaveTypeName
+          let leaveTypeName = lr.leaveType;
+          if (leaveTypeName && leaveTypeName.length > 20) {
+            const leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
+            if (leaveTypeEntity && leaveTypeEntity.leave_type) {
+              leaveTypeName = leaveTypeEntity.leave_type;
+            }
+          }
+          // เฉพาะประเภท sick, vacation, personal
+          if (["sick", "ลาป่วย", "vacation", "ลาพักผ่อน", "personal", "ลากิจ"].includes(leaveTypeName)) {
+            if (leaveTypeName === "personal" || leaveTypeName === "ลากิจ") {
+              // personal: อาจเป็นชั่วโมงหรือวัน
+              if (lr.startTime && lr.endTime) {
+                // ชั่วโมง
+                const [sh, sm] = lr.startTime.split(":").map(Number);
+                const [eh, em] = lr.endTime.split(":").map(Number);
+                let start = sh + (sm || 0) / 60;
+                let end = eh + (em || 0) / 60;
+                let diff = end - start;
+                if (diff < 0) diff += 24;
+                usedLeaveDays += diff / 9; // 1 วัน = 9 ชม.
+              } else if (lr.startDate && lr.endDate) {
+                // วัน
+                const start = new Date(lr.startDate);
+                const end = new Date(lr.endDate);
+                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                if (days < 0 || isNaN(days)) days = 0;
+                usedLeaveDays += days;
+              }
+            } else {
+              // sick, vacation: วันเท่านั้น
+              if (lr.startDate && lr.endDate) {
+                const start = new Date(lr.startDate);
+                const end = new Date(lr.endDate);
+                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                if (days < 0 || isNaN(days)) days = 0;
+                usedLeaveDays += days;
+              }
+            }
+          }
+        }
+      } catch (e) { usedLeaveDays = 0; }
+      usedLeaveDays = Math.round(usedLeaveDays * 100) / 100;
+      // --- จบส่วนเพิ่ม ---
+
       res.json({
         success: true,
         data: {
@@ -217,8 +282,8 @@ module.exports = (AppDataSource) => {
           position,
           department,
           role,
-          usedLeaveDays: null,
-          totalLeaveDays: null
+          usedLeaveDays,
+          totalLeaveDays
         }
       });
     } catch (err) {
@@ -298,6 +363,81 @@ module.exports = (AppDataSource) => {
           totalLeaveDays: null
         }
       });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  });
+
+  // GET /employee/:id/leave-history - Filter leave history by type, month, year, status
+  router.get('/employee/:id/leave-history', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { leaveType, month, year, status } = req.query;
+      const leaveRepo = AppDataSource.getRepository('LeaveRequest');
+      const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+      const userRepo = AppDataSource.getRepository('User');
+      const adminRepo = AppDataSource.getRepository('admin');
+
+      // ดึง leave ทั้งหมดของ user/admin
+      let leaves = await leaveRepo.find({ where: { Repid: id }, order: { createdAt: 'DESC' } });
+
+      // Filter ตาม leaveType (ชื่อ หรือ id)
+      if (leaveType) {
+        leaves = await Promise.all(leaves.map(async (l) => {
+          let typeName = l.leaveType;
+          if (typeName && typeName.length > 20) {
+            const typeObj = await leaveTypeRepo.findOneBy({ id: typeName });
+            if (typeObj && typeObj.leave_type) typeName = typeObj.leave_type;
+          }
+          return { ...l, _leaveTypeName: typeName };
+        }));
+        leaves = leaves.filter(l => l._leaveTypeName === leaveType || l.leaveType === leaveType);
+      }
+
+      // Filter ตามปี/เดือน (month ต้องมี year)
+      if (year) {
+        leaves = leaves.filter(l => {
+          if (!l.startDate) return false;
+          const d = new Date(l.startDate);
+          if (isNaN(d.getTime())) return false;
+          if (month) {
+            return d.getFullYear() === Number(year) && (d.getMonth() + 1) === Number(month);
+          } else {
+            return d.getFullYear() === Number(year);
+          }
+        });
+      }
+      // ถ้าเลือก month แต่ไม่เลือก year ไม่ต้อง filter เดือน (ต้องเลือก year ด้วย)
+
+      // Filter ตาม status
+      if (status) {
+        leaves = leaves.filter(l => l.status === status);
+      }
+
+      // Join leaveTypeName
+      leaves = await Promise.all(leaves.map(async (l) => {
+        let leaveTypeName = l.leaveType;
+        if (leaveTypeName && leaveTypeName.length > 20) {
+          const leaveTypeObj = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
+          if (leaveTypeObj && leaveTypeObj.leave_type) leaveTypeName = leaveTypeObj.leave_type;
+        }
+        return {
+          id: l.id,
+          leaveType: l.leaveType,
+          leaveTypeName,
+          leaveDate: l.startDate,
+          startDate: l.startDate,
+          endDate: l.endDate,
+          startTime: l.startTime || null,
+          endTime: l.endTime || null,
+          duration: l.duration,
+          reason: l.reason,
+          status: l.status,
+          submittedDate: l.createdAt,
+        };
+      }));
+
+      res.json({ success: true, data: leaves });
     } catch (err) {
       res.status(500).json({ success: false, message: err.message });
     }
