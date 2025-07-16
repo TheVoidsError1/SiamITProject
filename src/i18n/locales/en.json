@@ -256,7 +256,8 @@
     "filterByMonthYear": "Filter by month/year",
     "allMonths": "All months",
     "year": "Year",
-    "clearFilter": "Clear filter"
+    "clearFilter": "Clear filter",
+    "noData": "No leave history found for this period."
   },
   "admin": {
     "pendingRequests": "Pending Requests",

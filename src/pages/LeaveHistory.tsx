@@ -250,12 +250,17 @@ const LeaveHistory = () => {
             </button>
           </div>
           <div className="space-y-4">
-            {loading ? (
-              <p>{t('history.loadingLeaveHistory')}</p>
-            ) : error ? (
+            {loading ? null : error ? (
               <p className="text-red-500">{error}</p>
             ) : (
               <>
+                {leaveHistory.length === 0 && !loading && !error && (
+                  <div className="w-full flex justify-center mt-10">
+                    <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg px-6 py-4 text-center shadow">
+                      {t('history.noData', 'No leave history found for this period.')}
+                    </div>
+                  </div>
+                )}
                 {leaveHistory.map((leave) => (
                   <Card
                     key={leave.id}

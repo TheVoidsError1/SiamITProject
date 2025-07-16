@@ -257,7 +257,8 @@
     "filterByMonthYear": "กรองตามเดือน/ปี",
     "allMonths": "ทุกเดือน",
     "year": "ปี",
-    "clearFilter": "ล้างตัวกรอง"
+    "clearFilter": "ล้างตัวกรอง",
+    "noData": "ไม่พบประวัติการลาสำหรับช่วงเวลานี้"
   },
   "admin": {
     "pendingRequests": "คำขอรออนุมัติ",
