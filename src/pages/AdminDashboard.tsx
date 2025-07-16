@@ -475,10 +475,12 @@ const AdminDashboard = () => {
                               <XCircle className="w-4 h-4 mr-2" />
                               {t('admin.reject')}
                             </Button>
-                            <Button size="sm" variant="outline" onClick={() => handleViewDetails(request)}>
-                              <Eye className="w-4 h-4 mr-2" />
-                              {t('admin.viewDetails')}
-                            </Button>
+                            <button
+                              className="mt-3 px-4 py-1 rounded border border-blue-500 text-blue-600 hover:bg-blue-50 text-xs font-medium transition"
+                              onClick={() => handleViewDetails(request)}
+                            >
+                              <Eye className="w-4 h-4 inline mr-1" /> {t('admin.viewDetails', 'ดูรายละเอียด')}
+                            </button>
                           </div>
                         </div>
                       ))}
