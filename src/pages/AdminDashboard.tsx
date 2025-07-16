@@ -590,14 +590,14 @@ const AdminDashboard = () => {
                                 </div>
                                 {/* ชื่อ admin ที่อนุมัติ/ไม่อนุมัติ */}
                                 {request.status === "approved" && request.approvedBy && (
-                                  <div className="flex flex-col gap-0.5 text-xs text-green-700 mt-1">
-                                    <span className="font-semibold">{t('admin.approvedBy', 'โดย')}:</span>
+                                  <div className="flex items-center gap-1 text-xs text-green-700 mt-1">
+                                    <span className="font-semibold">{t('admin.by')}</span>
                                     <span>{request.approvedBy}</span>
                                   </div>
                                 )}
                                 {request.status === "rejected" && request.rejectedBy && (
-                                  <div className="flex flex-col gap-0.5 text-xs text-red-700 mt-1">
-                                    <span className="font-semibold">{t('admin.rejectedBy', 'โดย')}:</span>
+                                  <div className="flex items-center gap-1 text-xs text-red-700 mt-1">
+                                    <span className="font-semibold">{t('admin.by')}</span>
                                     <span>{request.rejectedBy}</span>
                                   </div>
                                 )}
@@ -606,7 +606,7 @@ const AdminDashboard = () => {
                                   <div className="flex items-start gap-2 text-xs text-red-500 mt-2">
                                     <FileText className="w-4 h-4 mt-0.5" />
                                     <div>
-                                      <span className="font-semibold">{t('leave.rejectionReason', 'เหตุผลที่ไม่อนุมัติ')}:</span>
+                                      <span className="font-semibold">{t('leave.rejectionReason')}:</span>
                                       <span className="ml-1">{request.rejectionReason}</span>
                                     </div>
                                   </div>

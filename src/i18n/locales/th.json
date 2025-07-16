@@ -283,7 +283,8 @@
     "rejectedWhen": "ไม่อนุมัติเมื่อ:",
     "rejected": "ไม่อนุมัติแล้ว",
     "noApprovalHistory": "ไม่มีประวัติการอนุมัติ/ไม่อนุมัติ",
-    "allapproved": "อนุมัติทั้งหมด"
+    "allapproved": "อนุมัติทั้งหมด",
+    "by": "โดย"
   },
   "system": {
     "onlineLeaveSystem": "ระบบลาออนไลน์",
@@ -316,10 +317,6 @@
     "submittedDate": "วันที่ส่งคำขอ"
   },
   "employee": {
-    "name": "ชื่อ",
-    "phone": "เบอร์โทรศัพท์"
-  },
-  "employee": {
     "details": "รายละเอียดพนักงาน",
     "personalInfo": "ข้อมูลส่วนตัวพนักงาน",
     "personalInfoDesc": "ดูและจัดการข้อมูลส่วนตัวของพนักงาน",
@@ -344,7 +341,8 @@
     "leaveHistoryDesc": "ประวัติการลาของพนักงาน",
     "noPassword": "ยังไม่ได้ตั้งรหัสผ่าน",
     "setNewPassword": "ตั้งรหัสผ่านใหม่",
-    "name": "ชื่อ"
+    "name": "ชื่อ",
+    "phone": "เบอร์โทรศัพท์"
   },
   "notification": {
     "title": "การแจ้งเตือน",

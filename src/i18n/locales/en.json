@@ -282,7 +282,8 @@
     "rejectedWhen": "Rejected on:",
     "rejected": "Rejected",
     "noApprovalHistory": "No approval/rejection history",
-    "allapproved": "All approved"
+    "allapproved": "All approved",
+    "by": "by"
   },
   "system": {
     "onlineLeaveSystem": "Online Leave System",
