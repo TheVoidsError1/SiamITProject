@@ -29,6 +29,35 @@ const LeaveHistory = () => {
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   // --- เพิ่ม state สำหรับ items per page ---
   const [limit, setLimit] = useState(6);
+  const [filterLeaveType, setFilterLeaveType] = useState('');
+  // --- เพิ่ม state สำหรับ leave types dropdown ---
+  const [leaveTypes, setLeaveTypes] = useState<{ id: string; leave_type: string }[]>([]);
+  const [leaveTypesLoading, setLeaveTypesLoading] = useState(false);
+  const [leaveTypesError, setLeaveTypesError] = useState<string | null>(null);
+
+  // Fetch leave types from backend
+  useEffect(() => {
+    const fetchLeaveTypes = async () => {
+      setLeaveTypesLoading(true);
+      setLeaveTypesError(null);
+      try {
+        const res = await fetch('/api/leave-types');
+        const data = await res.json();
+        if (data.success) {
+          setLeaveTypes(data.data);
+        } else {
+          setLeaveTypes([]);
+          setLeaveTypesError(data.message || 'Failed to fetch leave types');
+        }
+      } catch (err: any) {
+        setLeaveTypes([]);
+        setLeaveTypesError(err.message || 'Failed to fetch leave types');
+      } finally {
+        setLeaveTypesLoading(false);
+      }
+    };
+    fetchLeaveTypes();
+  }, []);
 
   useEffect(() => {
     const fetchLeaveHistory = async () => {
@@ -37,8 +66,9 @@ const LeaveHistory = () => {
       try {
         const token = localStorage.getItem('token');
         if (!token) throw new Error('No token found, please login');
-        // --- ส่ง page, limit, month, year ไป backend ---
+        // --- ส่ง page, limit, month, year, leaveType ไป backend ---
         let url = `/api/leave-history?page=${page}&limit=${limit}`;
+        if (filterLeaveType) url += `&leaveType=${filterLeaveType}`;
         if (filterMonth) url += `&month=${filterMonth}`;
         if (filterYear) url += `&year=${filterYear}`;
         const res = await fetch(url, {
@@ -59,7 +89,7 @@ const LeaveHistory = () => {
       }
     };
     fetchLeaveHistory();
-  }, [page, filterMonth, filterYear, limit]);
+  }, [page, filterMonth, filterYear, limit, filterLeaveType]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -241,6 +271,25 @@ const LeaveHistory = () => {
 
           {/* Leave History List */}
           <div className="flex flex-wrap gap-4 items-center mb-6">
+            <label className="text-sm font-medium">{t('leave.type')}</label>
+            {leaveTypesLoading ? (
+              <span className="text-gray-500 text-sm">{t('common.loading')}</span>
+            ) : leaveTypesError ? (
+              <span className="text-red-500 text-sm">{leaveTypesError}</span>
+            ) : (
+              <select
+                className="border rounded px-2 py-1"
+                value={filterLeaveType}
+                onChange={e => { setFilterLeaveType(e.target.value); setPage(1); }}
+              >
+                <option value="">{t('leave.allTypes')}</option>
+                {leaveTypes.map((lt) => (
+                  <option key={lt.id} value={lt.id}>
+                    {t(`leaveTypes.${lt.leave_type}`, lt.leave_type)}
+                  </option>
+                ))}
+              </select>
+            )}
             <label className="text-sm font-medium">{t('history.filterByMonthYear')}</label>
             <select
               className="border rounded px-2 py-1"

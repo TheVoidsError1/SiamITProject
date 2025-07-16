@@ -70,6 +70,7 @@ const AdminDashboard = () => {
   const [filterYear, setFilterYear] = useState<number | ''>('');
   // --- เพิ่ม state สำหรับ items per page ---
   const [historyLimit, setHistoryLimit] = useState(5);
+  const [pendingLimit, setPendingLimit] = useState(4);
 
   // ปรับการคำนวณสถิติให้ใช้ข้อมูลจาก leave request ที่ดึงมา
   const pendingCount = pendingRequests.length;
@@ -291,7 +292,7 @@ const AdminDashboard = () => {
       try {
         const token = localStorage.getItem('token');
         // --- ส่ง page, limit ไป backend ---
-        const res = await fetch(`http://localhost:3001/api/leave-request/pending?page=${pendingPage}&limit=4`, {
+        const res = await fetch(`http://localhost:3001/api/leave-request/pending?page=${pendingPage}&limit=${pendingLimit}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
@@ -312,7 +313,7 @@ const AdminDashboard = () => {
       }
     };
     fetchPending();
-  }, [t, pendingPage]);
+  }, [t, pendingPage, pendingLimit]);
 
   useEffect(() => {
     fetchHistoryRequests();
@@ -516,18 +517,51 @@ const AdminDashboard = () => {
                         </div>
                       ))}
                       {/* --- ปุ่มเปลี่ยนหน้า --- */}
-                      {pendingTotalPages > 1 && (
-                        <div className="flex justify-center mt-6 gap-2">
-                          {Array.from({ length: pendingTotalPages }, (_, i) => (
-                            <button
-                              key={i}
-                              onClick={() => setPendingPage(i + 1)}
-                              className={`px-3 py-1 rounded border ${pendingPage === i + 1 ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`}
-                              disabled={pendingPage === i + 1}
-                            >
-                              {i + 1}
-                            </button>
-                          ))}
+                      {(
+                        <div className="flex flex-wrap justify-center mt-6 gap-2 items-center">
+                          {/* --- Pagination with ellipsis --- */}
+                          {(() => {
+                            const pages = [];
+                            const maxPageButtons = 5;
+                            let start = Math.max(1, pendingPage - 2);
+                            let end = Math.min(pendingTotalPages, start + maxPageButtons - 1);
+                            if (end - start < maxPageButtons - 1) {
+                              start = Math.max(1, end - maxPageButtons + 1);
+                            }
+                            if (start > 1) {
+                              pages.push(
+                                <button key={1} onClick={() => setPendingPage(1)} className={`px-3 py-1 rounded border ${pendingPage === 1 ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`}>1</button>
+                              );
+                              if (start > 2) pages.push(<span key="start-ellipsis">...</span>);
+                            }
+                            for (let i = start; i <= end; i++) {
+                              pages.push(
+                                <button key={i} onClick={() => setPendingPage(i)} className={`px-3 py-1 rounded border ${pendingPage === i ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`} disabled={pendingPage === i}>{i}</button>
+                              );
+                            }
+                            if (end < pendingTotalPages) {
+                              if (end < pendingTotalPages - 1) pages.push(<span key="end-ellipsis">...</span>);
+                              pages.push(
+                                <button key={pendingTotalPages} onClick={() => setPendingPage(pendingTotalPages)} className={`px-3 py-1 rounded border ${pendingPage === pendingTotalPages ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`}>{pendingTotalPages}</button>
+                              );
+                            }
+                            return pages;
+                          })()}
+                          {/* --- Items per page select --- */}
+                          <select
+                            className="ml-4 border rounded px-2 py-1 text-sm"
+                            value={pendingLimit}
+                            onChange={e => {
+                              setPendingLimit(Number(e.target.value));
+                              setPendingPage(1);
+                            }}
+                          >
+                            {[5, 10, 20, 50].map(n => (
+                              <option key={n} value={n}>{n}</option>
+                            ))}
+                          </select>
+                          <span className="ml-2 text-sm text-gray-500">{t('admin.itemsPerPage')}</span>
+                          <span className="ml-2 text-sm text-gray-500">{t('admin.pageInfo', { page: pendingPage, totalPages: pendingTotalPages })}</span>
                         </div>
                       )}
                     </div>

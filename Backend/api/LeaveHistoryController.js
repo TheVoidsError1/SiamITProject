@@ -30,6 +30,7 @@ module.exports = (AppDataSource) => {
       // --- เพิ่ม filter เดือนและปี ---
       const month = req.query.month ? parseInt(req.query.month) : null;
       const year = req.query.year ? parseInt(req.query.year) : null;
+      const leaveType = req.query.leaveType || null;
       
       // ดึง leave request ของ user (paging) พร้อม filter เดือน/ปี (ใช้ createdAt)
       let where = { Repid: userId };
@@ -49,6 +50,9 @@ module.exports = (AppDataSource) => {
           ...where,
           createdAt: Between(startOfYear, endOfYear)
         };
+      }
+      if (leaveType) {
+        where = { ...where, leaveType };
       }
 
       // ดึง leave request ของ user (paging)

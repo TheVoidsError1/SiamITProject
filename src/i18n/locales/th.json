@@ -155,6 +155,7 @@
     "noHourlyLeave": "ไม่มีการลาเป็น ชม.",
     "required": "กรุณากรอกข้อมูลให้ครบถ้วน",
     "attachmentLabel": "แนบหลักฐาน",
+    "allTypes": "ทั้งหมด",
     "attachmentHint": "(ใบรับรองแพทย์, เอกสารรับรอง ฯลฯ)"
   },
   "leaveTypes": {
