@@ -65,6 +65,9 @@ const Index = () => {
   const [filteredDaysUsed, setFilteredDaysUsed] = useState<number>(0);
   // เพิ่ม state สำหรับ hours used จาก filter
   const [filteredHoursUsed, setFilteredHoursUsed] = useState<number>(0);
+  // เพิ่ม state สำหรับ totalDays/totalHours จาก recent leave stats
+  const [recentTotalDays, setRecentTotalDays] = useState<number>(0);
+  const [recentTotalHours, setRecentTotalHours] = useState<number>(0);
 
   const showSessionExpiredToast = () => {
     toast({
@@ -115,11 +118,15 @@ const Index = () => {
       .finally(() => setLoadingStats(false));
   };
 
+  // ปรับ useEffect ดึง /dashboard-recent-leave-stats ให้ส่ง month/year ไปกับ API
   useEffect(() => {
     setLoadingRecentStats(true);
     setErrorRecentStats("");
     const token = localStorage.getItem("token");
-    fetchWithAuth("/api/dashboard-recent-leave-stats", {
+    let url = `/api/dashboard-recent-leave-stats`;
+    if (selectedMonth && selectedYear) url += `?month=${selectedMonth}&year=${selectedYear}`;
+    else if (selectedYear) url += `?year=${selectedYear}`;
+    fetchWithAuth(url, {
       headers: {
         Authorization: token ? `Bearer ${token}` : undefined,
       },
@@ -127,14 +134,16 @@ const Index = () => {
       .then((res) => res && res.json())
       .then((data) => {
         if (data.status === "success" && data.data) {
-          setRecentLeaveStats(data.data);
+          setRecentLeaveStats(data.data.leaveTypeStats || {});
+          setRecentTotalDays(data.data.totalDays || 0);
+          setRecentTotalHours(data.data.totalHours || 0);
         } else {
           setErrorRecentStats(t('error.cannotLoadStats'));
         }
       })
       .catch(() => setErrorRecentStats(t('error.apiConnectionError')))
       .finally(() => setLoadingRecentStats(false));
-  }, [t, logout]);
+  }, [selectedMonth, selectedYear, t, logout]);
 
   useEffect(() => {
     setLoadingDaysRemaining(true);
@@ -305,17 +314,17 @@ const Index = () => {
             <CardContent>
               <div className="space-y-0.5">
                 <p className="text-2xl font-bold">
-                  {loadingStats ? (
+                  {loadingRecentStats ? (
                     <span>{t('common.loading')}</span>
-                  ) : errorStats ? (
-                    <span className="text-red-500">{errorStats}</span>
+                  ) : errorRecentStats ? (
+                    <span className="text-red-500">{errorRecentStats}</span>
                   ) : (
                     <>
-                      <span className="font-bold">{filteredDaysUsed}</span>
+                      <span className="font-bold">{recentTotalDays}</span>
                       <span className="text-base font-normal text-muted-foreground ml-1">{t('common.days')}</span>
-                      {filteredHoursUsed > 0 && (
+                      {recentTotalHours > 0 && (
                         <>
-                          <span className="font-bold ml-2">{filteredHoursUsed}</span>
+                          <span className="font-bold ml-2">{recentTotalHours}</span>
                           <span className="text-base font-normal text-muted-foreground ml-1">{t('common.hour')}</span>
                         </>
                       )}
@@ -390,6 +399,7 @@ const Index = () => {
             </CardContent>
           </Card>
 
+          {/* ปรับ Recent Leave Statistics ให้แสดง leaveType ทุกประเภท */}
           <Card className="border-0 shadow-md p-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg font-bold">
@@ -407,28 +417,30 @@ const Index = () => {
                 <div className="text-center py-3 text-red-500 text-base">{errorRecentStats}</div>
               ) : (
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-base">{t('leaveTypes.sick')}</span>
-                    <span className="font-medium text-base">
-                      {recentLeaveStats.sick.days} {t('common.days')}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-base">{t('leaveTypes.vacation')}</span>
-                    <span className="font-medium text-base">
-                      {recentLeaveStats.vacation.days} {t('common.days')}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-base">{t('leaveTypes.personal')}</span>
+                  {Object.entries(recentLeaveStats).map(([type, stat]) => (
+                    <div className="flex justify-between items-center" key={type}>
+                      <span className="text-base">{type}</span>
+                      <span className="font-medium text-base">
+                        {(() => {
+                          const d = stat.days;
+                          const h = stat.hours;
+                          const hourLabel = t('common.hour', 'ชั่วโมง');
+                          if (d > 0 && h > 0) return `${d} ${t('common.days')} ${h} ${hourLabel}`;
+                          if (d > 0) return `${d} ${t('common.days')}`;
+                          if (h > 0) return `${h} ${hourLabel}`;
+                          return `0 ${t('common.days')}`;
+                        })()}
+                      </span>
+                    </div>
+                  ))}
+                  {/* รวมวันและชั่วโมงทั้งหมด */}
+                  <div className="flex justify-between items-center font-bold border-t pt-2 mt-2">
+                    <span className="text-base">{t('common.total', 'รวม')}</span>
                     <span className="font-medium text-base">
                       {(() => {
-                        const d = recentLeaveStats.personal.days;
-                        const h = recentLeaveStats.personal.hours;
-                        const hourLabel = t('common.hour', 'ชั่วโมง');
-                        if (d > 0 && h > 0) return `${d} ${t('common.days')} ${h} ${hourLabel}`;
-                        if (d > 0) return `${d} ${t('common.days')}`;
-                        if (h > 0) return `${h} ${hourLabel}`;
+                        if (recentTotalDays > 0 && recentTotalHours > 0) return `${recentTotalDays} ${t('common.days')} ${recentTotalHours} ${t('common.hour', 'ชั่วโมง')}`;
+                        if (recentTotalDays > 0) return `${recentTotalDays} ${t('common.days')}`;
+                        if (recentTotalHours > 0) return `${recentTotalHours} ${t('common.hour', 'ชั่วโมง')}`;
                         return `0 ${t('common.days')}`;
                       })()}
                     </span>
