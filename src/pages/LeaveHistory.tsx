@@ -418,7 +418,7 @@ const LeaveHistory = () => {
                   <div className="space-y-2">
                     <Label>{t('history.monthYear', 'เดือน/ปี')}</Label>
                     <div className="flex gap-2">
-                      <Select value={filterMonth ? filterMonth.toString() : "all"} onValueChange={v => setFilterMonth(v === "all" ? '' : Number(v))}>
+                      <Select value={filterMonth ? filterMonth.toString() : "all"} onValueChange={v => setFilterMonth(v === "all" ? '' : Number(v))} disabled={!!singleDate}>
                         <SelectTrigger className="w-20">
                           <SelectValue placeholder={t('history.month', 'เดือน')} />
                         </SelectTrigger>
@@ -429,7 +429,7 @@ const LeaveHistory = () => {
                           ))}
                         </SelectContent>
                       </Select>
-                      <Select value={filterYear ? filterYear.toString() : "all"} onValueChange={v => setFilterYear(v === "all" ? '' : Number(v))}>
+                      <Select value={filterYear ? filterYear.toString() : "all"} onValueChange={v => setFilterYear(v === "all" ? '' : Number(v))} disabled={!!singleDate}>
                         <SelectTrigger className="w-20">
                           <SelectValue placeholder={t('history.year', 'ปี')} />
                         </SelectTrigger>
