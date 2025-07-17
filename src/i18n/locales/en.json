@@ -341,7 +341,7 @@
     "intern": "Intern",
     "email": "Email",
     "password": "Password",
-    "usedLeaveDays": "Used leave days:",
+    "usedLeaveDays": "Used leave days",
     "noPassword": "Not set",
     "leaveHistoryDesc": "Employee leave history",
     "name": "name"
