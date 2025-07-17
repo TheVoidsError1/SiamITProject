@@ -519,14 +519,29 @@ const EmployeeDetail = () => {
                   className="bg-blue-500 hover:bg-blue-600 text-white"
                 >{t('common.confirm') || 'ยืนยัน'}</Button>
               </div>
-              {employee && typeof employee.usedLeaveDays === 'number' && (
+              {filteredLeaveHistory && filteredLeaveHistory.length > 0 && (
                 <div className="text-sm font-medium">
                   <span className={
-                    employee.totalLeaveDays && employee.usedLeaveDays > employee.totalLeaveDays * 0.8
-                      ? 'text-red-600'
-                      : 'text-green-600'
+                    (() => {
+                      const approved = filteredLeaveHistory.filter(l => l.status === 'approved');
+                      const days = approved.filter(l => l.durationType === 'day').reduce((sum, l) => sum + (parseInt(l.duration) || 0), 0);
+                      const hours = approved.filter(l => l.durationType === 'hour').reduce((sum, l) => sum + (parseInt(l.duration) || 0), 0);
+                      const total = employee?.totalLeaveDays || 0;
+                      return total && days > total * 0.8 ? 'text-red-600' : 'text-green-600';
+                    })()
                   }>
-                    วันลาที่ใช้ไปแล้ว: {employee.usedLeaveDays} วัน
+                    {
+                      (() => {
+                        const approved = filteredLeaveHistory.filter(l => l.status === 'approved');
+                        const days = approved.filter(l => l.durationType === 'day').reduce((sum, l) => sum + (parseInt(l.duration) || 0), 0);
+                        const hours = approved.filter(l => l.durationType === 'hour').reduce((sum, l) => sum + (parseInt(l.duration) || 0), 0);
+                        let text = 'วันลาที่ใช้ไปแล้ว:';
+                        if (days > 0) text += ` ${days} วัน`;
+                        if (hours > 0) text += ` ${hours} ชั่วโมง`;
+                        if (days === 0 && hours === 0) text += ' 0 วัน';
+                        return text;
+                      })()
+                    }
                   </span>
                 </div>
               )}
@@ -558,7 +573,13 @@ const EmployeeDetail = () => {
                             : '-'
                       }</TableCell>
                       <TableCell className="whitespace-nowrap">{leave.leaveDate}</TableCell>
-                      <TableCell>{leave.durationType === 'hour' ? parseInt(leave.duration) : leave.duration} {leave.durationType === 'hour' ? t('leave.durationHour') : leave.durationType === 'day' ? t('leave.durationDay') : ''}</TableCell>
+                      <TableCell>{
+                        leave.durationType === 'hour'
+                          ? `${parseInt(leave.duration)} ชั่วโมง`
+                          : leave.durationType === 'day'
+                            ? `${leave.duration} วัน`
+                            : ''
+                      }</TableCell>
                       <TableCell className="max-w-[100px] truncate">{leave.reason}</TableCell>
                       <TableCell>
                         <Badge
