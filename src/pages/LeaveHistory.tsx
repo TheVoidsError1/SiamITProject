@@ -37,7 +37,7 @@ const LeaveHistory = () => {
   const [limit, setLimit] = useState(5);
   const [filterLeaveType, setFilterLeaveType] = useState('');
   // --- เพิ่ม state สำหรับ leave types dropdown ---
-  const [leaveTypes, setLeaveTypes] = useState<{ id: string; leave_type: string }[]>([]);
+  const [leaveTypes, setLeaveTypes] = useState<{ id: string; leave_type: string; leave_type_th: string; leave_type_en: string }[]>([]);
   const [leaveTypesLoading, setLeaveTypesLoading] = useState(false);
   const [leaveTypesError, setLeaveTypesError] = useState<string | null>(null);
 
@@ -261,6 +261,13 @@ const LeaveHistory = () => {
   const currentYear = new Date().getFullYear();
   const allYears = Array.from({ length: 10 }, (_, i) => currentYear - 5 + i);
 
+  // เพิ่มฟังก์ชันนี้ด้านบน component
+  const getLeaveTypeLabel = (typeId: string) => {
+    const found = leaveTypes.find(lt => lt.id === typeId || lt.leave_type === typeId);
+    if (!found) return typeId;
+    return i18n.language.startsWith('th') ? found.leave_type_th : found.leave_type_en;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="border-b bg-white/80 backdrop-blur-sm">
@@ -390,7 +397,7 @@ const LeaveHistory = () => {
                         <SelectItem value="all">{t('leave.allTypes', 'ทั้งหมด')}</SelectItem>
                         {leaveTypes.map((lt) => (
                           <SelectItem key={lt.id} value={lt.id}>
-                            {t(`leaveTypes.${lt.leave_type}`, lt.leave_type)}
+                            {i18n.language.startsWith('th') ? lt.leave_type_th : lt.leave_type_en}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -488,7 +495,7 @@ const LeaveHistory = () => {
                     <CardHeader className="pb-3 border-b border-gray-100 mb-2 bg-white/0 rounded-t-xl">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className={`text-lg font-bold ${getTypeColor(leave.type)}`}>{translateLeaveType(leave.type)}</div>
+                          <div className={`text-lg font-bold ${getTypeColor(leave.type)}`}>{getLeaveTypeLabel(leave.type)}</div>
                           {getStatusBadge(leave.status)}
                         </div>
                         <div className="text-sm text-gray-400 font-medium">
@@ -651,7 +658,7 @@ const LeaveHistory = () => {
             <DialogDescription>
               {selectedLeave && (
                 <div className="space-y-2 text-gray-700">
-                  <div><b>{t('leave.type')}:</b> {translateLeaveType(selectedLeave.type)}</div>
+                  <div><b>{t('leave.type')}:</b> {getLeaveTypeLabel(selectedLeave.type)}</div>
                   <div><b>{t('leave.status')}:</b> {getStatusBadge(selectedLeave.status)}</div>
                   <div><b>{t('leave.startDate')}:</b> {formatDateLocalized(selectedLeave.startDate)}</div>
                   <div><b>{t('leave.endDate')}:</b> {formatDateLocalized(selectedLeave.endDate)}</div>

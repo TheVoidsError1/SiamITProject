@@ -200,7 +200,7 @@ module.exports = (AppDataSource) => {
    */
   router.get('/admins', async (req, res) => {
     try {
-      const adminRepo = AppDataSource.getRepository('admin');
+      const adminRepo = AppDataSource.getRepository('Admin');
       const admins = await adminRepo.find();
       res.json({ success: true, data: admins, message: 'ดึงข้อมูล admin สำเร็จ' });
     } catch (err) {
@@ -253,7 +253,7 @@ module.exports = (AppDataSource) => {
   router.post('/admins/register', async (req, res) => {
     try {
       const { email, password, admin_name, department, position } = req.body;
-      const adminRepo = AppDataSource.getRepository('admin');
+      const adminRepo = AppDataSource.getRepository('Admin');
       const processRepo = AppDataSource.getRepository('ProcessCheck');
 
       // ตรวจสอบ email ซ้ำ
@@ -346,7 +346,7 @@ module.exports = (AppDataSource) => {
    */
   router.delete('/admins/:id', async (req, res) => {
     try {
-      const adminRepo = AppDataSource.getRepository('admin');
+      const adminRepo = AppDataSource.getRepository('Admin');
       const result = await adminRepo.delete(req.params.id);
       if (result.affected === 0) {
         return res.status(404).json({ success: false, data: null, message: 'Admin not found' });

@@ -9,7 +9,11 @@ interface User {
   avatar_url?: string;
   role?: 'employee' | 'admin' | 'superadmin';
   department?: string;
+  department_name_th?: string;
+  department_name_en?: string;
   position?: string;
+  position_name_th?: string;
+  position_name_en?: string;
 }
 
 interface AuthContextType {

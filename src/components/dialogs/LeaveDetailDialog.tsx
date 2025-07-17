@@ -9,7 +9,7 @@ interface LeaveRequest {
   id: string;
   type?: string;
   leaveTypeName?: string;
-  user?: { User_name?: string; department?: string; position?: string };
+  user?: { User_name?: string; department?: string; position?: string; department_name_th?: string; position_name_th?: string };
   startDate: string;
   endDate: string;
   days?: number;

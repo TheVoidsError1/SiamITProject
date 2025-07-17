@@ -98,12 +98,14 @@ module.exports = (AppDataSource) => {
 
       // join leaveType, admin (approver/rejector)
       const result = await Promise.all(leaves.map(async (leave) => {
-        let leaveTypeName = null;
+        let leaveTypeName_th = null;
+        let leaveTypeName_en = null;
         let approvedBy = null;
         let rejectedBy = null;
         if (leave.leaveType) {
           const leaveType = await leaveTypeRepo.findOneBy({ id: leave.leaveType });
-          leaveTypeName = leaveType ? leaveType.leave_type : leave.leaveType;
+          leaveTypeName_th = leaveType ? leaveType.leave_type_th : leave.leaveType;
+          leaveTypeName_en = leaveType ? leaveType.leave_type_en : leave.leaveType;
         }
         if (leave.statusBy && leave.status === 'approved') {
           const admin = await adminRepo.findOneBy({ id: leave.statusBy });
@@ -115,7 +117,9 @@ module.exports = (AppDataSource) => {
         }
         return {
           id: leave.id,
-          type: leaveTypeName,
+          type: leave.leaveType, // id
+          leaveTypeName_th,
+          leaveTypeName_en,
           startDate: leave.startDate,
           endDate: leave.endDate,
           startTime: leave.startTime, // เพิ่มบรรทัดนี้

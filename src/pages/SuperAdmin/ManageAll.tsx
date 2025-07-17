@@ -50,7 +50,12 @@ const ManageAll: React.FC = () => {
       .then(res => res.json())
       .then(data => {
         if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
-          setDepartments(data.data);
+          // รองรับทั้งกรณีที่ backend ส่ง array ของ string หรือ object
+          setDepartments(data.data.map((d: any) =>
+            typeof d === 'string'
+              ? { department_name_th: d, department_name_en: d, id: d }
+              : d
+          ));
         }
       });
   };
@@ -75,7 +80,7 @@ const ManageAll: React.FC = () => {
   const handleEditDepartment = (id: string) => {
     const dep = departments.find(dep => dep.id === id);
     if (dep) {
-      setDepartmentForm({ name_en: dep.name_en, name_th: dep.name_th });
+      setDepartmentForm({ name_en: dep.department_name_en, name_th: dep.department_name_th });
       setEditingDepartmentId(id);
     }
   };
@@ -118,7 +123,7 @@ const ManageAll: React.FC = () => {
   const handleEditLeaveType = (id: string) => {
     const lt = leaveTypes.find(lt => lt.id === id);
     if (lt) {
-      setLeaveTypeForm({ name_en: lt.name_en, name_th: lt.name_th });
+      setLeaveTypeForm({ name_en: lt.leave_type_en, name_th: lt.leave_type_th });
       setEditingLeaveTypeId(id);
     }
   };
@@ -248,7 +253,11 @@ const ManageAll: React.FC = () => {
       .then(res => res.json())
       .then(data => {
         if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
-          setLeaveTypes(data.data);
+          setLeaveTypes(data.data.map((lt: any) => ({
+            ...lt,
+            leave_type_en: lt.leave_type_en || lt.leave_type,
+            leave_type_th: lt.leave_type_th || lt.leave_type
+          })));
         }
       });
   }, []);
@@ -283,7 +292,6 @@ const ManageAll: React.FC = () => {
             quotasForBackend[lt.id] = positionForm.quotas[lt.id];
           }
         });
-        console.log('Submitting quotasForBackend:', quotasForBackend);
         const res = await fetch('http://localhost:3001/api/positions-with-quotas', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

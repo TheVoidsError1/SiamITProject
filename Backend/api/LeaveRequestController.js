@@ -79,8 +79,9 @@
          // --- Validation: quota ---
          // 1. ดึง quota ของ user
          const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
-         const quota = await leaveQuotaRepo.findOneBy({ positionId: employeeType });
-         if (!quota) {
+         // ดึง quota ของตำแหน่งนี้ (แบบใหม่)
+         const quotas = await leaveQuotaRepo.find({ where: { positionId: employeeType } });
+         if (!quotas || quotas.length === 0) {
            return res.status(400).json({ status: 'error', message: 'ไม่พบโควต้าการลาสำหรับตำแหน่งนี้' });
          }
          // 2. คำนวณ leave ที่ใช้ไปในปีนี้ (approved)
@@ -115,8 +116,8 @@
            let leaveTypeName = lr.leaveType;
            if (leaveTypeName && leaveTypeName.length > 20) {
              const leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
-             if (leaveTypeEntity && leaveTypeEntity.leave_type) {
-               leaveTypeName = leaveTypeEntity.leave_type;
+             if (leaveTypeEntity && leaveTypeEntity.leave_type_th) {
+               leaveTypeName = leaveTypeEntity.leave_type_th;
              }
            }
            const leaveTypeNorm = normalizeType(leaveTypeName);
@@ -172,7 +173,7 @@
            }
          }
          // 5. quota (ชั่วโมง)
-         const totalQuotaHours = ((quota.sick || 0) + (quota.vacation || 0) + (quota.personal || 0)) * 9;
+         const totalQuotaHours = ((quotas[0].sick || 0) + (quotas[0].vacation || 0) + (quotas[0].personal || 0)) * 9;
          // 6. ถ้า used + request > quota => reject
          if (usedHours + requestHours > totalQuotaHours) {
            return res.status(400).json({
@@ -360,13 +361,18 @@
                user = { User_name: user.User_name, department: user.department, position: user.position };
              }
            }
+           let leaveTypeName_th = null;
+           let leaveTypeName_en = null;
            if (leave.leaveType) {
              leaveTypeObj = await leaveTypeRepo.findOneBy({ id: leave.leaveType });
+             leaveTypeName_th = leaveTypeObj ? leaveTypeObj.leave_type_th : leave.leaveType;
+             leaveTypeName_en = leaveTypeObj ? leaveTypeObj.leave_type_en : leave.leaveType;
            }
            return {
              ...leave,
              user: user ? { User_name: user.User_name, department: user.department, position: user.position } : null,
-             leaveTypeName: leaveTypeObj ? leaveTypeObj.leave_type : leave.leaveType,
+             leaveTypeName_th,
+             leaveTypeName_en,
              attachments: parseAttachments(leave.attachments),
            };
          }));
@@ -554,7 +560,7 @@
            }
            return {
              id: leave.id,
-             leaveTypeName: leaveTypeObj ? leaveTypeObj.leave_type : leave.leaveType,
+             leaveTypeName: leaveTypeObj ? leaveTypeObj.leave_type_th : leave.leaveType,
              leaveDate: leave.startDate,
              startDate: leave.startDate,
              endDate: leave.endDate,
@@ -671,7 +677,7 @@
            let leaveTypeName = l.leaveType;
            if (l.leaveType) {
              const leaveTypeObj = await leaveTypeRepo.findOneBy({ id: l.leaveType });
-             if (leaveTypeObj) leaveTypeName = leaveTypeObj.leave_type;
+             if (leaveTypeObj) leaveTypeName = leaveTypeObj.leave_type_th;
            }
            // Calculate duration
            let duration = '';
@@ -771,7 +777,7 @@
            }
            return {
              id: leave.id,
-             leaveTypeName: leaveTypeObj ? leaveTypeObj.leave_type : leave.leaveType,
+             leaveTypeName: leaveTypeObj ? leaveTypeObj.leave_type_th : leave.leaveType,
              leaveDate: leave.startDate,
              startDate: leave.startDate,
              endDate: leave.endDate,
@@ -835,7 +841,7 @@
            data: {
              ...leave,
              user: user ? { User_name: user.User_name, department: user.department, position: user.position } : null,
-             leaveTypeName: leaveTypeObj ? leaveTypeObj.leave_type : leave.leaveType,
+             leaveTypeName: leaveTypeObj ? leaveTypeObj.leave_type_th : leave.leaveType,
              attachments: parseAttachments(leave.attachments),
            }
          });
@@ -885,7 +891,7 @@
          let leaveTypeName = leave.leaveType;
          if (leave.leaveType) {
            const leaveTypeObj = await leaveTypeRepo.findOneBy({ id: leave.leaveType });
-           if (leaveTypeObj && leaveTypeObj.leave_type) leaveTypeName = leaveTypeObj.leave_type;
+           if (leaveTypeObj && leaveTypeObj.leave_type_th) leaveTypeName = leaveTypeObj.leave_type_th;
          }
 
          // Format submittedDate as DD/MM/YYYY
@@ -960,7 +966,7 @@
                const processCheck = await processRepo.findOneBy({ Repid: decoded.userId });
                if (processCheck) {
                  // หาใน admin table
-                 const adminRepo = AppDataSource.getRepository('admin');
+                 const adminRepo = AppDataSource.getRepository('Admin');
                  const admin = await adminRepo.findOneBy({ id: decoded.userId });
                  if (admin) {
                    approverName = admin.admin_name;

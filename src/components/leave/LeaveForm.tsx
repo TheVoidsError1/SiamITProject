@@ -63,9 +63,9 @@ export const LeaveForm = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
-  const [departments, setDepartments] = useState<{ id: number; department_name: string }[]>([]);
-  const [leaveTypes, setLeaveTypes] = useState<{ id: string; leave_type: string }[]>([]);
-  const [positions, setPositions] = useState<{ id: string; position_name: string }[]>([]);
+  const [departments, setDepartments] = useState<{ id: number; department_name_th: string; department_name_en: string }[]>([]);
+  const [leaveTypes, setLeaveTypes] = useState<{ id: string; leave_type_th: string; leave_type_en: string }[]>([]);
+  const [positions, setPositions] = useState<{ id: string; position_name_th: string; position_name_en: string }[]>([]);
   const [admins, setAdmins] = useState<{ id: string; admin_name: string }[]>([]);
   const { user } = useAuth();
   const [timeError, setTimeError] = useState("");
@@ -420,7 +420,7 @@ export const LeaveForm = () => {
     // สมมุติว่า leave_type ในฐานข้อมูลเป็นภาษาอังกฤษ (sick, emergency, maternity)
     const selected = leaveTypes.find(type => type.id === leaveType);
     if (!selected) return false;
-    const name = selected.leave_type?.toLowerCase();
+    const name = selected.leave_type_en?.toLowerCase();
     return name === 'sick' || name === 'emergency' || name === 'maternity';
   })();
   const hasTimeOption = false; // ปิดฟีเจอร์เลือกเวลาแบบ dynamic ชั่วคราว
@@ -428,7 +428,7 @@ export const LeaveForm = () => {
   const isPersonalLeave = (() => {
     const selected = leaveTypes.find(type => type.id === leaveType);
     if (!selected) return false;
-    return selected.leave_type?.toLowerCase() === 'personal';
+    return selected.leave_type_en?.toLowerCase() === 'personal';
   })();
   const isHourlyLeave = personalLeaveType === "hour";
 
@@ -471,7 +471,7 @@ export const LeaveForm = () => {
           <SelectContent>
             {leaveTypes.map((type) => (
               <SelectItem key={type.id} value={type.id}>
-                {t(`leaveTypes.${type.leave_type}`, type.leave_type)}
+                {i18n.language.startsWith('th') ? type.leave_type_th : type.leave_type_en}
               </SelectItem>
             ))}
           </SelectContent>

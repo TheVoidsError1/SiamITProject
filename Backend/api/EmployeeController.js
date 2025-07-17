@@ -41,7 +41,7 @@ module.exports = (AppDataSource) => {
   router.get('/employees', async (req, res) => {
     try {
       const processRepo = AppDataSource.getRepository('ProcessCheck');
-      const adminRepo = AppDataSource.getRepository('admin');
+      const adminRepo = AppDataSource.getRepository('Admin');
       const userRepo = AppDataSource.getRepository('User');
 
       // ดึง process_check ทั้งหมด
@@ -63,8 +63,8 @@ module.exports = (AppDataSource) => {
             // ดึงชื่อ position และ department
             const posEntity = await AppDataSource.getRepository('Position').findOne({ where: { id: profile.position } });
             const deptEntity = await AppDataSource.getRepository('Department').findOne({ where: { id: profile.department } });
-            position = posEntity ? posEntity.position_name : profile.position;
-            department = deptEntity ? deptEntity.department_name : profile.department;
+            position = posEntity ? posEntity.position_name_th : profile.position;
+            department = deptEntity ? deptEntity.department_name_th : profile.department;
             id = profile.id;
           }
         } else if (proc.Role === 'superadmin') {
@@ -74,8 +74,8 @@ module.exports = (AppDataSource) => {
             name = profile.superadmin_name;
             const posEntity = await AppDataSource.getRepository('Position').findOne({ where: { id: profile.position } });
             const deptEntity = await AppDataSource.getRepository('Department').findOne({ where: { id: profile.department } });
-            position = posEntity ? posEntity.position_name : profile.position;
-            department = deptEntity ? deptEntity.department_name : profile.department;
+            position = posEntity ? posEntity.position_name_th : profile.position;
+            department = deptEntity ? deptEntity.department_name_th : profile.department;
             id = profile.id;
           }
         } else {
@@ -85,8 +85,8 @@ module.exports = (AppDataSource) => {
             // ดึงชื่อ position และ department
             const posEntity = await AppDataSource.getRepository('Position').findOne({ where: { id: profile.position } });
             const deptEntity = await AppDataSource.getRepository('Department').findOne({ where: { id: profile.department } });
-            position = posEntity ? posEntity.position_name : profile.position;
-            department = deptEntity ? deptEntity.department_name : profile.department;
+            position = posEntity ? posEntity.position_name_th : profile.position;
+            department = deptEntity ? deptEntity.department_name_th : profile.department;
             id = profile.id;
           }
         }
@@ -94,18 +94,15 @@ module.exports = (AppDataSource) => {
         if (!profile) continue;
 
         // --- เพิ่มส่วนนี้ ---
-        // 1. ดึง leave quota ตาม position
+        // 1. ดึง leave quota ตาม position (แบบใหม่)
         let totalLeaveDays = 0;
         try {
           const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
-          const posEntity = await AppDataSource.getRepository('Position').findOne({ where: { position_name: position } });
-          let quota = null;
-          if (posEntity) {
-            quota = await leaveQuotaRepo.findOneBy({ positionId: posEntity.id });
-          }
-          if (quota) {
-            totalLeaveDays = (quota.sick || 0) + (quota.vacation || 0) + (quota.personal || 0);
-          }
+          const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+          // ดึง leaveQuota ทั้งหมดของตำแหน่งนี้
+          const quotas = await leaveQuotaRepo.find({ where: { positionId: profile.position } });
+          // รวม quota ทุกประเภท (หรือเลือกเฉพาะประเภทที่ต้องการ)
+          totalLeaveDays = quotas.reduce((sum, q) => sum + (q.quota || 0), 0);
         } catch (e) { totalLeaveDays = 0; }
 
         // 2. ดึง leaveRequest ที่อนุมัติของ user/admin นี้
@@ -119,11 +116,11 @@ module.exports = (AppDataSource) => {
             let leaveTypeName = lr.leaveType;
             if (leaveTypeName && leaveTypeName.length > 20) {
               const leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
-              if (leaveTypeEntity && leaveTypeEntity.leave_type) {
-                leaveTypeName = leaveTypeEntity.leave_type;
+              if (leaveTypeEntity && leaveTypeEntity.leave_type_th) {
+                leaveTypeName = leaveTypeEntity.leave_type_th;
               }
             }
-            // เฉพาะประเภท sick, vacation, personal
+            // เฉพาะประเภท sick, vacation, personal (ทั้งภาษาไทยและอังกฤษ)
             if (["sick", "ลาป่วย", "vacation", "ลาพักผ่อน", "personal", "ลากิจ"].includes(leaveTypeName)) {
               if (leaveTypeName === "personal" || leaveTypeName === "ลากิจ") {
                 // personal: อาจเป็นชั่วโมงหรือวัน
@@ -183,7 +180,7 @@ module.exports = (AppDataSource) => {
     try {
       const { id } = req.params;
       const processRepo = AppDataSource.getRepository('ProcessCheck');
-      const adminRepo = AppDataSource.getRepository('admin');
+      const adminRepo = AppDataSource.getRepository('Admin');
       const userRepo = AppDataSource.getRepository('User');
       const departmentRepo = AppDataSource.getRepository('Department');
       const positionRepo = AppDataSource.getRepository('Position');
@@ -219,21 +216,21 @@ module.exports = (AppDataSource) => {
       if (role === 'superadmin') {
         if (profile.department) {
           const deptEntity = await departmentRepo.findOne({ where: { id: profile.department } });
-          department = deptEntity ? deptEntity.department_name : profile.department;
+          department = deptEntity ? deptEntity.department_name_th : profile.department;
         }
         if (profile.position) {
           const posEntity = await positionRepo.findOne({ where: { id: profile.position } });
-          position = posEntity ? posEntity.position_name : profile.position;
+          position = posEntity ? posEntity.position_name_th : profile.position;
           positionId = profile.position;
         }
       } else {
         if (profile.department) {
           const deptEntity = await departmentRepo.findOne({ where: { id: profile.department } });
-          department = deptEntity ? deptEntity.department_name : profile.department;
+          department = deptEntity ? deptEntity.department_name_th : profile.department;
         }
         if (profile.position) {
           const posEntity = await positionRepo.findOne({ where: { id: profile.position } });
-          position = posEntity ? posEntity.position_name : profile.position;
+          position = posEntity ? posEntity.position_name_th : profile.position;
           positionId = profile.position;
         }
       }
@@ -245,7 +242,7 @@ module.exports = (AppDataSource) => {
       let totalLeaveDays = 0;
       try {
         const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
-        const posEntity = await AppDataSource.getRepository('Position').findOne({ where: { position_name: position } });
+        const posEntity = await AppDataSource.getRepository('Position').findOne({ where: { position_name_th: position } });
         let quota = null;
         if (posEntity) {
           quota = await leaveQuotaRepo.findOneBy({ positionId: posEntity.id });
@@ -265,8 +262,8 @@ module.exports = (AppDataSource) => {
           let leaveTypeName = lr.leaveType;
           if (leaveTypeName && leaveTypeName.length > 20) {
             const leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
-            if (leaveTypeEntity && leaveTypeEntity.leave_type) {
-              leaveTypeName = leaveTypeEntity.leave_type;
+            if (leaveTypeEntity && leaveTypeEntity.leave_type_th) {
+              leaveTypeName = leaveTypeEntity.leave_type_th;
             }
           }
           // เฉพาะประเภท sick, vacation, personal
@@ -331,7 +328,7 @@ module.exports = (AppDataSource) => {
       const { id } = req.params;
       const { name, email, password, position, department } = req.body;
       const processRepo = AppDataSource.getRepository('ProcessCheck');
-      const adminRepo = AppDataSource.getRepository('admin');
+      const adminRepo = AppDataSource.getRepository('Admin');
       const userRepo = AppDataSource.getRepository('User');
       const superadminRepo = AppDataSource.getRepository('SuperAdmin');
       const departmentRepo = AppDataSource.getRepository('Department');
@@ -386,11 +383,11 @@ module.exports = (AppDataSource) => {
       let positionName = '';
       if (profile.department) {
         const deptEntity = await departmentRepo.findOne({ where: { id: profile.department } });
-        departmentName = deptEntity ? deptEntity.department_name : profile.department;
+        departmentName = deptEntity ? deptEntity.department_name_th : profile.department;
       }
       if (profile.position) {
         const posEntity = await positionRepo.findOne({ where: { id: profile.position } });
-        positionName = posEntity ? posEntity.position_name : profile.position;
+        positionName = posEntity ? posEntity.position_name_th : profile.position;
       }
 
       res.json({
@@ -420,7 +417,7 @@ module.exports = (AppDataSource) => {
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
       const userRepo = AppDataSource.getRepository('User');
-      const adminRepo = AppDataSource.getRepository('admin');
+      const adminRepo = AppDataSource.getRepository('Admin');
 
       // ดึง leave ทั้งหมดของ user/admin
       let leaves = await leaveRepo.find({ where: { Repid: id }, order: { createdAt: 'DESC' } });
@@ -431,7 +428,7 @@ module.exports = (AppDataSource) => {
           let typeName = l.leaveType;
           if (typeName && typeName.length > 20) {
             const typeObj = await leaveTypeRepo.findOneBy({ id: typeName });
-            if (typeObj && typeObj.leave_type) typeName = typeObj.leave_type;
+            if (typeObj && typeObj.leave_type_th) typeName = typeObj.leave_type_th;
           }
           return { ...l, _leaveTypeName: typeName };
         }));
@@ -463,7 +460,7 @@ module.exports = (AppDataSource) => {
         let leaveTypeName = l.leaveType;
         if (leaveTypeName && leaveTypeName.length > 20) {
           const leaveTypeObj = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
-          if (leaveTypeObj && leaveTypeObj.leave_type) leaveTypeName = leaveTypeObj.leave_type;
+          if (leaveTypeObj && leaveTypeObj.leave_type_th) leaveTypeName = leaveTypeObj.leave_type_th;
         }
         // --- เพิ่มการคำนวณ duration/durationType ---
         let duration = 0;

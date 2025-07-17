@@ -40,8 +40,8 @@ const EmployeeDetail = () => {
   const [leaveHistory, setLeaveHistory] = useState([]);
   // เพิ่ม state สำหรับ processCheckId
   const [processCheckId, setProcessCheckId] = useState(null);
-  const [departments, setDepartments] = useState<{ id: string; department_name: string }[]>([]);
-  const [positions, setPositions] = useState<{ id: string; position_name: string }[]>([]);
+  const [departments, setDepartments] = useState<{ id: string; department_name_th: string; department_name_en: string }[]>([]);
+  const [positions, setPositions] = useState<{ id: string; position_name_th: string; position_name_en: string }[]>([]);
   // --- เพิ่ม state สำหรับ paging ---
   const [leavePage, setLeavePage] = useState(1);
   const [leaveTotalPages, setLeaveTotalPages] = useState(1);
@@ -183,6 +183,18 @@ const EmployeeDetail = () => {
       .catch(() => setPositions([]));
   }, []);
 
+  const [leaveTypes, setLeaveTypes] = useState<{ id: string; leave_type: string; leave_type_th: string; leave_type_en: string }[]>([]);
+
+  useEffect(() => {
+    fetch('http://localhost:3001/api/leave-types')
+      .then(res => res.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.data)) {
+          setLeaveTypes(data.data);
+        }
+      });
+  }, []);
+
   // อ่าน role จาก query string
   const queryParams = new URLSearchParams(location.search);
   const role = queryParams.get("role");
@@ -254,8 +266,8 @@ const EmployeeDetail = () => {
       return;
     }
     // หา id ของตำแหน่ง/แผนกจากชื่อที่ backend ส่งมา
-    const positionId = positions.find(p => p.position_name === employee?.position)?.id || '';
-    const departmentId = departments.find(d => d.department_name === employee?.department)?.id || '';
+    const positionId = positions.find(p => p.position_name_th === employee?.position_th)?.id || '';
+    const departmentId = departments.find(d => d.department_name_th === employee?.department_th)?.id || '';
     setEditData({
       full_name: employee?.name || '',
       email: employee?.email || '',
@@ -316,6 +328,13 @@ const EmployeeDetail = () => {
     console.log('View Details clicked. leave:', leave, 'leave.id:', leave.id);
     setSelectedLeave(leave);
     setLeaveDialogOpen(true);
+  };
+
+  // เพิ่มฟังก์ชันนี้ด้านบน component
+  const getLeaveTypeLabel = (typeId: string) => {
+    const found = leaveTypes.find(lt => lt.id === typeId || lt.leave_type === typeId);
+    if (!found) return typeId;
+    return i18n.language.startsWith('th') ? found.leave_type_th : found.leave_type_en;
   };
 
   if (loading) return <div>{t('common.loading')}</div>;
@@ -380,13 +399,13 @@ const EmployeeDetail = () => {
                         <SelectContent>
                           {positions.map((pos) => (
                             <SelectItem key={pos.id} value={pos.id}>
-                              {t(`positions.${pos.position_name}`, { defaultValue: pos.position_name })}
+                              {i18n.language.startsWith('th') ? pos.position_name_th : pos.position_name_en}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     ) : (
-                      <p className="text-sm text-gray-600">{String(t(`positions.${employee.position}`, { defaultValue: employee.position }))}</p>
+                      <p className="text-sm text-gray-600">{String(t(`positions.${employee.position_th}`, { defaultValue: employee.position_th }))}</p>
                     )}
                   </div>
                   <div>
@@ -399,13 +418,13 @@ const EmployeeDetail = () => {
                         <SelectContent>
                           {departments.map((dep) => (
                             <SelectItem key={dep.id} value={dep.id}>
-                              {t(`departments.${dep.department_name}`, { defaultValue: dep.department_name })}
+                              {i18n.language.startsWith('th') ? dep.department_name_th : dep.department_name_en}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     ) : (
-                      <p className="text-sm text-gray-600">{String(t(`departments.${employee.department}`, { defaultValue: employee.department }))}</p>
+                      <p className="text-sm text-gray-600">{String(t(`departments.${employee.department_th}`, { defaultValue: employee.department_th }))}</p>
                     )}
                   </div>
                 </div>
@@ -646,13 +665,7 @@ const EmployeeDetail = () => {
                   <TableBody>
                     {filteredLeaveHistory.map((leave, idx) => (
                       <TableRow key={idx}>
-                        <TableCell className="font-medium">{
-                          leave.leaveTypeName
-                            ? String(t(`leaveTypes.${leave.leaveTypeName}`, leave.leaveTypeName))
-                            : leave.leaveType
-                              ? String(t(`leaveTypes.${leave.leaveType}`, leave.leaveType))
-                              : '-'
-                        }</TableCell>
+                        <TableCell className="font-medium">{getLeaveTypeLabel(leave.leaveType)}</TableCell>
                         <TableCell className="whitespace-nowrap">{leave.leaveDate}</TableCell>
                           <TableCell>{
                             leave.durationType === 'hour'

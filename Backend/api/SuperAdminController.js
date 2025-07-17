@@ -88,8 +88,8 @@ module.exports = (AppDataSource) => {
       const { superadmin_name, department, position, email, password } = req.body;
       const superadminRepo = AppDataSource.getRepository('SuperAdmin');
       const processRepo = AppDataSource.getRepository('ProcessCheck');
-      const departmentRepo = AppDataSource.getRepository('department');
-      const positionRepo = AppDataSource.getRepository('position');
+      const departmentRepo = AppDataSource.getRepository('Department');
+      const positionRepo = AppDataSource.getRepository('Position');
 
       // Check for duplicate name
       const nameExist = await superadminRepo.findOneBy({ superadmin_name });
@@ -111,7 +111,7 @@ module.exports = (AppDataSource) => {
         if (uuidRegex.test(department)) {
           departmentId = department;
         } else {
-          const deptEntity = await departmentRepo.findOne({ where: { department_name: department } });
+          const deptEntity = await departmentRepo.findOne({ where: { department_name_th: department } });
           if (!deptEntity) {
             return res.status(400).json({ success: false, data: null, message: 'Department not found' });
           }
@@ -126,7 +126,7 @@ module.exports = (AppDataSource) => {
         if (uuidRegex.test(position)) {
           positionId = position;
         } else {
-          const posEntity = await positionRepo.findOne({ where: { position_name: position } });
+          const posEntity = await positionRepo.findOne({ where: { position_name_th: position } });
           if (!posEntity) {
             return res.status(400).json({ success: false, data: null, message: 'Position not found' });
           }
@@ -238,8 +238,8 @@ module.exports = (AppDataSource) => {
       }
       
       const processRepo = queryRunner.manager.getRepository('ProcessCheck');
-      const departmentRepo = queryRunner.manager.getRepository('department');
-      const positionRepo = queryRunner.manager.getRepository('position');
+      const departmentRepo = queryRunner.manager.getRepository('Department');
+      const positionRepo = queryRunner.manager.getRepository('Position');
       
       // Check for duplicate email
       const exist = await processRepo.findOneBy({ Email: email });
@@ -255,7 +255,7 @@ module.exports = (AppDataSource) => {
         if (uuidRegex.test(department)) {
           departmentId = department;
         } else {
-          const deptEntity = await departmentRepo.findOne({ where: { department_name: department } });
+          const deptEntity = await departmentRepo.findOne({ where: { department_name_th: department } });
           if (!deptEntity) {
             await queryRunner.rollbackTransaction();
             return res.status(400).json({ success: false, message: 'Department not found' });
@@ -271,7 +271,7 @@ module.exports = (AppDataSource) => {
         if (uuidRegex.test(position)) {
           positionId = position;
         } else {
-          const posEntity = await positionRepo.findOne({ where: { position_name: position } });
+          const posEntity = await positionRepo.findOne({ where: { position_name_th: position } });
           if (!posEntity) {
             await queryRunner.rollbackTransaction();
             return res.status(400).json({ success: false, message: 'Position not found' });

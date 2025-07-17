@@ -56,7 +56,7 @@ module.exports = (AppDataSource) => {
         let leaveTypeName = lr.leaveType;
         if (leaveTypeName && leaveTypeName.length > 20) {
           const leaveType = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
-          leaveTypeName = leaveType ? leaveType.leave_type : leaveTypeName;
+          leaveTypeName = leaveType ? leaveType.leave_type_th : leaveTypeName;
         }
         const leaveType = normalizeType(leaveTypeName);
         if (!leaveType) continue;
@@ -103,7 +103,7 @@ module.exports = (AppDataSource) => {
         let leaveTypeName = lr.leaveType;
         if (leaveTypeName && leaveTypeName.length > 20) {
           const leaveType = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
-          leaveTypeName = leaveType ? leaveType.leave_type : leaveTypeName;
+          leaveTypeName = leaveType ? leaveType.leave_type_th : leaveTypeName;
         }
         const start = new Date(lr.startDate);
         const end = new Date(lr.endDate);

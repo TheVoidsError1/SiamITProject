@@ -50,8 +50,8 @@ const EmployeeManagement = () => {
             id: item.id,
             full_name: item.name || '',
             email: item.email || '',
-            position: item.position || '',
-            department: item.department || '',
+            position: item.position_name_th || item.position,
+            department: item.department_name_th || item.department,
             role: item.role || '',
             usedLeaveDays: item.usedLeaveDays ?? 0,
             totalLeaveDays: item.totalLeaveDays ?? 0

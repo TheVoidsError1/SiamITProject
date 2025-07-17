@@ -71,15 +71,15 @@ const AdminDashboard = () => {
     userCount: 0,
     averageDayOff: 0,
   });
-  const [departments, setDepartments] = useState<{ id: string; department_name: string }[]>([]);
-  const [positions, setPositions] = useState<{ id: string; position_name: string }[]>([]);
+  const [departments, setDepartments] = useState<{ id: string; department_name_th: string; department_name_en: string }[]>([]);
+  const [positions, setPositions] = useState<{ id: string; position_name_th: string; position_name_en: string }[]>([]);
   // --- เพิ่ม state สำหรับ filter เดือน/ปี ---
   const [filterMonth, setFilterMonth] = useState<number | ''>('');
   const [filterYear, setFilterYear] = useState<number | ''>('');
   // --- เพิ่ม state สำหรับ items per page ---
   const [historyLimit, setHistoryLimit] = useState(5);
   const [pendingLimit, setPendingLimit] = useState(5);
-  const [pendingLeaveTypes, setPendingLeaveTypes] = useState<{ id: string; leave_type: string }[]>([]);
+  const [pendingLeaveTypes, setPendingLeaveTypes] = useState<{ id: string; leave_type: string; leave_type_th: string; leave_type_en: string }[]>([]);
   const [pendingLeaveTypesLoading, setPendingLeaveTypesLoading] = useState(false);
   const [pendingLeaveTypesError, setPendingLeaveTypesError] = useState<string | null>(null);
   const [pendingFilterLeaveType, setPendingFilterLeaveType] = useState('');
@@ -500,6 +500,12 @@ const AdminDashboard = () => {
     setHistoryPage(1);
   };
 
+  const getLeaveTypeLabel = (typeId: string) => {
+    const found = pendingLeaveTypes.find(lt => lt.id === typeId || lt.leave_type === typeId);
+    if (!found) return typeId;
+    return i18n.language.startsWith('th') ? found.leave_type_th : found.leave_type_en;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="border-b bg-white/80 backdrop-blur-sm">
@@ -597,11 +603,14 @@ const AdminDashboard = () => {
                         onChange={e => { setPendingFilterLeaveType(e.target.value); setPendingPage(1); }}
                       >
                         <option value="">{t('leave.allTypes')}</option>
-                        {pendingLeaveTypes.map((lt) => (
-                          <option key={lt.id} value={lt.id}>
-                            {t(`leaveTypes.${lt.leave_type}`, lt.leave_type)}
-                          </option>
-                        ))}
+                        {pendingRequests
+                          .map(r => ({ id: r.leaveType, name_th: r.leaveTypeName_th, name_en: r.leaveTypeName_en }))
+                          .filter((v, i, a) => v.id && a.findIndex(t => t.id === v.id) === i)
+                          .map(lt => (
+                            <option key={lt.id} value={lt.id}>
+                              {i18n.language.startsWith('th') ? lt.name_th : lt.name_en}
+                            </option>
+                          ))}
                       </select>
                     )}
                     {/* ปุ่มล้าง filter */}
@@ -634,7 +643,7 @@ const AdminDashboard = () => {
                                   ? JSON.parse(request.user).User_name
                                   : request.user?.User_name || "-"}
                               </h3>
-                              <p className="text-sm text-gray-600">{request.leaveTypeName ? String(t(`leaveTypes.${String(request.leaveTypeName)}`, String(request.leaveTypeName))) : '-'}</p>
+                              <p className="text-sm text-gray-600">{i18n.language.startsWith('th') ? request.leaveTypeName_th : request.leaveTypeName_en}</p>
                             </div>
                             <Badge variant="outline" className="text-orange-600 border-orange-200">
                               {t('admin.pending')}
@@ -886,7 +895,7 @@ const AdminDashboard = () => {
                             {/* ข้อมูล leave หลัก */}
                             <div className="flex-1">
                               <div className="font-bold text-lg mb-1">{request.user?.User_name || "-"}</div>
-                              <div className="text-base text-gray-700 mb-2">{request.leaveTypeName ? String(t(`leaveTypes.${String(request.leaveTypeName)}`, String(request.leaveTypeName))) : '-'}</div>
+                              <div className="text-base text-gray-700 mb-2">{i18n.language.startsWith('th') ? request.leaveTypeName_th : request.leaveTypeName_en}</div>
                               <div className="text-sm text-gray-700 mb-1">
                                 {t('leave.date')}: {startStr} - {endStr}{request.startTime && request.endTime
                                   ? ` (${calcHours(request.startTime, request.endTime)} ${hourUnit}, ${request.startTime} - ${request.endTime})`
@@ -1043,7 +1052,7 @@ const AdminDashboard = () => {
                       <span className="font-semibold text-blue-800">{t('leave.position', 'ตำแหน่ง')}:</span> {(() => {
                         const posId = selectedRequest.user?.position || selectedRequest.employeeType;
                         const pos = positions.find(p => p.id === posId);
-                        const posName = pos ? pos.position_name : posId || "-";
+                        const posName = pos ? (i18n.language.startsWith('th') ? pos.position_name_th : pos.position_name_en) : posId || "-";
                         return String(t(`positions.${posName}`, posName)) || String(posName) || '';
                       })()}
                     </div>
@@ -1051,12 +1060,12 @@ const AdminDashboard = () => {
                       <span className="font-semibold text-blue-800">{t('leave.department', 'แผนก')}:</span> {(() => {
                         const deptId = selectedRequest.user?.department;
                         const dept = departments.find(d => d.id === deptId);
-                        const deptName = dept ? dept.department_name : deptId || "-";
+                        const deptName = dept ? (i18n.language.startsWith('th') ? dept.department_name_th : dept.department_name_en) : deptId || "-";
                         return String(t(`departments.${deptName}`, deptName)) || String(deptName) || '';
                       })()}
                     </div>
                     <div>
-                      <span className="font-semibold text-blue-800">{t('leave.type', 'ประเภทการลา')}:</span> {selectedRequest.leaveTypeName ? String(t(`leaveTypes.${String(selectedRequest.leaveTypeName)}`, String(selectedRequest.leaveTypeName))) : '-'}
+                      <span className="font-semibold text-blue-800">{t('leave.type', 'ประเภทการลา')}:</span> {i18n.language.startsWith('th') ? selectedRequest.leaveTypeName_th : selectedRequest.leaveTypeName_en}
                     </div>
                     <div>
                       <span className="font-semibold text-blue-800">{t('leave.reason', 'เหตุผล')}:</span> {selectedRequest.reason}

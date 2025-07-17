@@ -103,8 +103,8 @@ const Profile = () => {
         setFormData({
           full_name: data.name || '',
           email: data.email || '',
-          department: data.department || '',
-          position: data.position || '',
+          department: data.department_name_th || data.department || '',
+          position: data.position_name_th || data.position || '',
         });
           setProfileLoaded(true);
         }
@@ -113,8 +113,8 @@ const Profile = () => {
         updateUser({
           full_name: data.name,
           email: data.email,
-          department: data.department,
-          position: data.position,
+          department: data.department_name_th || data.department,
+          position: data.position_name_th || data.position,
         });
       } catch (err: any) {
         if (err.response?.status === 401) {
@@ -329,15 +329,15 @@ const Profile = () => {
         setFormData({
           full_name: updatedData.name || formData.full_name,
           email: updatedData.email || formData.email,
-          department: updatedData.department || formData.department,
-          position: updatedData.position || formData.position,
+          department: updatedData.department_name_th || updatedData.department || formData.department,
+          position: updatedData.position_name_th || updatedData.position || formData.position,
         });
         
         // Update user context with new data
         updateUser({
           full_name: updatedData.name || formData.full_name,
-          position: updatedData.position || formData.position,
-          department: updatedData.department || formData.department,
+          position: updatedData.position_name_th || updatedData.position || formData.position,
+          department: updatedData.department_name_th || updatedData.department || formData.department,
           email: updatedData.email || formData.email,
         });
       } else {
@@ -466,9 +466,9 @@ const Profile = () => {
                         <SelectValue placeholder={t('positions.selectPosition')} />
                       </SelectTrigger>
                       <SelectContent>
-                        {positions.map(pos => (
+                        {positions.map((pos) => (
                           <SelectItem key={pos.id} value={pos.id}>
-                            {i18n.language === 'th' ? pos.position_name_th : pos.position_name_en}
+                            {i18n.language.startsWith('th') ? pos.position_name_th : pos.position_name_en}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -485,9 +485,9 @@ const Profile = () => {
                         <SelectValue placeholder={t('departments.selectDepartment')} />
                       </SelectTrigger>
                       <SelectContent>
-                        {departments.map(dep => (
+                        {departments.map((dep) => (
                           <SelectItem key={dep.id} value={dep.id}>
-                            {i18n.language === 'th' ? dep.department_name_th : dep.department_name_en}
+                            {i18n.language.startsWith('th') ? dep.department_name_th : dep.department_name_en}
                           </SelectItem>
                         ))}
                       </SelectContent>
