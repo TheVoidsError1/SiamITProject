@@ -161,7 +161,8 @@
     "pleaseSelectYear": "Please select a year before confirming",
     "durationDay": "day",
     "durationHour": "hour",
-    "pleaseSelectAtLeastOne": "Please select at least one option"
+    "pleaseSelectAtLeastOne": "Please select at least one option",
+    "noHistoryForPeriod": "No leave history for this period."
   },
   "leaveTypes": {
     "vacation": "Vacation ",
@@ -340,7 +341,7 @@
     "intern": "Intern",
     "email": "Email",
     "password": "Password",
-    "usedLeaveDays": "Used Leave Days",
+    "usedLeaveDays": "Used leave days:",
     "noPassword": "Not set",
     "leaveHistoryDesc": "Employee leave history",
     "name": "name"

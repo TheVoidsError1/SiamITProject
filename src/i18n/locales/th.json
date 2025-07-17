@@ -104,7 +104,8 @@
     "rejected": "ไม่อนุมัติ",
     "durationDay": "วัน",
     "durationHour": "ชั่วโมง",
-    "pleaseSelectAtLeastOne": "โปรดเลือกอย่างน้อย 1 ตัวเลือก"
+    "pleaseSelectAtLeastOne": "โปรดเลือกอย่างน้อย 1 ตัวเลือก",
+    "noHistoryForPeriod": "ไม่มีประวัติการลาในช่วงนี้"
   },
   "leaveTypes": {
     "vacation": "ลาพักผ่อน",
@@ -294,7 +295,7 @@
     "status": "สถานะ",
     "email": "อีเมล",
     "password": "รหัสผ่าน",
-    "usedLeaveDays": "วันลาที่ใช้ไป",
+    "usedLeaveDays": "วันลาที่ใช้ไปแล้ว",
     "notFound": "ไม่พบข้อมูลพนักงาน",
     "loadError": "ไม่สามารถโหลดข้อมูลพนักงานได้",
     "admin": "ผู้ดูแลระบบ",

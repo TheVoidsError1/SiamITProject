@@ -424,73 +424,119 @@ const EmployeeDetail = () => {
                 {t('employee.leaveHistoryDesc')}
               </CardDescription>
             </CardHeader>
+            {filteredLeaveHistory.length > 0 && (
+              <div className="flex justify-end px-8 mt-2">
+                <span className="text-black font-semibold text-base flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                  {(() => {
+                    const approved = filteredLeaveHistory.filter(l => l.status === 'approved');
+                    const days = approved.filter(l => l.durationType === 'day').reduce((sum, l) => sum + (parseInt(l.duration) || 0), 0);
+                    const hours = approved.filter(l => l.durationType === 'hour').reduce((sum, l) => sum + (parseInt(l.duration) || 0), 0);
+                    let text = t('employee.usedLeaveDays') + ':';
+                    if (days > 0) text += ` ${days} ${t('common.days')}`;
+                    if (hours > 0) text += ` ${hours} ${t('common.hours')}`;
+                    if (days === 0 && hours === 0) text += ` 0 ${t('common.days')}`;
+                    return text;
+                  })()}
+                </span>
+              </div>
+            )}
             {/* Filter + วันลาที่ใช้ไปแล้ว (flex row) */}
-            <div className="flex flex-wrap items-center justify-between px-6 mt-4 gap-2">
-              <div className="flex flex-wrap gap-4 items-center">
-                <div className="flex flex-col relative">
-                  <Select value={pendingFilterType} onValueChange={v => { setPendingFilterType(v); setShowTypeError(false); }}>
-                    <SelectTrigger className="w-40">{pendingFilterType && pendingFilterType !== "all" ? t(`leaveTypes.${pendingFilterType}`) : t('leave.type')}</SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('months.all')}</SelectItem>
-                      <SelectItem value="sick">{t('leaveTypes.sick')}</SelectItem>
-                      <SelectItem value="vacation">{t('leaveTypes.vacation')}</SelectItem>
-                      <SelectItem value="personal">{t('leaveTypes.personal')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {showTypeError && <span className="text-red-500 text-xs absolute right-2 top-0">*</span>}
-                </div>
-                <div className="flex flex-col relative">
-                  <Select value={pendingFilterMonth} onValueChange={v => { setPendingFilterMonth(v); setShowMonthError(false); }}>
-                    <SelectTrigger className="w-32">{pendingFilterMonth && pendingFilterMonth !== "all" ? t(`months.${pendingFilterMonth}`) : t('common.month')}</SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('months.all')}</SelectItem>
-                      <SelectItem value="1">{t('months.1')}</SelectItem>
-                      <SelectItem value="2">{t('months.2')}</SelectItem>
-                      <SelectItem value="3">{t('months.3')}</SelectItem>
-                      <SelectItem value="4">{t('months.4')}</SelectItem>
-                      <SelectItem value="5">{t('months.5')}</SelectItem>
-                      <SelectItem value="6">{t('months.6')}</SelectItem>
-                      <SelectItem value="7">{t('months.7')}</SelectItem>
-                      <SelectItem value="8">{t('months.8')}</SelectItem>
-                      <SelectItem value="9">{t('months.9')}</SelectItem>
-                      <SelectItem value="10">{t('months.10')}</SelectItem>
-                      <SelectItem value="11">{t('months.11')}</SelectItem>
-                      <SelectItem value="12">{t('months.12')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {showMonthError && <span className="text-red-500 text-xs absolute right-2 top-0">*</span>}
-                </div>
-                <div className="flex flex-col relative">
-                  <Select value={pendingFilterYear} onValueChange={v => { setPendingFilterYear(v); setShowYearError(false); }}>
-                    <SelectTrigger className="w-28">{pendingFilterYear && pendingFilterYear !== "all" ?
-                      i18n.language === 'th' ? (parseInt(pendingFilterYear) + 543) : pendingFilterYear
-                    : t('common.year')}</SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('months.all')}</SelectItem>
-                      {yearOptions.map(y => (
-                        <SelectItem key={y} value={String(y)}>
-                          {i18n.language === 'th' ? y + 543 : y}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {showYearError && <span className="text-red-500 text-xs absolute right-2 top-0">*</span>}
-                </div>
-                <div className="flex flex-col relative">
-                  <Select value={pendingFilterStatus} onValueChange={v => { setPendingFilterStatus(v); setShowStatusError(false); }}>
-                    <SelectTrigger className="w-36">{pendingFilterStatus && pendingFilterStatus !== "all" ? t(`leave.${pendingFilterStatus}`) : t('common.status')}</SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">{t('months.all')}</SelectItem>
-                      <SelectItem value="approved">{t('leave.approved')}</SelectItem>
-                      <SelectItem value="pending">{t('leave.pending')}</SelectItem>
-                      <SelectItem value="rejected">{t('leave.rejected')}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {showStatusError && <span className="text-red-500 text-xs absolute right-2 top-0">*</span>}
-                </div>
-                <Button variant="outline" onClick={resetFilters}>{t('common.reset') || 'รีเซ็ต'}</Button>
-                <Button
-                  onClick={() => {
+            <div className="grid grid-cols-7 gap-4 items-end mb-2 px-6 mt-4">
+              <div className="flex flex-col col-span-1">
+                <label className="text-xs text-gray-500 mb-1">{t('leave.type')}</label>
+                <Select value={pendingFilterType} onValueChange={v => { setPendingFilterType(v); setShowTypeError(false); }}>
+                  <SelectTrigger className="min-w-[9rem] w-36">{
+                    !pendingFilterType || pendingFilterType === ''
+                      ? t('leave.type')
+                      : pendingFilterType === 'all'
+                        ? t('months.all')
+                        : t(`leaveTypes.${pendingFilterType}`)
+                  }</SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('months.all')}</SelectItem>
+                    <SelectItem value="sick">{t('leaveTypes.sick')}</SelectItem>
+                    <SelectItem value="vacation">{t('leaveTypes.vacation')}</SelectItem>
+                    <SelectItem value="personal">{t('leaveTypes.personal')}</SelectItem>
+                    <SelectItem value="maternity">{t('leaveTypes.maternity')}</SelectItem>
+                    <SelectItem value="emergency">{t('leaveTypes.emergency')}</SelectItem>
+                  </SelectContent>
+                </Select>
+                {showTypeError && <span className="text-red-500 text-xs absolute right-2 top-0">*</span>}
+              </div>
+              <div className="flex flex-col col-span-1">
+                <label className="text-xs text-gray-500 mb-1">{t('common.month')}</label>
+                <Select value={pendingFilterMonth} onValueChange={v => { setPendingFilterMonth(v); setShowMonthError(false); }}>
+                  <SelectTrigger className="min-w-[9rem] w-36">{
+                    !pendingFilterMonth || pendingFilterMonth === ''
+                      ? t('common.month')
+                      : pendingFilterMonth === 'all'
+                        ? t('months.all')
+                        : t(`months.${pendingFilterMonth}`)
+                  }</SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('months.all')}</SelectItem>
+                    <SelectItem value="1">{t('months.1')}</SelectItem>
+                    <SelectItem value="2">{t('months.2')}</SelectItem>
+                    <SelectItem value="3">{t('months.3')}</SelectItem>
+                    <SelectItem value="4">{t('months.4')}</SelectItem>
+                    <SelectItem value="5">{t('months.5')}</SelectItem>
+                    <SelectItem value="6">{t('months.6')}</SelectItem>
+                    <SelectItem value="7">{t('months.7')}</SelectItem>
+                    <SelectItem value="8">{t('months.8')}</SelectItem>
+                    <SelectItem value="9">{t('months.9')}</SelectItem>
+                    <SelectItem value="10">{t('months.10')}</SelectItem>
+                    <SelectItem value="11">{t('months.11')}</SelectItem>
+                    <SelectItem value="12">{t('months.12')}</SelectItem>
+                  </SelectContent>
+                </Select>
+                {showMonthError && <span className="text-red-500 text-xs absolute right-2 top-0">*</span>}
+              </div>
+              <div className="flex flex-col col-span-1">
+                <label className="text-xs text-gray-500 mb-1">{t('common.year')}</label>
+                <Select value={pendingFilterYear} onValueChange={v => { setPendingFilterYear(v); setShowYearError(false); }}>
+                  <SelectTrigger className="min-w-[9rem] w-36">{
+                    !pendingFilterYear || pendingFilterYear === ''
+                      ? t('common.year')
+                      : pendingFilterYear === 'all'
+                        ? t('months.all')
+                        : (i18n.language === 'th' ? (parseInt(pendingFilterYear) + 543) : pendingFilterYear)
+                  }</SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('months.all')}</SelectItem>
+                    {yearOptions.map(y => (
+                      <SelectItem key={y} value={String(y)}>
+                        {i18n.language === 'th' ? y + 543 : y}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {showYearError && <span className="text-red-500 text-xs absolute right-2 top-0">*</span>}
+              </div>
+              <div className="flex flex-col col-span-1">
+                <label className="text-xs text-gray-500 mb-1">{t('common.status')}</label>
+                <Select value={pendingFilterStatus} onValueChange={v => { setPendingFilterStatus(v); setShowStatusError(false); }}>
+                  <SelectTrigger className="min-w-[9rem] w-36">{
+                    !pendingFilterStatus || pendingFilterStatus === ''
+                      ? t('common.status')
+                      : pendingFilterStatus === 'all'
+                        ? t('months.all')
+                        : t(`leave.${pendingFilterStatus}`)
+                  }</SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('months.all')}</SelectItem>
+                    <SelectItem value="approved">{t('leave.approved')}</SelectItem>
+                    <SelectItem value="pending">{t('leave.pending')}</SelectItem>
+                    <SelectItem value="rejected">{t('leave.rejected')}</SelectItem>
+                  </SelectContent>
+                </Select>
+                {showStatusError && <span className="text-red-500 text-xs absolute right-2 top-0">*</span>}
+              </div>
+              <div className="flex flex-col col-span-1">
+                <Button variant="outline" className="w-full h-10" onClick={resetFilters}>{t('common.reset') || 'รีเซ็ต'}</Button>
+              </div>
+              <div className="flex flex-col col-span-1">
+                <Button className="w-full h-10 bg-blue-500 hover:bg-blue-600 text-white" onClick={() => {
                     // ถ้าเลือกเดือนแต่ไม่เลือกปี
                     if (pendingFilterMonth !== "all" && (pendingFilterYear === "all" || !pendingFilterYear)) {
                       setFilterError(t('leave.pleaseSelectYear') || "กรุณาเลือกปีให้ครบก่อนกดยืนยัน");
@@ -515,118 +561,97 @@ const EmployeeDetail = () => {
                     setFilterMonth(pendingFilterMonth);
                     setFilterYear(pendingFilterYear);
                     setFilterStatus(pendingFilterStatus);
-                  }}
-                  className="bg-blue-500 hover:bg-blue-600 text-white"
-                >{t('common.confirm') || 'ยืนยัน'}</Button>
+                  }}>{t('common.confirm') || 'ยืนยัน'}</Button>
               </div>
-              {filteredLeaveHistory && filteredLeaveHistory.length > 0 && (
-                <div className="text-sm font-medium">
-                  <span className={
-                    (() => {
-                      const approved = filteredLeaveHistory.filter(l => l.status === 'approved');
-                      const days = approved.filter(l => l.durationType === 'day').reduce((sum, l) => sum + (parseInt(l.duration) || 0), 0);
-                      const hours = approved.filter(l => l.durationType === 'hour').reduce((sum, l) => sum + (parseInt(l.duration) || 0), 0);
-                      const total = employee?.totalLeaveDays || 0;
-                      return total && days > total * 0.8 ? 'text-red-600' : 'text-green-600';
-                    })()
-                  }>
-                    {
-                      (() => {
-                        const approved = filteredLeaveHistory.filter(l => l.status === 'approved');
-                        const days = approved.filter(l => l.durationType === 'day').reduce((sum, l) => sum + (parseInt(l.duration) || 0), 0);
-                        const hours = approved.filter(l => l.durationType === 'hour').reduce((sum, l) => sum + (parseInt(l.duration) || 0), 0);
-                        let text = 'วันลาที่ใช้ไปแล้ว:';
-                        if (days > 0) text += ` ${days} วัน`;
-                        if (hours > 0) text += ` ${hours} ชั่วโมง`;
-                        if (days === 0 && hours === 0) text += ' 0 วัน';
-                        return text;
-                      })()
-                    }
-                  </span>
-                </div>
-              )}
+              <div className="col-span-2"></div>
             </div>
             {filterError && (
               <div className="text-red-600 text-sm px-6 mt-1">{filterError}</div>
             )}
             <CardContent className="p-6">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>{t('leave.type')}</TableHead>
-                    <TableHead>{t('leave.date')}</TableHead>
-                    <TableHead>{t('leave.duration')}</TableHead>
-                    <TableHead>{t('leave.reason')}</TableHead>
-                    <TableHead>{t('leave.status')}</TableHead>
-                    <TableHead>{t('leave.submittedDate')}</TableHead>
-                    <TableHead className="text-center">{t('common.actions')}</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredLeaveHistory.map((leave, idx) => (
-                    <TableRow key={idx}>
-                      <TableCell className="font-medium">{
-                        leave.leaveTypeName
-                          ? String(t(`leaveTypes.${leave.leaveTypeName}`, leave.leaveTypeName))
-                          : leave.leaveType
-                            ? String(t(`leaveTypes.${leave.leaveType}`, leave.leaveType))
-                            : '-'
-                      }</TableCell>
-                      <TableCell className="whitespace-nowrap">{leave.leaveDate}</TableCell>
-                      <TableCell>{
-                        leave.durationType === 'hour'
-                          ? `${parseInt(leave.duration)} ชั่วโมง`
-                          : leave.durationType === 'day'
-                            ? `${leave.duration} วัน`
-                            : ''
-                      }</TableCell>
-                      <TableCell className="max-w-[100px] truncate">{leave.reason}</TableCell>
-                      <TableCell>
-                        <Badge
-                          className={`rounded-full px-3 py-1 text-xs font-semibold
-                            ${leave.status === 'approved' ? 'bg-green-100 text-green-800' : ''}
-                            ${leave.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : ''}
-                            ${leave.status === 'rejected' ? 'bg-red-100 text-red-800' : ''}
-                          `}
-                        >
-                          {leave.status === 'approved' ? t('leave.approved') : leave.status === 'pending' ? t('leave.pending') : leave.status === 'rejected' ? t('leave.rejected') : leave.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{leave.submittedDate ? new Date(leave.submittedDate).toLocaleDateString() : ''}</TableCell>
-                      <TableCell className="text-center">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => handleViewLeaveDetails(leave)}
-                        >
-                          <Eye className="w-4 h-4 mr-2" />
-                          {String(t('common.viewDetails'))}
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              {/* --- ปุ่มเปลี่ยนหน้า --- */}
-              {leaveTotalPages > 1 && (
-                <div className="flex justify-center mt-4 gap-1">
-                  {Array.from({ length: leaveTotalPages }, (_, i) => (
-                    <button
-                      key={i}
-                      onClick={() => setLeavePage(i + 1)}
-                      className={`px-2 py-1 rounded border text-sm ${leavePage === i + 1 ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-300'} transition`}
-                      disabled={leavePage === i + 1}
-                    >
-                      {i + 1}
-                    </button>
-                  ))}
+              {filteredLeaveHistory.length === 0 ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="bg-yellow-100 border border-yellow-300 text-yellow-800 px-6 py-4 rounded text-center text-base font-medium shadow-sm">
+                    {t('leave.noHistoryForPeriod')}
+                  </div>
                 </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('leave.type')}</TableHead>
+                      <TableHead>{t('leave.date')}</TableHead>
+                      <TableHead>{t('leave.duration')}</TableHead>
+                      <TableHead>{t('leave.reason')}</TableHead>
+                      <TableHead>{t('leave.status')}</TableHead>
+                      <TableHead>{t('leave.submittedDate')}</TableHead>
+                      <TableHead className="text-center">{t('common.actions')}</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredLeaveHistory.map((leave, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell className="font-medium">{
+                          leave.leaveTypeName
+                            ? String(t(`leaveTypes.${leave.leaveTypeName}`, leave.leaveTypeName))
+                            : leave.leaveType
+                              ? String(t(`leaveTypes.${leave.leaveType}`, leave.leaveType))
+                              : '-'
+                        }</TableCell>
+                        <TableCell className="whitespace-nowrap">{leave.leaveDate}</TableCell>
+                          <TableCell>{
+                            leave.durationType === 'hour'
+                              ? `${parseInt(leave.duration)} ${t('common.hours')}`
+                              : leave.durationType === 'day'
+                                ? `${leave.duration} ${t('common.days')}`
+                                : ''
+                          }</TableCell>
+                        <TableCell className="max-w-[100px] truncate">{leave.reason}</TableCell>
+                        <TableCell>
+                          <Badge
+                            className={`rounded-full px-3 py-1 text-xs font-semibold
+                              ${leave.status === 'approved' ? 'bg-green-100 text-green-800' : ''}
+                              ${leave.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : ''}
+                              ${leave.status === 'rejected' ? 'bg-red-100 text-red-800' : ''}
+                            `}
+                          >
+                            {leave.status === 'approved' ? t('leave.approved') : leave.status === 'pending' ? t('leave.pending') : leave.status === 'rejected' ? t('leave.rejected') : leave.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{leave.submittedDate ? new Date(leave.submittedDate).toLocaleDateString() : ''}</TableCell>
+                        <TableCell className="text-center">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleViewLeaveDetails(leave)}
+                          >
+                            <Eye className="w-4 h-4 mr-2" />
+                            {String(t('common.viewDetails'))}
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               )}
             </CardContent>
+            {leaveTotalPages > 1 && filteredLeaveHistory.length > 0 && (
+              <div className="flex justify-center mt-4 gap-1">
+                {Array.from({ length: leaveTotalPages }, (_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setLeavePage(i + 1)}
+                    className={`px-2 py-1 rounded border text-sm ${leavePage === i + 1 ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-300'} transition`}
+                    disabled={leavePage === i + 1}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+              </div>
+            )}
           </Card>
         </div>
       </div>
-
       <LeaveDetailDialog
         open={leaveDialogOpen}
         onOpenChange={setLeaveDialogOpen}
@@ -634,6 +659,6 @@ const EmployeeDetail = () => {
       />
     </div>
   );
-};
+}
 
 export default EmployeeDetail;
