@@ -31,6 +31,9 @@ module.exports = (AppDataSource) => {
       const month = req.query.month ? parseInt(req.query.month) : null;
       const year = req.query.year ? parseInt(req.query.year) : null;
       const leaveType = req.query.leaveType || null;
+      const status = req.query.status || null;
+      const startDate = req.query.startDate ? new Date(req.query.startDate) : null;
+      const endDate = req.query.endDate ? new Date(req.query.endDate) : null;
       
       // ดึง leave request ของ user (paging) พร้อม filter เดือน/ปี (ใช้ createdAt)
       let where = { Repid: userId };
@@ -53,6 +56,17 @@ module.exports = (AppDataSource) => {
       }
       if (leaveType) {
         where = { ...where, leaveType };
+      }
+      if (status) {
+        where = { ...where, status };
+      }
+      // กรองช่วงวันที่ (startDate, endDate) จากฟิลด์ startDate
+      if (startDate && endDate) {
+        where = { ...where, startDate: Between(startDate, endDate) };
+      } else if (startDate) {
+        where = { ...where, startDate: Between(startDate, new Date(3000, 0, 1)) };
+      } else if (endDate) {
+        where = { ...where, startDate: Between(new Date(2000, 0, 1), endDate) };
       }
 
       // ดึง leave request ของ user (paging)
@@ -126,6 +140,34 @@ module.exports = (AppDataSource) => {
         status: 'error',
         message: lang === 'th' ? 'เกิดข้อผิดพลาด: ' + err.message : 'Error: ' + err.message
       });
+    }
+  });
+
+  // GET /api/leave-history/filters (ต้องแนบ JWT)
+  router.get('/filters', authMiddleware, async (req, res) => {
+    try {
+      const userId = req.user && req.user.userId;
+      if (!userId) return res.status(401).json({ status: 'error', message: 'Unauthorized' });
+      const leaveRepo = AppDataSource.getRepository('LeaveRequest');
+
+      // ดึง leave ทั้งหมดของ user
+      const leaves = await leaveRepo.find({ where: { Repid: userId } });
+
+      // Statuses
+      const statuses = Array.from(new Set(leaves.map(l => l.status))).filter(Boolean);
+      // Years
+      const years = Array.from(new Set(leaves.map(l => l.createdAt && new Date(l.createdAt).getFullYear()))).filter(Boolean).sort();
+      // Months (1-12)
+      const months = Array.from(new Set(leaves.map(l => l.createdAt && (new Date(l.createdAt).getMonth() + 1)))).filter(Boolean).sort((a, b) => a - b);
+
+      res.json({
+        status: 'success',
+        statuses,
+        years,
+        months
+      });
+    } catch (err) {
+      res.status(500).json({ status: 'error', message: err.message });
     }
   });
 

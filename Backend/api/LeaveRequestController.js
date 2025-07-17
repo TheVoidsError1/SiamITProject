@@ -276,6 +276,9 @@
      // GET /api/leave-request/pending
      router.get('/pending', async (req, res) => {
        try {
+         // --- i18n: ตรวจจับภาษา ---
+         let lang = req.headers['accept-language'] || req.query.lang || 'th';
+         lang = lang.split(',')[0].toLowerCase().startsWith('en') ? 'en' : 'th';
          const leaveRepo = AppDataSource.getRepository('LeaveRequest');
          const userRepo = AppDataSource.getRepository('User');
          const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
@@ -283,11 +286,54 @@
          const page = parseInt(req.query.page) || 1;
          const limit = parseInt(req.query.limit) || 4;
          const skip = (page - 1) * limit;
-         // --- เพิ่ม filter leaveType ---
+         // --- เพิ่ม filter leaveType, startDate, endDate, month, year ---
          const leaveType = req.query.leaveType || null;
+         const startDate = req.query.startDate ? new Date(req.query.startDate) : null;
+         const endDate = req.query.endDate ? new Date(req.query.endDate) : null;
+         const month = req.query.month ? parseInt(req.query.month) : null;
+         const year = req.query.year ? parseInt(req.query.year) : null;
          let where = { status: 'pending' };
          if (leaveType) {
-           where = { ...where, leaveType };
+           const leaveTypeObj = await leaveTypeRepo.findOneBy({ id: leaveType });
+           if (leaveTypeObj) {
+             where = { ...where, leaveType: leaveTypeObj.id };
+           } else {
+             where = { ...where, leaveType };
+           }
+         }
+         if (month && year) {
+           const { Between } = require('typeorm');
+           const startOfMonth = new Date(year, month - 1, 1);
+           const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
+           where = { ...where, createdAt: Between(startOfMonth, endOfMonth) };
+         } else if (year) {
+           const { Between } = require('typeorm');
+           const startOfYear = new Date(year, 0, 1);
+           const endOfYear = new Date(year, 11, 31, 23, 59, 59, 999);
+           where = { ...where, createdAt: Between(startOfYear, endOfYear) };
+         }
+         // --- สำหรับ /pending ---
+         if (startDate && endDate) {
+           const { Between } = require('typeorm');
+           const startOfDay = new Date(startDate);
+           startOfDay.setHours(0, 0, 0, 0);
+           const endOfDay = new Date(endDate);
+           endOfDay.setHours(23, 59, 59, 999);
+           where = { ...where, createdAt: Between(startOfDay, endOfDay) };
+         } else if (startDate) {
+           const { Between } = require('typeorm');
+           const startOfDay = new Date(startDate);
+           startOfDay.setHours(0, 0, 0, 0);
+           const endOfDay = new Date(startDate);
+           endOfDay.setHours(23, 59, 59, 999);
+           where = { ...where, createdAt: Between(startOfDay, endOfDay) };
+         } else if (endDate) {
+           const { Between } = require('typeorm');
+           const startOfDay = new Date(endDate);
+           startOfDay.setHours(0, 0, 0, 0);
+           const endOfDay = new Date(endDate);
+           endOfDay.setHours(23, 59, 59, 999);
+           where = { ...where, createdAt: Between(startOfDay, endOfDay) };
          }
          // ดึง leave requests ที่ pending (paging)
          const [pendingLeaves, total] = await Promise.all([
@@ -324,15 +370,20 @@
              attachments: parseAttachments(leave.attachments),
            };
          }));
-         res.json({ status: 'success', data: result, total, page, totalPages: Math.ceil(total / limit) });
+         res.json({ status: 'success', data: result, total, page, totalPages: Math.ceil(total / limit), message: lang === 'th' ? 'ดึงข้อมูลสำเร็จ' : 'Fetch success' });
        } catch (err) {
-         res.status(500).json({ status: 'error', message: err.message });
+         let lang = req.headers['accept-language'] || req.query.lang || 'th';
+         lang = lang.split(',')[0].toLowerCase().startsWith('en') ? 'en' : 'th';
+         res.status(500).json({ status: 'error', message: lang === 'th' ? 'เกิดข้อผิดพลาด: ' + err.message : 'Error: ' + err.message });
        }
      });
 
      // GET /api/leave-request/history
      router.get('/history', async (req, res) => {
        try {
+         // --- i18n: ตรวจจับภาษา ---
+         let lang = req.headers['accept-language'] || req.query.lang || 'th';
+         lang = lang.split(',')[0].toLowerCase().startsWith('en') ? 'en' : 'th';
          const leaveRepo = AppDataSource.getRepository('LeaveRequest');
          const userRepo = AppDataSource.getRepository('User');
          const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
@@ -341,6 +392,9 @@
          // --- เพิ่ม filter เดือน/ปี ---
          const month = req.query.month ? parseInt(req.query.month) : null;
          const year = req.query.year ? parseInt(req.query.year) : null;
+         // --- เพิ่ม filter ช่วงวัน ---
+         const startDate = req.query.startDate ? new Date(req.query.startDate) : null;
+         const endDate = req.query.endDate ? new Date(req.query.endDate) : null;
          let where;
          const { Between } = require('typeorm');
          if (status) {
@@ -357,6 +411,14 @@
              const endOfYear = new Date(year, 11, 31, 23, 59, 59, 999);
              where = [{ status, createdAt: Between(startOfYear, endOfYear) }];
              if (userId) where = [{ status, Repid: userId, createdAt: Between(startOfYear, endOfYear) }];
+           }
+           // --- เพิ่ม filter ช่วงวัน ---
+           if (startDate && endDate) {
+             where = where.map(w => ({ ...w, startDate: Between(startDate, endDate) }));
+           } else if (startDate) {
+             where = where.map(w => ({ ...w, startDate: Between(startDate, new Date(3000, 0, 1)) }));
+           } else if (endDate) {
+             where = where.map(w => ({ ...w, startDate: Between(new Date(2000, 0, 1), endDate) }));
            }
          } else {
            // ไม่ได้กรอง status (default: approved, rejected, pending)
@@ -399,12 +461,46 @@
                { status: 'pending', Repid: userId, createdAt: Between(startOfYear, endOfYear) }
              ];
            }
+           // --- เพิ่ม filter ช่วงวัน ---
+           if (startDate && endDate) {
+             where = where.map(w => ({ ...w, startDate: Between(startDate, endDate) }));
+           } else if (startDate) {
+             where = where.map(w => ({ ...w, startDate: Between(startDate, new Date(3000, 0, 1)) }));
+           } else if (endDate) {
+             where = where.map(w => ({ ...w, startDate: Between(new Date(2000, 0, 1), endDate) }));
+           }
+         }
+         // --- สำหรับ /history (startDate, endDate filter ใช้กับ startDate) ---
+         if (startDate && endDate) {
+           where = where.map(w => {
+             const startOfDay = new Date(startDate);
+             startOfDay.setHours(0, 0, 0, 0);
+             const endOfDay = new Date(endDate);
+             endOfDay.setHours(23, 59, 59, 999);
+             return { ...w, startDate: Between(startOfDay, endOfDay) };
+           });
+         } else if (startDate) {
+           where = where.map(w => {
+             const startOfDay = new Date(startDate);
+             startOfDay.setHours(0, 0, 0, 0);
+             const endOfDay = new Date(startDate);
+             endOfDay.setHours(23, 59, 59, 999);
+             return { ...w, startDate: Between(startOfDay, endOfDay) };
+           });
+         } else if (endDate) {
+           where = where.map(w => {
+             const startOfDay = new Date(endDate);
+             startOfDay.setHours(0, 0, 0, 0);
+             const endOfDay = new Date(endDate);
+             endOfDay.setHours(23, 59, 59, 999);
+             return { ...w, startDate: Between(startOfDay, endOfDay) };
+           });
          }
          // --- เพิ่ม paging ---
          const page = parseInt(req.query.page) || 1;
          const limit = parseInt(req.query.limit) || 5;
          const skip = (page - 1) * limit;
-         // ดึงใบคำขอที่ status เป็น approved หรือ rejected (และ filter ตาม userId/เดือน/ปี ถ้ามี) (paging)
+         // ดึงใบคำขอที่ status เป็น approved หรือ rejected (และ filter ตาม userId/เดือน/ปี/ช่วงวัน ถ้ามี) (paging)
          const [processedLeaves, total] = await Promise.all([
            leaveRepo.find({
              where,
@@ -414,6 +510,9 @@
            }),
            leaveRepo.count({ where })
          ]);
+         // --- เพิ่มการคำนวณ approvedCount/rejectedCount ตาม filter ---
+         const approvedCount = await leaveRepo.count({ where: where.map(w => ({ ...w, status: 'approved' })) });
+         const rejectedCount = await leaveRepo.count({ where: where.map(w => ({ ...w, status: 'rejected' })) });
          const result = await Promise.all(processedLeaves.map(async (leave) => {
            let user = null;
            let leaveTypeObj = null;
@@ -484,9 +583,11 @@
              attachments: parseAttachments(leave.attachments),
            };
          }));
-         res.json({ status: 'success', data: result, total, page, totalPages: Math.ceil(total / limit) });
+         res.json({ status: 'success', data: result, total, page, totalPages: Math.ceil(total / limit), approvedCount, rejectedCount, message: lang === 'th' ? 'ดึงข้อมูลสำเร็จ' : 'Fetch success' });
        } catch (err) {
-         res.status(500).json({ status: 'error', message: err.message });
+         let lang = req.headers['accept-language'] || req.query.lang || 'th';
+         lang = lang.split(',')[0].toLowerCase().startsWith('en') ? 'en' : 'th';
+         res.status(500).json({ status: 'error', message: lang === 'th' ? 'เกิดข้อผิดพลาด: ' + err.message : 'Error: ' + err.message });
        }
      });
 

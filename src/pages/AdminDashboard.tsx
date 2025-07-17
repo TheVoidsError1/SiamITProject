@@ -12,6 +12,9 @@ import { AlertCircle, CheckCircle, Clock, Eye, TrendingUp, Users, XCircle, FileT
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from '@/contexts/AuthContext';
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "lucide-react";
 
 type LeaveRequest = {
   id: number;
@@ -75,7 +78,7 @@ const AdminDashboard = () => {
   const [filterYear, setFilterYear] = useState<number | ''>('');
   // --- เพิ่ม state สำหรับ items per page ---
   const [historyLimit, setHistoryLimit] = useState(5);
-  const [pendingLimit, setPendingLimit] = useState(4);
+  const [pendingLimit, setPendingLimit] = useState(5);
   const [pendingLeaveTypes, setPendingLeaveTypes] = useState<{ id: string; leave_type: string }[]>([]);
   const [pendingLeaveTypesLoading, setPendingLeaveTypesLoading] = useState(false);
   const [pendingLeaveTypesError, setPendingLeaveTypesError] = useState<string | null>(null);
@@ -85,6 +88,10 @@ const AdminDashboard = () => {
   const [expandedRejection, setExpandedRejection] = useState<{ [id: string]: boolean }>({});
   const [showApproveDialog, setShowApproveDialog] = useState(false);
   const [approvingRequest, setApprovingRequest] = useState<any | null>(null);
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
+  const [approvedCount, setApprovedCount] = useState(0);
+  const [rejectedCount, setRejectedCount] = useState(0);
+  const [pendingDateRange, setPendingDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
 
   // ปรับการคำนวณสถิติให้ใช้ข้อมูลจาก leave request ที่ดึงมา
   const pendingCount = pendingRequests.length;
@@ -119,14 +126,14 @@ const AdminDashboard = () => {
     },
     {
       title: t('admin.allapproved'),
-      value: dashboardStats.approvedCount.toString(),
+      value: approvedCount.toString(), // ใช้ค่าที่อัปเดตตาม filter
       icon: CheckCircle,
       color: "text-green-600",
       bgColor: "bg-green-50",
     },
     {
       title: t('admin.rejected'),
-      value: dashboardStats.rejectedCount?.toString() || '0',
+      value: rejectedCount.toString(), // ใช้ค่าที่อัปเดตตาม filter
       icon: XCircle,
       color: "text-red-600",
       bgColor: "bg-red-50",
@@ -285,11 +292,13 @@ const AdminDashboard = () => {
       showSessionExpiredDialog();
       return;
     }
-    // --- ส่ง page, limit, month, year, status ไป backend ---
+    // --- ส่ง page, limit, month, year, status, dateRange ไป backend ---
     let url = `http://localhost:3001/api/leave-request/history?page=${historyPage}&limit=${historyLimit}`;
     if (filterMonth) url += `&month=${filterMonth}`;
     if (filterYear) url += `&year=${filterYear}`;
     if (historyStatusFilter) url += `&status=${historyStatusFilter}`;
+    if (dateRange.from) url += `&startDate=${format(dateRange.from, 'yyyy-MM-dd')}`;
+    if (dateRange.to) url += `&endDate=${format(dateRange.to, 'yyyy-MM-dd')}`;
     fetch(url, {
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -304,14 +313,20 @@ const AdminDashboard = () => {
         if (data.status === "success") {
           setHistoryRequests(data.data);
           setHistoryTotalPages(data.totalPages || 1);
+          setApprovedCount(data.approvedCount || 0);   // อัปเดตตาม filter
+          setRejectedCount(data.rejectedCount || 0);   // อัปเดตตาม filter
         } else {
           setHistoryRequests([]);
           setHistoryTotalPages(1);
+          setApprovedCount(0);
+          setRejectedCount(0);
         }
       })
       .catch(() => {
         setHistoryRequests([]);
         setHistoryTotalPages(1);
+        setApprovedCount(0);
+        setRejectedCount(0);
       })
       .finally(() => setLoading(false));
   };
@@ -329,6 +344,8 @@ const AdminDashboard = () => {
         // --- ส่ง page, limit ไป backend ---
         let url = `http://localhost:3001/api/leave-request/pending?page=${pendingPage}&limit=${pendingLimit}`;
         if (pendingFilterLeaveType) url += `&leaveType=${pendingFilterLeaveType}`;
+        if (pendingDateRange.from) url += `&startDate=${format(pendingDateRange.from, 'yyyy-MM-dd')}`;
+        if (pendingDateRange.to) url += `&endDate=${format(pendingDateRange.to, 'yyyy-MM-dd')}`;
         const res = await fetch(url, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -354,11 +371,11 @@ const AdminDashboard = () => {
       }
     };
     fetchPending();
-  }, [t, pendingPage, pendingLimit, pendingFilterLeaveType]);
+  }, [t, pendingPage, pendingLimit, pendingFilterLeaveType, pendingDateRange]);
 
   useEffect(() => {
     fetchHistoryRequests();
-  }, [t, historyPage, filterMonth, filterYear, historyLimit, historyStatusFilter]);
+  }, [t, historyPage, filterMonth, filterYear, historyLimit, historyStatusFilter, dateRange]);
 
   useEffect(() => {
     let url = "http://localhost:3001/api/leave-request/dashboard-stats";
@@ -516,6 +533,33 @@ const AdminDashboard = () => {
                 </CardHeader>
                 <CardContent className="p-6">
                   <div className="flex flex-wrap gap-4 items-center mb-6">
+                    {/* Date Range Picker for Pending */}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-64 min-w-[220px] max-w-full justify-start text-left font-normal whitespace-nowrap"
+                        >
+                          <Calendar className="mr-2 h-4 w-4" />
+                          {pendingDateRange.from
+                            ? pendingDateRange.to
+                              ? `${format(pendingDateRange.from, "dd/MM/yyyy")} - ${format(pendingDateRange.to, "dd/MM/yyyy")}`
+                              : format(pendingDateRange.from, "dd/MM/yyyy")
+                            : t('history.selectDateRange', 'เลือกช่วงเวลา')}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          initialFocus
+                          mode="range"
+                          defaultMonth={pendingDateRange.from || new Date()}
+                          selected={pendingDateRange}
+                          onSelect={range => setPendingDateRange({ from: range?.from, to: range?.to })}
+                          numberOfMonths={2}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    {/* Leave Type Filter เดิม */}
                     <label className="text-sm font-medium">{t('leave.type')}</label>
                     {pendingLeaveTypesLoading ? (
                       <span className="text-gray-500 text-sm">{t('common.loading')}</span>
@@ -535,6 +579,14 @@ const AdminDashboard = () => {
                         ))}
                       </select>
                     )}
+                    {/* ปุ่มล้าง filter */}
+                    <button
+                      className="ml-2 px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm"
+                      onClick={() => { setPendingFilterLeaveType(''); setPendingDateRange({ from: undefined, to: undefined }); setPendingPage(1); }}
+                      type="button"
+                    >
+                      {t('history.clearFilter')}
+                    </button>
                   </div>
                   {loading ? (
                     <div className="text-center py-10 text-gray-500">{t('common.loading')}</div>
@@ -664,6 +716,14 @@ const AdminDashboard = () => {
                           </select>
                           <span className="ml-2 text-sm text-gray-500">{t('admin.itemsPerPage')}</span>
                           <span className="ml-2 text-sm text-gray-500">{t('admin.pageInfo', { page: pendingPage, totalPages: pendingTotalPages })}</span>
+                          {/* ปุ่มล้าง filter */}
+                          <button
+                            className="ml-2 px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm"
+                            onClick={() => { setPendingFilterLeaveType(''); setPendingDateRange({ from: undefined, to: undefined }); setPendingPage(1); }}
+                            type="button"
+                          >
+                            {t('history.clearFilter')}
+                          </button>
                         </div>
                       )}
                     </div>
@@ -686,6 +746,32 @@ const AdminDashboard = () => {
                 <CardContent className="p-6">
                   <div className="flex flex-wrap gap-4 items-center mb-6">
                     <label className="text-sm font-medium">{t('history.filterByMonthYear')}</label>
+                    {/* Date Range Picker */}
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-64 min-w-[220px] max-w-full justify-start text-left font-normal whitespace-nowrap"
+                        >
+                          <Calendar className="mr-2 h-4 w-4" />
+                          {dateRange.from
+                            ? dateRange.to
+                              ? `${format(dateRange.from, "dd/MM/yyyy")} - ${format(dateRange.to, "dd/MM/yyyy")}`
+                              : format(dateRange.from, "dd/MM/yyyy")
+                            : t('history.selectDateRange', 'เลือกช่วงเวลา')}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          initialFocus
+                          mode="range"
+                          defaultMonth={dateRange.from || new Date()}
+                          selected={dateRange}
+                          onSelect={range => setDateRange({ from: range?.from, to: range?.to })}
+                          numberOfMonths={2}
+                        />
+                      </PopoverContent>
+                    </Popover>
                     <select
                       className="border rounded px-2 py-1"
                       value={filterMonth}
@@ -723,7 +809,7 @@ const AdminDashboard = () => {
                     </select>
                     <button
                       className="ml-2 px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm"
-                      onClick={() => { setFilterMonth(''); setFilterYear(''); setHistoryStatusFilter(''); }}
+                      onClick={() => { setFilterMonth(''); setFilterYear(''); setHistoryStatusFilter(''); setDateRange({ from: undefined, to: undefined }); }}
                       type="button"
                     >
                       {t('history.clearFilter')}
@@ -1032,18 +1118,18 @@ const AdminDashboard = () => {
       <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>กรุณาระบุเหตุผลในการไม่อนุมัติ</DialogTitle>
+            <DialogTitle>{t('admin.rejectReasonTitle', 'กรุณาระบุเหตุผลในการไม่อนุมัติ')}</DialogTitle>
           </DialogHeader>
           <textarea
             className="w-full border rounded p-2 mt-2"
             rows={3}
-            placeholder="กรอกเหตุผล..."
+            placeholder={t('admin.rejectReasonPlaceholder', 'กรอกเหตุผล...')}
             value={rejectReason}
             onChange={e => setRejectReason(e.target.value)}
           />
           <DialogFooter className="flex gap-2 justify-end mt-4">
-            <Button variant="outline" onClick={() => setShowRejectDialog(false)}>ย้อนกลับ</Button>
-            <Button variant="destructive" onClick={confirmReject} disabled={!rejectReason.trim()}>ยืนยัน</Button>
+            <Button variant="outline" onClick={() => setShowRejectDialog(false)}>{t('common.back', 'ย้อนกลับ')}</Button>
+            <Button variant="destructive" onClick={confirmReject} disabled={!rejectReason.trim()}>{t('common.confirm', 'ยืนยัน')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

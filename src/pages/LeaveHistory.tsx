@@ -1,7 +1,7 @@
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Clock, Calendar, FileText, CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { Clock, Calendar, FileText, CheckCircle, XCircle, AlertCircle, Filter, X } from "lucide-react";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import { useTranslation } from "react-i18next";
@@ -10,6 +10,11 @@ import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from '@/contexts/AuthContext';
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const LeaveHistory = () => {
   const { t, i18n } = useTranslation();
@@ -29,12 +34,20 @@ const LeaveHistory = () => {
   const [selectedLeave, setSelectedLeave] = useState<any | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   // --- เพิ่ม state สำหรับ items per page ---
-  const [limit, setLimit] = useState(6);
+  const [limit, setLimit] = useState(5);
   const [filterLeaveType, setFilterLeaveType] = useState('');
   // --- เพิ่ม state สำหรับ leave types dropdown ---
   const [leaveTypes, setLeaveTypes] = useState<{ id: string; leave_type: string }[]>([]);
   const [leaveTypesLoading, setLeaveTypesLoading] = useState(false);
   const [leaveTypesError, setLeaveTypesError] = useState<string | null>(null);
+
+  // --- เพิ่ม state สำหรับปฏิทินและ filter ใหม่ ---
+  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
+  const [filterStatus, setFilterStatus] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [statusOptions, setStatusOptions] = useState<string[]>([]);
+  const [yearOptions, setYearOptions] = useState<number[]>([]);
+  const [monthOptions, setMonthOptions] = useState<number[]>([]);
 
   const { showSessionExpiredDialog } = useAuth();
 
@@ -62,6 +75,25 @@ const LeaveHistory = () => {
     fetchLeaveTypes();
   }, []);
 
+  // ดึง filter options จาก backend
+  useEffect(() => {
+    const fetchFilters = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      const res = await fetch('/api/leave-history/filters', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      if (data.status === 'success') {
+        setStatusOptions(data.statuses || []);
+        setYearOptions(data.years || []);
+        setMonthOptions(data.months || []);
+      }
+    };
+    fetchFilters();
+  }, []);
+
   useEffect(() => {
     const fetchLeaveHistory = async () => {
       setLoading(true);
@@ -77,6 +109,10 @@ const LeaveHistory = () => {
         if (filterLeaveType) url += `&leaveType=${filterLeaveType}`;
         if (filterMonth) url += `&month=${filterMonth}`;
         if (filterYear) url += `&year=${filterYear}`;
+        if (filterStatus) url += `&status=${filterStatus}`;
+        // เพิ่ม date range filter
+        if (dateRange?.from) url += `&startDate=${format(dateRange.from, 'yyyy-MM-dd')}`;
+        if (dateRange?.to) url += `&endDate=${format(dateRange.to, 'yyyy-MM-dd')}`;
         const res = await fetch(url, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -99,7 +135,22 @@ const LeaveHistory = () => {
       }
     };
     fetchLeaveHistory();
-  }, [page, filterMonth, filterYear, limit, filterLeaveType]);
+  }, [page, filterMonth, filterYear, limit, filterLeaveType, filterStatus, dateRange]);
+
+  // ฟังก์ชันล้าง filter ทั้งหมด
+  const clearAllFilters = () => {
+    setFilterLeaveType('');
+    setFilterMonth('');
+    setFilterYear('');
+    setFilterStatus('');
+    setDateRange({ from: undefined, to: undefined });
+    setPage(1);
+  };
+
+  // ฟังก์ชันตรวจสอบว่ามี filter ใช้งานอยู่หรือไม่
+  const hasActiveFilters = () => {
+    return filterLeaveType || filterMonth || filterYear || filterStatus || dateRange?.from || dateRange?.to;
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -204,6 +255,11 @@ const LeaveHistory = () => {
     ? ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม']
     : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
+  // สร้างตัวเลือกเดือนและปีทั้งหมด
+  const allMonths = Array.from({ length: 12 }, (_, i) => i + 1);
+  const currentYear = new Date().getFullYear();
+  const allYears = Array.from({ length: 10 }, (_, i) => currentYear - 5 + i);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="border-b bg-white/80 backdrop-blur-sm">
@@ -279,62 +335,150 @@ const LeaveHistory = () => {
             </Card>
           </div>
 
-          {/* Leave History List */}
-          <div className="flex flex-wrap gap-4 items-center mb-6">
-            <label className="text-sm font-medium">{t('leave.type')}</label>
-            {leaveTypesLoading ? (
-              <span className="text-gray-500 text-sm">{t('common.loading')}</span>
-            ) : leaveTypesError ? (
-              <span className="text-red-500 text-sm">{leaveTypesError}</span>
-            ) : (
-              <select
-                className="border rounded px-2 py-1"
-                value={filterLeaveType}
-                onChange={e => { setFilterLeaveType(e.target.value); setPage(1); }}
-              >
-                <option value="">{t('leave.allTypes')}</option>
-                {leaveTypes.map((lt) => (
-                  <option key={lt.id} value={lt.id}>
-                    {t(`leaveTypes.${lt.leave_type}`, lt.leave_type)}
-                  </option>
-                ))}
-              </select>
+          {/* Enhanced Filter Section */}
+          <Card className="border-0 shadow-md">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Filter className="w-5 h-5 text-blue-600" />
+                  <h3 className="text-lg font-semibold">{t('history.filters', 'ตัวกรอง')}</h3>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowFilters(!showFilters)}
+                >
+                  {showFilters ? t('history.hideFilters', 'ซ่อนตัวกรอง') : t('history.showFilters', 'แสดงตัวกรอง')}
+                </Button>
+              </div>
+            </CardHeader>
+            {showFilters && (
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {/* Date Range Calendar */}
+                  <div className="space-y-2">
+                    <Label>{t('history.dateRange', 'ช่วงวันที่')}</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-48 min-w-[180px] max-w-[220px] justify-start text-left font-normal truncate whitespace-nowrap"
+                        >
+                          <Calendar className="mr-2 h-4 w-4" />
+                          {dateRange?.from ? (
+                            dateRange?.to ? (
+                              <>
+                                {format(dateRange.from, "dd/MM/yyyy")} - {format(dateRange.to, "dd/MM/yyyy")}
+                              </>
+                            ) : (
+                              format(dateRange.from, "dd/MM/yyyy")
+                            )
+                          ) : (
+                            <span>{t('history.selectDateRange', 'เลือกช่วงวันที่')}</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <CalendarComponent
+                          initialFocus
+                          mode="range"
+                          defaultMonth={dateRange.from || new Date()}
+                          selected={dateRange}
+                          onSelect={range => setDateRange({ from: range?.from, to: range?.to })}
+                          numberOfMonths={2}
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+
+                  {/* Leave Type Filter */}
+                  <div className="space-y-2">
+                    <Label>{t('leave.type', 'ประเภทการลา')}</Label>
+                    <Select value={filterLeaveType || "all"} onValueChange={v => setFilterLeaveType(v === "all" ? "" : v)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('leave.allTypes', 'ทั้งหมด')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t('leave.allTypes', 'ทั้งหมด')}</SelectItem>
+                        {leaveTypes.map((lt) => (
+                          <SelectItem key={lt.id} value={lt.id}>
+                            {t(`leaveTypes.${lt.leave_type}`, lt.leave_type)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Status Filter */}
+                  <div className="space-y-2">
+                    <Label>{t('leave.status', 'สถานะ')}</Label>
+                    <Select value={filterStatus || "all"} onValueChange={v => setFilterStatus(v === "all" ? "" : v)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={t('history.allStatuses', 'ทั้งหมด')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">{t('history.allStatuses', 'ทั้งหมด')}</SelectItem>
+                        {statusOptions.map(status => (
+                          <SelectItem key={status} value={status}>{t(`leave.${status}`, status)}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Month/Year Filter */}
+                  <div className="space-y-2">
+                    <Label>{t('history.monthYear', 'เดือน/ปี')}</Label>
+                    <div className="flex gap-2">
+                      <Select value={filterMonth ? filterMonth.toString() : "all"} onValueChange={v => setFilterMonth(v === "all" ? '' : Number(v))}>
+                        <SelectTrigger className="w-20">
+                          <SelectValue placeholder={t('history.month', 'เดือน')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">{t('history.allMonths', 'ทุกเดือน')}</SelectItem>
+                          {allMonths.map(m => (
+                            <SelectItem key={m} value={m.toString()}>{monthNames[m-1]}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Select value={filterYear ? filterYear.toString() : "all"} onValueChange={v => setFilterYear(v === "all" ? '' : Number(v))}>
+                        <SelectTrigger className="w-20">
+                          <SelectValue placeholder={t('history.year', 'ปี')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">{t('history.allYears', 'ทุกปี')}</SelectItem>
+                          {allYears.map(y => (
+                            <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Clear Filters Button */}
+                <div className="flex justify-between items-center pt-2 border-t">
+                  <div className="flex items-center gap-2">
+                    {hasActiveFilters() && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={clearAllFilters}
+                        className="text-red-600 border-red-200 hover:bg-red-50"
+                      >
+                        <X className="w-4 h-4 mr-1" />
+                        {t('history.clearAllFilters', 'ล้างตัวกรองทั้งหมด')}
+                      </Button>
+                    )}
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {leaveHistory.length} {t('history.results', 'ผลลัพธ์')}
+                  </div>
+                </div>
+              </CardContent>
             )}
-            <label className="text-sm font-medium">{t('history.filterByMonthYear')}</label>
-            <select
-              className="border rounded px-2 py-1"
-              value={filterMonth}
-              onChange={e => {
-                const value = e.target.value ? Number(e.target.value) : '';
-                setFilterMonth(value);
-                if (value && !filterYear) {
-                  const currentYear = new Date().getFullYear();
-                  setFilterYear(currentYear);
-                }
-              }}
-            >
-              <option value="">{t('history.allMonths')}</option>
-              {monthNames.map((name, i) => (
-                <option key={i+1} value={i+1}>{name}</option>
-              ))}
-            </select>
-            <input
-              type="number"
-              className="border rounded px-2 py-1 w-24"
-              placeholder={t('history.year')}
-              value={filterYear}
-              min={2000}
-              max={2100}
-              onChange={e => setFilterYear(e.target.value ? Number(e.target.value) : '')}
-            />
-            <button
-              className="ml-2 px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm"
-              onClick={() => { setFilterMonth(''); setFilterYear(''); }}
-              type="button"
-            >
-              {t('history.clearFilter')}
-            </button>
-          </div>
+          </Card>
+
+          {/* Leave History List */}
           <div className="space-y-4">
             {loading ? null : error ? (
               <p className="text-red-500">{error}</p>
@@ -343,7 +487,7 @@ const LeaveHistory = () => {
                 {leaveHistory.length === 0 && !loading && !error && (
                   <div className="w-full flex justify-center mt-10">
                     <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-lg px-6 py-4 text-center shadow">
-                      {t('history.noData', 'No leave history found for this period.')}
+                      {t('history.noData', 'ไม่พบประวัติการลาในช่วงเวลาที่เลือก')}
                     </div>
                   </div>
                 )}

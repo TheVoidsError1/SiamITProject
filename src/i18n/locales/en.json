@@ -76,7 +76,8 @@
     "reset": "Reset",
     "confirm": "Confirm",
     "month": "Month",
-    "year": "Year"
+    "year": "Year",
+    "close": "Close"
   },
   "leave": {
     "leaveRequest": "Leave Request",
@@ -285,7 +286,9 @@
     "year": "Year",
     "clearFilter": "Clear filter",
     "noData": "No leave history found for this period.",
-    "rejectedRequests": "Rejected Requests"
+    "rejectedRequests": "Rejected Requests",
+    "selectDateRange": "Select period",
+    "allYears": "All years"
   },
   "admin": {
     "pendingRequests": "Pending Requests",
@@ -318,7 +321,11 @@
     "allapproved": "All approved",
     "by": "by",
     "itemsPerPage": "Items per page",
-    "pageInfo": "{{page}} of {{totalPages}} pages"
+    "pageInfo": "{{page}} of {{totalPages}} pages",
+    "rejectReasonTitle": "Please specify the reason for rejection",
+    "rejectReasonPlaceholder": "Enter reason...",
+    "allStatuses": "All statuses",
+    "noDataForSelectedMonthYear": "No data for the selected month/year"
   },
   "system": {
     "onlineLeaveSystem": "Online Leave System",
