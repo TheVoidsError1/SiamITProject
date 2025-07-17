@@ -340,7 +340,7 @@
     "rejected": "ไม่อนุมัติแล้ว",
     "noApprovalHistory": "ไม่มีประวัติการอนุมัติ/ไม่อนุมัติ",
     "allapproved": "อนุมัติทั้งหมด",
-    "createUser": "สร้างผู้ใช้"
+    "createUser": "สร้างผู้ใช้",
     "allapproved": "อนุมัติทั้งหมด",
     "by": "โดย",
     "itemsPerPage": "จำนวนรายการต่อหน้า",
@@ -384,7 +384,6 @@
     "name": "ชื่อ",
     "phone": "เบอร์โทรศัพท์",
     "superadmin": "ซูเปอร์แอดมิน",
-  "employee": {
     "details": "รายละเอียดพนักงาน",
     "personalInfo": "ข้อมูลส่วนตัวพนักงาน",
     "personalInfoDesc": "ดูและจัดการข้อมูลส่วนตัวของพนักงาน",
@@ -407,7 +406,6 @@
     "noProcessCheckId": "ไม่พบ process check ID",
     "newPassword": "รหัสผ่านใหม่",
     "noPassword": "ยังไม่ได้ตั้งรหัสผ่าน",
-    "setNewPassword": "ตั้งรหัสผ่านใหม่"
     "setNewPassword": "ตั้งรหัสผ่านใหม่",
     "name": "ชื่อ",
     "phone": "เบอร์โทรศัพท์"

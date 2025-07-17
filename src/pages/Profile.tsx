@@ -19,7 +19,7 @@ import { usePushNotification } from "@/contexts/PushNotificationContext";
 import ChangePasswordDialog from "@/components/dialogs/ChangePasswordDialog";
 
 const Profile = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user, updateUser, showSessionExpiredDialog } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -468,7 +468,7 @@ const Profile = () => {
                       <SelectContent>
                         {positions.map(pos => (
                           <SelectItem key={pos.id} value={pos.id}>
-                            {lang === 'th' ? pos.position_name_th : pos.position_name_en}
+                            {i18n.language === 'th' ? pos.position_name_th : pos.position_name_en}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -487,7 +487,7 @@ const Profile = () => {
                       <SelectContent>
                         {departments.map(dep => (
                           <SelectItem key={dep.id} value={dep.id}>
-                            {lang === 'th' ? dep.department_name_th : dep.department_name_en}
+                            {i18n.language === 'th' ? dep.department_name_th : dep.department_name_en}
                           </SelectItem>
                         ))}
                       </SelectContent>
