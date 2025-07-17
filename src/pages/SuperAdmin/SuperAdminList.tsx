@@ -1,144 +1,115 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Mail, Lock, User, Building } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { useEffect } from 'react';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Eye, EyeOff, Mail, Lock, User, Building } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from 'react-i18next';
 
-const Register = () => {
+const SuperAdminList: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const lang = i18n.language.startsWith('th') ? 'th' : 'en';
-  const [formData, setFormData] = useState({
+  const { toast } = useToast();
+  const [form, setForm] = useState({
+    full_name: '',
     email: '',
     password: '',
     confirmPassword: '',
-    full_name: '',
     department: '',
     position: '',
-    role: 'employee' as 'employee' | 'admin' | 'intern'
+    role: '', // No default, force user to select
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [departments, setDepartments] = useState<{ id: string; department_name_en: string; department_name_th: string }[]>([]);
-  const [positions, setPositions] = useState<{ id: string; position_name_en: string; position_name_th: string }[]>([]);
-  const [newDepartment, setNewDepartment] = useState('');
-  const [newPosition, setNewPosition] = useState('');
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [positions, setPositions] = useState<any[]>([]);
   const [error, setError] = useState<{ email?: string; full_name?: string; general?: string }>({});
-  
-  const { signup } = useAuth();
-  const { toast } = useToast();
-  const navigate = useNavigate();
 
-  // ดึงข้อมูลจาก API
+  const lang = i18n.language.startsWith('th') ? 'th' : 'en';
+
   useEffect(() => {
     fetch('http://localhost:3001/api/departments')
       .then(res => res.json())
       .then(data => {
-        const depts = data.data.map((d: any) => ({
-          id: d.id,
-          department_name_en: d.department_name_en,
-          department_name_th: d.department_name_th
-        }));
+        let depts = data.data.map((d: any) => ({ id: d.id, department_name_th: d.department_name_th, department_name_en: d.department_name_en }));
         setDepartments(depts);
       })
       .catch(() => setDepartments([]));
-
     fetch('http://localhost:3001/api/positions')
       .then(res => res.json())
       .then(data => {
-        const pos = data.data.map((p: any) => ({
-          id: p.id,
-          position_name_en: p.position_name_en,
-          position_name_th: p.position_name_th
-        }));
+        let pos = data.data.map((p: any) => ({ id: p.id, position_name_th: p.position_name_th, position_name_en: p.position_name_en }));
         setPositions(pos);
       })
       .catch(() => setPositions([]));
   }, []);
 
-  // เพิ่ม department ใหม่
-  const handleAddDepartment = async () => {
-    if (!newDepartment) return;
-    const res = await fetch('http://localhost:3001/api/departments', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ department_name: newDepartment }),
-    });
-    if (res.ok) {
-      setDepartments(prev => [...prev, { id: 'new', department_name_en: newDepartment, department_name_th: newDepartment }]);
-      setNewDepartment('');
-    }
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  // เพิ่ม position ใหม่
-  const handleAddPosition = async () => {
-    if (!newPosition) return;
-    const res = await fetch('http://localhost:3001/api/positions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ position_name: newPosition }),
-    });
-    if (res.ok) {
-      setPositions(prev => [...prev, { id: 'new', position_name_en: newPosition, position_name_th: newPosition }]);
-      setNewPosition('');
-    }
+  const handleRoleChange = (value: string) => {
+    setForm({ ...form, role: value });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError({});
-    
-    if (formData.password !== formData.confirmPassword) {
+    if (form.password !== form.confirmPassword) {
       toast({
         title: t('auth.passwordMismatch'),
         description: t('auth.checkPasswordMatch'),
-        variant: "destructive",
+        variant: 'destructive',
       });
       return;
     }
-
     setLoading(true);
-
     try {
-      // Convert intern role to employee for signup, but keep position info
-      const signupRole = formData.role === 'intern' ? 'employee' : formData.role as 'employee' | 'admin';
-      
-      await signup(formData.email, formData.password, {
-        full_name: formData.full_name,
-        department: formData.department,
-        position: formData.position,
-        role: signupRole
+      const url = 'http://localhost:3001/api/create-user-with-role';
+      const payload = {
+        role: form.role,
+        name: form.full_name,
+        department: form.department,
+        position: form.position,
+        email: form.email,
+        password: form.password,
+      };
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
       });
-      
-      toast({
-        title: t('auth.registerSuccess'),
-        description: t('auth.checkEmailVerification'),
-      });
-      navigate('/login');
-    } catch (error: any) {
-      let errMsg = error.message || t('common.error');
-      console.log('Registration error object:', error);
-      console.log('Registration error message:', errMsg);
-      let newError: { email?: string; full_name?: string; general?: string } = {};
-      const lowerMsg = errMsg.toLowerCase();
-      if (lowerMsg.includes('user') || lowerMsg.includes('ชื่อผู้ใช')) {
-        newError.full_name = errMsg;
-      } else if (lowerMsg.includes('email')) {
-        newError.email = errMsg;
+      const data = await res.json();
+      if (res.ok && (data.success || data.token)) {
+        toast({
+          title: t('auth.registerSuccess'),
+          description: t('auth.checkEmailVerification'),
+        });
+        setForm({
+          full_name: '',
+          email: '',
+          password: '',
+          confirmPassword: '',
+          department: '',
+          position: '',
+          role: form.role,
+        });
       } else {
-        newError.general = errMsg;
+        toast({
+          title: t('auth.registerError'),
+          description: data.message || t('common.error'),
+          variant: 'destructive',
+        });
       }
-      setError(newError);
+    } catch (err: any) {
       toast({
         title: t('auth.registerError'),
-        description: errMsg,
-        variant: "destructive",
+        description: err.message || t('common.error'),
+        variant: 'destructive',
       });
     } finally {
       setLoading(false);
@@ -158,41 +129,51 @@ const Register = () => {
             className="mx-auto h-16 w-auto mb-6"
           />
           <h2 className="text-3xl font-bold text-gray-900">
-            {t('auth.register')}
+            {t('admin.createUser')}
           </h2>
           <p className="mt-2 text-sm text-gray-600">
             {t('main.onlineLeaveSystemCompany')}
           </p>
         </div>
-
         <Card className="shadow-lg border-0">
-          {/* Removed duplicate Register title and description in the card header */}
           <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2 mb-4 mt-4">
+                <Label htmlFor="role" className="mb-2 block">{t('auth.role')}</Label>
+                <Select value={form.role} onValueChange={handleRoleChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('auth.selectRole', 'Select Role')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="user">{t('employee.employee')}</SelectItem>
+                    <SelectItem value="admin">{t('employee.admin')}</SelectItem>
+                    <SelectItem value="superadmin">{t('employee.superadmin')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2 mb-4">
                 <Label htmlFor="full_name" className="mb-2 block">{t('auth.fullName')}</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     id="full_name"
+                    name="full_name"
                     placeholder={t('auth.fullName')}
-                    value={formData.full_name}
-                    onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
+                    value={form.full_name}
+                    onChange={handleChange}
                     className="pl-10"
                     required
                   />
                 </div>
-                {error.full_name && <div className="text-red-500 text-xs mt-1">{error.full_name}</div>}
               </div>
-
               <div className="space-y-2 mb-4">
                 <Label htmlFor="position" className="mb-2 block">{t('auth.position')}</Label>
-                <Select onValueChange={(value) => setFormData(prev => ({ ...prev, position: value }))}>
+                <Select value={form.position} onValueChange={value => setForm(f => ({ ...f, position: value }))}>
                   <SelectTrigger>
                     <SelectValue placeholder={t('positions.selectPosition')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {positions.map(pos => (
+                    {positions.map((pos) => (
                       <SelectItem key={pos.id} value={pos.id}>
                         {lang === 'th' ? pos.position_name_th : pos.position_name_en}
                       </SelectItem>
@@ -200,15 +181,14 @@ const Register = () => {
                   </SelectContent>
                 </Select>
               </div>
-
               <div className="space-y-2 mb-4">
                 <Label htmlFor="department" className="mb-2 block">{t('auth.department')}</Label>
-                <Select onValueChange={(value) => setFormData(prev => ({ ...prev, department: value }))}>
+                <Select value={form.department} onValueChange={value => setForm(f => ({ ...f, department: value }))}>
                   <SelectTrigger>
                     <SelectValue placeholder={t('departments.selectDepartment')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {departments.map(dep => (
+                    {departments.map((dep) => (
                       <SelectItem key={dep.id} value={dep.id}>
                         {lang === 'th' ? dep.department_name_th : dep.department_name_en}
                       </SelectItem>
@@ -216,34 +196,33 @@ const Register = () => {
                   </SelectContent>
                 </Select>
               </div>
-
               <div className="space-y-2 mb-4">
                 <Label htmlFor="email" className="mb-2 block">{t('auth.email')}</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     id="email"
+                    name="email"
                     type="email"
                     placeholder={t('auth.email')}
-                    value={formData.email}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    value={form.email}
+                    onChange={handleChange}
                     className="pl-10"
                     required
                   />
                 </div>
-                {error.email && <div className="text-red-500 text-xs mt-1">{error.email}</div>}
               </div>
-              
               <div className="space-y-2 mb-4">
                 <Label htmlFor="password" className="mb-2 block">{t('auth.password')}</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     id="password"
-                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
                     placeholder="••••••••"
-                    value={formData.password}
-                    onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
+                    value={form.password}
+                    onChange={handleChange}
                     className="pl-10 pr-10"
                     required
                   />
@@ -256,28 +235,23 @@ const Register = () => {
                   </button>
                 </div>
               </div>
-
               <div className="space-y-2 mb-4">
                 <Label htmlFor="confirmPassword" className="mb-2 block">{t('auth.confirmPassword')}</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     id="confirmPassword"
+                    name="confirmPassword"
                     type="password"
                     placeholder="••••••••"
-                    value={formData.confirmPassword}
-                    onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                    value={form.confirmPassword}
+                    onChange={handleChange}
                     className="pl-10"
                     required
                   />
                 </div>
               </div>
-
-              <Button 
-                type="submit" 
-                className="w-full" 
-                disabled={loading}
-              >
+              <Button type="submit" className="w-full" disabled={loading}>
                 {loading ? (
                   <>
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
@@ -288,18 +262,6 @@ const Register = () => {
                 )}
               </Button>
             </form>
-            {error.general && <div className="text-red-500 text-xs mt-2 text-center">{error.general}</div>}
-            <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">
-                {t('auth.alreadyHaveAccount')}{' '}
-                <Link 
-                  to="/login" 
-                  className="font-medium text-primary hover:text-primary/80 transition-colors"
-                >
-                  {t('auth.login')}
-                </Link>
-              </p>
-            </div>
           </CardContent>
         </Card>
       </div>
@@ -307,4 +269,4 @@ const Register = () => {
   );
 };
 
-export default Register;
+export default SuperAdminList; 

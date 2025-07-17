@@ -163,31 +163,39 @@ module.exports = (AppDataSource) => {
 
       const departmentRepo = AppDataSource.getRepository('Department');
       const positionRepo = AppDataSource.getRepository('Position');
-
+      let userEntity = null;
       if (role === 'admin') {
         const adminRepo = AppDataSource.getRepository('admin');
-        const admin = await adminRepo.findOne({ where: { id: repid } });
-        if (!admin) {
-          return res.status(404).json({ success: false, message: 'Admin not found' });
-        }
-        const department = admin.department ? await departmentRepo.findOne({ where: { id: admin.department } }) : null;
-        const position = admin.position ? await positionRepo.findOne({ where: { id: admin.position } }) : null;
-        profile.name = admin.admin_name;
-        profile.position = position ? position.position_name : '';
-        profile.department = department ? department.department_name : '';
+        userEntity = await adminRepo.findOne({ where: { id: repid } });
+        if (!userEntity) return res.status(404).json({ success: false, message: 'Admin not found' });
+        profile.name = userEntity.admin_name;
+      } else if (role === 'superadmin') {
+        const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+        userEntity = await superadminRepo.findOne({ where: { id: repid } });
+        if (!userEntity) return res.status(404).json({ success: false, message: 'SuperAdmin not found' });
+        profile.name = userEntity.superadmin_name;
       } else {
         const userRepo = AppDataSource.getRepository('User');
-        const user = await userRepo.findOne({ where: { id: repid } });
-        if (!user) {
-          return res.status(404).json({ success: false, message: 'User not found' });
-        }
-        const department = user.department ? await departmentRepo.findOne({ where: { id: user.department } }) : null;
-        const position = user.position ? await positionRepo.findOne({ where: { id: user.position } }) : null;
-        profile.name = user.User_name;
-        profile.position = position ? position.position_name : '';
-        profile.department = department ? department.department_name : '';
+        userEntity = await userRepo.findOne({ where: { id: repid } });
+        if (!userEntity) return res.status(404).json({ success: false, message: 'User not found' });
+        profile.name = userEntity.User_name;
       }
-
+      // Department
+      let department = null;
+      if (userEntity.department) {
+        department = await departmentRepo.findOne({ where: { id: userEntity.department } });
+      }
+      profile.department_id = department ? department.id : '';
+      profile.department_name_en = department ? department.department_name_en : '';
+      profile.department_name_th = department ? department.department_name_th : '';
+      // Position
+      let position = null;
+      if (userEntity.position) {
+        position = await positionRepo.findOne({ where: { id: userEntity.position } });
+      }
+      profile.position_id = position ? position.id : '';
+      profile.position_name_en = position ? position.position_name_en : '';
+      profile.position_name_th = position ? position.position_name_th : '';
       return res.json({ success: true, data: profile });
     } catch (err) {
       console.error('Profile error:', err);
@@ -261,7 +269,7 @@ module.exports = (AppDataSource) => {
         return res.status(404).json({ success: false, message: 'User not found in ProcessCheck' });
       }
       const { Role: role, Repid: repid, Email: email } = processCheck;
-      const { name, email: newEmail, position, department, password } = req.body;
+      const { name, email: newEmail, position_id, department_id, password } = req.body;
       const departmentRepo = AppDataSource.getRepository('Department');
       const positionRepo = AppDataSource.getRepository('Position');
       let updated;
@@ -269,38 +277,37 @@ module.exports = (AppDataSource) => {
       if (password) {
         hashedPassword = await bcrypt.hash(password, 10);
       }
+      let userEntity = null;
       if (role === 'admin') {
         const adminRepo = AppDataSource.getRepository('admin');
-        const admin = await adminRepo.findOne({ where: { id: repid } });
-        if (!admin) {
-          return res.status(404).json({ success: false, message: 'Admin not found' });
-        }
-        let departmentEntity = null;
-        let positionEntity = null;
-        if (department) departmentEntity = await departmentRepo.findOne({ where: { department_name: department } });
-        if (position) positionEntity = await positionRepo.findOne({ where: { position_name: position } });
-        admin.admin_name = name || admin.admin_name;
-        admin.email = newEmail || admin.email;
-        admin.department = departmentEntity ? departmentEntity.id : admin.department;
-        admin.position = positionEntity ? positionEntity.id : admin.position;
-        if (hashedPassword) admin.password = hashedPassword;
-        updated = await adminRepo.save(admin);
+        userEntity = await adminRepo.findOne({ where: { id: repid } });
+        if (!userEntity) return res.status(404).json({ success: false, message: 'Admin not found' });
+        userEntity.admin_name = name || userEntity.admin_name;
+        userEntity.email = newEmail || userEntity.email;
+        userEntity.department = department_id || userEntity.department;
+        userEntity.position = position_id || userEntity.position;
+        if (hashedPassword) userEntity.password = hashedPassword;
+        updated = await adminRepo.save(userEntity);
+      } else if (role === 'superadmin') {
+        const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+        userEntity = await superadminRepo.findOne({ where: { id: repid } });
+        if (!userEntity) return res.status(404).json({ success: false, message: 'SuperAdmin not found' });
+        userEntity.superadmin_name = name || userEntity.superadmin_name;
+        userEntity.email = newEmail || userEntity.email;
+        userEntity.department = department_id || userEntity.department;
+        userEntity.position = position_id || userEntity.position;
+        if (hashedPassword) userEntity.password = hashedPassword;
+        updated = await superadminRepo.save(userEntity);
       } else {
         const userRepo = AppDataSource.getRepository('User');
-        const user = await userRepo.findOne({ where: { id: repid } });
-        if (!user) {
-          return res.status(404).json({ success: false, message: 'User not found' });
-        }
-        let departmentEntity = null;
-        let positionEntity = null;
-        if (department) departmentEntity = await departmentRepo.findOne({ where: { department_name: department } });
-        if (position) positionEntity = await positionRepo.findOne({ where: { position_name: position } });
-        user.User_name = name || user.User_name;
-        user.email = newEmail || user.email;
-        user.department = departmentEntity ? departmentEntity.id : user.department;
-        user.position = positionEntity ? positionEntity.id : user.position;
-        if (hashedPassword) user.password = hashedPassword;
-        updated = await userRepo.save(user);
+        userEntity = await userRepo.findOne({ where: { id: repid } });
+        if (!userEntity) return res.status(404).json({ success: false, message: 'User not found' });
+        userEntity.User_name = name || userEntity.User_name;
+        userEntity.email = newEmail || userEntity.email;
+        userEntity.department = department_id || userEntity.department;
+        userEntity.position = position_id || userEntity.position;
+        if (hashedPassword) userEntity.password = hashedPassword;
+        updated = await userRepo.save(userEntity);
       }
       // Update password in ProcessCheck if changed
       if (hashedPassword) {
@@ -309,15 +316,26 @@ module.exports = (AppDataSource) => {
       }
       // Return updated profile in the same format as GET
       let profile = { email: updated.email || email };
-      if (role === 'admin') {
-        profile.name = updated.admin_name;
-        profile.position = updated.position ? (await positionRepo.findOne({ where: { id: updated.position } }))?.position_name : '';
-        profile.department = updated.department ? (await departmentRepo.findOne({ where: { id: updated.department } }))?.department_name : '';
-      } else {
-        profile.name = updated.User_name;
-        profile.position = updated.position ? (await positionRepo.findOne({ where: { id: updated.position } }))?.position_name : '';
-        profile.department = updated.department ? (await departmentRepo.findOne({ where: { id: updated.department } }))?.department_name : '';
+      // Department
+      let department = null;
+      if (updated.department) {
+        department = await departmentRepo.findOne({ where: { id: updated.department } });
       }
+      profile.department_id = department ? department.id : '';
+      profile.department_name_en = department ? department.department_name_en : '';
+      profile.department_name_th = department ? department.department_name_th : '';
+      // Position
+      let position = null;
+      if (updated.position) {
+        position = await positionRepo.findOne({ where: { id: updated.position } });
+      }
+      profile.position_id = position ? position.id : '';
+      profile.position_name_en = position ? position.position_name_en : '';
+      profile.position_name_th = position ? position.position_name_th : '';
+      // Name
+      if (role === 'admin') profile.name = updated.admin_name;
+      else if (role === 'superadmin') profile.name = updated.superadmin_name;
+      else profile.name = updated.User_name;
       return res.json({ success: true, data: profile });
     } catch (err) {
       console.error('Profile update error:', err);
@@ -660,6 +678,11 @@ module.exports = (AppDataSource) => {
         const admin = await adminRepo.findOne({ where: { id: repid } });
         if (!admin) return res.status(404).json({ success: false, message: 'Admin not found' });
         positionId = admin.position;
+      } else if (role === 'superadmin') {
+        const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+        const superadmin = await superadminRepo.findOne({ where: { id: repid } });
+        if (!superadmin) return res.status(404).json({ success: false, message: 'SuperAdmin not found' });
+        positionId = superadmin.position;
       } else {
         const userRepo = AppDataSource.getRepository('User');
         const user = await userRepo.findOne({ where: { id: repid } });
@@ -668,64 +691,65 @@ module.exports = (AppDataSource) => {
       }
       if (!positionId) return res.status(404).json({ success: false, message: 'Position not found' });
 
-      // 5. Query leaveQuota by positionId
+      // 5. Query all leaveQuota rows for this position
       const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
-      const quota = await leaveQuotaRepo.findOne({ where: { positionId } });
-      if (!quota) return res.status(404).json({ success: false, message: 'Leave quota not found for this position' });
-
-      // 6. Query approved leaveRequests for this user
-      const leaveRequestRepo = AppDataSource.getRepository('LeaveRequest');
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+      const leaveRequestRepo = AppDataSource.getRepository('LeaveRequest');
+      const quotas = await leaveQuotaRepo.find({ where: { positionId } });
+      const leaveTypes = await leaveTypeRepo.find();
       const leaveRequests = await leaveRequestRepo.find({ where: { Repid: repid, status: 'approved' } });
 
-      // 7. Map leaveType id -> leave_type (string)
-      const leaveTypeIdToName = {};
-      const allLeaveTypes = await leaveTypeRepo.find();
-      allLeaveTypes.forEach(lt => {
-        leaveTypeIdToName[lt.id] = lt.leave_type;
-      });
-
-      // 8. รวมวัน/ชั่วโมงที่ใช้แต่ละประเภท
-      let used = { vacation: 0, sick: 0, personal: 0, maternity: 0 };
-      for (const lr of leaveRequests) {
-        let typeName = lr.leaveType;
-        if (leaveTypeIdToName[typeName]) typeName = leaveTypeIdToName[typeName];
-        // Normalize typeName
-        let typeKey = null;
-        if (["ลาพักผ่อน", "vacation"].includes(typeName)) typeKey = "vacation";
-        else if (["ลาป่วย", "sick"].includes(typeName)) typeKey = "sick";
-        else if (["ลากิจ", "personal"].includes(typeName)) typeKey = "personal";
-        else if (["ลาคลอด", "maternity"].includes(typeName)) typeKey = "maternity";
-        if (!typeKey) continue;
-        // คำนวณจำนวนวัน/ชั่วโมง
-        if (typeKey === "personal" && lr.startTime && lr.endTime) {
-          // แบบชั่วโมง
-          const [sh, sm] = lr.startTime.split(":").map(Number);
-          const [eh, em] = lr.endTime.split(":").map(Number);
-          let start = sh + (sm || 0) / 60;
-          let end = eh + (em || 0) / 60;
-          let diff = end - start;
-          if (diff < 0) diff += 24;
-          used.personal += diff / 9; // 9 ชั่วโมง = 1 วัน
-        } else if (lr.startDate && lr.endDate) {
-          // แบบวัน
-          const start = new Date(lr.startDate);
-          const end = new Date(lr.endDate);
-          let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-          if (days < 0 || isNaN(days)) days = 0;
-          used[typeKey] += days;
+      // 6. For each leave type, calculate quota and used (sick, personal, vacation, maternity)
+      const allowedTypes = ['sick', 'personal', 'vacation', 'maternity', 'ลาป่วย', 'ลากิจ', 'ลาพักผ่อน', 'ลาคลอด'];
+      const result = [];
+      for (const leaveType of leaveTypes) {
+        if (!allowedTypes.includes(leaveType.leave_type)) continue;
+        // Find quota for this leave type
+        const quotaRow = quotas.find(q => q.leaveTypeId === leaveType.id);
+        const quota = quotaRow ? quotaRow.quota : 0;
+        // Calculate used leave for this type
+        let used = 0;
+        for (const lr of leaveRequests) {
+          let leaveTypeName = lr.leaveType;
+          if (leaveTypeName && leaveTypeName.length > 20) {
+            const leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
+            if (leaveTypeEntity && leaveTypeEntity.leave_type) {
+              leaveTypeName = leaveTypeEntity.leave_type;
+            }
+          }
+          if (leaveTypeName === leaveType.leave_type) {
+            // Personal leave: may be by hour or day
+            if (leaveTypeName === 'personal' || leaveTypeName === 'ลากิจ') {
+              if (lr.startTime && lr.endTime) {
+                const [sh, sm] = lr.startTime.split(":").map(Number);
+                const [eh, em] = lr.endTime.split(":").map(Number);
+                let start = sh + (sm || 0) / 60;
+                let end = eh + (em || 0) / 60;
+                let diff = end - start;
+                if (diff < 0) diff += 24;
+                used += diff / 9; // 1 day = 9 hours
+              } else if (lr.startDate && lr.endDate) {
+                const start = new Date(lr.startDate);
+                const end = new Date(lr.endDate);
+                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                if (days < 0 || isNaN(days)) days = 0;
+                used += days;
+              }
+            } else {
+              // Other types: by day
+              if (lr.startDate && lr.endDate) {
+                const start = new Date(lr.startDate);
+                const end = new Date(lr.endDate);
+                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                if (days < 0 || isNaN(days)) days = 0;
+                used += days;
+              }
+            }
+          }
         }
+        const remaining = Math.max(0, quota - used);
+        result.push({ type: leaveType.leave_type, used: Math.round(used * 100) / 100, quota, remaining });
       }
-      // ปัดเศษทศนิยม 2 ตำแหน่งสำหรับ personal
-      used.personal = Math.round(used.personal * 100) / 100;
-
-      // 9. Prepare result
-      const result = [
-        { type: 'vacation', used: used.vacation, total: quota.vacation },
-        { type: 'sick', used: used.sick, total: quota.sick },
-        { type: 'personal', used: used.personal, total: quota.personal },
-        { type: 'maternity', used: used.maternity, total: quota.maternity },
-      ];
       return res.json({ success: true, data: result });
     } catch (err) {
       console.error('Leave quota error:', err);

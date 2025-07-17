@@ -13,20 +13,13 @@ module.exports = new EntitySchema({
       type: 'varchar',
       nullable: false,
     },
-    sick: {
-      type: 'int',
-      default: 0,
+    leaveTypeId: {
+      type: 'varchar',
+      nullable: false,
     },
-    vacation: {
+    quota: {
       type: 'int',
-      default: 0,
-    },
-    personal: {
-      type: 'int',
-      default: 0,
-    },
-    maternity: {
-      type: 'int',
+      nullable: false,
       default: 0,
     },
   },

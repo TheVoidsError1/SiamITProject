@@ -20,6 +20,8 @@ import EmployeeDetail from "./pages/EmployeeDetail";
 import NotFound from "./pages/NotFound";
 import '@/i18n';
 import { PushNotificationProvider } from "@/contexts/PushNotificationContext";
+import ManageAll from './pages/SuperAdmin/ManageAll';
+import SuperAdminList from './pages/SuperAdmin/SuperAdminList';
 
 const queryClient = new QueryClient();
 
@@ -83,6 +85,16 @@ const AppContent = () => {
             <Route path="/admin/employees/:id" element={
               <ProtectedRoute adminOnly>
                 <EmployeeDetail />
+              </ProtectedRoute>
+            } />
+            <Route path="/superadmin/manage-all" element={
+              <ProtectedRoute superadminOnly>
+                <ManageAll />
+              </ProtectedRoute>
+            } />
+            <Route path="/superadmin/superadmins" element={
+              <ProtectedRoute superadminOnly>
+                <SuperAdminList />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />

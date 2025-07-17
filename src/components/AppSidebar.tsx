@@ -1,5 +1,5 @@
 
-import { Calendar, Home, Clock, Settings, User, LogOut, Users } from "lucide-react";
+import { Calendar, Home, Clock, Settings, User, LogOut, Users, Building } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import {
@@ -57,6 +57,32 @@ const adminItems = [
   },
 ];
 
+const superadminItems = [
+  {
+    title: "navigation.manageAll",
+    url: "/superadmin/manage-all",
+    icon: Settings,
+  },
+  {
+    title: "navigation.createUser",
+    url: "/superadmin/superadmins",
+    icon: User,
+  },
+];
+
+const superadminExtraItems = [
+  {
+    title: "navigation.manageAll",
+    url: "/superadmin/manage-all",
+    icon: Settings,
+  },
+  {
+    title: "navigation.createUser",
+    url: "/superadmin/superadmins",
+    icon: User,
+  },
+];
+
 export function AppSidebar() {
   const { t } = useTranslation();
   const location = useLocation();
@@ -81,7 +107,11 @@ export function AppSidebar() {
     }
   };
 
-  const allItems = user?.role === 'admin' ? [...items, ...adminItems] : items;
+  const allItems = user?.role === 'superadmin'
+    ? [...items, ...adminItems, ...superadminExtraItems]
+    : user?.role === 'admin'
+      ? [...items, ...adminItems]
+      : items;
 
   return (
     <Sidebar className="border-r border-border/50">

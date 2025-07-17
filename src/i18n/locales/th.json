@@ -33,8 +33,9 @@
     "sessionExpired": "เซสชันหมดอายุ",
     "sessionExpiredDesc": "เซสชันการใช้งานของคุณหมดอายุแล้ว กรุณาเข้าสู่ระบบใหม่",
     "pleaseLoginAgain": "กรุณาเข้าสู่ระบบใหม่",
-    "loginAgain": "เข้าสู่ระบบใหม่",
-    "passwordRequired": "กรุณากรอกรหัสผ่านใหม่ และ กรุณายืนยันรหัสผ่าน"
+    "passwordRequired": "กรุณากรอกรหัสผ่านใหม่ และ กรุณายืนยันรหัสผ่าน",
+    "role": "บทบาท",
+    "selectRole": "เลือกบทบาท"
   },
   "navigation": {
     "home": "หน้าหลัก",
@@ -44,7 +45,9 @@
     "adminDashboard": "จัดการระบบ",
     "employeeManagement": "จัดการพนักงาน",
     "mainMenu": "เมนูหลัก",
-    "allEmployees": "บุคลากรทั้งหมด"
+    "allEmployees": "บุคลากรทั้งหมด",
+    "createUser": "สร้างผู้ใช้",
+    "manageAll": "จัดการทั้งหมด"
   },
   "common": {
     "submit": "ส่ง",
@@ -337,6 +340,8 @@
     "rejected": "ไม่อนุมัติแล้ว",
     "noApprovalHistory": "ไม่มีประวัติการอนุมัติ/ไม่อนุมัติ",
     "allapproved": "อนุมัติทั้งหมด",
+    "createUser": "สร้างผู้ใช้"
+    "allapproved": "อนุมัติทั้งหมด",
     "by": "โดย",
     "itemsPerPage": "จำนวนรายการต่อหน้า",
     "pageInfo": "หน้า {{page}} จาก {{totalPages}} หน้า",
@@ -376,6 +381,10 @@
     "submittedDate": "วันที่ส่งคำขอ"
   },
   "employee": {
+    "name": "ชื่อ",
+    "phone": "เบอร์โทรศัพท์",
+    "superadmin": "ซูเปอร์แอดมิน",
+  "employee": {
     "details": "รายละเอียดพนักงาน",
     "personalInfo": "ข้อมูลส่วนตัวพนักงาน",
     "personalInfoDesc": "ดูและจัดการข้อมูลส่วนตัวของพนักงาน",
@@ -397,8 +406,8 @@
     "saveError": "บันทึกข้อมูลพนักงานไม่สำเร็จ",
     "noProcessCheckId": "ไม่พบ process check ID",
     "newPassword": "รหัสผ่านใหม่",
-    "leaveHistoryDesc": "ประวัติการลาของพนักงาน",
     "noPassword": "ยังไม่ได้ตั้งรหัสผ่าน",
+    "setNewPassword": "ตั้งรหัสผ่านใหม่"
     "setNewPassword": "ตั้งรหัสผ่านใหม่",
     "name": "ชื่อ",
     "phone": "เบอร์โทรศัพท์"

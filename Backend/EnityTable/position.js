@@ -10,7 +10,8 @@ module.exports = new EntitySchema({
             length: 36,
             generated: 'uuid',
         },
-        position_name: { type: 'varchar' },
+        position_name_en: { type: 'varchar' },
+        position_name_th: { type: 'varchar' },
     },
     beforeInsert: (entity) => {
         if (!entity.id) {

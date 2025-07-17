@@ -31,9 +31,11 @@
     "passwordMismatch": "Passwords do not match",
     "passwordTooShort": "Password must be at least 6 characters",
     "checkEmailVerification": "You can now log in with this user.",
-    "sessionExpired": "Session Expired",
-    "sessionExpiredDesc": "Your session has expired. Please login again.",
+    "sessionExpired": "Session expired, please login again",
     "pleaseLoginAgain": "Please login again",
+    "role": "Role",
+    "selectRole": "Select Role",
+    "sessionExpiredDesc": "Your session has expired. Please login again.",
     "loginAgain": "Login Again"
   },
   "navigation": {
@@ -44,7 +46,9 @@
     "adminDashboard": "Admin Dashboard",
     "employeeManagement": "Employee Management",
     "mainMenu": "Main Menu",
-    "allEmployees": "All Employees"
+    "allEmployees": "All Employees",
+    "createUser": "Create User",
+    "manageAll": "Manage All"
   },
   "common": {
     "submit": "Submit",
@@ -332,6 +336,8 @@
     "rejected": "Rejected",
     "noApprovalHistory": "No approval/rejection history",
     "allapproved": "All approved",
+    "createUser": "Create User"
+    "allapproved": "All approved",
     "by": "by",
     "itemsPerPage": "Items per page",
     "pageInfo": "{{page}} of {{totalPages}} pages",
@@ -377,7 +383,8 @@
     "usedLeaveDays": "Used leave days",
     "noPassword": "Not set",
     "leaveHistoryDesc": "Employee leave history",
-    "name": "name"
+    "name": "name",
+    "superadmin": "Superadmin"
   },
   "notification": {
     "title": "Notifications",

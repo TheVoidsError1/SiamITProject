@@ -67,7 +67,18 @@ module.exports = (AppDataSource) => {
             department = deptEntity ? deptEntity.department_name : profile.department;
             id = profile.id;
           }
-        } else if (proc.Role === 'user') {
+        } else if (proc.Role === 'superadmin') {
+          const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+          profile = await superadminRepo.findOneBy({ id: proc.Repid });
+          if (profile) {
+            name = profile.superadmin_name;
+            const posEntity = await AppDataSource.getRepository('Position').findOne({ where: { id: profile.position } });
+            const deptEntity = await AppDataSource.getRepository('Department').findOne({ where: { id: profile.department } });
+            position = posEntity ? posEntity.position_name : profile.position;
+            department = deptEntity ? deptEntity.department_name : profile.department;
+            id = profile.id;
+          }
+        } else {
           profile = await userRepo.findOneBy({ id: proc.Repid });
           if (profile) {
             name = profile.User_name;
@@ -176,6 +187,9 @@ module.exports = (AppDataSource) => {
       const userRepo = AppDataSource.getRepository('User');
       const departmentRepo = AppDataSource.getRepository('Department');
       const positionRepo = AppDataSource.getRepository('Position');
+      const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
+      const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+      const leaveRequestRepo = AppDataSource.getRepository('LeaveRequest');
 
       // Try to find in admin first
       let profile = await adminRepo.findOne({ where: { id } });
@@ -185,7 +199,13 @@ module.exports = (AppDataSource) => {
         role = 'employee';
       }
       if (!profile) {
-        return res.status(404).json({ success: false, message: 'User/Admin not found' });
+        // Try superadmin
+        const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+        profile = await superadminRepo.findOne({ where: { id } });
+        role = 'superadmin';
+      }
+      if (!profile) {
+        return res.status(404).json({ success: false, message: 'User/Admin/SuperAdmin not found' });
       }
 
       // Find processCheck for email (if exists)
@@ -195,13 +215,27 @@ module.exports = (AppDataSource) => {
       // Get department and position names (i18n key or readable)
       let department = '';
       let position = '';
-      if (profile.department) {
-        const deptEntity = await departmentRepo.findOne({ where: { id: profile.department } });
-        department = deptEntity ? deptEntity.department_name : profile.department;
-      }
-      if (profile.position) {
-        const posEntity = await positionRepo.findOne({ where: { id: profile.position } });
-        position = posEntity ? posEntity.position_name : profile.position;
+      let positionId = '';
+      if (role === 'superadmin') {
+        if (profile.department) {
+          const deptEntity = await departmentRepo.findOne({ where: { id: profile.department } });
+          department = deptEntity ? deptEntity.department_name : profile.department;
+        }
+        if (profile.position) {
+          const posEntity = await positionRepo.findOne({ where: { id: profile.position } });
+          position = posEntity ? posEntity.position_name : profile.position;
+          positionId = profile.position;
+        }
+      } else {
+        if (profile.department) {
+          const deptEntity = await departmentRepo.findOne({ where: { id: profile.department } });
+          department = deptEntity ? deptEntity.department_name : profile.department;
+        }
+        if (profile.position) {
+          const posEntity = await positionRepo.findOne({ where: { id: profile.position } });
+          position = posEntity ? posEntity.position_name : profile.position;
+          positionId = profile.position;
+        }
       }
 
       // Password field (for future editing)
@@ -276,7 +310,7 @@ module.exports = (AppDataSource) => {
         success: true,
         data: {
           id,
-          name: profile.admin_name || profile.User_name || '',
+          name: profile.admin_name || profile.User_name || profile.superadmin_name || '',
           email,
           password,
           position,
@@ -291,7 +325,7 @@ module.exports = (AppDataSource) => {
     }
   });
 
-  // Update employee/admin profile by ID
+  // Update employee/admin/superadmin profile by ID
   router.put('/employee/:id', async (req, res) => {
     try {
       const { id } = req.params;
@@ -299,6 +333,7 @@ module.exports = (AppDataSource) => {
       const processRepo = AppDataSource.getRepository('ProcessCheck');
       const adminRepo = AppDataSource.getRepository('admin');
       const userRepo = AppDataSource.getRepository('User');
+      const superadminRepo = AppDataSource.getRepository('SuperAdmin');
       const departmentRepo = AppDataSource.getRepository('Department');
       const positionRepo = AppDataSource.getRepository('Position');
 
@@ -310,7 +345,11 @@ module.exports = (AppDataSource) => {
         role = 'employee';
       }
       if (!profile) {
-        return res.status(404).json({ success: false, message: 'User/Admin not found' });
+        profile = await superadminRepo.findOne({ where: { id } });
+        role = 'superadmin';
+      }
+      if (!profile) {
+        return res.status(404).json({ success: false, message: 'User/Admin/SuperAdmin not found' });
       }
 
       // Update fields
@@ -319,6 +358,11 @@ module.exports = (AppDataSource) => {
         if (position !== undefined) profile.position = position;
         if (department !== undefined) profile.department = department;
         await adminRepo.save(profile);
+      } else if (role === 'superadmin') {
+        if (name !== undefined) profile.superadmin_name = name;
+        if (position !== undefined) profile.position = position;
+        if (department !== undefined) profile.department = department;
+        await superadminRepo.save(profile);
       } else {
         if (name !== undefined) profile.User_name = name;
         if (position !== undefined) profile.position = position;
@@ -353,7 +397,7 @@ module.exports = (AppDataSource) => {
         success: true,
         data: {
           id,
-          name: profile.admin_name || profile.User_name || '',
+          name: profile.admin_name || profile.User_name || profile.superadmin_name || '',
           email: processCheck ? processCheck.Email : (profile.email || ''),
           password: processCheck ? processCheck.Password : '',
           position: positionName,

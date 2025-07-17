@@ -7,7 +7,7 @@ interface User {
   email: string;
   full_name?: string;
   avatar_url?: string;
-  role?: 'employee' | 'admin';
+  role?: 'employee' | 'admin' | 'superadmin';
   department?: string;
   position?: string;
 }

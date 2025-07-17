@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import axios from 'axios';
-import { Building, Calendar, Camera, Save, Shield, User } from 'lucide-react';
+import { Building, Calendar, Camera, Save, Shield, User, Crown } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
@@ -33,8 +33,8 @@ const Profile = () => {
     position: '',
   });
   const [saving, setSaving] = useState(false);
-  const [departments, setDepartments] = useState<string[]>([]);
-  const [positions, setPositions] = useState<string[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [positions, setPositions] = useState<any[]>([]);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [positionsLoaded, setPositionsLoaded] = useState(false);
   const [departmentsLoaded, setDepartmentsLoaded] = useState(false);
@@ -163,12 +163,12 @@ const Profile = () => {
     fetch('http://localhost:3001/api/positions')
       .then(res => res.json())
       .then(data => {
-        let pos = data.data.map((p: any) => p.position_name);
-        const isNoPos = (p: string) => !p || p.trim() === '' || p.toLowerCase() === 'none' || p.toLowerCase() === 'no position' || p.toLowerCase() === 'noposition';
-        const noPos = pos.filter(isNoPos);
-        // Sort by translated label
-        const normalPos = pos.filter(p => !isNoPos(p)).sort((a, b) => t(`positions.${a}`).localeCompare(t(`positions.${b}`)));
-        setPositions([...normalPos, ...noPos]);
+        const pos = data.data.map((p: any) => ({
+          id: p.id,
+          position_name_en: p.position_name_en,
+          position_name_th: p.position_name_th
+        }));
+        setPositions(pos);
         setPositionsLoaded(true);
       })
       .catch(() => setPositionsLoaded(true));
@@ -176,12 +176,12 @@ const Profile = () => {
     fetch('http://localhost:3001/api/departments')
       .then(res => res.json())
       .then(data => {
-        let depts = data.data.map((d: any) => d.department_name);
-        const isNoDept = (d: string) => !d || d.trim() === '' || d.toLowerCase() === 'none' || d.toLowerCase() === 'no department' || d.toLowerCase() === 'nodepartment';
-        const noDept = depts.filter(isNoDept);
-        // Sort by translated label
-        const normalDepts = depts.filter(d => !isNoDept(d)).sort((a, b) => t(`departments.${a}`).localeCompare(t(`departments.${b}`)));
-        setDepartments([...normalDepts, ...noDept]);
+        const depts = data.data.map((d: any) => ({
+          id: d.id,
+          department_name_en: d.department_name_en,
+          department_name_th: d.department_name_th
+        }));
+        setDepartments(depts);
         setDepartmentsLoaded(true);
       })
       .catch(() => setDepartmentsLoaded(true));
@@ -225,14 +225,16 @@ const Profile = () => {
   const leaveStats = leaveQuota.map(item => {
     const usedDays = item.type === 'personal' ? Math.floor(item.used) : item.used;
     const usedHours = item.type === 'personal' ? Math.round((item.used % 1) * 9) : 0;
-    const remaining = item.total - item.used;
+    // Use backend-provided quota and remaining
+    const quota = item.quota;
+    const remaining = item.remaining;
     const remainingDays = item.type === 'personal' ? Math.floor(remaining) : remaining;
     const remainingHours = item.type === 'personal' ? Math.round((remaining % 1) * 9) : 0;
     return {
       label: leaveTypeMap[item.type]?.label || item.type,
       used: usedDays,
       usedHour: usedHours,
-      total: item.total,
+      quota,
       color: leaveTypeMap[item.type]?.color || 'bg-gray-400',
       type: item.type,
       remaining: remainingDays,
@@ -401,10 +403,12 @@ const Profile = () => {
                 <h2 className="text-2xl font-bold text-gray-900">{user?.full_name}</h2>
                 <p className="text-gray-600 mb-2">{user?.position ? t(`positions.${user.position}`) : '-'}</p>
                 <div className="flex items-center gap-4">
-                  <Badge variant={user?.role === 'admin' ? 'default' : 'secondary'} className="flex items-center gap-1">
-                    <Shield className="h-3 w-3" />
-                    {user?.role === 'admin' ? t('main.systemAdmin') : (user?.position ? t(`positions.${user.position}`) : t('main.employee'))}
-                  </Badge>
+                  {user?.role === 'superadmin' && (
+                    <Badge className="flex items-center gap-1 bg-purple-100 text-purple-800 border border-purple-300">
+                      <Crown className="h-3 w-3" />
+                      {t('employee.superadmin', 'Superadmin')}
+                    </Badge>
+                  )}
                   <Badge variant="outline" className="flex items-center gap-1">
                     <Building className="h-3 w-3" />
                     {user?.department ? t(`departments.${user.department}`) : '-'}
@@ -462,11 +466,9 @@ const Profile = () => {
                         <SelectValue placeholder={t('positions.selectPosition')} />
                       </SelectTrigger>
                       <SelectContent>
-                        {positions.map((key) => (
-                          <SelectItem key={key} value={key}>
-                            {key === '' || key.toLowerCase() === 'none' || key.toLowerCase() === 'no position'
-                              ? t('positions.notSpecified')
-                              : t(`positions.${key}`)}
+                        {positions.map(pos => (
+                          <SelectItem key={pos.id} value={pos.id}>
+                            {lang === 'th' ? pos.position_name_th : pos.position_name_en}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -483,11 +485,9 @@ const Profile = () => {
                         <SelectValue placeholder={t('departments.selectDepartment')} />
                       </SelectTrigger>
                       <SelectContent>
-                        {departments.map((key) => (
-                          <SelectItem key={key} value={key}>
-                            {key === '' || key.toLowerCase() === 'none' || key.toLowerCase() === 'no department'
-                              ? t('departments.notSpecified', t('departments.selectDepartment'))
-                              : t(`departments.${key}`)}
+                        {departments.map(dep => (
+                          <SelectItem key={dep.id} value={dep.id}>
+                            {lang === 'th' ? dep.department_name_th : dep.department_name_en}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -532,22 +532,22 @@ const Profile = () => {
                           <span className="text-sm font-medium">{stat.label}</span>
                           <span className="text-sm text-gray-500">
                             {stat.type === 'personal'
-                              ? `${stat.used} ${t('common.days')}${stat.usedHour > 0 ? ` ${stat.usedHour} ${t('common.hours')}` : ''}/${stat.total} ${t('common.days')}`
-                              : `${stat.used}/${stat.total} ${t('common.days')}`}
+                              ? `${stat.used} ${t('common.days')}${stat.usedHour > 0 ? ` ${stat.usedHour} ${t('common.hours')}` : ''}/${stat.quota} ${t('common.days')}`
+                              : `${stat.used}/${stat.quota} ${t('common.days')}`}
                           </span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
                           <div
                             className={`${stat.color} h-2 rounded-full transition-all duration-500`}
                             style={{
-                              width: `${Math.min(100, stat.total > 0 ? (stat.used / stat.total) * 100 : 0)}%`
+                              width: `${Math.min(100, stat.quota > 0 ? (stat.used / stat.quota) * 100 : 0)}%`
                             }}
                           ></div>
                         </div>
                         <div className="text-xs text-gray-500">
                           {stat.type === 'personal'
                             ? `${t('common.remaining')} ${stat.remaining} ${t('common.days')}${stat.remainingHour > 0 ? ` ${stat.remainingHour} ${t('common.hours')}` : ''}`
-                            : `${t('common.remaining')} ${stat.total - stat.used} ${t('common.days')}`}
+                            : `${t('common.remaining')} ${stat.remaining} ${t('common.days')}`}
                         </div>
                       </div>
                     ))}

@@ -263,95 +263,83 @@ module.exports = (AppDataSource) => {
       const userId = req.user.userId;
       const userRepo = AppDataSource.getRepository('User');
       const adminRepo = AppDataSource.getRepository('Admin');
+      const superadminRepo = AppDataSource.getRepository('SuperAdmin');
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
       const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
+      const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
 
-      // Get user and their position (check both User and Admin tables)
+      // Get user and their position (check User, Admin, SuperAdmin tables)
       let user = await userRepo.findOneBy({ id: userId });
       if (!user) {
         user = await adminRepo.findOneBy({ id: userId });
       }
+      if (!user) {
+        user = await superadminRepo.findOneBy({ id: userId });
+      }
       if (!user || !user.position) {
         return res.status(404).json({ status: 'error', message: 'User or position not found' });
       }
+      const positionId = user.position;
 
-      // Get leave quota for this position
-      const quota = await leaveQuotaRepo.findOneBy({ positionId: user.position });
-      if (!quota) {
-        return res.status(404).json({ status: 'error', message: 'Leave quota not found for this position' });
-      }
-      // Sum sick, vacation, personal (in hours)
-      const totalQuotaHours = ((quota.sick || 0) + (quota.vacation || 0) + (quota.personal || 0)) * 9;
+      // Get all leave quotas for this position
+      const quotas = await leaveQuotaRepo.find({ where: { positionId } });
+      const leaveTypes = await leaveTypeRepo.find();
+      // Get all approved leave requests for this user
+      const approvedLeaves = await leaveRepo.find({ where: { Repid: userId, status: 'approved' } });
 
-      // --- ปรับ filter เฉพาะปีที่เลือก (หรือปีปัจจุบัน) ---
-      const year = req.query.year ? parseInt(req.query.year) : (new Date()).getFullYear();
-      const startOfYear = new Date(year, 0, 1);
-      const endOfYear = new Date(year, 11, 31, 23, 59, 59, 999);
-      // Get all approved leave requests for this user ในปีนั้น
-      const approvedLeaves = await leaveRepo.find({
-        where: {
-          Repid: userId,
-          status: 'approved',
-          startDate: Between(startOfYear, endOfYear)
+      // For each leave type, calculate remaining (only sick, personal, vacation)
+      let totalRemaining = 0;
+      for (const leaveType of leaveTypes) {
+        if (!['sick', 'personal', 'vacation', 'ลาป่วย', 'ลากิจ', 'ลาพักผ่อน'].includes(leaveType.leave_type)) continue;
+        const quotaRow = quotas.find(q => q.leaveTypeId === leaveType.id);
+        const quota = quotaRow ? quotaRow.quota : 0;
+        let used = 0;
+        for (const lr of approvedLeaves) {
+          let leaveTypeName = lr.leaveType;
+          if (leaveTypeName && leaveTypeName.length > 20) {
+            const leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
+            if (leaveTypeEntity && leaveTypeEntity.leave_type) {
+              leaveTypeName = leaveTypeEntity.leave_type;
+            }
+          }
+          if (leaveTypeName === leaveType.leave_type) {
+            // Personal leave: may be by hour or day
+            if (leaveTypeName === 'personal' || leaveTypeName === 'ลากิจ') {
+              if (lr.startTime && lr.endTime) {
+                const [sh, sm] = lr.startTime.split(":").map(Number);
+                const [eh, em] = lr.endTime.split(":").map(Number);
+                let start = sh + (sm || 0) / 60;
+                let end = eh + (em || 0) / 60;
+                let diff = end - start;
+                if (diff < 0) diff += 24;
+                used += diff / 9; // 1 day = 9 hours
+              } else if (lr.startDate && lr.endDate) {
+                const start = new Date(lr.startDate);
+                const end = new Date(lr.endDate);
+                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                if (days < 0 || isNaN(days)) days = 0;
+                used += days;
+              }
+            } else {
+              // Other types: by day
+              if (lr.startDate && lr.endDate) {
+                const start = new Date(lr.startDate);
+                const end = new Date(lr.endDate);
+                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                if (days < 0 || isNaN(days)) days = 0;
+                used += days;
+              }
+            }
+          }
         }
-      });
-      // Helper to normalize type
-      const normalizeType = (type) => {
-        if (!type) return null;
-        if (["sick", "ลาป่วย"].includes(type)) return "sick";
-        if (["vacation", "ลาพักผ่อน"].includes(type)) return "vacation";
-        if (["personal", "ลากิจ"].includes(type)) return "personal";
-        return null;
-      };
-      // Calculate used leave in hours
-      let usedHours = 0;
-      const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
-      function parseTimeToMinutes(t) {
-        if (!t) return 0;
-        const [h, m] = t.split(':').map(Number);
-        return h * 60 + (m || 0);
+        let remaining = quota - used;
+        if (remaining < 0) remaining = 0;
+        totalRemaining += remaining;
       }
-      for (const lr of approvedLeaves) {
-        let leaveTypeName = lr.leaveType;
-        if (leaveTypeName && leaveTypeName.length > 20) {
-          const leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
-          if (leaveTypeEntity && leaveTypeEntity.leave_type) {
-            leaveTypeName = leaveTypeEntity.leave_type;
-          }
-        }
-        const leaveType = normalizeType(leaveTypeName);
-        if (!leaveType) continue;
-        if (leaveType === "personal") {
-          if (lr.startTime && lr.endTime) {
-            const startMinutes = parseTimeToMinutes(lr.startTime);
-            const endMinutes = parseTimeToMinutes(lr.endTime);
-            let durationHours = (endMinutes - startMinutes) / 60;
-            if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
-            usedHours += durationHours;
-          } else if (lr.startDate && lr.endDate) {
-            const start = new Date(lr.startDate);
-            const end = new Date(lr.endDate);
-            let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-            if (days < 0 || isNaN(days)) days = 0;
-            usedHours += days * 9;
-          }
-        } else if (leaveType === "sick" || leaveType === "vacation") {
-          if (lr.startDate && lr.endDate) {
-            const start = new Date(lr.startDate);
-            const end = new Date(lr.endDate);
-            let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-            if (days < 0 || isNaN(days)) days = 0;
-            usedHours += days * 9;
-          }
-        }
-      }
-      // Calculate remaining
-      let remaining = totalQuotaHours - usedHours;
-      if (remaining < 0) remaining = 0;
-      res.json({ status: 'success', data: {
-        days: Math.floor(remaining / 9),
-        hours: Math.round(remaining % 9)
-      }});
+      // Convert to days and hours (1 day = 9 hours)
+      const days = Math.floor(totalRemaining);
+      const hours = Math.round((totalRemaining - days) * 9);
+      res.json({ status: 'success', data: { days, hours } });
     } catch (err) {
       res.status(500).json({ status: 'error', message: err.message });
     }
@@ -363,12 +351,16 @@ module.exports = (AppDataSource) => {
       const userId = req.user.userId;
       const userRepo = AppDataSource.getRepository('User');
       const adminRepo = AppDataSource.getRepository('Admin');
+      const superadminRepo = AppDataSource.getRepository('SuperAdmin');
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
 
-      // Get user (check both User and Admin tables)
+      // Get user (check User, Admin, SuperAdmin tables)
       let user = await userRepo.findOneBy({ id: userId });
       if (!user) {
         user = await adminRepo.findOneBy({ id: userId });
+      }
+      if (!user) {
+        user = await superadminRepo.findOneBy({ id: userId });
       }
       if (!user) {
         return res.status(404).json({ status: 'error', message: 'User not found' });
@@ -377,6 +369,12 @@ module.exports = (AppDataSource) => {
       // Get all leave requests for this user
       const leaves = await leaveRepo.find({ where: { Repid: userId } });
       // Helper to normalize type
+      const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+      function parseTimeToMinutes(t) {
+        if (!t) return 0;
+        const [h, m] = t.split(':').map(Number);
+        return h * 60 + (m || 0);
+      }
       const normalizeType = (type) => {
         if (!type) return null;
         if (["sick", "ลาป่วย"].includes(type)) return "sick";
@@ -386,12 +384,6 @@ module.exports = (AppDataSource) => {
       };
       // Calculate total used leave in hours
       let totalHours = 0;
-      const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
-      function parseTimeToMinutes(t) {
-        if (!t) return 0;
-        const [h, m] = t.split(':').map(Number);
-        return h * 60 + (m || 0);
-      }
       for (const lr of leaves) {
         let leaveTypeName = lr.leaveType;
         if (leaveTypeName && leaveTypeName.length > 20) {
