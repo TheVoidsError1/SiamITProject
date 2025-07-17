@@ -1,29 +1,107 @@
 const express = require('express');
 const authMiddleware = require('../middleware/authMiddleware');
 const router = express.Router();
+const { Between } = require('typeorm');
 
 module.exports = (AppDataSource) => {
   router.get('/dashboard-stats', authMiddleware, async (req, res) => {
     try {
       const userId = req.user.userId;
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
-      // Fetch all leave requests where the current user is the requester
-      const leaveHistory = await leaveRepo.find({ where: { Repid: userId } });
-      // Calculate days used
+      // --- เพิ่ม filter เดือน/ปี และ user เฉพาะคนนั้น ---
+      const month = req.query.month ? parseInt(req.query.month) : null;
+      const year = req.query.year ? parseInt(req.query.year) : null;
+      let where = { Repid: userId };
+      if (month && year) {
+        // filter เฉพาะ startDate ที่อยู่ในเดือน/ปีนั้น
+        where = {
+          ...where,
+          startDate: Between(
+            new Date(year, month - 1, 1),
+            new Date(year, month, 0, 23, 59, 59, 999)
+          )
+        };
+      } else if (year) {
+        where = {
+          ...where,
+          startDate: Between(
+            new Date(year, 0, 1),
+            new Date(year, 11, 31, 23, 59, 59, 999)
+          )
+        };
+      }
+      const leaveHistory = await leaveRepo.find({ where });
+      // Calculate days used - ปรับการคำนวณให้ถูกต้องตามประเภทการลา
       let daysUsed = 0;
-      leaveHistory.forEach(lr => {
-        const start = new Date(lr.startDate);
-        const end = new Date(lr.endDate);
-        daysUsed += (end - start) / (1000 * 60 * 60 * 24) + 1;
-      });
-      // Only use approved leaves for stats
+      let hoursUsed = 0;
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+
+      // Helper to normalize type
+      const normalizeType = (type) => {
+        if (!type) return null;
+        if (["sick", "ลาป่วย"].includes(type)) return "sick";
+        if (["vacation", "ลาพักผ่อน"].includes(type)) return "vacation";
+        if (["personal", "ลากิจ"].includes(type)) return "personal";
+        return null;
+      };
+
+      // Helper to parse HH:mm to minutes
+      function parseTimeToMinutes(t) {
+        if (!t) return 0;
+        const [h, m] = t.split(':').map(Number);
+        return h * 60 + (m || 0);
+      }
+
+      for (const lr of leaveHistory) {
+        let leaveTypeName = lr.leaveType;
+        if (leaveTypeName && leaveTypeName.length > 20) {
+          const leaveType = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
+          leaveTypeName = leaveType ? leaveType.leave_type : leaveTypeName;
+        }
+        const leaveType = normalizeType(leaveTypeName);
+        if (!leaveType) continue;
+
+        if (leaveType === "personal") {
+          // Personal leave: can be hour-based or day-based
+          if (lr.startTime && lr.endTime) {
+            // Hour-based
+            const startMinutes = parseTimeToMinutes(lr.startTime);
+            const endMinutes = parseTimeToMinutes(lr.endTime);
+            let durationHours = (endMinutes - startMinutes) / 60;
+            if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
+            hoursUsed += durationHours;
+          } else if (lr.startDate && lr.endDate) {
+            // Day-based, convert days to hours (1 day = 9 hours)
+            const start = new Date(lr.startDate);
+            const end = new Date(lr.endDate);
+            let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+            if (days < 0 || isNaN(days)) days = 0;
+            hoursUsed += days * 9;
+          }
+        } else if (leaveType === "sick" || leaveType === "vacation") {
+          // Sick/Vacation: only day-based
+          if (lr.startDate && lr.endDate) {
+            const start = new Date(lr.startDate);
+            const end = new Date(lr.endDate);
+            let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+            if (days < 0 || isNaN(days)) days = 0;
+            daysUsed += days;
+          }
+        }
+      }
+
+      // Convert hours to days if >= 9 hours
+      const additionalDays = Math.floor(hoursUsed / 9);
+      const remainingHours = Math.round(hoursUsed % 9);
+      daysUsed += additionalDays;
+
+      // Only use approved leaves for stats
       const approvedLeaves = leaveHistory.filter(lr => lr.status === 'approved');
       // Calculate leave days by type using leaveType name
       const leaveTypeStats = {};
       for (const lr of approvedLeaves) {
         let leaveTypeName = lr.leaveType;
-        if (leaveTypeName) {
+        if (leaveTypeName && leaveTypeName.length > 20) {
           const leaveType = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
           leaveTypeName = leaveType ? leaveType.leave_type : leaveTypeName;
         }
@@ -47,6 +125,7 @@ module.exports = (AppDataSource) => {
         data: {
           leaveHistory,
           daysUsed,
+          hoursUsed: remainingHours, // เพิ่มชั่วโมงที่เหลือ
           pendingRequests,
           approvalRate,
           remainingDays,

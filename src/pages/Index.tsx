@@ -8,7 +8,9 @@ import { useToast } from "@/hooks/use-toast";
 import { fetchWithAuth } from "@/lib/utils";
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
-import { Calendar, Clock, TrendingUp, Users } from "lucide-react";
+import { Calendar, Clock, TrendingUp, Users, Calendar as CalendarIcon } from "lucide-react";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
+import { Calendar as CalendarPicker } from "@/components/ui/calendar";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useNavigate } from "react-router-dom";
@@ -56,6 +58,13 @@ const Index = () => {
   const [daysUsed, setDaysUsed] = useState<{ days: number, hours: number } | null>(null);
   const [loadingDaysUsed, setLoadingDaysUsed] = useState(true);
   const [errorDaysUsed, setErrorDaysUsed] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  // เพิ่ม state สำหรับ days used จาก filter
+  const [filteredDaysUsed, setFilteredDaysUsed] = useState<number>(0);
+  // เพิ่ม state สำหรับ hours used จาก filter
+  const [filteredHoursUsed, setFilteredHoursUsed] = useState<number>(0);
 
   const showSessionExpiredToast = () => {
     toast({
@@ -68,10 +77,14 @@ const Index = () => {
     });
   };
 
-  useEffect(() => {
+  // เพิ่มฟังก์ชันสำหรับเรียก API พร้อม month/year
+  const fetchDashboardStats = (month?: number, year?: number) => {
     setLoadingStats(true);
     const token = localStorage.getItem("token");
-    fetchWithAuth("/api/dashboard-stats", {
+    let url = "/api/dashboard-stats";
+    if (month && year) url += `?month=${month}&year=${year}`;
+    else if (year) url += `?year=${year}`;
+    fetchWithAuth(url, {
       headers: {
         Authorization: token ? `Bearer ${token}` : undefined,
       },
@@ -85,7 +98,9 @@ const Index = () => {
             { title: t('main.pendingRequests'), value: data.data.pendingRequests, unit: t('main.requests'), icon: Users, color: "text-orange-600", bgColor: "bg-orange-50" },
             { title: t('main.approvalRate'), value: data.data.approvalRate, unit: "%", icon: TrendingUp, color: "text-purple-600", bgColor: "bg-purple-50" },
           ]);
-          // Map leaveTypeStats to leaveStats for display
+          // อัปเดต filteredDaysUsed และ filteredHoursUsed สำหรับ Days Used card
+          setFilteredDaysUsed(data.data.daysUsed || 0);
+          setFilteredHoursUsed(data.data.hoursUsed || 0);
           const stats = data.data.leaveTypeStats || {};
           setLeaveStats({
             sick: stats["ลาป่วย"] || stats["sick"] || 0,
@@ -98,7 +113,7 @@ const Index = () => {
       })
       .catch(() => setErrorStats(t('error.apiConnectionError')))
       .finally(() => setLoadingStats(false));
-  }, [t, logout]);
+  };
 
   useEffect(() => {
     setLoadingRecentStats(true);
@@ -142,26 +157,11 @@ const Index = () => {
       .finally(() => setLoadingDaysRemaining(false));
   }, [t, logout]);
 
+  // useEffect เรียก fetchDashboardStats เมื่อ selectedMonth/selectedYear เปลี่ยน
   useEffect(() => {
-    setLoadingDaysUsed(true);
-    setErrorDaysUsed("");
-    const token = localStorage.getItem("token");
-    fetchWithAuth("/api/day-used", {
-      headers: {
-        Authorization: token ? `Bearer ${token}` : undefined,
-      },
-    }, logout)
-      .then((res) => res && res.json())
-      .then((data) => {
-        if (data.status === "success" && data.data) {
-          setDaysUsed(data.data);
-        } else {
-          setErrorDaysUsed(t('error.cannotLoadStats'));
-        }
-      })
-      .catch(() => setErrorDaysUsed(t('error.apiConnectionError')))
-      .finally(() => setLoadingDaysUsed(false));
-  }, [t, logout]);
+    fetchDashboardStats(selectedMonth, selectedYear);
+    // eslint-disable-next-line
+  }, [selectedMonth, selectedYear, t, logout]);
 
   // Localized date formatter for dashboard welcome section
   const formatFullDateLocalized = (date: Date) => {
@@ -191,6 +191,43 @@ const Index = () => {
               {t('main.welcomeMessage')}
             </p>
           </div>
+          <Popover open={showMonthPicker} onOpenChange={setShowMonthPicker}>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="flex items-center gap-2">
+                <CalendarIcon className="w-4 h-4 text-blue-600" />
+                <span className="text-sm">{selectedMonth}/{selectedYear}</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2">
+              <div className="flex flex-col items-center">
+                <div className="flex gap-2 mb-2">
+                  <Button size="icon" variant="ghost" onClick={() => setSelectedYear(y => y - 1)}>
+                    &lt;
+                  </Button>
+                  <span className="font-semibold text-lg">{selectedYear}</span>
+                  <Button size="icon" variant="ghost" onClick={() => setSelectedYear(y => y + 1)}>
+                    &gt;
+                  </Button>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {[...Array(12)].map((_, i) => (
+                    <Button
+                      key={i}
+                      size="sm"
+                      variant={selectedMonth === i + 1 ? "default" : "outline"}
+                      className="w-16"
+                      onClick={() => {
+                        setSelectedMonth(i + 1);
+                        setShowMonthPicker(false);
+                      }}
+                    >
+                      {format(new Date(selectedYear, i, 1), "MMM", { locale: i18n.language === 'th' ? th : undefined })}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
           <LanguageSwitcher />
         </div>
       </div>
@@ -268,23 +305,21 @@ const Index = () => {
             <CardContent>
               <div className="space-y-0.5">
                 <p className="text-2xl font-bold">
-                  {loadingDaysUsed ? (
+                  {loadingStats ? (
                     <span>{t('common.loading')}</span>
-                  ) : errorDaysUsed ? (
-                    <span className="text-red-500">{errorDaysUsed}</span>
-                  ) : daysUsed ? (
+                  ) : errorStats ? (
+                    <span className="text-red-500">{errorStats}</span>
+                  ) : (
                     <>
-                      <span className="font-bold">{daysUsed.days}</span>
+                      <span className="font-bold">{filteredDaysUsed}</span>
                       <span className="text-base font-normal text-muted-foreground ml-1">{t('common.days')}</span>
-                      {daysUsed.hours > 0 && (
+                      {filteredHoursUsed > 0 && (
                         <>
-                          <span className="font-bold ml-2">{daysUsed.hours}</span>
+                          <span className="font-bold ml-2">{filteredHoursUsed}</span>
                           <span className="text-base font-normal text-muted-foreground ml-1">{t('common.hour')}</span>
                         </>
                       )}
                     </>
-                  ) : (
-                    <span>-</span>
                   )}
                 </p>
                 <p className="text-base text-muted-foreground">
