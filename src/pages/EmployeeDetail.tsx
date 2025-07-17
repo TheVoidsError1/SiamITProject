@@ -20,7 +20,7 @@ const EmployeeDetail = () => {
   const location = useLocation();
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, showSessionExpiredDialog } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [selectedLeave, setSelectedLeave] = useState(null);
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
@@ -77,8 +77,19 @@ const EmployeeDetail = () => {
     if (!id) return;
     setLoading(true);
     setError(null);
-    fetch(`http://localhost:3001/api/employee/${id}`)
-      .then(res => res.json())
+    const token = localStorage.getItem('token');
+    if (!token) {
+      showSessionExpiredDialog();
+      return;
+    }
+    const res = fetch(`http://localhost:3001/api/employee/${id}`)
+      .then(res => {
+        if (res.status === 401) {
+          showSessionExpiredDialog();
+          return Promise.reject(new Error('Session expired'));
+        }
+        return res.json();
+      })
       .then(data => {
         if (data.success) {
           setEmployee(data.data);
@@ -106,7 +117,13 @@ const EmployeeDetail = () => {
     if (filterStatus && filterStatus !== "all") params.push(`status=${filterStatus}`);
     const query = params.length > 0 ? `?${params.join("&")}` : "";
     fetch(`http://localhost:3001/api/employee/${id}/leave-history${query}`)
-      .then(res => res.json())
+      .then(res => {
+        if (res.status === 401) {
+          showSessionExpiredDialog();
+          return Promise.reject(new Error('Session expired'));
+        }
+        return res.json();
+      })
       .then(data => {
         if (data.success) {
           setLeaveHistory(data.data);
@@ -136,14 +153,26 @@ const EmployeeDetail = () => {
 
   useEffect(() => {
     fetch('http://localhost:3001/api/departments')
-      .then(res => res.json())
+      .then(res => {
+        if (res.status === 401) {
+          showSessionExpiredDialog();
+          return Promise.reject(new Error('Session expired'));
+        }
+        return res.json();
+      })
       .then(data => {
         setDepartments(Array.isArray(data.data) ? data.data : []);
       })
       .catch(() => setDepartments([]));
 
     fetch('http://localhost:3001/api/positions')
-      .then(res => res.json())
+      .then(res => {
+        if (res.status === 401) {
+          showSessionExpiredDialog();
+          return Promise.reject(new Error('Session expired'));
+        }
+        return res.json();
+      })
       .then(data => {
         setPositions(Array.isArray(data.data) ? data.data : []);
       })
@@ -158,8 +187,19 @@ const EmployeeDetail = () => {
     if (!id) return;
     setLoading(true);
     setError(null);
-    fetch(`http://localhost:3001/api/employee/${id}`)
-      .then(res => res.json())
+    const token = localStorage.getItem('token');
+    if (!token) {
+      showSessionExpiredDialog();
+      return;
+    }
+    const res = fetch(`http://localhost:3001/api/employee/${id}`)
+      .then(res => {
+        if (res.status === 401) {
+          showSessionExpiredDialog();
+          return Promise.reject(new Error('Session expired'));
+        }
+        return res.json();
+      })
       .then(data => {
         if (data.success) {
           setEmployee(data.data);
@@ -177,7 +217,13 @@ const EmployeeDetail = () => {
 
     // Fetch leave history for this employee by id (paging)
     fetch(`http://localhost:3001/api/leave-request/user/${id}?page=${leavePage}&limit=6`)
-      .then(res => res.json())
+      .then(res => {
+        if (res.status === 401) {
+          showSessionExpiredDialog();
+          return Promise.reject(new Error('Session expired'));
+        }
+        return res.json();
+      })
       .then(data => {
         if (data.status === 'success') {
           setLeaveHistory(data.data);

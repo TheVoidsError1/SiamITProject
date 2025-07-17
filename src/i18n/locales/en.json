@@ -31,8 +31,10 @@
     "passwordMismatch": "Passwords do not match",
     "passwordTooShort": "Password must be at least 6 characters",
     "checkEmailVerification": "You can now log in with this user.",
-    "sessionExpired": "Session expired, please login again",
-    "pleaseLoginAgain": "Please login again"
+    "sessionExpired": "Session Expired",
+    "sessionExpiredDesc": "Your session has expired. Please login again.",
+    "pleaseLoginAgain": "Please login again",
+    "loginAgain": "Login Again"
   },
   "navigation": {
     "home": "Home",

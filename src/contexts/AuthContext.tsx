@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import SessionExpiredDialog from '@/components/dialogs/SessionExpiredDialog';
 
 interface User {
   id: string;
@@ -18,6 +19,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
   loading: boolean;
+  showSessionExpiredDialog: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -49,6 +51,7 @@ function parseJwt(token: string) {
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showSessionExpiredDialog, setShowSessionExpiredDialog] = useState(false);
   const logoutTimer = useRef<NodeJS.Timeout | null>(null);
   const { t } = useTranslation();
 
@@ -76,16 +79,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const now = Date.now();
 
     if (exp <= now) {
-      logout();
+      setShowSessionExpiredDialog(true);
       return;
     }
 
     // ตั้ง timer auto logout
     const timeout = exp - now;
     logoutTimer.current = setTimeout(() => {
-      logout();
-      alert(t('auth.sessionExpired'));
-      window.location.href = '/login'; // หรือใช้ navigate('/login')
+      setShowSessionExpiredDialog(true);
     }, timeout);
 
     // cleanup timer
@@ -189,6 +190,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     localStorage.removeItem('currentUser');
     localStorage.removeItem('token');
+    if (logoutTimer.current) {
+      clearTimeout(logoutTimer.current);
+      logoutTimer.current = null;
+    }
   };
 
   const updateUser = (userData: Partial<User>) => {
@@ -206,7 +211,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     logout,
     updateUser,
     loading,
+    showSessionExpiredDialog: () => setShowSessionExpiredDialog(true),
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      <SessionExpiredDialog 
+        open={showSessionExpiredDialog} 
+        onOpenChange={setShowSessionExpiredDialog} 
+      />
+    </AuthContext.Provider>
+  );
 };

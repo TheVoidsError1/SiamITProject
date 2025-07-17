@@ -9,6 +9,7 @@ import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { useEffect, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { useAuth } from '@/contexts/AuthContext';
 
 const LeaveHistory = () => {
   const { t, i18n } = useTranslation();
@@ -34,6 +35,8 @@ const LeaveHistory = () => {
   const [leaveTypes, setLeaveTypes] = useState<{ id: string; leave_type: string }[]>([]);
   const [leaveTypesLoading, setLeaveTypesLoading] = useState(false);
   const [leaveTypesError, setLeaveTypesError] = useState<string | null>(null);
+
+  const { showSessionExpiredDialog } = useAuth();
 
   // Fetch leave types from backend
   useEffect(() => {
@@ -65,7 +68,10 @@ const LeaveHistory = () => {
       setError(null);
       try {
         const token = localStorage.getItem('token');
-        if (!token) throw new Error('No token found, please login');
+        if (!token) {
+          showSessionExpiredDialog();
+          return;
+        }
         // --- ส่ง page, limit, month, year, leaveType ไป backend ---
         let url = `/api/leave-history?page=${page}&limit=${limit}`;
         if (filterLeaveType) url += `&leaveType=${filterLeaveType}`;
@@ -74,6 +80,10 @@ const LeaveHistory = () => {
         const res = await fetch(url, {
           headers: { Authorization: `Bearer ${token}` }
         });
+        if (res.status === 401) {
+          showSessionExpiredDialog();
+          return;
+        }
         const data = await res.json();
         if (data.status === "success") {
           setLeaveHistory(data.data);

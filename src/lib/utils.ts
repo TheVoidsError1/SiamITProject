@@ -5,7 +5,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-export async function fetchWithAuth(input: RequestInfo, init?: RequestInit, _logoutFn?: () => void, toastFn?: () => void) {
+export async function fetchWithAuth(input: RequestInfo, init?: RequestInit, logoutFn?: () => void, sessionExpiredFn?: () => void) {
   const token = localStorage.getItem("token");
   const headers = {
     ...(init?.headers || {}),
@@ -13,7 +13,11 @@ export async function fetchWithAuth(input: RequestInfo, init?: RequestInit, _log
   };
   const response = await fetch(input, { ...init, headers });
   if (response.status === 401) {
-    if (toastFn) toastFn();
+    if (sessionExpiredFn) {
+      sessionExpiredFn();
+    } else if (logoutFn) {
+      logoutFn();
+    }
     return null;
   }
   return response;

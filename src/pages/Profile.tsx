@@ -20,7 +20,7 @@ import ChangePasswordDialog from "@/components/dialogs/ChangePasswordDialog";
 
 const Profile = () => {
   const { t } = useTranslation();
-  const { user, updateUser } = useAuth();
+  const { user, updateUser, showSessionExpiredDialog } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -85,8 +85,7 @@ const Profile = () => {
       try {
         const token = localStorage.getItem('token');
         if (!token) {
-          setError('No token found. Please log in.');
-          setLoading(false);
+          showSessionExpiredDialog();
           return;
         }
         const res = await axios.get('http://localhost:3001/api/profile', {
@@ -118,6 +117,10 @@ const Profile = () => {
           position: data.position,
         });
       } catch (err: any) {
+        if (err.response?.status === 401) {
+          showSessionExpiredDialog();
+          return;
+        }
         setError('Failed to load profile');
       } finally {
         setLoading(false);
@@ -130,7 +133,10 @@ const Profile = () => {
     const fetchAvatar = async () => {
       try {
         const token = localStorage.getItem('token');
-        if (!token) return;
+        if (!token) {
+          showSessionExpiredDialog();
+          return;
+        }
         
         const res = await axios.get('http://localhost:3001/api/avatar', {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -186,7 +192,10 @@ const Profile = () => {
       setLeaveLoading(true);
       try {
         const token = localStorage.getItem('token');
-        if (!token) return;
+        if (!token) {
+          showSessionExpiredDialog();
+          return;
+        }
         const res = await axios.get('http://localhost:3001/api/leave-quota/me', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -244,6 +253,7 @@ const Profile = () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
+        showSessionExpiredDialog();
         toast({ title: t('error.title'), description: 'No token found', variant: 'destructive' });
         return;
       }
@@ -264,6 +274,10 @@ const Profile = () => {
         throw new Error(response.data.message || t('profile.uploadError'));
       }
     } catch (err: any) {
+      if (err.response?.status === 401) {
+        showSessionExpiredDialog();
+        return;
+      }
       toast({ 
         title: t('profile.uploadError'), 
         description: err.response?.data?.message || err.message,
@@ -277,6 +291,7 @@ const Profile = () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
+        showSessionExpiredDialog();
         toast({
           title: t('error.title'),
           description: 'No token found. Please log in.',
@@ -327,6 +342,10 @@ const Profile = () => {
         throw new Error(response.data.message || t('profile.saveError'));
       }
     } catch (error: any) {
+      if (error.response?.status === 401) {
+        showSessionExpiredDialog();
+        return;
+      }
       toast({
         title: t('error.title'),
         description: error.response?.data?.message || t('profile.saveError'),

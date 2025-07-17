@@ -69,16 +69,7 @@ const Index = () => {
   const [recentTotalDays, setRecentTotalDays] = useState<number>(0);
   const [recentTotalHours, setRecentTotalHours] = useState<number>(0);
 
-  const showSessionExpiredToast = () => {
-    toast({
-      title: t('auth.sessionExpired'),
-      description: t('auth.pleaseLoginAgain'),
-      variant: "destructive",
-      action: (
-        <ToastAction altText={t('common.ok')} onClick={() => { logout(); navigate("/login"); }}>{t('common.ok')}</ToastAction>
-      ),
-    });
-  };
+  const { showSessionExpiredDialog } = useAuth();
 
   // เพิ่มฟังก์ชันสำหรับเรียก API พร้อม month/year
   const fetchDashboardStats = (month?: number, year?: number) => {
@@ -91,7 +82,7 @@ const Index = () => {
       headers: {
         Authorization: token ? `Bearer ${token}` : undefined,
       },
-    }, undefined, showSessionExpiredToast)
+    }, undefined, showSessionExpiredDialog)
       ?.then((res) => res && res.json())
       .then((data) => {
         if (data && data.status === "success" && data.data) {
@@ -130,7 +121,7 @@ const Index = () => {
       headers: {
         Authorization: token ? `Bearer ${token}` : undefined,
       },
-    }, logout)
+    }, logout, showSessionExpiredDialog)
       .then((res) => res && res.json())
       .then((data) => {
         if (data.status === "success" && data.data) {
@@ -155,13 +146,13 @@ const Index = () => {
       headers: {
         Authorization: token ? `Bearer ${token}` : undefined,
       },
-    }, logout)
+    }, logout, showSessionExpiredDialog)
       .then((res) => res && res.json())
       .then((data) => {
         if (data.status === "success" && data.data) {
           setDaysRemaining(data.data);
         } else {
-          setErrorDaysRemaining(t('error.cannotLoadStats'));
+          setErrorDaysRemaining(t('error.apiConnectionError'));
         }
       })
       .catch(() => setErrorDaysRemaining(t('error.apiConnectionError')))

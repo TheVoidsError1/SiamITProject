@@ -11,6 +11,7 @@ import { th } from "date-fns/locale";
 import { AlertCircle, CheckCircle, Clock, Eye, TrendingUp, Users, XCircle, FileText } from "lucide-react";
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useAuth } from '@/contexts/AuthContext';
 
 type LeaveRequest = {
   id: number;
@@ -30,6 +31,7 @@ const clampLines = 3;
 const AdminDashboard = () => {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
+  const { showSessionExpiredDialog } = useAuth();
 
   // ลบ state ที่ไม่ได้ใช้จริง
   // const [adminName, setAdminName] = useState<string>("");
@@ -252,6 +254,10 @@ const AdminDashboard = () => {
   const refreshLeaveRequests = () => {
     setLoading(true);
     const token = localStorage.getItem('token');
+    if (!token) {
+      showSessionExpiredDialog();
+      return;
+    }
     fetch("http://localhost:3001/api/leave-request/pending", {
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -275,6 +281,10 @@ const AdminDashboard = () => {
   const fetchHistoryRequests = () => {
     setLoading(true);
     const token = localStorage.getItem('token');
+    if (!token) {
+      showSessionExpiredDialog();
+      return;
+    }
     // --- ส่ง page, limit, month, year, status ไป backend ---
     let url = `http://localhost:3001/api/leave-request/history?page=${historyPage}&limit=${historyLimit}`;
     if (filterMonth) url += `&month=${filterMonth}`;
@@ -283,7 +293,13 @@ const AdminDashboard = () => {
     fetch(url, {
       headers: { Authorization: `Bearer ${token}` }
     })
-      .then(res => res.json())
+      .then(res => {
+        if (res.status === 401) {
+          showSessionExpiredDialog();
+          return;
+        }
+        return res.json();
+      })
       .then(data => {
         if (data.status === "success") {
           setHistoryRequests(data.data);
@@ -306,12 +322,20 @@ const AdminDashboard = () => {
       setLoading(true);
       try {
         const token = localStorage.getItem('token');
+        if (!token) {
+          showSessionExpiredDialog();
+          return;
+        }
         // --- ส่ง page, limit ไป backend ---
         let url = `http://localhost:3001/api/leave-request/pending?page=${pendingPage}&limit=${pendingLimit}`;
         if (pendingFilterLeaveType) url += `&leaveType=${pendingFilterLeaveType}`;
         const res = await fetch(url, {
           headers: { Authorization: `Bearer ${token}` }
         });
+        if (res.status === 401) {
+          showSessionExpiredDialog();
+          return;
+        }
         const data = await res.json();
         if (data.status === "success") {
           setPendingRequests(data.data);
@@ -356,9 +380,17 @@ const AdminDashboard = () => {
     const fetchDepartments = async () => {
       try {
         const token = localStorage.getItem('token');
+        if (!token) {
+          showSessionExpiredDialog();
+          return;
+        }
         const res = await fetch('http://localhost:3001/api/departments', {
           headers: { Authorization: `Bearer ${token}` },
         });
+        if (res.status === 401) {
+          showSessionExpiredDialog();
+          return;
+        }
         const data = await res.json();
         if (data.status === 'success' && Array.isArray(data.data)) {
           setDepartments(data.data);
@@ -369,9 +401,17 @@ const AdminDashboard = () => {
     const fetchPositions = async () => {
       try {
         const token = localStorage.getItem('token');
+        if (!token) {
+          showSessionExpiredDialog();
+          return;
+        }
         const res = await fetch('http://localhost:3001/api/positions', {
           headers: { Authorization: `Bearer ${token}` },
         });
+        if (res.status === 401) {
+          showSessionExpiredDialog();
+          return;
+        }
         const data = await res.json();
         if (data.status === 'success' && Array.isArray(data.data)) {
           setPositions(data.data);
