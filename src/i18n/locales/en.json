@@ -32,7 +32,9 @@
     "passwordTooShort": "Password must be at least 6 characters",
     "checkEmailVerification": "You can now log in with this user.",
     "sessionExpired": "Session expired, please login again",
-    "pleaseLoginAgain": "Please login again"
+    "pleaseLoginAgain": "Please login again",
+    "role": "Role",
+    "selectRole": "Select Role"
   },
   "navigation": {
     "home": "Home",
@@ -42,7 +44,9 @@
     "adminDashboard": "Admin Dashboard",
     "employeeManagement": "Employee Management",
     "mainMenu": "Main Menu",
-    "allEmployees": "All Employees"
+    "allEmployees": "All Employees",
+    "createUser": "Create User",
+    "manageAll": "Manage All"
   },
   "common": {
     "submit": "Submit",
@@ -279,7 +283,8 @@
     "rejectedWhen": "Rejected on:",
     "rejected": "Rejected",
     "noApprovalHistory": "No approval/rejection history",
-    "allapproved": "All approved"
+    "allapproved": "All approved",
+    "createUser": "Create User"
   },
   "system": {
     "onlineLeaveSystem": "Online Leave System",
@@ -318,7 +323,8 @@
     "usedLeaveDays": "Used Leave Days",
     "noPassword": "Not set",
     "leaveHistoryDesc": "Employee leave history",
-    "name": "name"
+    "name": "name",
+    "superadmin": "Superadmin"
   },
   "notification": {
     "title": "Notifications",

@@ -20,11 +20,8 @@ import EmployeeDetail from "./pages/EmployeeDetail";
 import NotFound from "./pages/NotFound";
 import '@/i18n';
 import { PushNotificationProvider } from "@/contexts/PushNotificationContext";
-import SuperAdminDashboard from './pages/SuperAdmin/SuperAdminDashboard';
+import ManageAll from './pages/SuperAdmin/ManageAll';
 import SuperAdminList from './pages/SuperAdmin/SuperAdminList';
-import PositionManager from './pages/SuperAdmin/PositionManager';
-import DepartmentManager from './pages/SuperAdmin/DepartmentManager';
-import LeaveTypeManager from './pages/SuperAdmin/LeaveTypeManager';
 
 const queryClient = new QueryClient();
 
@@ -90,29 +87,14 @@ const AppContent = () => {
                 <EmployeeDetail />
               </ProtectedRoute>
             } />
-            <Route path="/superadmin" element={
+            <Route path="/superadmin/manage-all" element={
               <ProtectedRoute superadminOnly>
-                <SuperAdminDashboard />
+                <ManageAll />
               </ProtectedRoute>
             } />
             <Route path="/superadmin/superadmins" element={
               <ProtectedRoute superadminOnly>
                 <SuperAdminList />
-              </ProtectedRoute>
-            } />
-            <Route path="/superadmin/positions" element={
-              <ProtectedRoute superadminOnly>
-                <PositionManager />
-              </ProtectedRoute>
-            } />
-            <Route path="/superadmin/departments" element={
-              <ProtectedRoute superadminOnly>
-                <DepartmentManager />
-              </ProtectedRoute>
-            } />
-            <Route path="/superadmin/leavetypes" element={
-              <ProtectedRoute superadminOnly>
-                <LeaveTypeManager />
               </ProtectedRoute>
             } />
             <Route path="*" element={<NotFound />} />

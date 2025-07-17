@@ -4,90 +4,264 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
-
-const mockSuperadmins = [
-  { id: '1', name: 'Superadmin One', email: 'super1@example.com' },
-  { id: '2', name: 'Superadmin Two', email: 'super2@example.com' },
-];
+import { useEffect } from 'react';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Eye, EyeOff, Mail, Lock, User, Building } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from 'react-i18next';
 
 const SuperAdminList: React.FC = () => {
-  const [superadmins, setSuperadmins] = useState(mockSuperadmins);
-  const [form, setForm] = useState({ name: '', email: '', password: '' });
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const { t, i18n } = useTranslation();
+  const { toast } = useToast();
+  const [form, setForm] = useState({
+    full_name: '',
+    email: '',
+    password: '',
+    confirmPassword: '',
+    department: '',
+    position: '',
+    role: '', // No default, force user to select
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [positions, setPositions] = useState<any[]>([]);
+  const [error, setError] = useState<{ email?: string; full_name?: string; general?: string }>({});
+
+  const lang = i18n.language.startsWith('th') ? 'th' : 'en';
+
+  useEffect(() => {
+    fetch('http://localhost:3001/api/departments')
+      .then(res => res.json())
+      .then(data => {
+        let depts = data.data.map((d: any) => ({ id: d.id, department_name_th: d.department_name_th, department_name_en: d.department_name_en }));
+        setDepartments(depts);
+      })
+      .catch(() => setDepartments([]));
+    fetch('http://localhost:3001/api/positions')
+      .then(res => res.json())
+      .then(data => {
+        let pos = data.data.map((p: any) => ({ id: p.id, position_name_th: p.position_name_th, position_name_en: p.position_name_en }));
+        setPositions(pos);
+      })
+      .catch(() => setPositions([]));
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleRoleChange = (value: string) => {
+    setForm({ ...form, role: value });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingId) {
-      setSuperadmins(superadmins.map(sa => sa.id === editingId ? { ...sa, ...form } : sa));
-      setEditingId(null);
-    } else {
-      setSuperadmins([...superadmins, { id: Date.now().toString(), ...form }]);
+    setError({});
+    if (form.password !== form.confirmPassword) {
+      toast({
+        title: t('auth.passwordMismatch'),
+        description: t('auth.checkPasswordMatch'),
+        variant: 'destructive',
+      });
+      return;
     }
-    setForm({ name: '', email: '', password: '' });
-  };
-
-  const handleEdit = (id: string) => {
-    const sa = superadmins.find(sa => sa.id === id);
-    if (sa) {
-      setForm({ name: sa.name, email: sa.email, password: '' });
-      setEditingId(id);
+    setLoading(true);
+    try {
+      const url = 'http://localhost:3001/api/create-user-with-role';
+      const payload = {
+        role: form.role,
+        name: form.full_name,
+        department: form.department,
+        position: form.position,
+        email: form.email,
+        password: form.password,
+      };
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (res.ok && (data.success || data.token)) {
+        toast({
+          title: t('auth.registerSuccess'),
+          description: t('auth.checkEmailVerification'),
+        });
+        setForm({
+          full_name: '',
+          email: '',
+          password: '',
+          confirmPassword: '',
+          department: '',
+          position: '',
+          role: form.role,
+        });
+      } else {
+        toast({
+          title: t('auth.registerError'),
+          description: data.message || t('common.error'),
+          variant: 'destructive',
+        });
+      }
+    } catch (err: any) {
+      toast({
+        title: t('auth.registerError'),
+        description: err.message || t('common.error'),
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const handleDelete = (id: string) => {
-    setSuperadmins(superadmins.filter(sa => sa.id !== id));
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="border-b bg-white/80 backdrop-blur-sm">
-        <div className="flex h-16 items-center px-4 gap-4">
-          <SidebarTrigger />
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">Manage SuperAdmins</h1>
-          </div>
-          <LanguageSwitcher />
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="absolute top-4 right-4">
+        <LanguageSwitcher />
       </div>
-      <div className="p-6 animate-fade-in">
-        <Card className="max-w-3xl mx-auto border-0 shadow-lg">
-          <CardHeader>
-            <CardTitle>SuperAdmins</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="mb-6 flex gap-2 items-end">
-              <Input name="name" value={form.name} onChange={handleChange} placeholder="Name" required />
-              <Input name="email" value={form.email} onChange={handleChange} placeholder="Email" required />
-              <Input name="password" value={form.password} onChange={handleChange} placeholder="Password" type="password" required />
-              <Button type="submit" className="btn-primary">{editingId ? 'Update' : 'Add'}</Button>
+      <div className="w-full max-w-md space-y-8 animate-fade-in">
+        <div className="text-center">
+          <img
+            src="/lovable-uploads/IMG_4486-removebg-preview.png"
+            alt="Siam IT Logo"
+            className="mx-auto h-16 w-auto mb-6"
+          />
+          <h2 className="text-3xl font-bold text-gray-900">
+            {t('admin.createUser')}
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            {t('main.onlineLeaveSystemCompany')}
+          </p>
+        </div>
+        <Card className="shadow-lg border-0">
+          <CardContent className="pt-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2 mb-4 mt-4">
+                <Label htmlFor="role" className="mb-2 block">{t('auth.role')}</Label>
+                <Select value={form.role} onValueChange={handleRoleChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('auth.selectRole', 'Select Role')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="user">{t('employee.employee')}</SelectItem>
+                    <SelectItem value="admin">{t('employee.admin')}</SelectItem>
+                    <SelectItem value="superadmin">{t('employee.superadmin')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="full_name" className="mb-2 block">{t('auth.fullName')}</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="full_name"
+                    name="full_name"
+                    placeholder={t('auth.fullName')}
+                    value={form.full_name}
+                    onChange={handleChange}
+                    className="pl-10"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="position" className="mb-2 block">{t('auth.position')}</Label>
+                <Select value={form.position} onValueChange={value => setForm(f => ({ ...f, position: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('positions.selectPosition')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {positions.map((pos) => (
+                      <SelectItem key={pos.id} value={pos.id}>
+                        {lang === 'th' ? pos.position_name_th : pos.position_name_en}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="department" className="mb-2 block">{t('auth.department')}</Label>
+                <Select value={form.department} onValueChange={value => setForm(f => ({ ...f, department: value }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('departments.selectDepartment')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {departments.map((dep) => (
+                      <SelectItem key={dep.id} value={dep.id}>
+                        {lang === 'th' ? dep.department_name_th : dep.department_name_en}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="email" className="mb-2 block">{t('auth.email')}</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder={t('auth.email')}
+                    value={form.email}
+                    onChange={handleChange}
+                    className="pl-10"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="password" className="mb-2 block">{t('auth.password')}</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={form.password}
+                    onChange={handleChange}
+                    className="pl-10 pr-10"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff /> : <Eye />}
+                  </button>
+                </div>
+              </div>
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="confirmPassword" className="mb-2 block">{t('auth.confirmPassword')}</Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type="password"
+                    placeholder="••••••••"
+                    value={form.confirmPassword}
+                    onChange={handleChange}
+                    className="pl-10"
+                    required
+                  />
+                </div>
+              </div>
+              <Button type="submit" className="w-full" disabled={loading}>
+                {loading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    {t('common.loading')}
+                  </>
+                ) : (
+                  t('auth.register')
+                )}
+              </Button>
             </form>
-            <div className="overflow-x-auto">
-              <table className="w-full table-auto border">
-                <thead>
-                  <tr className="bg-gray-100">
-                    <th className="p-2">Name</th>
-                    <th className="p-2">Email</th>
-                    <th className="p-2">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {superadmins.map(sa => (
-                    <tr key={sa.id}>
-                      <td className="p-2">{sa.name}</td>
-                      <td className="p-2">{sa.email}</td>
-                      <td className="p-2 flex gap-2">
-                        <Button variant="outline" onClick={() => handleEdit(sa.id)}>Edit</Button>
-                        <Button variant="destructive" onClick={() => handleDelete(sa.id)}>Delete</Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
           </CardContent>
         </Card>
       </div>

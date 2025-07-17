@@ -163,42 +163,39 @@ module.exports = (AppDataSource) => {
 
       const departmentRepo = AppDataSource.getRepository('Department');
       const positionRepo = AppDataSource.getRepository('Position');
-
+      let userEntity = null;
       if (role === 'admin') {
         const adminRepo = AppDataSource.getRepository('admin');
-        const admin = await adminRepo.findOne({ where: { id: repid } });
-        if (!admin) {
-          return res.status(404).json({ success: false, message: 'Admin not found' });
-        }
-        const department = admin.department ? await departmentRepo.findOne({ where: { id: admin.department } }) : null;
-        const position = admin.position ? await positionRepo.findOne({ where: { id: admin.position } }) : null;
-        profile.name = admin.admin_name;
-        profile.position = position ? position.position_name : '';
-        profile.department = department ? department.department_name : '';
+        userEntity = await adminRepo.findOne({ where: { id: repid } });
+        if (!userEntity) return res.status(404).json({ success: false, message: 'Admin not found' });
+        profile.name = userEntity.admin_name;
       } else if (role === 'superadmin') {
         const superadminRepo = AppDataSource.getRepository('SuperAdmin');
-        const superadmin = await superadminRepo.findOne({ where: { id: repid } });
-        if (!superadmin) {
-          return res.status(404).json({ success: false, message: 'SuperAdmin not found' });
-        }
-        const department = superadmin.department ? await departmentRepo.findOne({ where: { id: superadmin.department } }) : null;
-        const position = superadmin.position ? await positionRepo.findOne({ where: { id: superadmin.position } }) : null;
-        profile.name = superadmin.superadmin_name;
-        profile.position = position ? position.position_name : '';
-        profile.department = department ? department.department_name : '';
+        userEntity = await superadminRepo.findOne({ where: { id: repid } });
+        if (!userEntity) return res.status(404).json({ success: false, message: 'SuperAdmin not found' });
+        profile.name = userEntity.superadmin_name;
       } else {
         const userRepo = AppDataSource.getRepository('User');
-        const user = await userRepo.findOne({ where: { id: repid } });
-        if (!user) {
-          return res.status(404).json({ success: false, message: 'User not found' });
-        }
-        const department = user.department ? await departmentRepo.findOne({ where: { id: user.department } }) : null;
-        const position = user.position ? await positionRepo.findOne({ where: { id: user.position } }) : null;
-        profile.name = user.User_name;
-        profile.position = position ? position.position_name : '';
-        profile.department = department ? department.department_name : '';
+        userEntity = await userRepo.findOne({ where: { id: repid } });
+        if (!userEntity) return res.status(404).json({ success: false, message: 'User not found' });
+        profile.name = userEntity.User_name;
       }
-
+      // Department
+      let department = null;
+      if (userEntity.department) {
+        department = await departmentRepo.findOne({ where: { id: userEntity.department } });
+      }
+      profile.department_id = department ? department.id : '';
+      profile.department_name_en = department ? department.department_name_en : '';
+      profile.department_name_th = department ? department.department_name_th : '';
+      // Position
+      let position = null;
+      if (userEntity.position) {
+        position = await positionRepo.findOne({ where: { id: userEntity.position } });
+      }
+      profile.position_id = position ? position.id : '';
+      profile.position_name_en = position ? position.position_name_en : '';
+      profile.position_name_th = position ? position.position_name_th : '';
       return res.json({ success: true, data: profile });
     } catch (err) {
       console.error('Profile error:', err);
@@ -272,7 +269,7 @@ module.exports = (AppDataSource) => {
         return res.status(404).json({ success: false, message: 'User not found in ProcessCheck' });
       }
       const { Role: role, Repid: repid, Email: email } = processCheck;
-      const { name, email: newEmail, position, department, password } = req.body;
+      const { name, email: newEmail, position_id, department_id, password } = req.body;
       const departmentRepo = AppDataSource.getRepository('Department');
       const positionRepo = AppDataSource.getRepository('Position');
       let updated;
@@ -280,54 +277,37 @@ module.exports = (AppDataSource) => {
       if (password) {
         hashedPassword = await bcrypt.hash(password, 10);
       }
+      let userEntity = null;
       if (role === 'admin') {
         const adminRepo = AppDataSource.getRepository('admin');
-        const admin = await adminRepo.findOne({ where: { id: repid } });
-        if (!admin) {
-          return res.status(404).json({ success: false, message: 'Admin not found' });
-        }
-        let departmentEntity = null;
-        let positionEntity = null;
-        if (department) departmentEntity = await departmentRepo.findOne({ where: { department_name: department } });
-        if (position) positionEntity = await positionRepo.findOne({ where: { position_name: position } });
-        admin.admin_name = name || admin.admin_name;
-        admin.email = newEmail || admin.email;
-        admin.department = departmentEntity ? departmentEntity.id : admin.department;
-        admin.position = positionEntity ? positionEntity.id : admin.position;
-        if (hashedPassword) admin.password = hashedPassword;
-        updated = await adminRepo.save(admin);
+        userEntity = await adminRepo.findOne({ where: { id: repid } });
+        if (!userEntity) return res.status(404).json({ success: false, message: 'Admin not found' });
+        userEntity.admin_name = name || userEntity.admin_name;
+        userEntity.email = newEmail || userEntity.email;
+        userEntity.department = department_id || userEntity.department;
+        userEntity.position = position_id || userEntity.position;
+        if (hashedPassword) userEntity.password = hashedPassword;
+        updated = await adminRepo.save(userEntity);
       } else if (role === 'superadmin') {
         const superadminRepo = AppDataSource.getRepository('SuperAdmin');
-        const superadmin = await superadminRepo.findOne({ where: { id: repid } });
-        if (!superadmin) {
-          return res.status(404).json({ success: false, message: 'SuperAdmin not found' });
-        }
-        let departmentEntity = null;
-        let positionEntity = null;
-        if (department) departmentEntity = await departmentRepo.findOne({ where: { department_name: department } });
-        if (position) positionEntity = await positionRepo.findOne({ where: { position_name: position } });
-        superadmin.superadmin_name = name || superadmin.superadmin_name;
-        superadmin.email = newEmail || superadmin.email;
-        superadmin.department = departmentEntity ? departmentEntity.id : superadmin.department;
-        superadmin.position = positionEntity ? positionEntity.id : superadmin.position;
-        if (hashedPassword) superadmin.password = hashedPassword;
-        updated = await superadminRepo.save(superadmin);
+        userEntity = await superadminRepo.findOne({ where: { id: repid } });
+        if (!userEntity) return res.status(404).json({ success: false, message: 'SuperAdmin not found' });
+        userEntity.superadmin_name = name || userEntity.superadmin_name;
+        userEntity.email = newEmail || userEntity.email;
+        userEntity.department = department_id || userEntity.department;
+        userEntity.position = position_id || userEntity.position;
+        if (hashedPassword) userEntity.password = hashedPassword;
+        updated = await superadminRepo.save(userEntity);
       } else {
         const userRepo = AppDataSource.getRepository('User');
-        const user = await userRepo.findOne({ where: { id: repid } });
-        if (!user) {
-          return res.status(404).json({ success: false, message: 'User not found' });
-        }
-        let departmentEntity = null;
-        let positionEntity = null;
-        if (department) departmentEntity = await departmentRepo.findOne({ where: { department_name: department } });
-        if (position) positionEntity = await positionRepo.findOne({ where: { position_name: position } });
-        user.User_name = name || user.User_name;
-        user.email = newEmail || user.email;
-        user.department = departmentEntity ? departmentEntity.id : user.department;
-        user.position = positionEntity ? positionEntity.id : user.position;
-        if (hashedPassword) user.password = hashedPassword;
-        updated = await userRepo.save(user);
+        userEntity = await userRepo.findOne({ where: { id: repid } });
+        if (!userEntity) return res.status(404).json({ success: false, message: 'User not found' });
+        userEntity.User_name = name || userEntity.User_name;
+        userEntity.email = newEmail || userEntity.email;
+        userEntity.department = department_id || userEntity.department;
+        userEntity.position = position_id || userEntity.position;
+        if (hashedPassword) userEntity.password = hashedPassword;
+        updated = await userRepo.save(userEntity);
       }
       // Update password in ProcessCheck if changed
       if (hashedPassword) {
@@ -336,19 +316,26 @@ module.exports = (AppDataSource) => {
       }
       // Return updated profile in the same format as GET
       let profile = { email: updated.email || email };
-      if (role === 'admin') {
-        profile.name = updated.admin_name;
-        profile.position = updated.position ? (await positionRepo.findOne({ where: { id: updated.position } }))?.position_name : '';
-        profile.department = updated.department ? (await departmentRepo.findOne({ where: { id: updated.department } }))?.department_name : '';
-      } else if (role === 'superadmin') {
-        profile.name = updated.superadmin_name;
-        profile.position = updated.position ? (await positionRepo.findOne({ where: { id: updated.position } }))?.position_name : '';
-        profile.department = updated.department ? (await departmentRepo.findOne({ where: { id: updated.department } }))?.department_name : '';
-      } else {
-        profile.name = updated.User_name;
-        profile.position = updated.position ? (await positionRepo.findOne({ where: { id: updated.position } }))?.position_name : '';
-        profile.department = updated.department ? (await departmentRepo.findOne({ where: { id: updated.department } }))?.department_name : '';
+      // Department
+      let department = null;
+      if (updated.department) {
+        department = await departmentRepo.findOne({ where: { id: updated.department } });
       }
+      profile.department_id = department ? department.id : '';
+      profile.department_name_en = department ? department.department_name_en : '';
+      profile.department_name_th = department ? department.department_name_th : '';
+      // Position
+      let position = null;
+      if (updated.position) {
+        position = await positionRepo.findOne({ where: { id: updated.position } });
+      }
+      profile.position_id = position ? position.id : '';
+      profile.position_name_en = position ? position.position_name_en : '';
+      profile.position_name_th = position ? position.position_name_th : '';
+      // Name
+      if (role === 'admin') profile.name = updated.admin_name;
+      else if (role === 'superadmin') profile.name = updated.superadmin_name;
+      else profile.name = updated.User_name;
       return res.json({ success: true, data: profile });
     } catch (err) {
       console.error('Profile update error:', err);

@@ -38,7 +38,7 @@ const Login = () => {
       if (userInfo.role === 'admin') {
         navigate('/admin', { replace: true });
       } else if (userInfo.role === 'superadmin') {
-        navigate('/superadmin', { replace: true });
+        navigate('/', { replace: true });
       } else {
         navigate('/', { replace: true });
       }

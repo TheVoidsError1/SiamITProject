@@ -12,7 +12,8 @@ import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 const Register = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language.startsWith('th') ? 'th' : 'en';
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -24,8 +25,8 @@ const Register = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [departments, setDepartments] = useState<string[]>([]);
-  const [positions, setPositions] = useState<string[]>([]);
+  const [departments, setDepartments] = useState<{ id: string; department_name_en: string; department_name_th: string }[]>([]);
+  const [positions, setPositions] = useState<{ id: string; position_name_en: string; position_name_th: string }[]>([]);
   const [newDepartment, setNewDepartment] = useState('');
   const [newPosition, setNewPosition] = useState('');
   const [error, setError] = useState<{ email?: string; full_name?: string; general?: string }>({});
@@ -39,24 +40,24 @@ const Register = () => {
     fetch('http://localhost:3001/api/departments')
       .then(res => res.json())
       .then(data => {
-        let depts = data.data.map((d: any) => d.department_name);
-        const isNoDept = (d: string) => !d || d.trim() === '' || d.toLowerCase() === 'none' || d.toLowerCase() === 'no department' || d.toLowerCase() === 'nodepartment';
-        const noDept = depts.filter(isNoDept);
-        // Sort by translated label
-        const normalDepts = depts.filter(d => !isNoDept(d)).sort((a, b) => t(`departments.${a}`).localeCompare(t(`departments.${b}`)));
-        setDepartments([...normalDepts, ...noDept]);
+        const depts = data.data.map((d: any) => ({
+          id: d.id,
+          department_name_en: d.department_name_en,
+          department_name_th: d.department_name_th
+        }));
+        setDepartments(depts);
       })
       .catch(() => setDepartments([]));
 
     fetch('http://localhost:3001/api/positions')
       .then(res => res.json())
       .then(data => {
-        let pos = data.data.map((p: any) => p.position_name);
-        const isNoPos = (p: string) => !p || p.trim() === '' || p.toLowerCase() === 'none' || p.toLowerCase() === 'no position' || p.toLowerCase() === 'noposition';
-        const noPos = pos.filter(isNoPos);
-        // Sort by translated label
-        const normalPos = pos.filter(p => !isNoPos(p)).sort((a, b) => t(`positions.${a}`).localeCompare(t(`positions.${b}`)));
-        setPositions([...normalPos, ...noPos]);
+        const pos = data.data.map((p: any) => ({
+          id: p.id,
+          position_name_en: p.position_name_en,
+          position_name_th: p.position_name_th
+        }));
+        setPositions(pos);
       })
       .catch(() => setPositions([]));
   }, []);
@@ -70,7 +71,7 @@ const Register = () => {
       body: JSON.stringify({ department_name: newDepartment }),
     });
     if (res.ok) {
-      setDepartments(prev => [...prev, newDepartment]);
+      setDepartments(prev => [...prev, { id: 'new', department_name_en: newDepartment, department_name_th: newDepartment }]);
       setNewDepartment('');
     }
   };
@@ -84,7 +85,7 @@ const Register = () => {
       body: JSON.stringify({ position_name: newPosition }),
     });
     if (res.ok) {
-      setPositions(prev => [...prev, newPosition]);
+      setPositions(prev => [...prev, { id: 'new', position_name_en: newPosition, position_name_th: newPosition }]);
       setNewPosition('');
     }
   };
@@ -191,11 +192,9 @@ const Register = () => {
                     <SelectValue placeholder={t('positions.selectPosition')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {positions.map((key) => (
-                      <SelectItem key={key} value={key}>
-                        {key === '' || key.toLowerCase() === 'none' || key.toLowerCase() === 'no position'
-                          ? t('positions.notSpecified')
-                          : t(`positions.${key}`)}
+                    {positions.map(pos => (
+                      <SelectItem key={pos.id} value={pos.id}>
+                        {lang === 'th' ? pos.position_name_th : pos.position_name_en}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -209,11 +208,9 @@ const Register = () => {
                     <SelectValue placeholder={t('departments.selectDepartment')} />
                   </SelectTrigger>
                   <SelectContent>
-                    {departments.map((key) => (
-                      <SelectItem key={key} value={key}>
-                        {key === '' || key.toLowerCase() === 'none' || key.toLowerCase() === 'no department'
-                          ? t('departments.notSpecified', t('departments.selectDepartment'))
-                          : t(`departments.${key}`)}
+                    {departments.map(dep => (
+                      <SelectItem key={dep.id} value={dep.id}>
+                        {lang === 'th' ? dep.department_name_th : dep.department_name_en}
                       </SelectItem>
                     ))}
                   </SelectContent>

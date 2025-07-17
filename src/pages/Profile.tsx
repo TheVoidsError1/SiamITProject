@@ -19,7 +19,8 @@ import { usePushNotification } from "@/contexts/PushNotificationContext";
 import ChangePasswordDialog from "@/components/dialogs/ChangePasswordDialog";
 
 const Profile = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language.startsWith('th') ? 'th' : 'en';
   const { user, updateUser } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -33,8 +34,8 @@ const Profile = () => {
     position: '',
   });
   const [saving, setSaving] = useState(false);
-  const [departments, setDepartments] = useState<string[]>([]);
-  const [positions, setPositions] = useState<string[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [positions, setPositions] = useState<any[]>([]);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [positionsLoaded, setPositionsLoaded] = useState(false);
   const [departmentsLoaded, setDepartmentsLoaded] = useState(false);
@@ -157,12 +158,12 @@ const Profile = () => {
     fetch('http://localhost:3001/api/positions')
       .then(res => res.json())
       .then(data => {
-        let pos = data.data.map((p: any) => p.position_name);
-        const isNoPos = (p: string) => !p || p.trim() === '' || p.toLowerCase() === 'none' || p.toLowerCase() === 'no position' || p.toLowerCase() === 'noposition';
-        const noPos = pos.filter(isNoPos);
-        // Sort by translated label
-        const normalPos = pos.filter(p => !isNoPos(p)).sort((a, b) => t(`positions.${a}`).localeCompare(t(`positions.${b}`)));
-        setPositions([...normalPos, ...noPos]);
+        const pos = data.data.map((p: any) => ({
+          id: p.id,
+          position_name_en: p.position_name_en,
+          position_name_th: p.position_name_th
+        }));
+        setPositions(pos);
         setPositionsLoaded(true);
       })
       .catch(() => setPositionsLoaded(true));
@@ -170,12 +171,12 @@ const Profile = () => {
     fetch('http://localhost:3001/api/departments')
       .then(res => res.json())
       .then(data => {
-        let depts = data.data.map((d: any) => d.department_name);
-        const isNoDept = (d: string) => !d || d.trim() === '' || d.toLowerCase() === 'none' || d.toLowerCase() === 'no department' || d.toLowerCase() === 'nodepartment';
-        const noDept = depts.filter(isNoDept);
-        // Sort by translated label
-        const normalDepts = depts.filter(d => !isNoDept(d)).sort((a, b) => t(`departments.${a}`).localeCompare(t(`departments.${b}`)));
-        setDepartments([...normalDepts, ...noDept]);
+        const depts = data.data.map((d: any) => ({
+          id: d.id,
+          department_name_en: d.department_name_en,
+          department_name_th: d.department_name_th
+        }));
+        setDepartments(depts);
         setDepartmentsLoaded(true);
       })
       .catch(() => setDepartmentsLoaded(true));
@@ -447,11 +448,9 @@ const Profile = () => {
                         <SelectValue placeholder={t('positions.selectPosition')} />
                       </SelectTrigger>
                       <SelectContent>
-                        {positions.map((key) => (
-                          <SelectItem key={key} value={key}>
-                            {key === '' || key.toLowerCase() === 'none' || key.toLowerCase() === 'no position'
-                              ? t('positions.notSpecified')
-                              : t(`positions.${key}`)}
+                        {positions.map(pos => (
+                          <SelectItem key={pos.id} value={pos.id}>
+                            {lang === 'th' ? pos.position_name_th : pos.position_name_en}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -468,11 +467,9 @@ const Profile = () => {
                         <SelectValue placeholder={t('departments.selectDepartment')} />
                       </SelectTrigger>
                       <SelectContent>
-                        {departments.map((key) => (
-                          <SelectItem key={key} value={key}>
-                            {key === '' || key.toLowerCase() === 'none' || key.toLowerCase() === 'no department'
-                              ? t('departments.notSpecified', t('departments.selectDepartment'))
-                              : t(`departments.${key}`)}
+                        {departments.map(dep => (
+                          <SelectItem key={dep.id} value={dep.id}>
+                            {lang === 'th' ? dep.department_name_th : dep.department_name_en}
                           </SelectItem>
                         ))}
                       </SelectContent>

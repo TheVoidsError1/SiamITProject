@@ -33,7 +33,9 @@
     "checkEmailVerification": "ตอนนี้คุณสามารถเข้าสู่ระบบด้วยผู้ใช้นี้ได้แล้ว",
     "sessionExpired": "เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่",
     "pleaseLoginAgain": "กรุณาเข้าสู่ระบบใหม่",
-    "passwordRequired": "กรุณากรอกรหัสผ่านใหม่ และ กรุณายืนยันรหัสผ่าน"
+    "passwordRequired": "กรุณากรอกรหัสผ่านใหม่ และ กรุณายืนยันรหัสผ่าน",
+    "role": "บทบาท",
+    "selectRole": "เลือกบทบาท"
   },
   "navigation": {
     "home": "หน้าหลัก",
@@ -43,7 +45,9 @@
     "adminDashboard": "จัดการระบบ",
     "employeeManagement": "จัดการพนักงาน",
     "mainMenu": "เมนูหลัก",
-    "allEmployees": "บุคลากรทั้งหมด"
+    "allEmployees": "บุคลากรทั้งหมด",
+    "createUser": "สร้างผู้ใช้",
+    "manageAll": "จัดการทั้งหมด"
   },
   "common": {
     "submit": "ส่ง",
@@ -281,7 +285,8 @@
     "rejectedWhen": "ไม่อนุมัติเมื่อ:",
     "rejected": "ไม่อนุมัติแล้ว",
     "noApprovalHistory": "ไม่มีประวัติการอนุมัติ/ไม่อนุมัติ",
-    "allapproved": "อนุมัติทั้งหมด"
+    "allapproved": "อนุมัติทั้งหมด",
+    "createUser": "สร้างผู้ใช้"
   },
   "system": {
     "onlineLeaveSystem": "ระบบลาออนไลน์",
@@ -315,9 +320,8 @@
   },
   "employee": {
     "name": "ชื่อ",
-    "phone": "เบอร์โทรศัพท์"
-  },
-  "employee": {
+    "phone": "เบอร์โทรศัพท์",
+    "superadmin": "ซูเปอร์แอดมิน",
     "details": "รายละเอียดพนักงาน",
     "personalInfo": "ข้อมูลส่วนตัวพนักงาน",
     "personalInfoDesc": "ดูและจัดการข้อมูลส่วนตัวของพนักงาน",
@@ -339,10 +343,8 @@
     "saveError": "บันทึกข้อมูลพนักงานไม่สำเร็จ",
     "noProcessCheckId": "ไม่พบ process check ID",
     "newPassword": "รหัสผ่านใหม่",
-    "leaveHistoryDesc": "ประวัติการลาของพนักงาน",
     "noPassword": "ยังไม่ได้ตั้งรหัสผ่าน",
-    "setNewPassword": "ตั้งรหัสผ่านใหม่",
-    "name": "ชื่อ"
+    "setNewPassword": "ตั้งรหัสผ่านใหม่"
   },
   "notification": {
     "title": "การแจ้งเตือน",

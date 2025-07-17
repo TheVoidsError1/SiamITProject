@@ -59,52 +59,27 @@ const adminItems = [
 
 const superadminItems = [
   {
-    title: "SuperAdmin Dashboard",
-    url: "/superadmin",
+    title: "navigation.manageAll",
+    url: "/superadmin/manage-all",
     icon: Settings,
   },
   {
-    title: "Manage SuperAdmins",
+    title: "navigation.createUser",
     url: "/superadmin/superadmins",
     icon: User,
-  },
-  {
-    title: "Manage Positions",
-    url: "/superadmin/positions",
-    icon: Users,
-  },
-  {
-    title: "Manage Departments",
-    url: "/superadmin/departments",
-    icon: Building,
-  },
-  {
-    title: "Manage Leave Types",
-    url: "/superadmin/leavetypes",
-    icon: Clock,
   },
 ];
 
 const superadminExtraItems = [
   {
-    title: "Manage SuperAdmins",
+    title: "navigation.manageAll",
+    url: "/superadmin/manage-all",
+    icon: Settings,
+  },
+  {
+    title: "navigation.createUser",
     url: "/superadmin/superadmins",
     icon: User,
-  },
-  {
-    title: "Manage Positions",
-    url: "/superadmin/positions",
-    icon: Users,
-  },
-  {
-    title: "Manage Departments",
-    url: "/superadmin/departments",
-    icon: Building,
-  },
-  {
-    title: "Manage Leave Types",
-    url: "/superadmin/leavetypes",
-    icon: Clock,
   },
 ];
 
