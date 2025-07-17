@@ -289,7 +289,19 @@
     "noData": "No leave history found for this period.",
     "rejectedRequests": "Rejected Requests",
     "selectDateRange": "Select period",
-    "allYears": "All years"
+    "allYears": "All years",
+    "filters": "Filters",
+    "clearAllFilters": "Clear all filters",
+    "results": "results",
+    "showFilters": "Show filters",
+    "hideFilters": "Hide filters",
+    "dateRange": "Date range",
+    "monthYear": "Month/Year",
+    "noData": "No leave history found for the selected period",
+    "showMore": "Show more",
+    "showLess": "Show less",
+    "selectSingleDate": "Select single date",
+    "singleDate": "Specific date"
   },
   "admin": {
     "pendingRequests": "Pending Requests",

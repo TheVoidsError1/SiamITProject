@@ -34,6 +34,7 @@ module.exports = (AppDataSource) => {
       const status = req.query.status || null;
       const startDate = req.query.startDate ? new Date(req.query.startDate) : null;
       const endDate = req.query.endDate ? new Date(req.query.endDate) : null;
+      const date = req.query.date ? new Date(req.query.date) : null;
       
       // ดึง leave request ของ user (paging) พร้อม filter เดือน/ปี (ใช้ createdAt)
       let where = { Repid: userId };
@@ -67,6 +68,13 @@ module.exports = (AppDataSource) => {
         where = { ...where, startDate: Between(startDate, new Date(3000, 0, 1)) };
       } else if (endDate) {
         where = { ...where, startDate: Between(new Date(2000, 0, 1), endDate) };
+      }
+      if (date) {
+        const startOfDay = new Date(date);
+        startOfDay.setHours(0, 0, 0, 0);
+        const endOfDay = new Date(date);
+        endOfDay.setHours(23, 59, 59, 999);
+        where = { ...where, createdAt: Between(startOfDay, endOfDay) };
       }
 
       // ดึง leave request ของ user (paging)

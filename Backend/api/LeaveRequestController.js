@@ -312,26 +312,13 @@
            const endOfYear = new Date(year, 11, 31, 23, 59, 59, 999);
            where = { ...where, createdAt: Between(startOfYear, endOfYear) };
          }
-         // --- สำหรับ /pending ---
-         if (startDate && endDate) {
+         // --- ใน /pending ---
+         const date = req.query.date ? new Date(req.query.date) : null;
+         if (date) {
            const { Between } = require('typeorm');
-           const startOfDay = new Date(startDate);
+           const startOfDay = new Date(date);
            startOfDay.setHours(0, 0, 0, 0);
-           const endOfDay = new Date(endDate);
-           endOfDay.setHours(23, 59, 59, 999);
-           where = { ...where, createdAt: Between(startOfDay, endOfDay) };
-         } else if (startDate) {
-           const { Between } = require('typeorm');
-           const startOfDay = new Date(startDate);
-           startOfDay.setHours(0, 0, 0, 0);
-           const endOfDay = new Date(startDate);
-           endOfDay.setHours(23, 59, 59, 999);
-           where = { ...where, createdAt: Between(startOfDay, endOfDay) };
-         } else if (endDate) {
-           const { Between } = require('typeorm');
-           const startOfDay = new Date(endDate);
-           startOfDay.setHours(0, 0, 0, 0);
-           const endOfDay = new Date(endDate);
+           const endOfDay = new Date(date);
            endOfDay.setHours(23, 59, 59, 999);
            where = { ...where, createdAt: Between(startOfDay, endOfDay) };
          }
@@ -470,30 +457,15 @@
              where = where.map(w => ({ ...w, startDate: Between(new Date(2000, 0, 1), endDate) }));
            }
          }
-         // --- สำหรับ /history (startDate, endDate filter ใช้กับ startDate) ---
-         if (startDate && endDate) {
+         // --- ใน /history ---
+         const singleDate = req.query.date ? new Date(req.query.date) : null;
+         if (singleDate) {
            where = where.map(w => {
-             const startOfDay = new Date(startDate);
+             const startOfDay = new Date(singleDate);
              startOfDay.setHours(0, 0, 0, 0);
-             const endOfDay = new Date(endDate);
+             const endOfDay = new Date(singleDate);
              endOfDay.setHours(23, 59, 59, 999);
-             return { ...w, startDate: Between(startOfDay, endOfDay) };
-           });
-         } else if (startDate) {
-           where = where.map(w => {
-             const startOfDay = new Date(startDate);
-             startOfDay.setHours(0, 0, 0, 0);
-             const endOfDay = new Date(startDate);
-             endOfDay.setHours(23, 59, 59, 999);
-             return { ...w, startDate: Between(startOfDay, endOfDay) };
-           });
-         } else if (endDate) {
-           where = where.map(w => {
-             const startOfDay = new Date(endDate);
-             startOfDay.setHours(0, 0, 0, 0);
-             const endOfDay = new Date(endDate);
-             endOfDay.setHours(23, 59, 59, 999);
-             return { ...w, startDate: Between(startOfDay, endOfDay) };
+             return { ...w, createdAt: Between(startOfDay, endOfDay) };
            });
          }
          // --- เพิ่ม paging ---

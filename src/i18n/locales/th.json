@@ -294,7 +294,19 @@
     "noData": "ไม่พบประวัติการลาสำหรับช่วงเวลานี้",
     "rejectedRequests": "คำขอที่ไม่อนุมัติ",
     "selectDateRange": "เลือกช่วงเวลา",
-    "allYears": "ทุกปี"
+    "allYears": "ทุกปี",
+    "filters": "ตัวกรอง",
+    "clearAllFilters": "ล้างตัวกรองทั้งหมด",
+    "results": "ผลลัพธ์",
+    "showFilters": "แสดงตัวกรอง",
+    "hideFilters": "ซ่อนตัวกรอง",
+    "dateRange": "ช่วงวันที่",
+    "monthYear": "เดือน/ปี",
+    "noData": "ไม่พบประวัติการลาในช่วงเวลาที่เลือก",
+    "showMore": "ดูเพิ่มเติม",
+    "showLess": "ย่อ",
+    "selectSingleDate": "เลือกวันเดียว",
+    "singleDate": "เฉพาะวัน"
   },
   "admin": {
     "pendingRequests": "คำขอรออนุมัติ",

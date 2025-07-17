@@ -42,12 +42,12 @@ const LeaveHistory = () => {
   const [leaveTypesError, setLeaveTypesError] = useState<string | null>(null);
 
   // --- เพิ่ม state สำหรับปฏิทินและ filter ใหม่ ---
-  const [dateRange, setDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
   const [filterStatus, setFilterStatus] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [statusOptions, setStatusOptions] = useState<string[]>([]);
   const [yearOptions, setYearOptions] = useState<number[]>([]);
   const [monthOptions, setMonthOptions] = useState<number[]>([]);
+  const [singleDate, setSingleDate] = useState<Date | undefined>(undefined);
 
   const { showSessionExpiredDialog } = useAuth();
 
@@ -110,9 +110,10 @@ const LeaveHistory = () => {
         if (filterMonth) url += `&month=${filterMonth}`;
         if (filterYear) url += `&year=${filterYear}`;
         if (filterStatus) url += `&status=${filterStatus}`;
-        // เพิ่ม date range filter
-        if (dateRange?.from) url += `&startDate=${format(dateRange.from, 'yyyy-MM-dd')}`;
-        if (dateRange?.to) url += `&endDate=${format(dateRange.to, 'yyyy-MM-dd')}`;
+        // --- เงื่อนไขใหม่: ถ้าเลือก singleDate ให้ filter ด้วย createdAt (date param) ---
+        if (singleDate) {
+          url += `&date=${format(singleDate, 'yyyy-MM-dd')}`;
+        }
         const res = await fetch(url, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -135,7 +136,7 @@ const LeaveHistory = () => {
       }
     };
     fetchLeaveHistory();
-  }, [page, filterMonth, filterYear, limit, filterLeaveType, filterStatus, dateRange]);
+  }, [page, filterMonth, filterYear, limit, filterLeaveType, filterStatus, singleDate]);
 
   // ฟังก์ชันล้าง filter ทั้งหมด
   const clearAllFilters = () => {
@@ -143,13 +144,13 @@ const LeaveHistory = () => {
     setFilterMonth('');
     setFilterYear('');
     setFilterStatus('');
-    setDateRange({ from: undefined, to: undefined });
+    setSingleDate(undefined);
     setPage(1);
   };
 
   // ฟังก์ชันตรวจสอบว่ามี filter ใช้งานอยู่หรือไม่
   const hasActiveFilters = () => {
-    return filterLeaveType || filterMonth || filterYear || filterStatus || dateRange?.from || dateRange?.to;
+    return filterLeaveType || filterMonth || filterYear || filterStatus || singleDate;
   };
 
   const getStatusBadge = (status: string) => {
@@ -355,37 +356,24 @@ const LeaveHistory = () => {
             {showFilters && (
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {/* Date Range Calendar */}
+                  {/* Single Date Filter */}
                   <div className="space-y-2">
-                    <Label>{t('history.dateRange', 'ช่วงวันที่')}</Label>
+                    <Label>{t('history.singleDate', 'วันที่เดียว')}</Label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-48 min-w-[180px] max-w-[220px] justify-start text-left font-normal truncate whitespace-nowrap"
+                          className="w-48 min-w-[180px] max-w-full justify-start text-left font-normal whitespace-nowrap"
                         >
                           <Calendar className="mr-2 h-4 w-4" />
-                          {dateRange?.from ? (
-                            dateRange?.to ? (
-                              <>
-                                {format(dateRange.from, "dd/MM/yyyy")} - {format(dateRange.to, "dd/MM/yyyy")}
-                              </>
-                            ) : (
-                              format(dateRange.from, "dd/MM/yyyy")
-                            )
-                          ) : (
-                            <span>{t('history.selectDateRange', 'เลือกช่วงวันที่')}</span>
-                          )}
+                          {singleDate ? format(singleDate, "dd/MM/yyyy") : t('history.selectSingleDate', 'เลือกวันเดียว')}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
                         <CalendarComponent
-                          initialFocus
-                          mode="range"
-                          defaultMonth={dateRange.from || new Date()}
-                          selected={dateRange}
-                          onSelect={range => setDateRange({ from: range?.from, to: range?.to })}
-                          numberOfMonths={2}
+                          mode="single"
+                          selected={singleDate}
+                          onSelect={date => setSingleDate(date)}
                         />
                       </PopoverContent>
                     </Popover>
@@ -417,6 +405,7 @@ const LeaveHistory = () => {
                         <SelectValue placeholder={t('history.allStatuses', 'ทั้งหมด')} />
                       </SelectTrigger>
                       <SelectContent>
+                        {/* ใช้ i18n สำหรับ option ทั้งหมดและแต่ละสถานะ */}
                         <SelectItem value="all">{t('history.allStatuses', 'ทั้งหมด')}</SelectItem>
                         {statusOptions.map(status => (
                           <SelectItem key={status} value={status}>{t(`leave.${status}`, status)}</SelectItem>
@@ -529,6 +518,11 @@ const LeaveHistory = () => {
                                 ? `${leave.startTime} - ${leave.endTime} (${calcHours(leave.startTime, leave.endTime)} ${hourUnit})`
                                 : `${leave.days} ${t('leave.day')}`}
                             </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-sm">
+                            <Calendar className="w-4 h-4 text-gray-400" />
+                            <span className="font-semibold">{t('leave.createdAt', 'Created')}:</span>
+                            <span>{leave.submittedDate ? formatDateLocalized(leave.submittedDate) : '-'}</span>
                           </div>
                         </div>
                         {/* ฝั่งขวา: เหตุผล */}

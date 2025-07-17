@@ -92,6 +92,9 @@ const AdminDashboard = () => {
   const [approvedCount, setApprovedCount] = useState(0);
   const [rejectedCount, setRejectedCount] = useState(0);
   const [pendingDateRange, setPendingDateRange] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
+  // 1. เพิ่ม state
+  const [pendingSingleDate, setPendingSingleDate] = useState<Date | undefined>(undefined);
+  const [recentSingleDate, setRecentSingleDate] = useState<Date | undefined>(undefined);
 
   // ปรับการคำนวณสถิติให้ใช้ข้อมูลจาก leave request ที่ดึงมา
   const pendingCount = pendingRequests.length;
@@ -297,8 +300,14 @@ const AdminDashboard = () => {
     if (filterMonth) url += `&month=${filterMonth}`;
     if (filterYear) url += `&year=${filterYear}`;
     if (historyStatusFilter) url += `&status=${historyStatusFilter}`;
-    if (dateRange.from) url += `&startDate=${format(dateRange.from, 'yyyy-MM-dd')}`;
-    if (dateRange.to) url += `&endDate=${format(dateRange.to, 'yyyy-MM-dd')}`;
+    // ถ้าเลือกวันเดียว (recentSingleDate) ให้ filter ด้วย createdAt (param date)
+    if (recentSingleDate) {
+      url += `&date=${format(recentSingleDate, 'yyyy-MM-dd')}`;
+    } else {
+      // ถ้าเลือกช่วงวันที่ ให้ filter ด้วย startDate/endDate (เหมือนเดิม)
+      if (dateRange.from) url += `&startDate=${format(dateRange.from, 'yyyy-MM-dd')}`;
+      if (dateRange.to) url += `&endDate=${format(dateRange.to, 'yyyy-MM-dd')}`;
+    }
     fetch(url, {
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -344,8 +353,14 @@ const AdminDashboard = () => {
         // --- ส่ง page, limit ไป backend ---
         let url = `http://localhost:3001/api/leave-request/pending?page=${pendingPage}&limit=${pendingLimit}`;
         if (pendingFilterLeaveType) url += `&leaveType=${pendingFilterLeaveType}`;
-        if (pendingDateRange.from) url += `&startDate=${format(pendingDateRange.from, 'yyyy-MM-dd')}`;
-        if (pendingDateRange.to) url += `&endDate=${format(pendingDateRange.to, 'yyyy-MM-dd')}`;
+        // ถ้าเลือกวันเดียว (pendingSingleDate) ให้ filter ด้วย createdAt (param date)
+        if (pendingSingleDate) {
+          url += `&date=${format(pendingSingleDate, 'yyyy-MM-dd')}`;
+        } else {
+          // ถ้าเลือกช่วงวันที่ ให้ filter ด้วย startDate/endDate (เหมือนเดิม)
+          if (pendingDateRange.from) url += `&startDate=${format(pendingDateRange.from, 'yyyy-MM-dd')}`;
+          if (pendingDateRange.to) url += `&endDate=${format(pendingDateRange.to, 'yyyy-MM-dd')}`;
+        }
         const res = await fetch(url, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -371,11 +386,11 @@ const AdminDashboard = () => {
       }
     };
     fetchPending();
-  }, [t, pendingPage, pendingLimit, pendingFilterLeaveType, pendingDateRange]);
+  }, [t, pendingPage, pendingLimit, pendingFilterLeaveType, pendingDateRange, pendingSingleDate]);
 
   useEffect(() => {
     fetchHistoryRequests();
-  }, [t, historyPage, filterMonth, filterYear, historyLimit, historyStatusFilter, dateRange]);
+  }, [t, historyPage, filterMonth, filterYear, historyLimit, historyStatusFilter, dateRange, recentSingleDate]);
 
   useEffect(() => {
     let url = "http://localhost:3001/api/leave-request/dashboard-stats";
@@ -468,6 +483,23 @@ const AdminDashboard = () => {
     fetchLeaveTypes();
   }, []);
 
+  // ฟังก์ชันล้างตัวกรองสำหรับ pending
+  const clearPendingFilters = () => {
+    setPendingFilterLeaveType('');
+    setPendingDateRange({ from: undefined, to: undefined });
+    setPendingSingleDate(undefined); // ล้างวันเดียวด้วย
+    setPendingPage(1);
+  };
+  // ฟังก์ชันล้างตัวกรองสำหรับ history/recent
+  const clearHistoryFilters = () => {
+    setFilterMonth('');
+    setFilterYear('');
+    setHistoryStatusFilter('');
+    setDateRange({ from: undefined, to: undefined });
+    setRecentSingleDate(undefined); // ล้างวันเดียวด้วย
+    setHistoryPage(1);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="border-b bg-white/80 backdrop-blur-sm">
@@ -538,24 +570,17 @@ const AdminDashboard = () => {
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-64 min-w-[220px] max-w-full justify-start text-left font-normal whitespace-nowrap"
+                          className="w-48 min-w-[180px] max-w-full justify-start text-left font-normal whitespace-nowrap"
                         >
                           <Calendar className="mr-2 h-4 w-4" />
-                          {pendingDateRange.from
-                            ? pendingDateRange.to
-                              ? `${format(pendingDateRange.from, "dd/MM/yyyy")} - ${format(pendingDateRange.to, "dd/MM/yyyy")}`
-                              : format(pendingDateRange.from, "dd/MM/yyyy")
-                            : t('history.selectDateRange', 'เลือกช่วงเวลา')}
+                          {pendingSingleDate ? format(pendingSingleDate, "dd/MM/yyyy") : t('history.selectSingleDate', 'เลือกวันเดียว')}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
                         <CalendarComponent
-                          initialFocus
-                          mode="range"
-                          defaultMonth={pendingDateRange.from || new Date()}
-                          selected={pendingDateRange}
-                          onSelect={range => setPendingDateRange({ from: range?.from, to: range?.to })}
-                          numberOfMonths={2}
+                          mode="single"
+                          selected={pendingSingleDate}
+                          onSelect={date => setPendingSingleDate(date)}
                         />
                       </PopoverContent>
                     </Popover>
@@ -582,7 +607,7 @@ const AdminDashboard = () => {
                     {/* ปุ่มล้าง filter */}
                     <button
                       className="ml-2 px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm"
-                      onClick={() => { setPendingFilterLeaveType(''); setPendingDateRange({ from: undefined, to: undefined }); setPendingPage(1); }}
+                      onClick={clearPendingFilters}
                       type="button"
                     >
                       {t('history.clearFilter')}
@@ -719,7 +744,7 @@ const AdminDashboard = () => {
                           {/* ปุ่มล้าง filter */}
                           <button
                             className="ml-2 px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm"
-                            onClick={() => { setPendingFilterLeaveType(''); setPendingDateRange({ from: undefined, to: undefined }); setPendingPage(1); }}
+                            onClick={clearPendingFilters}
                             type="button"
                           >
                             {t('history.clearFilter')}
@@ -751,24 +776,17 @@ const AdminDashboard = () => {
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-64 min-w-[220px] max-w-full justify-start text-left font-normal whitespace-nowrap"
+                          className="w-48 min-w-[180px] max-w-full justify-start text-left font-normal whitespace-nowrap"
                         >
                           <Calendar className="mr-2 h-4 w-4" />
-                          {dateRange.from
-                            ? dateRange.to
-                              ? `${format(dateRange.from, "dd/MM/yyyy")} - ${format(dateRange.to, "dd/MM/yyyy")}`
-                              : format(dateRange.from, "dd/MM/yyyy")
-                            : t('history.selectDateRange', 'เลือกช่วงเวลา')}
+                          {recentSingleDate ? format(recentSingleDate, "dd/MM/yyyy") : t('history.selectSingleDate', 'เลือกวันเดียว')}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
                         <CalendarComponent
-                          initialFocus
-                          mode="range"
-                          defaultMonth={dateRange.from || new Date()}
-                          selected={dateRange}
-                          onSelect={range => setDateRange({ from: range?.from, to: range?.to })}
-                          numberOfMonths={2}
+                          mode="single"
+                          selected={recentSingleDate}
+                          onSelect={date => setRecentSingleDate(date)}
                         />
                       </PopoverContent>
                     </Popover>
@@ -809,7 +827,7 @@ const AdminDashboard = () => {
                     </select>
                     <button
                       className="ml-2 px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm"
-                      onClick={() => { setFilterMonth(''); setFilterYear(''); setHistoryStatusFilter(''); setDateRange({ from: undefined, to: undefined }); }}
+                      onClick={clearHistoryFilters}
                       type="button"
                     >
                       {t('history.clearFilter')}
