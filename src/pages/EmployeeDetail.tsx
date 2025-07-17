@@ -618,7 +618,7 @@ const EmployeeDetail = () => {
                             {leave.status === 'approved' ? t('leave.approved') : leave.status === 'pending' ? t('leave.pending') : leave.status === 'rejected' ? t('leave.rejected') : leave.status}
                           </Badge>
                         </TableCell>
-                        <TableCell>{leave.submittedDate ? new Date(leave.submittedDate).toLocaleDateString() : ''}</TableCell>
+                        <TableCell>{leave.submittedDate ? new Date(leave.submittedDate).toLocaleDateString('en-CA') : ''}</TableCell>
                         <TableCell className="text-center">
                           <Button
                             size="sm"
