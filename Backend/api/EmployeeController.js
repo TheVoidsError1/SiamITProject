@@ -421,6 +421,28 @@ module.exports = (AppDataSource) => {
           const leaveTypeObj = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
           if (leaveTypeObj && leaveTypeObj.leave_type) leaveTypeName = leaveTypeObj.leave_type;
         }
+        // --- เพิ่มการคำนวณ duration/durationType ---
+        let duration = 0;
+        let durationType = 'day';
+        if ((leaveTypeName === 'personal' || leaveTypeName === 'ลากิจ') && l.startTime && l.endTime) {
+          // ลากิจแบบชั่วโมง
+          const [sh, sm] = l.startTime.split(":").map(Number);
+          const [eh, em] = l.endTime.split(":").map(Number);
+          let start = sh + (sm || 0) / 60;
+          let end = eh + (em || 0) / 60;
+          let diff = end - start;
+          if (diff < 0) diff += 24;
+          duration = Math.floor(diff); // ปัดเศษลงเป็นจำนวนเต็มชั่วโมง
+          durationType = 'hour';
+        } else if (l.startDate && l.endDate) {
+          // ลาทั้งหมดแบบวัน
+          const start = new Date(l.startDate);
+          const end = new Date(l.endDate);
+          let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+          if (days < 0 || isNaN(days)) days = 0;
+          duration = days;
+          durationType = 'day';
+        }
         return {
           id: l.id,
           leaveType: l.leaveType,
@@ -430,7 +452,8 @@ module.exports = (AppDataSource) => {
           endDate: l.endDate,
           startTime: l.startTime || null,
           endTime: l.endTime || null,
-          duration: l.duration,
+          duration,
+          durationType,
           reason: l.reason,
           status: l.status,
           submittedDate: l.createdAt,
