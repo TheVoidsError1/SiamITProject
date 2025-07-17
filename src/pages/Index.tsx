@@ -149,7 +149,9 @@ const Index = () => {
     setLoadingDaysRemaining(true);
     setErrorDaysRemaining("");
     const token = localStorage.getItem("token");
-    fetchWithAuth("/api/leave-days-remaining", {
+    let url = `/api/leave-days-remaining`;
+    if (selectedYear) url += `?year=${selectedYear}`;
+    fetchWithAuth(url, {
       headers: {
         Authorization: token ? `Bearer ${token}` : undefined,
       },
@@ -164,7 +166,7 @@ const Index = () => {
       })
       .catch(() => setErrorDaysRemaining(t('error.apiConnectionError')))
       .finally(() => setLoadingDaysRemaining(false));
-  }, [t, logout]);
+  }, [selectedYear, t, logout]);
 
   // useEffect เรียก fetchDashboardStats เมื่อ selectedMonth/selectedYear เปลี่ยน
   useEffect(() => {
@@ -419,7 +421,7 @@ const Index = () => {
                 <div className="space-y-2">
                   {Object.entries(recentLeaveStats).map(([type, stat]) => (
                     <div className="flex justify-between items-center" key={type}>
-                      <span className="text-base">{type}</span>
+                      <span className="text-base">{t(`leaveTypes.${type}`, type)}</span>
                       <span className="font-medium text-base">
                         {(() => {
                           const d = stat.days;

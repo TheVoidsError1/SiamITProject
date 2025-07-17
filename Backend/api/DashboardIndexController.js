@@ -283,8 +283,18 @@ module.exports = (AppDataSource) => {
       // Sum sick, vacation, personal (in hours)
       const totalQuotaHours = ((quota.sick || 0) + (quota.vacation || 0) + (quota.personal || 0)) * 9;
 
-      // Get all approved leave requests for this user
-      const approvedLeaves = await leaveRepo.find({ where: { Repid: userId, status: 'approved' } });
+      // --- ปรับ filter เฉพาะปีที่เลือก (หรือปีปัจจุบัน) ---
+      const year = req.query.year ? parseInt(req.query.year) : (new Date()).getFullYear();
+      const startOfYear = new Date(year, 0, 1);
+      const endOfYear = new Date(year, 11, 31, 23, 59, 59, 999);
+      // Get all approved leave requests for this user ในปีนั้น
+      const approvedLeaves = await leaveRepo.find({
+        where: {
+          Repid: userId,
+          status: 'approved',
+          startDate: Between(startOfYear, endOfYear)
+        }
+      });
       // Helper to normalize type
       const normalizeType = (type) => {
         if (!type) return null;

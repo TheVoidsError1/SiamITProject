@@ -368,9 +368,9 @@ export const LeaveForm = () => {
       if (!response.ok) {
         // ถ้ามี message จาก backend ให้แสดงใน toast
         toast({
-          title: i18n.language.startsWith('en') ? 'Error' : 'เกิดข้อผิดพลาด',
+          title: i18n.language.startsWith('en') ? 'Notice' : 'แจ้งเตือน',
           description: data.message || t('leave.submitError'),
-          variant: "destructive",
+          variant: "default", // เปลี่ยนจาก destructive เป็น default (สีเทา)
         });
         return;
       }
