@@ -53,7 +53,13 @@ module.exports = (AppDataSource) => {
         let profile = null;
         let name = '';
         let position = '';
+        let position_id = '';
+        let position_name_th = '';
+        let position_name_en = '';
         let department = '';
+        let department_id = '';
+        let department_name_th = '';
+        let department_name_en = '';
         let id = '';
         let role = proc.Role;
         if (proc.Role === 'admin') {
@@ -63,8 +69,14 @@ module.exports = (AppDataSource) => {
             // ดึงชื่อ position และ department
             const posEntity = await AppDataSource.getRepository('Position').findOne({ where: { id: profile.position } });
             const deptEntity = await AppDataSource.getRepository('Department').findOne({ where: { id: profile.department } });
+            position_id = profile.position;
             position = posEntity ? posEntity.position_name_th : profile.position;
+            position_name_th = posEntity ? posEntity.position_name_th : '';
+            position_name_en = posEntity ? posEntity.position_name_en : '';
+            department_id = profile.department;
             department = deptEntity ? deptEntity.department_name_th : profile.department;
+            department_name_th = deptEntity ? deptEntity.department_name_th : '';
+            department_name_en = deptEntity ? deptEntity.department_name_en : '';
             id = profile.id;
           }
         } else if (proc.Role === 'superadmin') {
@@ -74,8 +86,14 @@ module.exports = (AppDataSource) => {
             name = profile.superadmin_name;
             const posEntity = await AppDataSource.getRepository('Position').findOne({ where: { id: profile.position } });
             const deptEntity = await AppDataSource.getRepository('Department').findOne({ where: { id: profile.department } });
+            position_id = profile.position;
             position = posEntity ? posEntity.position_name_th : profile.position;
+            position_name_th = posEntity ? posEntity.position_name_th : '';
+            position_name_en = posEntity ? posEntity.position_name_en : '';
+            department_id = profile.department;
             department = deptEntity ? deptEntity.department_name_th : profile.department;
+            department_name_th = deptEntity ? deptEntity.department_name_th : '';
+            department_name_en = deptEntity ? deptEntity.department_name_en : '';
             id = profile.id;
           }
         } else {
@@ -85,8 +103,14 @@ module.exports = (AppDataSource) => {
             // ดึงชื่อ position และ department
             const posEntity = await AppDataSource.getRepository('Position').findOne({ where: { id: profile.position } });
             const deptEntity = await AppDataSource.getRepository('Department').findOne({ where: { id: profile.department } });
+            position_id = profile.position;
             position = posEntity ? posEntity.position_name_th : profile.position;
+            position_name_th = posEntity ? posEntity.position_name_th : '';
+            position_name_en = posEntity ? posEntity.position_name_en : '';
+            department_id = profile.department;
             department = deptEntity ? deptEntity.department_name_th : profile.department;
+            department_name_th = deptEntity ? deptEntity.department_name_th : '';
+            department_name_en = deptEntity ? deptEntity.department_name_en : '';
             id = profile.id;
           }
         }
@@ -161,8 +185,12 @@ module.exports = (AppDataSource) => {
           id,
           name,
           email: proc.Email,
-          position,
-          department,
+          position: position_id,
+          position_name_th,
+          position_name_en,
+          department: department_id,
+          department_name_th,
+          department_name_en,
           status: proc.Role,
           role,
           usedLeaveDays,
