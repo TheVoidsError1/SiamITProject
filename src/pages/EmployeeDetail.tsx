@@ -663,13 +663,9 @@ const EmployeeDetail = () => {
                   <TableBody>
                     {filteredLeaveHistory.map((leave, idx) => (
                       <TableRow key={idx}>
-                        <TableCell className="font-medium">{
-                          leave.leaveTypeName
-                            ? leave.leaveTypeName
-                            : leave.leaveType
-                              ? leave.leaveType
-                              : '-'
-                        }</TableCell>
+                        <TableCell className="font-medium">
+                          {getLeaveTypeLabel(leave.leaveTypeId || leave.leaveType)}
+                        </TableCell>
                         <TableCell className="whitespace-nowrap">{leave.leaveDate}</TableCell>
                           <TableCell>{
                             leave.durationType === 'hour'
