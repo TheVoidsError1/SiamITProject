@@ -115,7 +115,11 @@ const EmployeeDetail = () => {
       params.push(`year=${filterYear}`);
     }
     if (filterStatus && filterStatus !== "all") params.push(`status=${filterStatus}`);
+    // เพิ่ม paging parameters
+    params.push(`page=${leavePage}`);
+    params.push(`limit=6`);
     const query = params.length > 0 ? `?${params.join("&")}` : "";
+    
     fetch(`http://localhost:3001/api/employee/${id}/leave-history${query}`)
       .then(res => {
         if (res.status === 401) {
@@ -127,12 +131,15 @@ const EmployeeDetail = () => {
       .then(data => {
         if (data.success) {
           setLeaveHistory(data.data);
+          setLeaveTotalPages(data.totalPages || 1);
         } else {
           setLeaveHistory([]);
+          setLeaveTotalPages(1);
         }
       })
-      .catch(() => {
+      .catch((error) => {
         setLeaveHistory([]);
+        setLeaveTotalPages(1);
       });
   }, [id, t, filterType, filterMonth, filterYear, filterStatus, leavePage]);
 
@@ -198,62 +205,6 @@ const EmployeeDetail = () => {
   // อ่าน role จาก query string
   const queryParams = new URLSearchParams(location.search);
   const role = queryParams.get("role");
-
-  useEffect(() => {
-    if (!id) return;
-    setLoading(true);
-    setError(null);
-    const token = localStorage.getItem('token');
-    if (!token) {
-      showSessionExpiredDialog();
-      return;
-    }
-    const res = fetch(`http://localhost:3001/api/employee/${id}`)
-      .then(res => {
-        if (res.status === 401) {
-          showSessionExpiredDialog();
-          return Promise.reject(new Error('Session expired'));
-        }
-        return res.json();
-      })
-      .then(data => {
-        if (data.success) {
-          setEmployee(data.data);
-        } else {
-          setEmployee(null);
-          setError(t('employee.notFound'));
-        }
-        setLoading(false);
-      })
-      .catch(() => {
-        setEmployee(null);
-        setError(t('employee.loadError'));
-        setLoading(false);
-      });
-
-    // Fetch leave history for this employee by id (paging)
-    fetch(`http://localhost:3001/api/leave-request/user/${id}?page=${leavePage}&limit=6`)
-      .then(res => {
-        if (res.status === 401) {
-          showSessionExpiredDialog();
-          return Promise.reject(new Error('Session expired'));
-        }
-        return res.json();
-      })
-      .then(data => {
-        if (data.status === 'success') {
-          setLeaveHistory(data.data);
-          setLeaveTotalPages(data.totalPages || 1);
-        } else {
-          setLeaveHistory([]);
-          setLeaveTotalPages(1);
-        }
-      })
-      .catch(() => {
-        setLeaveHistory([]);
-        setLeaveTotalPages(1);
-      });
-  }, [id, t, leavePage]);
 
   const handleEdit = () => {
     // Prevent admin from editing superadmin
@@ -525,15 +476,15 @@ const EmployeeDetail = () => {
                       ? t('leave.type')
                       : pendingFilterType === 'all'
                         ? t('months.all')
-                        : t(`leaveTypes.${pendingFilterType}`)
+                        : pendingFilterType // แสดงชื่อประเภทที่เลือกตรง ๆ
                   }</SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">{t('months.all')}</SelectItem>
-                    <SelectItem value="sick">{t('leaveTypes.sick')}</SelectItem>
-                    <SelectItem value="vacation">{t('leaveTypes.vacation')}</SelectItem>
-                    <SelectItem value="personal">{t('leaveTypes.personal')}</SelectItem>
-                    <SelectItem value="maternity">{t('leaveTypes.maternity')}</SelectItem>
-                    <SelectItem value="emergency">{t('leaveTypes.emergency')}</SelectItem>
+                    <SelectItem value="ลาป่วย">{t('leaveTypes.sick')}</SelectItem>
+                    <SelectItem value="ลาพักร้อน">{t('leaveTypes.vacation')}</SelectItem>
+                    <SelectItem value="ลากิจ">{t('leaveTypes.personal')}</SelectItem>
+                    <SelectItem value="ลาคลอด">{t('leaveTypes.maternity')}</SelectItem>
+                    <SelectItem value="ลาฉุกเฉิน">{t('leaveTypes.emergency')}</SelectItem>
                   </SelectContent>
                 </Select>
                 {showTypeError && <span className="text-red-500 text-xs absolute right-2 top-0">*</span>}
@@ -665,7 +616,7 @@ const EmployeeDetail = () => {
                   <TableBody>
                     {filteredLeaveHistory.map((leave, idx) => (
                       <TableRow key={idx}>
-                        <TableCell className="font-medium">{getLeaveTypeLabel(leave.leaveType)}</TableCell>
+                        <TableCell className="font-medium">{i18n.language === 'th' ? (leave.leaveTypeName_th || leave.leaveType) : (leave.leaveTypeName_en || leave.leaveType)}</TableCell>
                         <TableCell className="whitespace-nowrap">{leave.leaveDate}</TableCell>
                           <TableCell>{
                             leave.durationType === 'hour'

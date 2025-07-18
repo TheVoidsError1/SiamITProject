@@ -441,7 +441,7 @@ module.exports = (AppDataSource) => {
   router.get('/employee/:id/leave-history', async (req, res) => {
     try {
       const { id } = req.params;
-      const { leaveType, month, year, status } = req.query;
+      const { leaveType, month, year, status, page = 1, limit = 6 } = req.query;
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
       const userRepo = AppDataSource.getRepository('User');
@@ -451,49 +451,68 @@ module.exports = (AppDataSource) => {
       let leaves = await leaveRepo.find({ where: { Repid: id }, order: { createdAt: 'DESC' } });
 
       // Filter ตาม leaveType (ชื่อ หรือ id)
-      if (leaveType) {
+      if (leaveType && leaveType !== 'all') {
+        const leaveTypeLower = String(leaveType).trim().toLowerCase();
         leaves = await Promise.all(leaves.map(async (l) => {
-          let typeName = l.leaveType;
-          if (typeName && typeName.length > 20) {
-            const typeObj = await leaveTypeRepo.findOneBy({ id: typeName });
-            if (typeObj && typeObj.leave_type_th) typeName = typeObj.leave_type_th;
+          let typeName_th = l.leaveType;
+          let typeName_en = l.leaveType;
+          if (l.leaveType && l.leaveType.length > 20) {
+            const typeObj = await leaveTypeRepo.findOneBy({ id: l.leaveType });
+            if (typeObj) {
+              typeName_th = typeObj.leave_type_th || l.leaveType;
+              typeName_en = typeObj.leave_type_en || l.leaveType;
+            }
           }
-          return { ...l, _leaveTypeName: typeName };
+          return { ...l, _leaveTypeName_th: typeName_th, _leaveTypeName_en: typeName_en };
         }));
-        leaves = leaves.filter(l => l._leaveTypeName === leaveType || l.leaveType === leaveType);
+        leaves = leaves.filter(l => 
+          (l._leaveTypeName_th && String(l._leaveTypeName_th).trim().toLowerCase().includes(leaveTypeLower)) ||
+          (l._leaveTypeName_en && String(l._leaveTypeName_en).trim().toLowerCase().includes(leaveTypeLower)) ||
+          (l.leaveType && String(l.leaveType).trim().toLowerCase().includes(leaveTypeLower))
+        );
       }
 
       // Filter ตามปี/เดือน (month ต้องมี year)
-      if (year) {
+      if (year && year !== 'all') {
         leaves = leaves.filter(l => {
           if (!l.startDate) return false;
           const d = new Date(l.startDate);
           if (isNaN(d.getTime())) return false;
-          if (month) {
+          if (month && month !== 'all') {
             return d.getFullYear() === Number(year) && (d.getMonth() + 1) === Number(month);
           } else {
             return d.getFullYear() === Number(year);
           }
         });
       }
-      // ถ้าเลือก month แต่ไม่เลือก year ไม่ต้อง filter เดือน (ต้องเลือก year ด้วย)
 
       // Filter ตาม status
-      if (status) {
+      if (status && status !== 'all') {
         leaves = leaves.filter(l => l.status === status);
       }
 
+      // Apply paging
+      const pageNum = parseInt(page);
+      const limitNum = parseInt(limit);
+      const skip = (pageNum - 1) * limitNum;
+      const total = leaves.length;
+      leaves = leaves.slice(skip, skip + limitNum);
+
       // Join leaveTypeName
       leaves = await Promise.all(leaves.map(async (l) => {
-        let leaveTypeName = l.leaveType;
-        if (leaveTypeName && leaveTypeName.length > 20) {
-          const leaveTypeObj = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
-          if (leaveTypeObj && leaveTypeObj.leave_type_th) leaveTypeName = leaveTypeObj.leave_type_th;
+        let leaveTypeName_th = l.leaveType;
+        let leaveTypeName_en = l.leaveType;
+        if (l.leaveType && l.leaveType.length > 20) {
+          const leaveTypeObj = await leaveTypeRepo.findOneBy({ id: l.leaveType });
+          if (leaveTypeObj) {
+            leaveTypeName_th = leaveTypeObj.leave_type_th || l.leaveType;
+            leaveTypeName_en = leaveTypeObj.leave_type_en || l.leaveType;
+          }
         }
         // --- เพิ่มการคำนวณ duration/durationType ---
         let duration = 0;
         let durationType = 'day';
-        if ((leaveTypeName === 'personal' || leaveTypeName === 'ลากิจ') && l.startTime && l.endTime) {
+        if ((leaveTypeName_th === 'ลากิจ' || leaveTypeName_en === 'personal') && l.startTime && l.endTime) {
           // ลากิจแบบชั่วโมง
           const [sh, sm] = l.startTime.split(":").map(Number);
           const [eh, em] = l.endTime.split(":").map(Number);
@@ -515,7 +534,8 @@ module.exports = (AppDataSource) => {
         return {
           id: l.id,
           leaveType: l.leaveType,
-          leaveTypeName,
+          leaveTypeName_th,
+          leaveTypeName_en,
           leaveDate: l.startDate,
           startDate: l.startDate,
           endDate: l.endDate,
@@ -529,7 +549,13 @@ module.exports = (AppDataSource) => {
         };
       }));
 
-      res.json({ success: true, data: leaves });
+      res.json({ 
+        success: true, 
+        data: leaves, 
+        total,
+        page: pageNum,
+        totalPages: Math.ceil(total / limitNum)
+      });
     } catch (err) {
       res.status(500).json({ success: false, message: err.message });
     }

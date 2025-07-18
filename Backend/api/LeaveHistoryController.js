@@ -100,10 +100,12 @@ module.exports = (AppDataSource) => {
       const result = await Promise.all(leaves.map(async (leave) => {
         let leaveTypeName_th = null;
         let leaveTypeName_en = null;
+        let leaveTypeId = null;
         let approvedBy = null;
         let rejectedBy = null;
         if (leave.leaveType) {
           const leaveType = await leaveTypeRepo.findOneBy({ id: leave.leaveType });
+          leaveTypeId = leave.leaveType;
           leaveTypeName_th = leaveType ? leaveType.leave_type_th : leave.leaveType;
           leaveTypeName_en = leaveType ? leaveType.leave_type_en : leave.leaveType;
         }
@@ -117,13 +119,14 @@ module.exports = (AppDataSource) => {
         }
         return {
           id: leave.id,
-          type: leave.leaveType, // id
+          type: leaveTypeId, // id
+          leaveType: leaveTypeId, // id (backward compatible)
           leaveTypeName_th,
           leaveTypeName_en,
           startDate: leave.startDate,
           endDate: leave.endDate,
-          startTime: leave.startTime, // เพิ่มบรรทัดนี้
-          endTime: leave.endTime,     // เพิ่มบรรทัดนี้
+          startTime: leave.startTime,
+          endTime: leave.endTime,
           days: leave.startDate && leave.endDate ? (Math.floor((new Date(leave.endDate) - new Date(leave.startDate)) / (1000*60*60*24)) + 1) : 1,
           reason: leave.reason,
           status: leave.status,
