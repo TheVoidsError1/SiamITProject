@@ -68,6 +68,7 @@ const Index = () => {
   // เพิ่ม state สำหรับ totalDays/totalHours จาก recent leave stats
   const [recentTotalDays, setRecentTotalDays] = useState<number>(0);
   const [recentTotalHours, setRecentTotalHours] = useState<number>(0);
+  const [leaveTypes, setLeaveTypes] = useState<{ id: string, leave_type: string, leave_type_th: string, leave_type_en?: string }[]>([]);
 
   const { showSessionExpiredDialog } = useAuth();
 
@@ -158,6 +159,19 @@ const Index = () => {
       .catch(() => setErrorDaysRemaining(t('error.apiConnectionError')))
       .finally(() => setLoadingDaysRemaining(false));
   }, [selectedYear, t, logout]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    fetchWithAuth('/api/leave-types', {
+      headers: {
+        Authorization: token ? `Bearer ${token}` : undefined,
+      },
+    }, logout, showSessionExpiredDialog)
+      .then(res => res && res.json())
+      .then(data => {
+        if (data && data.success && Array.isArray(data.data)) setLeaveTypes(data.data);
+      });
+  }, [logout, showSessionExpiredDialog]);
 
   // useEffect เรียก fetchDashboardStats เมื่อ selectedMonth/selectedYear เปลี่ยน
   useEffect(() => {
@@ -410,22 +424,29 @@ const Index = () => {
                 <div className="text-center py-3 text-red-500 text-base">{errorRecentStats}</div>
               ) : (
                 <div className="space-y-2">
-                  {Object.entries(recentLeaveStats).map(([type, stat]) => (
-                    <div className="flex justify-between items-center" key={type}>
-                      <span className="text-base">{t(`leaveTypes.${type}`, type)}</span>
-                      <span className="font-medium text-base">
-                        {(() => {
-                          const d = stat.days;
-                          const h = stat.hours;
-                          const hourLabel = t('common.hour', 'ชั่วโมง');
-                          if (d > 0 && h > 0) return `${d} ${t('common.days')} ${h} ${hourLabel}`;
-                          if (d > 0) return `${d} ${t('common.days')}`;
-                          if (h > 0) return `${h} ${hourLabel}`;
-                          return `0 ${t('common.days')}`;
-                        })()}
-                      </span>
-                    </div>
-                  ))}
+                  {leaveTypes.map((lt) => {
+                    const stat = recentLeaveStats[lt.leave_type] || { days: 0, hours: 0 };
+                    return (
+                      <div className="flex justify-between items-center" key={lt.leave_type}>
+                        <span className="text-base">
+                          {i18n.language === 'th'
+                            ? lt.leave_type_th || lt.leave_type
+                            : lt.leave_type_en || lt.leave_type}
+                        </span>
+                        <span className="font-medium text-base">
+                          {(() => {
+                            const d = stat.days;
+                            const h = stat.hours;
+                            const hourLabel = t('common.hour', 'ชั่วโมง');
+                            if (d > 0 && h > 0) return `${d} ${t('common.days')} ${h} ${hourLabel}`;
+                            if (d > 0) return `${d} ${t('common.days')}`;
+                            if (h > 0) return `${h} ${hourLabel}`;
+                            return `0 ${t('common.days')}`;
+                          })()}
+                        </span>
+                      </div>
+                    );
+                  })}
                   {/* รวมวันและชั่วโมงทั้งหมด */}
                   <div className="flex justify-between items-center font-bold border-t pt-2 mt-2">
                     <span className="text-base">{t('common.total', 'รวม')}</span>
