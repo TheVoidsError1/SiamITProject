@@ -143,7 +143,10 @@ module.exports = (AppDataSource) => {
   router.post('/leave-types', async (req, res) => {
     try {
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
-      const leaveType = leaveTypeRepo.create(req.body);
+      const leaveType = leaveTypeRepo.create({
+        leave_type_en: req.body.leave_type_en,
+        leave_type_th: req.body.leave_type_th
+      });
       const saved = await leaveTypeRepo.save(leaveType);
       res.status(201).json({ success: true, data: saved, message: 'Created leave type successfully' });
     } catch (err) {
@@ -159,7 +162,8 @@ module.exports = (AppDataSource) => {
       if (!leaveType) {
         return res.status(404).json({ success: false, data: null, message: 'Leave type not found' });
       }
-      leaveType.leave_type = req.body.leave_type;
+      leaveType.leave_type_en = req.body.leave_type_en;
+      leaveType.leave_type_th = req.body.leave_type_th;
       const updated = await leaveTypeRepo.save(leaveType);
       res.json({ success: true, data: updated, message: 'Updated leave type successfully' });
     } catch (err) {

@@ -186,8 +186,8 @@ const EmployeeManagement = () => {
                           <TableRow key={employee.id} className={isMe ? "bg-blue-50" : undefined}>
                             <TableCell className="font-medium text-sm">{employee.full_name}{isMe && <span className="ml-2 text-xs text-blue-600 font-bold">(me)</span>}</TableCell>
                             <TableCell className="text-sm">{employee.email}</TableCell>
-                            <TableCell className="text-sm">{t('positions.' + employee.position, employee.position)}</TableCell>
-                            <TableCell className="text-sm">{t('departments.' + employee.department, employee.department)}</TableCell>
+                            <TableCell className="text-sm">{employee.position}</TableCell>
+                            <TableCell className="text-sm">{employee.department}</TableCell>
                             <TableCell>
                               <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${badgeColor}`}>{badgeText}</span>
                             </TableCell>

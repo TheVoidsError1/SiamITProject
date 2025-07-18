@@ -94,26 +94,26 @@ module.exports = (AppDataSource) => {
   });
 
   // ดึงข้อมูล department ทั้งหมด
-  router.get('/departments', async (req, res) => {
-    try {
-      const departmentRepo = AppDataSource.getRepository('department');
-      const departments = await departmentRepo.find();
-      res.json({ success: true, data: departments.map(d => d.department_name), message: 'ดึงข้อมูล department สำเร็จ' });
-    } catch (err) {
-      res.status(500).json({ success: false, data: null, message: err.message });
-    }
-  });
+  // router.get('/departments', async (req, res) => {
+  //   try {
+  //     const departmentRepo = AppDataSource.getRepository('department');
+  //     const departments = await departmentRepo.find();
+  //     res.json({ success: true, data: departments.map(d => d.department_name), message: 'ดึงข้อมูล department สำเร็จ' });
+  //   } catch (err) {
+  //     res.status(500).json({ success: false, data: null, message: err.message });
+  //   }
+  // });
 
   // ดึงข้อมูล position ทั้งหมด
-  router.get('/positions', async (req, res) => {
-    try {
-      const positionRepo = AppDataSource.getRepository('position');
-      const positions = await positionRepo.find();
-      res.json({ success: true, data: positions.map(p => p.position_name), message: 'ดึงข้อมูล position สำเร็จ' });
-    } catch (err) {
-      res.status(500).json({ success: false, data: null, message: err.message });
-    }
-  });
+  // router.get('/positions', async (req, res) => {
+  //   try {
+  //     const positionRepo = AppDataSource.getRepository('position');
+  //     const positions = await positionRepo.find();
+  //     res.json({ success: true, data: positions.map(p => p.position_name), message: 'ดึงข้อมูล position สำเร็จ' });
+  //   } catch (err) {
+  //     res.status(500).json({ success: false, data: null, message: err.message });
+  //   }
+  // });
 
   // เพิ่ม department
   router.post('/departments', async (req, res) => {

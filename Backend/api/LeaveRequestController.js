@@ -366,7 +366,7 @@
            return {
              ...leave,
              user: user ? { User_name: user.User_name, department: user.department, position: user.position } : null,
-             leaveTypeName: leaveTypeObj ? leaveTypeObj.leave_type : leave.leaveType,
+             leaveTypeName: leaveTypeObj ? (lang === 'th' ? leaveTypeObj.leave_type_th : leaveTypeObj.leave_type_en) : leave.leaveType,
              attachments: parseAttachments(leave.attachments),
            };
          }));

@@ -226,5 +226,176 @@ module.exports = (AppDataSource) => {
     }
   });
 
+  // Test endpoint to check database state
+  router.get('/test', async (req, res) => {
+    try {
+      const userRepo = AppDataSource.getRepository('User');
+      const processRepo = AppDataSource.getRepository('ProcessCheck');
+      const positionRepo = AppDataSource.getRepository('Position');
+      const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
+      const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+      
+      const users = await userRepo.find();
+      const processes = await processRepo.find();
+      const positions = await positionRepo.find();
+      const quotas = await leaveQuotaRepo.find();
+      const leaveTypes = await leaveTypeRepo.find();
+      
+      res.json({
+        success: true,
+        data: {
+          users: users.length,
+          processes: processes.length,
+          positions: positions.length,
+          quotas: quotas.length,
+          leaveTypes: leaveTypes.length,
+          sampleUser: users[0] || null,
+          sampleProcess: processes[0] || null,
+          samplePosition: positions[0] || null,
+          sampleQuota: quotas[0] || null,
+          sampleLeaveType: leaveTypes[0] || null,
+        }
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  });
+
+  // Test endpoint to check current user's position
+  router.get('/test-user', require('../middleware/authMiddleware'), async (req, res) => {
+    try {
+      const userId = req.user.userId;
+      console.log('Test user ID:', userId);
+      
+      const userRepo = AppDataSource.getRepository('User');
+      const processRepo = AppDataSource.getRepository('ProcessCheck');
+      
+      const user = await userRepo.findOne({ where: { id: userId } });
+      const processUser = await processRepo.findOne({ where: { Repid: userId } });
+      
+      res.json({
+        success: true,
+        data: {
+          userId,
+          user: user || null,
+          processUser: processUser || null,
+          userPosition: user?.position || null,
+          processPosition: processUser?.Position || null,
+        }
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  });
+
+  // --- NEW /api/leave-quota/me endpoint ---
+  router.get('/me', require('../middleware/authMiddleware'), async (req, res) => {
+    try {
+      const userId = req.user.userId;
+      const userRepo = AppDataSource.getRepository('User');
+      const adminRepo = AppDataSource.getRepository('Admin');
+      const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+      const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+      const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
+      const leaveRequestRepo = AppDataSource.getRepository('LeaveRequest');
+
+      let debugInfo = { foundIn: null, positionId: null };
+      // Try to find position from User, then Admin, then SuperAdmin
+      let user = await userRepo.findOne({ where: { id: userId } });
+      let positionId = user?.position || null;
+      if (positionId) debugInfo.foundIn = 'User';
+      if (!positionId) {
+        user = await adminRepo.findOne({ where: { id: userId } });
+        positionId = user?.position || null;
+        if (positionId) debugInfo.foundIn = 'Admin';
+      }
+      if (!positionId) {
+        user = await superadminRepo.findOne({ where: { id: userId } });
+        positionId = user?.position || null;
+        if (positionId) debugInfo.foundIn = 'SuperAdmin';
+      }
+      debugInfo.positionId = positionId;
+      console.log('DEBUG /api/leave-quota/me:', debugInfo);
+
+      // Get all leave types
+      const leaveTypes = await leaveTypeRepo.find();
+      // Get all quotas for this position
+      const quotas = positionId ? await leaveQuotaRepo.find({ where: { positionId } }) : [];
+      // Get all approved leave requests for this user
+      const approvedLeaves = await leaveRequestRepo.find({ where: { Repid: userId, status: 'approved' } });
+
+      function parseTimeToMinutes(t) {
+        if (!t) return 0;
+        const [h, m] = t.split(':').map(Number);
+        return h * 60 + (m || 0);
+      }
+
+      const result = leaveTypes.map(lt => {
+        const quotaRow = quotas.find(q => q.leaveTypeId === lt.id);
+        const quota = quotaRow ? quotaRow.quota : 0;
+        let used = 0;
+        let unit = 'day';
+        for (const lr of approvedLeaves) {
+          let leaveTypeName = lr.leaveType;
+          if (leaveTypeName && leaveTypeName.length > 20) {
+            const leaveTypeEntity = leaveTypes.find(t => t.id === leaveTypeName);
+            if (leaveTypeEntity) leaveTypeName = leaveTypeEntity.leave_type_en;
+          }
+          if (
+            leaveTypeName === lt.leave_type_en ||
+            leaveTypeName === lt.leave_type_th ||
+            leaveTypeName === lt.id
+          ) {
+            if (lt.leave_type_en?.toLowerCase() === 'personal' || lt.leave_type_th === 'ลากิจ') {
+              if (lr.startTime && lr.endTime) {
+                const startMinutes = parseTimeToMinutes(lr.startTime);
+                const endMinutes = parseTimeToMinutes(lr.endTime);
+                let durationHours = (endMinutes - startMinutes) / 60;
+                if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
+                used += durationHours;
+                unit = 'hour';
+              } else if (lr.startDate && lr.endDate) {
+                const start = new Date(lr.startDate);
+                const end = new Date(lr.endDate);
+                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                if (days < 0 || isNaN(days)) days = 0;
+                used += days;
+                unit = 'day';
+              }
+            } else {
+              if (lr.startDate && lr.endDate) {
+                const start = new Date(lr.startDate);
+                const end = new Date(lr.endDate);
+                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                if (days < 0 || isNaN(days)) days = 0;
+                used += days;
+                unit = 'day';
+              }
+            }
+          }
+        }
+        let quotaFinal = quota;
+        if ((lt.leave_type_en?.toLowerCase() === 'personal' || lt.leave_type_th === 'ลากิจ') && unit === 'hour') {
+          quotaFinal = quota * 9;
+        }
+        const remaining = Math.max(0, quotaFinal - used);
+        return {
+          id: lt.id,
+          leave_type_en: lt.leave_type_en,
+          leave_type_th: lt.leave_type_th,
+          quota: quotaFinal,
+          used: Math.round(used * 100) / 100,
+          remaining: Math.round(remaining * 100) / 100,
+          unit,
+        };
+      });
+      return res.json({ success: true, data: result, debug: debugInfo });
+    } catch (err) {
+      console.error('Leave quota error:', err);
+      return res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+  });
+
   return router;
 };
+

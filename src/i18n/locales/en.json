@@ -272,7 +272,9 @@
     "saveSuccessDesc": "Your profile information has been saved successfully",
     "saveError": "Failed to save profile",
     "uploadSuccess": "Profile picture uploaded successfully",
-    "uploadError": "Failed to upload profile picture"
+    "uploadError": "Failed to upload profile picture",
+    "noLeaveRights": "No leave rights found for your position.",
+    "contactAdmin": "Please contact your administrator to set up leave quotas for your position."
   },
   "history": {
     "leaveHistoryTitle": "View your leave history",
@@ -384,7 +386,8 @@
     "noPassword": "Not set",
     "leaveHistoryDesc": "Employee leave history",
     "name": "name",
-    "superadmin": "Superadmin"
+    "superadmin": "Superadmin",
+    "setNewPassword": "Set a new password"
   },
   "notification": {
     "title": "Notifications",
