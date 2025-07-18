@@ -43,7 +43,7 @@ const Index = () => {
   const [leaveStats, setLeaveStats] = useState({ sick: 0, vacation: 0, business: 0 });
   const [loadingStats, setLoadingStats] = useState(true);
   const [errorStats, setErrorStats] = useState("");
-  const [recentLeaveStats, setRecentLeaveStats] = useState<Record<string, { days: number; hours: number }>>({});
+  const [recentLeaveStats, setRecentLeaveStats] = useState<Record<string, { days: number; hours: number; quota?: number }>>({});
   const [loadingRecentStats, setLoadingRecentStats] = useState(true);
   const [errorRecentStats, setErrorRecentStats] = useState("");
   // Days remaining state
@@ -420,11 +420,21 @@ const Index = () => {
                             {(() => {
                               const d = stat.days;
                               const h = stat.hours;
+                              // ถ้าเป็น Emergency Leave (ลาฉุกเฉิน) ไม่ต้องแสดง quota
+                              const isEmergency = [
+                                t('leaveTypes.Emergency Leave', 'Emergency Leave'),
+                                t('leaveTypes.ลาฉุกเฉิน', 'ลาฉุกเฉิน'),
+                                'Emergency Leave',
+                                'ลาฉุกเฉิน'
+                              ].includes(type);
+                              const quota = (!isEmergency && stat.quota !== undefined) ? stat.quota : null;
                               const hourLabel = t('common.hour', 'ชั่วโมง');
-                              if (d > 0 && h > 0) return `${d} ${t('common.days')} ${h} ${hourLabel}`;
-                              if (d > 0) return `${d} ${t('common.days')}`;
-                              if (h > 0) return `${h} ${hourLabel}`;
-                              return `0 ${t('common.days')}`;
+                              let used = '';
+                              if (d > 0 && h > 0) used = `${d} ${t('common.days')} ${h} ${hourLabel}`;
+                              else if (d > 0) used = `${d} ${t('common.days')}`;
+                              else if (h > 0) used = `${h} ${hourLabel}`;
+                              else used = `0 ${t('common.days')}`;
+                              return quota !== null ? `${used} / ${quota} ${t('common.days')}` : used;
                             })()}
                           </span>
                         </div>

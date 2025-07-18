@@ -143,6 +143,10 @@ module.exports = (AppDataSource) => {
       const userId = req.user.userId;
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+      const userRepo = AppDataSource.getRepository('User');
+      const adminRepo = AppDataSource.getRepository('Admin');
+      const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+      const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
       // --- เพิ่ม filter เดือน/ปี ---
       const month = req.query.month ? parseInt(req.query.month) : null;
       const year = req.query.year ? parseInt(req.query.year) : null;
@@ -172,21 +176,38 @@ module.exports = (AppDataSource) => {
       const leaveTypeStats = {};
       for (const lt of allLeaveTypes) {
         if (lt.leave_type_th) { // ตรวจสอบว่ามี leave_type_th หรือไม่
-          leaveTypeStats[lt.leave_type_th] = { days: 0, hours: 0, id: lt.id };
+          leaveTypeStats[lt.leave_type_th] = { days: 0, hours: 0, id: lt.id, quota: 0 };
         }
       }
-      
+
+      // หา positionId ของ user
+      let user = await userRepo.findOneBy({ id: userId });
+      if (!user) user = await adminRepo.findOneBy({ id: userId });
+      if (!user) user = await superadminRepo.findOneBy({ id: userId });
+      const positionId = user && user.position ? user.position : null;
+      let quotas = [];
+      if (positionId) {
+        quotas = await leaveQuotaRepo.find({ where: { positionId } });
+      }
+      // map quota ใส่ leaveTypeStats
+      for (const quota of quotas) {
+        const leaveType = allLeaveTypes.find(lt => lt.id === quota.leaveTypeId);
+        if (leaveType && leaveType.leave_type_th && leaveTypeStats[leaveType.leave_type_th]) {
+          leaveTypeStats[leaveType.leave_type_th].quota = quota.quota;
+        }
+      }
+
       // Helper to parse 'HH:mm' to minutes
       function parseTimeToMinutes(t) {
         if (!t) return 0;
         const [h, m] = t.split(':').map(Number);
         return h * 60 + (m || 0);
       }
-      
+
       for (const lr of approvedLeaves) {
         let leaveTypeEntity = null;
         let leaveTypeName = null;
-        
+
         // If leaveType is a UUID, look up the entity
         if (lr.leaveType && lr.leaveType.length > 20) {
           leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: lr.leaveType });
@@ -195,7 +216,7 @@ module.exports = (AppDataSource) => {
           }
         } else {
           // If it's a string name, try to find by name
-          leaveTypeEntity = await leaveTypeRepo.findOne({ 
+          leaveTypeEntity = await leaveTypeRepo.findOne({
             where: [
               { leave_type_th: lr.leaveType },
               { leave_type_en: lr.leaveType }
@@ -207,13 +228,13 @@ module.exports = (AppDataSource) => {
             leaveTypeName = lr.leaveType; // fallback to original value
           }
         }
-        
+
         // ถ้าไม่มีใน leaveTypeStats ให้ข้าม
         if (!leaveTypeStats[leaveTypeName]) continue;
-        
+
         // Check if this leave type supports hourly leave (personal/business leave)
         const isHourlyLeave = ["ลากิจ", "personal", "business"].includes(leaveTypeName);
-        
+
         if (isHourlyLeave && lr.startTime && lr.endTime) {
           // Hour-based leave
           const startMinutes = parseTimeToMinutes(lr.startTime);
@@ -230,7 +251,7 @@ module.exports = (AppDataSource) => {
           leaveTypeStats[leaveTypeName].days += days;
         }
       }
-      
+
       // ปัดเศษชั่วโมงและแปลงชั่วโมงเป็นวันถ้าจำเป็น
       for (const key in leaveTypeStats) {
         leaveTypeStats[key].hours = Math.round(leaveTypeStats[key].hours);
@@ -251,7 +272,7 @@ module.exports = (AppDataSource) => {
       });
       totalDays += Math.floor(totalHours / 9);
       totalHours = totalHours % 9;
-      
+
       // ถ้าไม่มี leaveTypeStats ให้ส่ง object ว่างกลับไป
       if (Object.keys(leaveTypeStats).length === 0) {
         leaveTypeStats = {};
@@ -294,29 +315,45 @@ module.exports = (AppDataSource) => {
 
       // Get all leave quotas for this position
       const quotas = await leaveQuotaRepo.find({ where: { positionId } });
-      const leaveTypes = await leaveTypeRepo.find();
+      
       // Get all approved leave requests for this user
       const approvedLeaves = await leaveRepo.find({ where: { Repid: userId, status: 'approved' } });
 
-      // For each leave type, calculate remaining (only sick, personal, vacation)
+      // Calculate total remaining days from leave_quota
       let totalRemaining = 0;
-      for (const leaveType of leaveTypes) {
-        if (!['sick', 'personal', 'vacation', 'ลาป่วย', 'ลากิจ', 'ลาพักผ่อน'].includes(leaveType.leave_type)) continue;
-        const quotaRow = quotas.find(q => q.leaveTypeId === leaveType.id);
-        const quota = quotaRow ? quotaRow.quota : 0;
+      
+      for (const quota of quotas) {
+        // Get leave type details
+        const leaveType = await leaveTypeRepo.findOneBy({ id: quota.leaveTypeId });
+        if (!leaveType) continue;
+        
+        // Skip maternity leave (ลาคลอด) และ emergency leave (ลาฉุกเฉิน)
+        if (
+          leaveType.leave_type_th === 'ลาคลอด' || leaveType.leave_type_en === 'Maternity' ||
+          leaveType.leave_type_th === 'ลาฉุกเฉิน' || leaveType.leave_type_en === 'Emergency'
+        ) {
+          continue;
+        }
+        
+        // Calculate used days for this leave type
         let used = 0;
         for (const lr of approvedLeaves) {
           let leaveTypeName = lr.leaveType;
+          
+          // If leaveType is a UUID, look up the entity
           if (leaveTypeName && leaveTypeName.length > 20) {
             const leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
-            if (leaveTypeEntity && leaveTypeEntity.leave_type) {
-              leaveTypeName = leaveTypeEntity.leave_type;
+            if (leaveTypeEntity) {
+              leaveTypeName = leaveTypeEntity.leave_type_th;
             }
           }
-          if (leaveTypeName === leaveType.leave_type) {
+          
+          // Check if this leave request matches the current quota's leave type
+          if (leaveTypeName === leaveType.leave_type_th || leaveTypeName === leaveType.leave_type_en) {
             // Personal leave: may be by hour or day
-            if (leaveTypeName === 'personal' || leaveTypeName === 'ลากิจ') {
+            if (leaveType.leave_type_th === 'ลากิจ' || leaveType.leave_type_en === 'Personal') {
               if (lr.startTime && lr.endTime) {
+                // Hour-based calculation
                 const [sh, sm] = lr.startTime.split(":").map(Number);
                 const [eh, em] = lr.endTime.split(":").map(Number);
                 let start = sh + (sm || 0) / 60;
@@ -325,6 +362,7 @@ module.exports = (AppDataSource) => {
                 if (diff < 0) diff += 24;
                 used += diff / 9; // 1 day = 9 hours
               } else if (lr.startDate && lr.endDate) {
+                // Day-based calculation
                 const start = new Date(lr.startDate);
                 const end = new Date(lr.endDate);
                 let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
@@ -332,7 +370,7 @@ module.exports = (AppDataSource) => {
                 used += days;
               }
             } else {
-              // Other types: by day
+              // Other types: by day only
               if (lr.startDate && lr.endDate) {
                 const start = new Date(lr.startDate);
                 const end = new Date(lr.endDate);
@@ -343,13 +381,17 @@ module.exports = (AppDataSource) => {
             }
           }
         }
-        let remaining = quota - used;
+        
+        // Calculate remaining days for this leave type
+        let remaining = quota.quota - used;
         if (remaining < 0) remaining = 0;
         totalRemaining += remaining;
       }
+      
       // Convert to days and hours (1 day = 9 hours)
       const days = Math.floor(totalRemaining);
       const hours = Math.round((totalRemaining - days) * 9);
+      
       res.json({ status: 'success', data: { days, hours } });
     } catch (err) {
       res.status(500).json({ status: 'error', message: err.message });
@@ -437,6 +479,7 @@ module.exports = (AppDataSource) => {
       res.status(500).json({ status: 'error', message: err.message });
     }
   });
+  
   return router;
 };
 
