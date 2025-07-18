@@ -107,7 +107,9 @@ const EmployeeDetail = () => {
 
     // --- ดึง leave history ตาม filter (active) ---
     let params = [];
-    if (filterType && filterType !== "all") params.push(`leaveType=${filterType}`);
+    if (filterType && filterType !== "all") {
+      params.push(`leaveType=${encodeURIComponent(filterType)}`);
+    }
     if (filterMonth && filterMonth !== "all" && filterYear && filterYear !== "all") {
       params.push(`month=${filterMonth}`);
       params.push(`year=${filterYear}`);
@@ -190,16 +192,33 @@ const EmployeeDetail = () => {
       .catch(() => setPositions([]));
   }, []);
 
+  // --- เพิ่ม state สำหรับ leave types dropdown ---
   const [leaveTypes, setLeaveTypes] = useState<{ id: string; leave_type: string; leave_type_th: string; leave_type_en: string }[]>([]);
+  const [leaveTypesLoading, setLeaveTypesLoading] = useState(false);
+  const [leaveTypesError, setLeaveTypesError] = useState<string | null>(null);
 
+  // Fetch leave types from backend
   useEffect(() => {
-    fetch('http://localhost:3001/api/leave-types')
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && Array.isArray(data.data)) {
+    const fetchLeaveTypes = async () => {
+      setLeaveTypesLoading(true);
+      setLeaveTypesError(null);
+      try {
+        const res = await fetch('/api/leave-types');
+        const data = await res.json();
+        if (data.success) {
           setLeaveTypes(data.data);
+        } else {
+          setLeaveTypes([]);
+          setLeaveTypesError(data.message || 'Failed to fetch leave types');
         }
-      });
+      } catch (err: any) {
+        setLeaveTypes([]);
+        setLeaveTypesError(err.message || 'Failed to fetch leave types');
+      } finally {
+        setLeaveTypesLoading(false);
+      }
+    };
+    fetchLeaveTypes();
   }, []);
 
   // อ่าน role จาก query string
@@ -472,19 +491,29 @@ const EmployeeDetail = () => {
                 <label className="text-xs text-gray-500 mb-1">{t('leave.type')}</label>
                 <Select value={pendingFilterType} onValueChange={v => { setPendingFilterType(v); setShowTypeError(false); }}>
                   <SelectTrigger className="min-w-[9rem] w-36">{
-                    !pendingFilterType || pendingFilterType === ''
+                    !pendingFilterType || pendingFilterType === '' || pendingFilterType === 'all'
                       ? t('leave.type')
-                      : pendingFilterType === 'all'
-                        ? t('months.all')
-                        : pendingFilterType // แสดงชื่อประเภทที่เลือกตรง ๆ
+                      : (() => {
+                          const found = leaveTypes.find(lt => lt.id === pendingFilterType);
+                          if (found) {
+                            return i18n.language.startsWith('th') ? found.leave_type_th : found.leave_type_en;
+                          }
+                          return pendingFilterType;
+                        })()
                   }</SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">{t('months.all')}</SelectItem>
-                    <SelectItem value="ลาป่วย">{t('leaveTypes.sick')}</SelectItem>
-                    <SelectItem value="ลาพักร้อน">{t('leaveTypes.vacation')}</SelectItem>
-                    <SelectItem value="ลากิจ">{t('leaveTypes.personal')}</SelectItem>
-                    <SelectItem value="ลาคลอด">{t('leaveTypes.maternity')}</SelectItem>
-                    <SelectItem value="ลาฉุกเฉิน">{t('leaveTypes.emergency')}</SelectItem>
+                    {leaveTypesLoading ? (
+                      <div className="px-2 py-1 text-gray-500">{t('common.loading')}</div>
+                    ) : leaveTypesError ? (
+                      <div className="px-2 py-1 text-red-500">{leaveTypesError}</div>
+                    ) : (
+                      leaveTypes.map(lt => (
+                        <SelectItem key={lt.id} value={lt.id}>
+                          {i18n.language.startsWith('th') ? lt.leave_type_th : lt.leave_type_en}
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
                 {showTypeError && <span className="text-red-500 text-xs absolute right-2 top-0">*</span>}
@@ -582,7 +611,12 @@ const EmployeeDetail = () => {
                     setShowYearError(false);
                     setShowStatusError(false);
                     setFilterError("");
-                    setFilterType(pendingFilterType);
+                    // --- setFilterType เป็น id อย่างเดียว ---
+                    if (pendingFilterType !== "all") {
+                      setFilterType(pendingFilterType);
+                    } else {
+                      setFilterType("all");
+                    }
                     setFilterMonth(pendingFilterMonth);
                     setFilterYear(pendingFilterYear);
                     setFilterStatus(pendingFilterStatus);
