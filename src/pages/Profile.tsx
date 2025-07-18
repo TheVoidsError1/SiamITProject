@@ -553,18 +553,16 @@ const Profile = () => {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {leaveQuota
-                      .filter(item =>
-                        ['annual', 'sick', 'personal', 'maternity'].some(type =>
-                          (item.leave_type_en || item.type || item.leave_type)?.toLowerCase().includes(type)
-                        )
-                      )
+                      .filter(item => (item.quota && item.quota > 0))
                       .map((item, idx) => {
                         // Pick color based on type
                         let color = 'bg-gray-400';
-                        if ((item.leave_type_en || item.type || item.leave_type)?.toLowerCase().includes('annual')) color = 'bg-blue-500';
-                        if ((item.leave_type_en || item.type || item.leave_type)?.toLowerCase().includes('sick')) color = 'bg-green-500';
-                        if ((item.leave_type_en || item.type || item.leave_type)?.toLowerCase().includes('personal')) color = 'bg-orange-500';
-                        if ((item.leave_type_en || item.type || item.leave_type)?.toLowerCase().includes('maternity')) color = 'bg-purple-500';
+                        const type = (item.leave_type_en || item.type || item.leave_type || '').toLowerCase();
+                        if (type.includes('annual') || type.includes('vacation')) color = 'bg-blue-500';
+                        if (type.includes('sick')) color = 'bg-green-500';
+                        if (type.includes('personal')) color = 'bg-orange-500';
+                        if (type.includes('maternity')) color = 'bg-purple-500';
+                        if (type.includes('emergency')) color = 'bg-red-500';
 
                         // Format label and units
                         const label = item.leave_type_en || item.type || item.leave_type;
