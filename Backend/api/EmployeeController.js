@@ -43,6 +43,7 @@ module.exports = (AppDataSource) => {
       const processRepo = AppDataSource.getRepository('ProcessCheck');
       const adminRepo = AppDataSource.getRepository('Admin');
       const userRepo = AppDataSource.getRepository('User');
+      const lang = (req.headers['accept-language'] || 'en').toLowerCase().startsWith('th') ? 'th' : 'en';
 
       // ดึง process_check ทั้งหมด
       const allProcess = await processRepo.find();
@@ -215,6 +216,7 @@ module.exports = (AppDataSource) => {
       const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
       const leaveRequestRepo = AppDataSource.getRepository('LeaveRequest');
+      const lang = (req.headers['accept-language'] || 'en').toLowerCase().startsWith('th') ? 'th' : 'en';
 
       // Try to find in admin first
       let profile = await adminRepo.findOne({ where: { id } });
@@ -239,28 +241,18 @@ module.exports = (AppDataSource) => {
 
       // Get department and position names (i18n key or readable)
       let department = '';
+      let department_id = '';
       let position = '';
-      let positionId = '';
-      if (role === 'superadmin') {
-        if (profile.department) {
-          const deptEntity = await departmentRepo.findOne({ where: { id: profile.department } });
-          department = deptEntity ? deptEntity.department_name_th : profile.department;
-        }
-        if (profile.position) {
-          const posEntity = await positionRepo.findOne({ where: { id: profile.position } });
-          position = posEntity ? posEntity.position_name_th : profile.position;
-          positionId = profile.position;
-        }
-      } else {
-        if (profile.department) {
-          const deptEntity = await departmentRepo.findOne({ where: { id: profile.department } });
-          department = deptEntity ? deptEntity.department_name_th : profile.department;
-        }
-        if (profile.position) {
-          const posEntity = await positionRepo.findOne({ where: { id: profile.position } });
-          position = posEntity ? posEntity.position_name_th : profile.position;
-          positionId = profile.position;
-        }
+      let position_id = '';
+      if (profile.department) {
+        const deptEntity = await departmentRepo.findOne({ where: { id: profile.department } });
+        department = deptEntity ? (lang === 'th' ? deptEntity.department_name_th : deptEntity.department_name_en) : '';
+        department_id = profile.department;
+      }
+      if (profile.position) {
+        const posEntity = await positionRepo.findOne({ where: { id: profile.position } });
+        position = posEntity ? (lang === 'th' ? posEntity.position_name_th : posEntity.position_name_en) : '';
+        position_id = profile.position;
       }
 
       // Password field (for future editing)
@@ -338,8 +330,10 @@ module.exports = (AppDataSource) => {
           name: profile.admin_name || profile.User_name || profile.superadmin_name || '',
           email,
           password,
-          position,
-          department,
+          position: position,
+          position_id: position_id,
+          department: department,
+          department_id: department_id,
           role,
           usedLeaveDays,
           totalLeaveDays
@@ -354,7 +348,13 @@ module.exports = (AppDataSource) => {
   router.put('/employee/:id', async (req, res) => {
     try {
       const { id } = req.params;
-      const { name, email, password, position, department } = req.body;
+      // Accept both position_id/department_id and position/department for compatibility
+      const name = req.body.name;
+      const email = req.body.email;
+      const password = req.body.password;
+      // Prefer position_id/department_id if present, else fallback to position/department
+      const position = req.body.position_id !== undefined ? req.body.position_id : req.body.position;
+      const department = req.body.department_id !== undefined ? req.body.department_id : req.body.department;
       const processRepo = AppDataSource.getRepository('ProcessCheck');
       const adminRepo = AppDataSource.getRepository('Admin');
       const userRepo = AppDataSource.getRepository('User');

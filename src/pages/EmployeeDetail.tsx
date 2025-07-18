@@ -40,8 +40,8 @@ const EmployeeDetail = () => {
   const [leaveHistory, setLeaveHistory] = useState([]);
   // เพิ่ม state สำหรับ processCheckId
   const [processCheckId, setProcessCheckId] = useState(null);
-  const [departments, setDepartments] = useState<{ id: string; department_name_th: string; department_name_en: string }[]>([]);
-  const [positions, setPositions] = useState<{ id: string; position_name_th: string; position_name_en: string }[]>([]);
+  const [departments, setDepartments] = useState<{ id: string; department_name: string; department_name_en?: string; department_name_th?: string }[]>([]);
+  const [positions, setPositions] = useState<{ id: string; position_name: string; position_name_en?: string; position_name_th?: string }[]>([]);
   // --- เพิ่ม state สำหรับ paging ---
   const [leavePage, setLeavePage] = useState(1);
   const [leaveTotalPages, setLeaveTotalPages] = useState(1);
@@ -235,15 +235,12 @@ const EmployeeDetail = () => {
       });
       return;
     }
-    // หา id ของตำแหน่ง/แผนกจากชื่อที่ backend ส่งมา
-    const positionId = positions.find(p => p.position_name_th === employee?.position_th)?.id || '';
-    const departmentId = departments.find(d => d.department_name_th === employee?.department_th)?.id || '';
     setEditData({
       full_name: employee?.name || '',
       email: employee?.email || '',
       password: '', // Always blank when editing
-      department: departmentId,
-      position: positionId,
+      department: (employee?.department_id || employee?.department?.id || '') + '',
+      position: (employee?.position_id || employee?.position?.id || '') + '',
       role: employee?.role || ''
     });
     setIsEditing(true);
@@ -253,8 +250,8 @@ const EmployeeDetail = () => {
     try {
       const payload: any = {
         name: editData.full_name,
-        position: editData.position, // id
-        department: editData.department, // id
+        position_id: editData.position, // id
+        department_id: editData.department, // id
         email: editData.email,
       };
       if (editData.password && editData.password.trim() !== '') payload.password = editData.password;
@@ -362,39 +359,55 @@ const EmployeeDetail = () => {
                   <div>
                     <Label className="text-sm font-medium text-gray-700">{t('employee.position')}</Label>
                     {isEditing ? (
-                      <Select onValueChange={(value) => setEditData({...editData, position: value})} value={editData.position}>
+                      <Select onValueChange={(value) => setEditData({...editData, position: value})} value={editData.position ? String(editData.position) : ''}>
                         <SelectTrigger className="mt-1">
                           <SelectValue placeholder={t('positions.selectPosition')} />
                         </SelectTrigger>
                         <SelectContent>
                           {positions.map((pos) => (
-                            <SelectItem key={pos.id} value={pos.id}>
-                              {i18n.language.startsWith('th') ? pos.position_name_th : pos.position_name_en}
+                            <SelectItem key={pos.id} value={String(pos.id)}>
+                              {i18n.language === 'th' ? (pos.position_name_th || pos.position_name) : (pos.position_name_en || pos.position_name)}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     ) : (
-                      <p className="text-sm text-gray-600">{String(t(`positions.${employee.position_th}`, { defaultValue: employee.position_th }))}</p>
+                      <p className="text-sm text-gray-600">{
+                        (() => {
+                          const pos = positions.find(p => String(p.id) === String(employee.position_id));
+                          if (pos) {
+                            return i18n.language === 'th' ? (pos.position_name_th || pos.position_name) : (pos.position_name_en || pos.position_name);
+                          }
+                          return employee.position || '-';
+                        })()
+                      }</p>
                     )}
                   </div>
                   <div>
                     <Label className="text-sm font-medium text-gray-700">{t('employee.department')}</Label>
                     {isEditing ? (
-                      <Select onValueChange={(value) => setEditData({...editData, department: value})} value={editData.department}>
+                      <Select onValueChange={(value) => setEditData({...editData, department: value})} value={editData.department ? String(editData.department) : ''}>
                         <SelectTrigger className="mt-1">
                           <SelectValue placeholder={t('departments.selectDepartment')} />
                         </SelectTrigger>
                         <SelectContent>
                           {departments.map((dep) => (
-                            <SelectItem key={dep.id} value={dep.id}>
-                              {i18n.language.startsWith('th') ? dep.department_name_th : dep.department_name_en}
+                            <SelectItem key={dep.id} value={String(dep.id)}>
+                              {i18n.language === 'th' ? (dep.department_name_th || dep.department_name) : (dep.department_name_en || dep.department_name)}
                             </SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     ) : (
-                      <p className="text-sm text-gray-600">{String(t(`departments.${employee.department_th}`, { defaultValue: employee.department_th }))}</p>
+                      <p className="text-sm text-gray-600">{
+                        (() => {
+                          const dep = departments.find(d => String(d.id) === String(employee.department_id));
+                          if (dep) {
+                            return i18n.language === 'th' ? (dep.department_name_th || dep.department_name) : (dep.department_name_en || dep.department_name);
+                          }
+                          return employee.department || '-';
+                        })()
+                      }</p>
                     )}
                   </div>
                 </div>
@@ -650,7 +663,13 @@ const EmployeeDetail = () => {
                   <TableBody>
                     {filteredLeaveHistory.map((leave, idx) => (
                       <TableRow key={idx}>
-                        <TableCell className="font-medium">{i18n.language === 'th' ? (leave.leaveTypeName_th || leave.leaveType) : (leave.leaveTypeName_en || leave.leaveType)}</TableCell>
+                        <TableCell className="font-medium">{
+                          leave.leaveTypeName
+                            ? leave.leaveTypeName
+                            : leave.leaveType
+                              ? leave.leaveType
+                              : '-'
+                        }</TableCell>
                         <TableCell className="whitespace-nowrap">{leave.leaveDate}</TableCell>
                           <TableCell>{
                             leave.durationType === 'hour'

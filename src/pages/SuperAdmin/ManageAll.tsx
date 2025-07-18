@@ -95,11 +95,47 @@ const ManageAll: React.FC = () => {
   const handleLeaveTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLeaveTypeForm({ ...leaveTypeForm, [e.target.name]: e.target.value });
   };
+  const handleEditLeaveType = (id: string) => {
+    const lt = leaveTypes.find(lt => lt.id === id);
+    if (lt) {
+      setLeaveTypeForm({ name_en: lt.leave_type_en, name_th: lt.leave_type_th });
+      setEditingLeaveTypeId(id);
+    }
+  };
+  const handleDeleteLeaveType = async (id: string) => {
+    await fetch(`http://localhost:3001/api/leave-types/${id}`, {
+      method: 'DELETE',
+    });
+    // Refresh leave types
+    fetch('http://localhost:3001/api/leave-types')
+      .then(res => res.json())
+      .then(data => {
+        if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
+          setLeaveTypes(data.data);
+        }
+      });
+  };
   const handleLeaveTypeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (editingLeaveTypeId) {
-      // TODO: Implement update logic
+      // Update leave type
+      await fetch(`http://localhost:3001/api/leave-types/${editingLeaveTypeId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leave_type_en: leaveTypeForm.name_en,
+          leave_type_th: leaveTypeForm.name_th
+        })
+      });
       setEditingLeaveTypeId(null);
+      // Refresh leave types
+      fetch('http://localhost:3001/api/leave-types')
+        .then(res => res.json())
+        .then(data => {
+          if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
+            setLeaveTypes(data.data);
+          }
+        });
     } else {
       await fetch('http://localhost:3001/api/leave-types', {
         method: 'POST',
@@ -113,22 +149,12 @@ const ManageAll: React.FC = () => {
       fetch('http://localhost:3001/api/leave-types')
         .then(res => res.json())
         .then(data => {
-          if (data.success && Array.isArray(data.data)) {
+          if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
             setLeaveTypes(data.data);
           }
         });
     }
     setLeaveTypeForm({ name_en: '', name_th: '' });
-  };
-  const handleEditLeaveType = (id: string) => {
-    const lt = leaveTypes.find(lt => lt.id === id);
-    if (lt) {
-      setLeaveTypeForm({ name_en: lt.leave_type_en, name_th: lt.leave_type_th });
-      setEditingLeaveTypeId(id);
-    }
-  };
-  const handleDeleteLeaveType = (id: string) => {
-    setLeaveTypes(leaveTypes.filter(lt => lt.id !== id));
   };
 
   const startInlineEdit = (pos: any) => {
@@ -215,6 +241,45 @@ const ManageAll: React.FC = () => {
     setInlineDepartmentEdit(null);
   };
 
+  // Add state for inline editing leave type
+  const [inlineLeaveTypeEdit, setInlineLeaveTypeEdit] = useState<null | { id: string; name_en: string; name_th: string }>(null);
+  const [inlineLeaveTypeError, setInlineLeaveTypeError] = useState<string | null>(null);
+
+  const startInlineLeaveTypeEdit = (lt: any) => {
+    setInlineLeaveTypeEdit({ id: lt.id, name_en: lt.leave_type_en, name_th: lt.leave_type_th });
+  };
+  const cancelInlineLeaveTypeEdit = () => setInlineLeaveTypeEdit(null);
+  const handleInlineLeaveTypeEditChange = (field: string, value: string) => {
+    if (!inlineLeaveTypeEdit) return;
+    setInlineLeaveTypeEdit({ ...inlineLeaveTypeEdit, [field]: value });
+  };
+  const saveInlineLeaveTypeEdit = async () => {
+    if (!inlineLeaveTypeEdit) return;
+    setInlineLeaveTypeError(null);
+    const res = await fetch(`http://localhost:3001/api/leave-types/${inlineLeaveTypeEdit.id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        leave_type_en: inlineLeaveTypeEdit.name_en,
+        leave_type_th: inlineLeaveTypeEdit.name_th
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setInlineLeaveTypeError(data.message || 'Unknown error');
+      return;
+    }
+    // Refresh leave types
+    fetch('http://localhost:3001/api/leave-types')
+      .then(res => res.json())
+      .then(data => {
+        if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
+          setLeaveTypes(data.data);
+        }
+      });
+    setInlineLeaveTypeEdit(null);
+  };
+
   // Fetch positions with quotas on mount
   useEffect(() => {
     fetch('http://localhost:3001/api/positions-with-quotas')
@@ -222,26 +287,8 @@ const ManageAll: React.FC = () => {
       .then(data => {
         if (data.success && Array.isArray(data.data)) {
           setPositions(data.data);
-          // Collect all leave types from quotas (with id and names)
-          const leaveTypeMap: Record<string, { id: string, leave_type_en: string, leave_type_th: string }> = {};
-          data.data.forEach((pos: any) => {
-            if (Array.isArray(pos.quotas)) {
-              pos.quotas.forEach((q: any) => {
-                if (q.leaveTypeId && (q.leave_type_en || q.leave_type_th)) {
-                  leaveTypeMap[q.leaveTypeId] = {
-                    id: q.leaveTypeId,
-                    leave_type_en: q.leave_type_en || q.leave_type || '',
-                    leave_type_th: q.leave_type_th || q.leave_type || ''
-                  };
-                }
-              });
-            }
-          });
-          // Filter out 'emergency' leave type (case-insensitive, both EN/TH)
-          setLeaveTypes(Object.values(leaveTypeMap).filter(lt =>
-            lt.leave_type_en.toLowerCase() !== 'emergency' &&
-            lt.leave_type_th.toLowerCase() !== 'emergency'
-          ));
+          // Remove code that sets leaveTypes here
+          // LeaveTypes should only be set from /api/leave-types
         }
       });
   }, []);
@@ -270,9 +317,9 @@ const ManageAll: React.FC = () => {
   const handleQuotaChange = (leaveTypeId: string, value: string) => {
     setPositionForm({ ...positionForm, quotas: { ...positionForm.quotas, [leaveTypeId]: Number(value) } });
   };
-  // Helper to filter out emergency leave types
+  // Helper to filter out emergency leave types for position form/table only
   const filteredLeaveTypes = leaveTypes.filter(
-    lt => (lt.leave_type_en?.toLowerCase?.() !== 'emergency' && lt.leave_type_th?.toLowerCase?.() !== 'emergency' && lt.leave_type?.toLowerCase?.() !== 'emergency')
+    lt => lt.leave_type_en?.toLowerCase() !== 'emergency' && lt.leave_type_th !== 'ฉุกเฉิน'
   );
 
   // Debug: Log leave type keys for quota mapping
@@ -382,7 +429,7 @@ const ManageAll: React.FC = () => {
                           <div className="flex flex-wrap gap-4">
                             {filteredLeaveTypes.map(lt => (
                               <div key={lt.id} className="flex flex-col">
-                                <label className="text-sm font-medium text-gray-700">{lang === 'th' ? lt.leave_type_th : lt.leave_type_en} Quota</label>
+                                <label className="text-sm font-medium text-gray-700">{lang === 'th' ? lt.leave_type_th : lt.leave_type_en}</label>
                                 <Input
                                   type="number"
                                   min={0}
@@ -543,14 +590,34 @@ const ManageAll: React.FC = () => {
                           <tbody>
                             {leaveTypes.map(lt => (
                               <tr key={lt.id} className="hover:bg-blue-50">
-                                <td className="p-3 font-medium">{lt.leave_type_en}</td>
-                                <td className="p-3 font-medium">{lt.leave_type_th}</td>
-                                <td className="p-3 flex gap-2">
-                                  <Button variant="outline" onClick={() => handleEditLeaveType(lt.id)}>Edit</Button>
-                                  <Button variant="destructive" onClick={() => handleDeleteLeaveType(lt.id)}>Delete</Button>
-                                </td>
+                                {inlineLeaveTypeEdit && inlineLeaveTypeEdit.id === lt.id ? (
+                                  <>
+                                    <td className="p-3 font-medium">
+                                      <Input value={inlineLeaveTypeEdit.name_en} onChange={e => handleInlineLeaveTypeEditChange('name_en', e.target.value)} className="w-32" />
+                                    </td>
+                                    <td className="p-3 font-medium">
+                                      <Input value={inlineLeaveTypeEdit.name_th} onChange={e => handleInlineLeaveTypeEditChange('name_th', e.target.value)} className="w-32" />
+                                    </td>
+                                    <td className="p-3 flex gap-2">
+                                      <Button variant="outline" onClick={saveInlineLeaveTypeEdit}>Save</Button>
+                                      <Button variant="destructive" onClick={cancelInlineLeaveTypeEdit}>Cancel</Button>
+                                    </td>
+                                  </>
+                                ) : (
+                                  <>
+                                    <td className="p-3 font-medium">{lt.leave_type_en}</td>
+                                    <td className="p-3 font-medium">{lt.leave_type_th}</td>
+                                    <td className="p-3 flex gap-2">
+                                      <Button variant="outline" onClick={() => startInlineLeaveTypeEdit(lt)}>Edit</Button>
+                                      <Button variant="destructive" onClick={() => handleDeleteLeaveType(lt.id)}>Delete</Button>
+                                    </td>
+                                  </>
+                                )}
                               </tr>
                             ))}
+                            {inlineLeaveTypeEdit && inlineLeaveTypeError && (
+                              <tr><td colSpan={3} className="text-red-600 font-semibold mt-2">{inlineLeaveTypeError}</td></tr>
+                            )}
                           </tbody>
                         </table>
                       </div>

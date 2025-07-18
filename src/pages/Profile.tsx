@@ -93,8 +93,11 @@ const Profile = () => {
         });
         const data = res.data.data;
         
-        console.log('Backend position:', data.position);
-        console.log('Backend department:', data.department);
+        console.log('Backend profile data:', data);
+        console.log('Backend position_id:', data.position_id);
+        console.log('Backend position_name:', data.position_name);
+        console.log('Backend department_id:', data.department_id);
+        console.log('Backend department_name:', data.department_name);
         console.log('Positions array:', positions);
         console.log('Departments array:', departments);
 
@@ -103,8 +106,8 @@ const Profile = () => {
         setFormData({
           full_name: data.name || '',
           email: data.email || '',
-          department: data.department_name_th || data.department || '',
-          position: data.position_name_th || data.position || '',
+          department: data.department_id || '',
+          position: data.position_id || '',
         });
           setProfileLoaded(true);
         }
@@ -113,8 +116,8 @@ const Profile = () => {
         updateUser({
           full_name: data.name,
           email: data.email,
-          department: data.department_name_th || data.department,
-          position: data.position_name_th || data.position,
+          department: data.department_name, // for display
+          position: data.position_name,     // for display
         });
       } catch (err: any) {
         if (err.response?.status === 401) {
@@ -199,10 +202,16 @@ const Profile = () => {
         const res = await axios.get('http://localhost:3001/api/leave-quota/me', {
           headers: { 'Authorization': `Bearer ${token}` }
         });
+        // Log backend debug info to browser console
+        if (res.data.debug) {
+          console.log('LEAVE QUOTA DEBUG:', res.data.debug);
+        }
         if (res.data.success) {
           setLeaveQuota(res.data.data);
+        } else {
+          setLeaveQuota([]);
         }
-      } catch (err) {
+      } catch (err: any) {
         setLeaveQuota([]);
       } finally {
         setLeaveLoading(false);
@@ -215,28 +224,27 @@ const Profile = () => {
     // This effect is no longer needed as pushNotificationEnabled is managed by usePushNotification
   }, [pushNotificationEnabled]);
 
-  const leaveTypeMap: Record<string, { label: string, color: string }> = {
-    vacation: { label: t('profile.vacationLeave'), color: 'bg-blue-500' },
-    sick: { label: t('profile.sickLeave'), color: 'bg-green-500' },
-    personal: { label: t('profile.personalLeave'), color: 'bg-orange-500' },
-    maternity: { label: t('profile.maternityLeave'), color: 'bg-purple-500' },
-  };
-
+  // New leaveStats for new API response
   const leaveStats = leaveQuota.map(item => {
-    const usedDays = item.type === 'personal' ? Math.floor(item.used) : item.used;
-    const usedHours = item.type === 'personal' ? Math.round((item.used % 1) * 9) : 0;
-    // Use backend-provided quota and remaining
-    const quota = item.quota;
-    const remaining = item.remaining;
-    const remainingDays = item.type === 'personal' ? Math.floor(remaining) : remaining;
-    const remainingHours = item.type === 'personal' ? Math.round((remaining % 1) * 9) : 0;
+    // For personal leave, split days/hours
+    const isPersonal =
+      item.leave_type_en?.toLowerCase() === 'personal' ||
+      item.leave_type_th === 'ลากิจ';
+    const usedDays = isPersonal ? Math.floor(item.used) : item.used;
+    const usedHours = isPersonal ? Math.round((item.used % 1) * 9) : 0;
+    const remainingDays = isPersonal ? Math.floor(item.remaining) : item.remaining;
+    const remainingHours = isPersonal ? Math.round((item.remaining % 1) * 9) : 0;
     return {
-      label: leaveTypeMap[item.type]?.label || item.type,
+      label: i18n.language.startsWith('th') ? (item.leave_type_th || item.leave_type_en) : (item.leave_type_en || item.leave_type_th),
       used: usedDays,
       usedHour: usedHours,
-      quota,
-      color: leaveTypeMap[item.type]?.color || 'bg-gray-400',
-      type: item.type,
+      quota: item.quota,
+      color: isPersonal ? 'bg-orange-500' :
+        item.leave_type_en?.toLowerCase() === 'vacation' ? 'bg-blue-500' :
+        item.leave_type_en?.toLowerCase() === 'sick' ? 'bg-green-500' :
+        item.leave_type_en?.toLowerCase() === 'maternity' ? 'bg-purple-500' :
+        'bg-gray-400',
+      type: item.leave_type_en,
       remaining: remainingDays,
       remainingHour: remainingHours,
     };
@@ -305,8 +313,8 @@ const Profile = () => {
       const requestData = {
         name: formData.full_name,
         email: formData.email,
-        position: formData.position,
-        department: formData.department,
+        position_id: formData.position,      // <-- use _id for backend compatibility
+        department_id: formData.department,  // <-- use _id for backend compatibility
       };
 
       const response = await axios.put('http://localhost:3001/api/profile', requestData, {
@@ -336,8 +344,8 @@ const Profile = () => {
         // Update user context with new data
         updateUser({
           full_name: updatedData.name || formData.full_name,
-          position: updatedData.position_name_th || updatedData.position || formData.position,
-          department: updatedData.department_name_th || updatedData.department || formData.department,
+          position: updatedData.position_name || formData.position,
+          department: updatedData.department_name || formData.department,
           email: updatedData.email || formData.email,
         });
       } else {
@@ -401,7 +409,16 @@ const Profile = () => {
               
               <div className="flex-1">
                 <h2 className="text-2xl font-bold text-gray-900">{user?.full_name}</h2>
-                <p className="text-gray-600 mb-2">{user?.position ? t(`positions.${user.position}`) : '-'}</p>
+                <p className="text-gray-600 mb-2">{
+                  (() => {
+                    const posId = formData.position || user?.position;
+                    const pos = positions.find(p => String(p.id) === String(posId));
+                    if (pos) {
+                      return i18n.language.startsWith('th') ? (pos.position_name_th || pos.position_name_en) : (pos.position_name_en || pos.position_name_th);
+                    }
+                    return user?.position || '-';
+                  })()
+                }</p>
                 <div className="flex items-center gap-4">
                   {user?.role === 'superadmin' && (
                     <Badge className="flex items-center gap-1 bg-purple-100 text-purple-800 border border-purple-300">
@@ -411,7 +428,16 @@ const Profile = () => {
                   )}
                   <Badge variant="outline" className="flex items-center gap-1">
                     <Building className="h-3 w-3" />
-                    {user?.department ? t(`departments.${user.department}`) : '-'}
+                    {
+                      (() => {
+                        const depId = formData.department || user?.department;
+                        const dep = departments.find(d => String(d.id) === String(depId));
+                        if (dep) {
+                          return i18n.language.startsWith('th') ? (dep.department_name_th || dep.department_name_en) : (dep.department_name_en || dep.department_name_th);
+                        }
+                        return user?.department || '-';
+                      })()
+                    }
                   </Badge>
                 </div>
               </div>
@@ -523,34 +549,51 @@ const Profile = () => {
               </CardHeader>
               <CardContent>
                 {leaveLoading ? (
-                  <div>กำลังโหลดข้อมูล...</div>
+                  <div>Loading...</div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {leaveStats.map((stat, index) => (
-                      <div key={index} className="space-y-3">
-                        <div className="flex justify-between items-center">
-                          <span className="text-sm font-medium">{stat.label}</span>
-                          <span className="text-sm text-gray-500">
-                            {stat.type === 'personal'
-                              ? `${stat.used} ${t('common.days')}${stat.usedHour > 0 ? ` ${stat.usedHour} ${t('common.hours')}` : ''}/${stat.quota} ${t('common.days')}`
-                              : `${stat.used}/${stat.quota} ${t('common.days')}`}
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className={`${stat.color} h-2 rounded-full transition-all duration-500`}
-                            style={{
-                              width: `${Math.min(100, stat.quota > 0 ? (stat.used / stat.quota) * 100 : 0)}%`
-                            }}
-                          ></div>
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {stat.type === 'personal'
-                            ? `${t('common.remaining')} ${stat.remaining} ${t('common.days')}${stat.remainingHour > 0 ? ` ${stat.remainingHour} ${t('common.hours')}` : ''}`
-                            : `${t('common.remaining')} ${stat.remaining} ${t('common.days')}`}
-                        </div>
-                      </div>
-                    ))}
+                    {leaveQuota
+                      .filter(item =>
+                        ['annual', 'sick', 'personal', 'maternity'].some(type =>
+                          item.leave_type_en?.toLowerCase().includes(type)
+                        )
+                      )
+                      .map((item, idx) => {
+                        // Pick color based on type
+                        let color = 'bg-gray-400';
+                        if (item.leave_type_en?.toLowerCase().includes('annual')) color = 'bg-blue-500';
+                        if (item.leave_type_en?.toLowerCase().includes('sick')) color = 'bg-green-500';
+                        if (item.leave_type_en?.toLowerCase().includes('personal')) color = 'bg-orange-500';
+                        if (item.leave_type_en?.toLowerCase().includes('maternity')) color = 'bg-purple-500';
+
+                        // Format label and units
+                        const label = item.leave_type_en;
+                        const unit = item.unit === 'hour' ? t('common.hours') : t('common.days');
+                        const used = item.used || 0;
+                        const quota = item.quota || 0;
+                        const remaining = item.remaining || 0;
+                        const percent = quota > 0 ? (used / quota) * 100 : 0;
+
+                        return (
+                          <div key={item.id} className="space-y-3">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm font-medium">{label}</span>
+                              <span className="text-sm text-gray-500">
+                                {used}/{quota} {unit}
+                              </span>
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div
+                                className={`${color} h-2 rounded-full transition-all duration-500`}
+                                style={{ width: `${Math.min(100, percent)}%` }}
+                              ></div>
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {t('common.remaining')} {remaining} {unit}
+                            </div>
+                          </div>
+                        );
+                      })}
                   </div>
                 )}
               </CardContent>

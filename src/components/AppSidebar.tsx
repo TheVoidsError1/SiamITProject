@@ -84,12 +84,21 @@ const superadminExtraItems = [
 ];
 
 export function AppSidebar() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const location = useLocation();
   const { user, logout } = useAuth();
   const { toast } = useToast();
   // Use avatar URL from user context if available, otherwise fetch it
   const avatarUrl = user?.avatar_url ? `http://localhost:3001${user.avatar_url}` : null;
+
+  const [positions, setPositions] = useState<any[]>([]);
+  useEffect(() => {
+    fetch('http://localhost:3001/api/positions')
+      .then(res => res.json())
+      .then(data => {
+        setPositions(data.data || []);
+      });
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -175,7 +184,24 @@ export function AppSidebar() {
                   {user?.full_name || t('common.user')}
                 </p>
                 <p className="text-xs text-sidebar-foreground/70 truncate">
-                  {user?.position ? t(`positions.${user.position}`) : t('main.employee')}
+                  {(() => {
+                    // Try to match by ID
+                    let pos = positions.find(p => String(p.id) === String(user?.position));
+                    // If not found, try to match by English or Thai name
+                    if (!pos && user?.position) {
+                      pos = positions.find(
+                        p =>
+                          p.position_name_en === user.position ||
+                          p.position_name_th === user.position
+                      );
+                    }
+                    if (pos) {
+                      return i18n.language.startsWith('th')
+                        ? pos.position_name_th || pos.position_name_en
+                        : pos.position_name_en || pos.position_name_th;
+                    }
+                    return user?.position || t('main.employee');
+                  })()}
                 </p>
               </div>
             </div>
