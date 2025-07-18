@@ -754,6 +754,8 @@
          const result = await Promise.all(leaves.map(async (leave) => {
            let user = null;
            let leaveTypeObj = null;
+           let leaveTypeName_th = null;
+           let leaveTypeName_en = null;
            if (leave.Repid) {
              user = await userRepo.findOneBy({ id: leave.Repid });
              if (!user) {
@@ -773,7 +775,11 @@
                user = { User_name: user.User_name, department: user.department, position: user.position };
              }
            }
-           if (leave.leaveType) leaveTypeObj = await leaveTypeRepo.findOneBy({ id: leave.leaveType });
+           if (leave.leaveType) {
+             leaveTypeObj = await leaveTypeRepo.findOneBy({ id: leave.leaveType });
+             leaveTypeName_th = leaveTypeObj ? leaveTypeObj.leave_type_th : leave.leaveType;
+             leaveTypeName_en = leaveTypeObj ? leaveTypeObj.leave_type_en : leave.leaveType;
+           }
            // คำนวณจำนวนวันหรือชั่วโมงลา
            let duration = '';
            let durationType = '';
@@ -795,7 +801,9 @@
            }
            return {
              id: leave.id,
-             leaveTypeName: leaveTypeObj ? leaveTypeObj.leave_type_th : leave.leaveType,
+             leaveType: leave.leaveType, // id
+             leaveTypeName_th,
+             leaveTypeName_en,
              leaveDate: leave.startDate,
              startDate: leave.startDate,
              endDate: leave.endDate,
