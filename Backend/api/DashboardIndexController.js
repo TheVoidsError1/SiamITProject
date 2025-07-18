@@ -168,68 +168,74 @@ module.exports = (AppDataSource) => {
       const approvedLeaves = await leaveRepo.find({ where });
       // ดึง leaveType ทั้งหมด
       const allLeaveTypes = await leaveTypeRepo.find();
-      // เตรียม result สำหรับทุก leaveType
+      // เตรียม result สำหรับทุก leaveType โดยใช้ leave_type_th เป็น key
       const leaveTypeStats = {};
       for (const lt of allLeaveTypes) {
-        leaveTypeStats[lt.leave_type] = { days: 0, hours: 0 };
+        if (lt.leave_type_th) { // ตรวจสอบว่ามี leave_type_th หรือไม่
+          leaveTypeStats[lt.leave_type_th] = { days: 0, hours: 0, id: lt.id };
+        }
       }
-      // Helper to normalize type
-      const normalizeType = (type) => {
-        if (!type) return null;
-        if (["sick", "ลาป่วย"].includes(type)) return "sick";
-        if (["vacation", "ลาพักผ่อน"].includes(type)) return "vacation";
-        if (["personal", "ลากิจ"].includes(type)) return "personal";
-        return type;
-      };
+      
       // Helper to parse 'HH:mm' to minutes
       function parseTimeToMinutes(t) {
         if (!t) return 0;
         const [h, m] = t.split(':').map(Number);
         return h * 60 + (m || 0);
       }
+      
       for (const lr of approvedLeaves) {
-        let leaveTypeName = lr.leaveType;
-        // If leaveType is a UUID, look up the name
-        if (leaveTypeName && leaveTypeName.length > 20) {
-          const leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
-          if (leaveTypeEntity && leaveTypeEntity.leave_type) {
-            leaveTypeName = leaveTypeEntity.leave_type;
-          }
-        }
-        // ถ้าไม่มีใน leaveTypeStats ให้ข้าม
-        if (!leaveTypeStats[leaveTypeName]) continue;
-        // Personal leave: hour-based or day-based
-        if (["personal", "ลากิจ"].includes(leaveTypeName)) {
-          if (lr.startTime && lr.endTime) {
-            // Hour-based
-            const startMinutes = parseTimeToMinutes(lr.startTime);
-            const endMinutes = parseTimeToMinutes(lr.endTime);
-            let durationHours = (endMinutes - startMinutes) / 60;
-            if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
-            leaveTypeStats[leaveTypeName].hours += durationHours;
-          } else if (lr.startDate && lr.endDate) {
-            // Day-based, convert days to hours (1 day = 9 hours)
-            const start = new Date(lr.startDate);
-            const end = new Date(lr.endDate);
-            let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-            if (days < 0 || isNaN(days)) days = 0;
-            leaveTypeStats[leaveTypeName].hours += days * 9;
+        let leaveTypeEntity = null;
+        let leaveTypeName = null;
+        
+        // If leaveType is a UUID, look up the entity
+        if (lr.leaveType && lr.leaveType.length > 20) {
+          leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: lr.leaveType });
+          if (leaveTypeEntity) {
+            leaveTypeName = leaveTypeEntity.leave_type_th;
           }
         } else {
-          // Sick/Vacation/Other: only day-based
-          if (lr.startDate && lr.endDate) {
-            const start = new Date(lr.startDate);
-            const end = new Date(lr.endDate);
-            let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-            if (days < 0 || isNaN(days)) days = 0;
-            leaveTypeStats[leaveTypeName].days += days;
+          // If it's a string name, try to find by name
+          leaveTypeEntity = await leaveTypeRepo.findOne({ 
+            where: [
+              { leave_type_th: lr.leaveType },
+              { leave_type_en: lr.leaveType }
+            ]
+          });
+          if (leaveTypeEntity) {
+            leaveTypeName = leaveTypeEntity.leave_type_th;
+          } else {
+            leaveTypeName = lr.leaveType; // fallback to original value
           }
         }
+        
+        // ถ้าไม่มีใน leaveTypeStats ให้ข้าม
+        if (!leaveTypeStats[leaveTypeName]) continue;
+        
+        // Check if this leave type supports hourly leave (personal/business leave)
+        const isHourlyLeave = ["ลากิจ", "personal", "business"].includes(leaveTypeName);
+        
+        if (isHourlyLeave && lr.startTime && lr.endTime) {
+          // Hour-based leave
+          const startMinutes = parseTimeToMinutes(lr.startTime);
+          const endMinutes = parseTimeToMinutes(lr.endTime);
+          let durationHours = (endMinutes - startMinutes) / 60;
+          if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
+          leaveTypeStats[leaveTypeName].hours += durationHours;
+        } else if (lr.startDate && lr.endDate) {
+          // Day-based leave
+          const start = new Date(lr.startDate);
+          const end = new Date(lr.endDate);
+          let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+          if (days < 0 || isNaN(days)) days = 0;
+          leaveTypeStats[leaveTypeName].days += days;
+        }
       }
-      // ปัดเศษชั่วโมง
+      
+      // ปัดเศษชั่วโมงและแปลงชั่วโมงเป็นวันถ้าจำเป็น
       for (const key in leaveTypeStats) {
         leaveTypeStats[key].hours = Math.round(leaveTypeStats[key].hours);
-        if (["personal", "ลากิจ"].includes(key)) {
+        const isHourlyLeave = ["ลากิจ", "personal", "business"].includes(key);
+        if (isHourlyLeave && leaveTypeStats[key].hours >= 9) {
           // ถ้าเกิน 9 ชั่วโมง ให้แปลงเป็นวัน
           const addDays = Math.floor(leaveTypeStats[key].hours / 9);
           leaveTypeStats[key].days += addDays;
@@ -245,6 +251,11 @@ module.exports = (AppDataSource) => {
       });
       totalDays += Math.floor(totalHours / 9);
       totalHours = totalHours % 9;
+      
+      // ถ้าไม่มี leaveTypeStats ให้ส่ง object ว่างกลับไป
+      if (Object.keys(leaveTypeStats).length === 0) {
+        leaveTypeStats = {};
+      }
       res.json({
         status: 'success',
         data: {
