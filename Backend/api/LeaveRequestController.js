@@ -79,109 +79,127 @@
          // --- Validation: quota ---
          // 1. ดึง quota ของ user
          const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
-         // ดึง quota ของตำแหน่งนี้ (แบบใหม่)
-         const quotas = await leaveQuotaRepo.find({ where: { positionId: employeeType } });
-         if (!quotas || quotas.length === 0) {
-           return res.status(400).json({ status: 'error', message: 'ไม่พบโควต้าการลาสำหรับตำแหน่งนี้' });
-         }
-         // 2. คำนวณ leave ที่ใช้ไปในปีนี้ (approved)
-         const year = (new Date(startDate)).getFullYear();
-         const startOfYear = new Date(year, 0, 1);
-         const endOfYear = new Date(year, 11, 31, 23, 59, 59, 999);
-         const { Between } = require('typeorm');
-         const approvedLeaves = await leaveRepo.find({
-           where: {
-             Repid: userId,
-             status: 'approved',
-             startDate: Between(startOfYear, endOfYear)
-           }
-         });
-         // Helper to normalize type
-         const normalizeType = (type) => {
-           if (!type) return null;
-           if (["sick", "ลาป่วย"].includes(type)) return "sick";
-           if (["vacation", "ลาพักผ่อน"].includes(type)) return "vacation";
-           if (["personal", "ลากิจ"].includes(type)) return "personal";
-           return null;
-         };
-         // 3. คำนวณ leave ที่ใช้ไป (approved) ในปีนี้ (ชั่วโมง)
-         let usedHours = 0;
          const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
-         function parseTimeToMinutes(t) {
-           if (!t) return 0;
-           const [h, m] = t.split(':').map(Number);
-           return h * 60 + (m || 0);
+         // ดึง leaveType entity
+         let leaveTypeEntity = null;
+         if (leaveType && leaveType.length > 20) {
+           leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveType });
+         } else {
+           leaveTypeEntity = await leaveTypeRepo.findOne({
+             where: [
+               { leave_type_th: leaveType },
+               { leave_type_en: leaveType }
+             ]
+           });
          }
-         for (const lr of approvedLeaves) {
-           let leaveTypeName = lr.leaveType;
-           if (leaveTypeName && leaveTypeName.length > 20) {
-             const leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
-             if (leaveTypeEntity && leaveTypeEntity.leave_type_th) {
-               leaveTypeName = leaveTypeEntity.leave_type_th;
+         // ถ้าเป็น Emergency Leave ไม่ต้องตรวจสอบ quota
+         if (
+           leaveTypeEntity &&
+           (leaveTypeEntity.leave_type_en === 'Emergency' || leaveTypeEntity.leave_type_th === 'ลาฉุกเฉิน')
+         ) {
+           // ข้าม validation quota สำหรับ Emergency Leave
+         } else {
+           // ดึง quota ของ leaveType นี้
+           const quotaRow = leaveTypeEntity ? await leaveQuotaRepo.findOne({ where: { positionId: employeeType, leaveTypeId: leaveTypeEntity.id } }) : null;
+           if (!quotaRow) {
+             return res.status(400).json({ status: 'error', message: 'ไม่พบโควต้าการลาสำหรับประเภทนี้' });
+           }
+           const quota = quotaRow.quota;
+           // 2. คำนวณ leave ที่ใช้ไปในปีนี้ (approved เฉพาะ leaveType นี้)
+           const year = (new Date(startDate)).getFullYear();
+           const startOfYear = new Date(year, 0, 1);
+           const endOfYear = new Date(year, 11, 31, 23, 59, 59, 999);
+           const { Between } = require('typeorm');
+           const approvedLeaves = await leaveRepo.find({
+             where: {
+               Repid: userId,
+               status: 'approved',
+               startDate: Between(startOfYear, endOfYear)
+             }
+           });
+           // 3. คำนวณ leave ที่ใช้ไป (approved) ในปีนี้ (ชั่วโมง เฉพาะ leaveType นี้)
+           let usedHours = 0;
+           function parseTimeToMinutes(t) {
+             if (!t) return 0;
+             const [h, m] = t.split(':').map(Number);
+             return h * 60 + (m || 0);
+           }
+           for (const lr of approvedLeaves) {
+             let leaveTypeName = lr.leaveType;
+             if (leaveTypeName && leaveTypeName.length > 20) {
+               const leaveTypeEntity2 = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
+               if (leaveTypeEntity2 && leaveTypeEntity2.leave_type_th) {
+                 leaveTypeName = leaveTypeEntity2.leave_type_th;
+               }
+             }
+             // เฉพาะ leaveType นี้เท่านั้น
+             if (
+               leaveTypeName === leaveTypeEntity.leave_type_th ||
+               leaveTypeName === leaveTypeEntity.leave_type_en
+             ) {
+               // Personal leave: อาจเป็นชั่วโมงหรือวัน
+               if (leaveTypeEntity.leave_type_en === 'Personal' || leaveTypeEntity.leave_type_th === 'ลากิจ') {
+                 if (lr.startTime && lr.endTime) {
+                   const startMinutes = parseTimeToMinutes(lr.startTime);
+                   const endMinutes = parseTimeToMinutes(lr.endTime);
+                   let durationHours = (endMinutes - startMinutes) / 60;
+                   if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
+                   usedHours += durationHours;
+                 } else if (lr.startDate && lr.endDate) {
+                   const start = new Date(lr.startDate);
+                   const end = new Date(lr.endDate);
+                   let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                   if (days < 0 || isNaN(days)) days = 0;
+                   usedHours += days * 9;
+                 }
+               } else {
+                 // อื่น ๆ: วันเท่านั้น
+                 if (lr.startDate && lr.endDate) {
+                   const start = new Date(lr.startDate);
+                   const end = new Date(lr.endDate);
+                   let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                   if (days < 0 || isNaN(days)) days = 0;
+                   usedHours += days * 9;
+                 }
+               }
              }
            }
-           const leaveTypeNorm = normalizeType(leaveTypeName);
-           if (!leaveTypeNorm) continue;
-           if (leaveTypeNorm === "personal") {
-             if (lr.startTime && lr.endTime) {
-               const startMinutes = parseTimeToMinutes(lr.startTime);
-               const endMinutes = parseTimeToMinutes(lr.endTime);
+           // 4. คำนวณ leave ที่ขอใหม่ (ชั่วโมง)
+           let requestHours = 0;
+           if (leaveTypeEntity.leave_type_en === 'Personal' || leaveTypeEntity.leave_type_th === 'ลากิจ') {
+             if (startTime && endTime) {
+               const startMinutes = parseTimeToMinutes(startTime);
+               const endMinutes = parseTimeToMinutes(endTime);
                let durationHours = (endMinutes - startMinutes) / 60;
                if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
-               usedHours += durationHours;
-             } else if (lr.startDate && lr.endDate) {
-               const start = new Date(lr.startDate);
-               const end = new Date(lr.endDate);
+               requestHours += durationHours;
+             } else if (startDate && endDate) {
+               const start = new Date(startDate);
+               const end = new Date(endDate);
                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
                if (days < 0 || isNaN(days)) days = 0;
-               usedHours += days * 9;
+               requestHours += days * 9;
              }
-           } else if (leaveTypeNorm === "sick" || leaveTypeNorm === "vacation") {
-             if (lr.startDate && lr.endDate) {
-               const start = new Date(lr.startDate);
-               const end = new Date(lr.endDate);
+           } else {
+             if (startDate && endDate) {
+               const start = new Date(startDate);
+               const end = new Date(endDate);
                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
                if (days < 0 || isNaN(days)) days = 0;
-               usedHours += days * 9;
+               requestHours += days * 9;
              }
            }
-         }
-         // 4. คำนวณ leave ที่ขอใหม่ (ชั่วโมง)
-         let requestHours = 0;
-         const leaveTypeNorm = normalizeType(leaveType);
-         if (leaveTypeNorm === "personal") {
-           if (startTime && endTime) {
-             const startMinutes = parseTimeToMinutes(startTime);
-             const endMinutes = parseTimeToMinutes(endTime);
-             let durationHours = (endMinutes - startMinutes) / 60;
-             if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
-             requestHours += durationHours;
-           } else if (startDate && endDate) {
-             const start = new Date(startDate);
-             const end = new Date(endDate);
-             let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-             if (days < 0 || isNaN(days)) days = 0;
-             requestHours += days * 9;
+           // 5. quota (ชั่วโมง)
+           const totalQuotaHours = quota * 9;
+           // 6. ถ้า used + request > quota => reject
+           if (usedHours + requestHours > totalQuotaHours) {
+             return res.status(400).json({
+               status: 'error',
+               message: lang === 'en'
+                 ? 'You have exceeded your leave quota for this type.'
+                 : 'คุณใช้วันลาประเภทนี้ครบโควต้าแล้ว ไม่สามารถขอใบลาเพิ่มได้'
+             });
            }
-         } else if (leaveTypeNorm === "sick" || leaveTypeNorm === "vacation") {
-           if (startDate && endDate) {
-             const start = new Date(startDate);
-             const end = new Date(endDate);
-             let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-             if (days < 0 || isNaN(days)) days = 0;
-             requestHours += days * 9;
-           }
-         }
-         // 5. quota (ชั่วโมง)
-         const totalQuotaHours = ((quotas[0].sick || 0) + (quotas[0].vacation || 0) + (quotas[0].personal || 0)) * 9;
-         // 6. ถ้า used + request > quota => reject
-         if (usedHours + requestHours > totalQuotaHours) {
-           return res.status(400).json({
-             status: 'error',
-             message: lang === 'en'
-               ? 'You have exceeded your annual leave quota. Please check your remaining leave.'
-               : 'คุณใช้วันลาครบโควต้าประจำปีแล้ว ไม่สามารถขอใบลาเพิ่มได้'
-           });
          }
 
          // ตรวจสอบภาษา
