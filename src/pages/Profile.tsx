@@ -555,19 +555,19 @@ const Profile = () => {
                     {leaveQuota
                       .filter(item =>
                         ['annual', 'sick', 'personal', 'maternity'].some(type =>
-                          item.leave_type_en?.toLowerCase().includes(type)
+                          (item.leave_type_en || item.type || item.leave_type)?.toLowerCase().includes(type)
                         )
                       )
                       .map((item, idx) => {
                         // Pick color based on type
                         let color = 'bg-gray-400';
-                        if (item.leave_type_en?.toLowerCase().includes('annual')) color = 'bg-blue-500';
-                        if (item.leave_type_en?.toLowerCase().includes('sick')) color = 'bg-green-500';
-                        if (item.leave_type_en?.toLowerCase().includes('personal')) color = 'bg-orange-500';
-                        if (item.leave_type_en?.toLowerCase().includes('maternity')) color = 'bg-purple-500';
+                        if ((item.leave_type_en || item.type || item.leave_type)?.toLowerCase().includes('annual')) color = 'bg-blue-500';
+                        if ((item.leave_type_en || item.type || item.leave_type)?.toLowerCase().includes('sick')) color = 'bg-green-500';
+                        if ((item.leave_type_en || item.type || item.leave_type)?.toLowerCase().includes('personal')) color = 'bg-orange-500';
+                        if ((item.leave_type_en || item.type || item.leave_type)?.toLowerCase().includes('maternity')) color = 'bg-purple-500';
 
                         // Format label and units
-                        const label = item.leave_type_en;
+                        const label = item.leave_type_en || item.type || item.leave_type;
                         const unit = item.unit === 'hour' ? t('common.hours') : t('common.days');
                         const used = item.used || 0;
                         const quota = item.quota || 0;
@@ -575,7 +575,7 @@ const Profile = () => {
                         const percent = quota > 0 ? (used / quota) * 100 : 0;
 
                         return (
-                          <div key={item.id} className="space-y-3">
+                          <div key={item.id || label} className="space-y-3">
                             <div className="flex justify-between items-center">
                               <span className="text-sm font-medium">{label}</span>
                               <span className="text-sm text-gray-500">

@@ -701,7 +701,7 @@ module.exports = (AppDataSource) => {
       const allowedTypes = ['sick', 'personal', 'vacation', 'maternity', 'ลาป่วย', 'ลากิจ', 'ลาพักผ่อน', 'ลาคลอด'];
       const result = [];
       for (const leaveType of leaveTypes) {
-        if (!allowedTypes.includes(leaveType.leave_type)) continue;
+        if (!allowedTypes.includes(leaveType.leave_type_en?.toLowerCase()) && !allowedTypes.includes(leaveType.leave_type_th)) continue;
         // Find quota for this leave type
         const quotaRow = quotas.find(q => q.leaveTypeId === leaveType.id);
         const quota = quotaRow ? quotaRow.quota : 0;
@@ -711,13 +711,17 @@ module.exports = (AppDataSource) => {
           let leaveTypeName = lr.leaveType;
           if (leaveTypeName && leaveTypeName.length > 20) {
             const leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
-            if (leaveTypeEntity && leaveTypeEntity.leave_type) {
-              leaveTypeName = leaveTypeEntity.leave_type;
+            if (leaveTypeEntity && leaveTypeEntity.leave_type_en) {
+              leaveTypeName = leaveTypeEntity.leave_type_en;
             }
           }
-          if (leaveTypeName === leaveType.leave_type) {
+          if (
+            leaveTypeName === leaveType.leave_type_en ||
+            leaveTypeName === leaveType.leave_type_th ||
+            leaveTypeName === leaveType.id
+          ) {
             // Personal leave: may be by hour or day
-            if (leaveTypeName === 'personal' || leaveTypeName === 'ลากิจ') {
+            if (leaveType.leave_type_en?.toLowerCase() === 'personal' || leaveType.leave_type_th === 'ลากิจ') {
               if (lr.startTime && lr.endTime) {
                 const [sh, sm] = lr.startTime.split(":").map(Number);
                 const [eh, em] = lr.endTime.split(":").map(Number);
@@ -746,7 +750,15 @@ module.exports = (AppDataSource) => {
           }
         }
         const remaining = Math.max(0, quota - used);
-        result.push({ type: leaveType.leave_type, used: Math.round(used * 100) / 100, quota, remaining });
+        result.push({
+          id: leaveType.id,
+          leave_type_en: leaveType.leave_type_en,
+          leave_type_th: leaveType.leave_type_th,
+          quota,
+          used: Math.round(used * 100) / 100,
+          remaining: Math.round(remaining * 100) / 100,
+          unit: (leaveType.leave_type_en?.toLowerCase() === 'personal' || leaveType.leave_type_th === 'ลากิจ') ? 'hour' : 'day',
+        });
       }
       return res.json({ success: true, data: result });
     } catch (err) {
