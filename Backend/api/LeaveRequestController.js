@@ -891,6 +891,14 @@
          const { id } = req.params;
          const leave = await leaveRepo.findOneBy({ id });
          if (!leave) return res.status(404).json({ success: false, message: 'Leave request not found' });
+         // --- เพิ่ม validation: ห้ามแก้ไขถ้า startDate <= วันนี้ ---
+         const now = new Date();
+         now.setHours(0, 0, 0, 0);
+         const leaveStart = leave.startDate ? new Date(leave.startDate) : null;
+         if (leaveStart) leaveStart.setHours(0, 0, 0, 0);
+         if (leaveStart && leaveStart <= now) {
+           return res.status(400).json({ success: false, message: 'Cannot edit leave request that has already started.' });
+         }
          // อัปเดตฟิลด์ที่ส่งมา
          const {
            leaveType, personalLeaveType, startDate, endDate,

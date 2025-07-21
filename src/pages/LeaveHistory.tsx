@@ -693,34 +693,44 @@ const LeaveHistory = () => {
                         <Button size="sm" variant="outline" onClick={() => handleViewDetails(leave.id)}>
                           {t('common.viewDetails')}
                         </Button>
-                        {leave.status === "pending" && (
-                          <>
-                            <Button size="sm" variant="outline" onClick={() => handleEditLeave(leave.id)}>
-                              {t('common.edit')}
-                            </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button size="sm" variant="destructive" onClick={() => setDeleteLeaveId(leave.id)}>
-                                  {t('system.delete', 'Delete')}
+                        {leave.status === "pending" && (() => {
+                          // เช็คว่าวันนี้ < startDate แบบ UTC
+                          const today = new Date();
+                          today.setHours(0, 0, 0, 0); // ตัดเวลาออก
+                          const startDate = leave.startDate ? new Date(leave.startDate) : null;
+                          if (startDate) startDate.setHours(0, 0, 0, 0); // ตัดเวลาออก
+                          if (startDate && today < startDate) {
+                            return (
+                              <>
+                                <Button size="sm" variant="outline" onClick={() => handleEditLeave(leave.id)}>
+                                  {t('common.edit')}
                                 </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>{t('system.confirmDelete', 'Confirm Delete')}</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    {t('system.confirmDeleteLeave', 'Are you sure you want to delete this leave request?')}
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel disabled={deleting}>{t('common.cancel', 'Cancel')}</AlertDialogCancel>
-                                  <AlertDialogAction disabled={deleting} onClick={handleDeleteLeave}>
-                                    {deleting ? t('common.loading', 'Loading...') : t('system.confirm', 'Confirm')}
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </>
-                        )}
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button size="sm" variant="destructive" onClick={() => setDeleteLeaveId(leave.id)}>
+                                      {t('system.delete', 'Delete')}
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>{t('system.confirmDelete', 'Confirm Delete')}</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        {t('system.confirmDeleteLeave', 'Are you sure you want to delete this leave request?')}
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel disabled={deleting}>{t('common.cancel', 'Cancel')}</AlertDialogCancel>
+                                      <AlertDialogAction disabled={deleting} onClick={handleDeleteLeave}>
+                                        {deleting ? t('common.loading', 'Loading...') : t('system.confirm', 'Confirm')}
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </>
+                            );
+                          }
+                          return null;
+                        })()}
                       </div>
                     </CardContent>
                   </Card>
