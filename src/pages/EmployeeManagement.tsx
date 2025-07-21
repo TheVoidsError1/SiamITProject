@@ -8,6 +8,17 @@ import { Eye, User, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 
 // เพิ่ม type สำหรับข้อมูลพนักงาน
 interface Employee {
@@ -40,6 +51,8 @@ const EmployeeManagement = () => {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 4;
+  const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetch("http://localhost:3001/api/employees")
@@ -128,6 +141,33 @@ const EmployeeManagement = () => {
       bgColor: "bg-orange-50",
     },
   ];
+
+  const handleDelete = async () => {
+    if (!deleteTarget || !user) return;
+    setDeleting(true);
+    let url = "";
+    if (deleteTarget.role === "superadmin") {
+      url = `http://localhost:3001/api/superadmin/${deleteTarget.id}`;
+    } else if (deleteTarget.role === "admin") {
+      url = `http://localhost:3001/api/admins/${deleteTarget.id}`;
+    } else {
+      url = `http://localhost:3001/api/users/${deleteTarget.id}`;
+    }
+    try {
+      const res = await fetch(url, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        setEmployees((prev) => prev.filter((e) => e.id !== deleteTarget.id));
+        setDeleteTarget(null);
+      } else {
+        alert(data.message || t("system.deleteFailed", "Delete failed"));
+      }
+    } catch (e) {
+      alert(t("system.deleteFailed", "Delete failed"));
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -228,13 +268,42 @@ const EmployeeManagement = () => {
                             <TableCell>
                               <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${badgeColor}`}>{badgeText}</span>
                             </TableCell>
-                            <TableCell className="text-center">
+                            <TableCell className="text-center flex gap-2 justify-center items-center">
                               <Button asChild size="sm" variant="outline" className="text-xs px-2 py-1">
                                 <Link to={`/admin/employees/${employee.id}?role=${employee.role}`}>
                                   <Eye className="w-3 h-3 mr-1" />
                                   {t('system.seeDetails')}
                                 </Link>
                               </Button>
+                              {/* Only superadmin can see delete, and cannot delete themselves */}
+                              {user?.role === "superadmin" && !(employee.role === "superadmin" && isMe) && (
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      className="text-xs px-2 py-1"
+                                      onClick={() => setDeleteTarget(employee)}
+                                    >
+                                      {t('system.delete', 'Delete')}
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>{t('system.confirmDelete', 'Confirm Delete')}</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        {t('system.confirmDeleteUser', { name: employee.full_name })}
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel disabled={deleting}>{t('common.cancel', 'Cancel')}</AlertDialogCancel>
+                                      <AlertDialogAction disabled={deleting} onClick={handleDelete}>
+                                        {deleting ? t('common.loading', 'Loading...') : t('system.confirm', 'Confirm')}
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              )}
                             </TableCell>
                           </TableRow>
                         );

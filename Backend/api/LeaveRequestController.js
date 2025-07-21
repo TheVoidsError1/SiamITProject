@@ -1032,5 +1032,19 @@
          res.status(500).json({ success: false, message: err.message });
        }
      });
+
+     // DELETE /api/leave-request/:id
+     router.delete('/:id', async (req, res) => {
+       try {
+         const leaveRepo = AppDataSource.getRepository('LeaveRequest');
+         const { id } = req.params;
+         const leave = await leaveRepo.findOneBy({ id });
+         if (!leave) return res.status(404).json({ success: false, message: 'Leave request not found' });
+         await leaveRepo.delete({ id });
+         res.json({ success: true, message: 'Leave request deleted successfully' });
+       } catch (err) {
+         res.status(500).json({ success: false, message: err.message });
+       }
+     });
      return router;
    };

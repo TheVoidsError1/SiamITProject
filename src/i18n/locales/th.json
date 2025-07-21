@@ -94,7 +94,6 @@
     "submittedDate": "วันที่ส่งคำขอ",
     "startDate": "วันที่เริ่มลา",
     "endDate": "วันที่สิ้นสุด",
-    "reason": "เหตุผลการลา",
     "attachments": "เอกสารแนบ",
     "dateRange": "ช่วงวันที่ลา",
     "submitRequest": "ส่งคำขอ",
@@ -113,7 +112,6 @@
     "pleaseSelectAtLeastOne": "โปรดเลือกอย่างน้อย 1 ตัวเลือก",
     "noHistoryForPeriod": "ไม่มีประวัติการลาในช่วงนี้",
     "noHistory": "ไม่มีประวัติการลา",
-    "submittedDate": "วันที่ส่งคำขอ",
     "viewDetails": "ดูรายละเอียด",
     "leaveForm": "แบบฟอร์มขอลา",
     "fillAllFields": "กรุณากรอกข้อมูลให้ครบ",
@@ -166,7 +164,6 @@
     "contact": "เบอร์ติดต่อ",
     "submittedDate": "วันที่ส่งคำขอ",
     "attachment": "ไฟล์แนบ",
-    "duration": "ระยะเวลา",
     "hour": "ชั่วโมง",
     "day": "วัน",
     "leaveTime": "เวลาที่ลา:",
@@ -370,7 +367,8 @@
     "changePasswordDesc": "เปลี่ยนรหัสผ่านของคุณ",
     "changePassword": "เปลี่ยนรหัสผ่าน",
     "cancel":"ยกเลิก",
-    "change":"เปลี่ยน"
+    "change":"เปลี่ยน",
+    "confirmDeleteUser": "คุณจะลบ User หรือไม่?"
   },
   "error": {
     "apiConnectionError": "ข้อผิดพลาดการเชื่อมต่อ API"

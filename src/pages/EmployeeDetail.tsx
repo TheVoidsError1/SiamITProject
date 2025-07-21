@@ -14,6 +14,17 @@ import { ArrowLeft, Calendar, Edit, Eye, Mail, Save, User, X } from "lucide-reac
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useParams } from "react-router-dom";
+import {
+  AlertDialog,
+  AlertDialogTrigger,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from "@/components/ui/alert-dialog";
 
 const EmployeeDetail = () => {
   const { id } = useParams();
@@ -72,44 +83,11 @@ const EmployeeDetail = () => {
   // --- กรอง leaveHistory ตาม filter ---
   // ลบ useMemo เดิมออก ไม่ต้อง filter ฝั่ง frontend แล้ว
 
-  // useEffect สำหรับ fetch leaveHistory เฉพาะเมื่อ filter จริง (active) เปลี่ยน
-  useEffect(() => {
+  // --- Move fetch leave history logic to a function ---
+  const fetchLeaveHistory = () => {
     if (!id) return;
-    setLoading(true);
-    setError(null);
-    const token = localStorage.getItem('token');
-    if (!token) {
-      showSessionExpiredDialog();
-      return;
-    }
-    const res = fetch(`http://localhost:3001/api/employee/${id}`)
-      .then(res => {
-        if (res.status === 401) {
-          showSessionExpiredDialog();
-          return Promise.reject(new Error('Session expired'));
-        }
-        return res.json();
-      })
-      .then(data => {
-        if (data.success) {
-          setEmployee(data.data);
-        } else {
-          setEmployee(null);
-          setError(t('employee.notFound'));
-        }
-        setLoading(false);
-      })
-      .catch(() => {
-        setEmployee(null);
-        setError(t('employee.loadError'));
-        setLoading(false);
-      });
-
-    // --- ดึง leave history ตาม filter (active) ---
     let params = [];
-    if (filterType && filterType !== "all") {
-      params.push(`leaveType=${encodeURIComponent(filterType)}`);
-    }
+    if (filterType && filterType !== "all") params.push(`leaveType=${encodeURIComponent(filterType)}`);
     if (filterMonth && filterMonth !== "all" && filterYear && filterYear !== "all") {
       params.push(`month=${filterMonth}`);
       params.push(`year=${filterYear}`);
@@ -117,19 +95,11 @@ const EmployeeDetail = () => {
       params.push(`year=${filterYear}`);
     }
     if (filterStatus && filterStatus !== "all") params.push(`status=${filterStatus}`);
-    // เพิ่ม paging parameters
     params.push(`page=${leavePage}`);
     params.push(`limit=6`);
     const query = params.length > 0 ? `?${params.join("&")}` : "";
-    
     fetch(`http://localhost:3001/api/employee/${id}/leave-history${query}`)
-      .then(res => {
-        if (res.status === 401) {
-          showSessionExpiredDialog();
-          return Promise.reject(new Error('Session expired'));
-        }
-        return res.json();
-      })
+      .then(res => res.json())
       .then(data => {
         if (data.success) {
           setLeaveHistory(data.data);
@@ -139,10 +109,16 @@ const EmployeeDetail = () => {
           setLeaveTotalPages(1);
         }
       })
-      .catch((error) => {
+      .catch(() => {
         setLeaveHistory([]);
         setLeaveTotalPages(1);
       });
+  };
+
+  // useEffect สำหรับ fetch leaveHistory เฉพาะเมื่อ filter จริง (active) เปลี่ยน
+  useEffect(() => {
+    fetchLeaveHistory();
+    // eslint-disable-next-line
   }, [id, t, filterType, filterMonth, filterYear, filterStatus, leavePage]);
 
   // filteredLeaveHistory = leaveHistory (ไม่ต้อง filter ฝั่ง frontend)
@@ -303,6 +279,52 @@ const EmployeeDetail = () => {
     if (!found) return typeId;
     return i18n.language.startsWith('th') ? found.leave_type_th : found.leave_type_en;
   };
+
+  const [deleteLeaveId, setDeleteLeaveId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // --- Add delete handler ---
+  const handleDeleteLeave = async () => {
+    if (!deleteLeaveId) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`http://localhost:3001/api/leave-request/${deleteLeaveId}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        setDeleteLeaveId(null);
+        fetchLeaveHistory(); // fetch leave history again
+      } else {
+        alert(data.message || t("system.deleteFailed", "Delete failed"));
+      }
+    } catch (e) {
+      alert(t("system.deleteFailed", "Delete failed"));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // เพิ่ม useEffect สำหรับ fetch employee
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    setError(null);
+    fetch(`http://localhost:3001/api/employee/${id}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setEmployee(data.data);
+        } else {
+          setEmployee(null);
+          setError(t('employee.notFound'));
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        setEmployee(null);
+        setError(t('employee.loadError'));
+        setLoading(false);
+      });
+  }, [id, t]);
 
   if (loading) return <div>{t('common.loading')}</div>;
   if (error) return <div>{error}</div>;
@@ -687,7 +709,7 @@ const EmployeeDetail = () => {
                           </Badge>
                         </TableCell>
                         <TableCell>{leave.submittedDate ? new Date(leave.submittedDate).toLocaleDateString('en-CA') : ''}</TableCell>
-                        <TableCell className="text-center">
+                        <TableCell className="text-center flex gap-2 justify-center items-center">
                           <Button
                             size="sm"
                             variant="outline"
@@ -696,6 +718,34 @@ const EmployeeDetail = () => {
                             <Eye className="w-4 h-4 mr-2" />
                             {String(t('common.viewDetails'))}
                           </Button>
+                          {/* Only superadmin can see delete */}
+                          {user?.role === "superadmin" && (
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  onClick={() => setDeleteLeaveId(leave.id)}
+                                >
+                                  {t('system.delete', 'Delete')}
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>{t('system.confirmDelete', 'Confirm Delete')}</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {t('system.confirmDeleteLeave', 'Are you sure you want to delete this leave request?')}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel disabled={deleting}>{t('common.cancel', 'Cancel')}</AlertDialogCancel>
+                                  <AlertDialogAction disabled={deleting} onClick={handleDeleteLeave}>
+                                    {deleting ? t('common.loading', 'Loading...') : t('system.confirm', 'Confirm')}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
