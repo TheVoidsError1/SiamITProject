@@ -30,6 +30,7 @@ interface LeaveRequest {
   submittedDate?: string;
   name?: string;
   leaveDate?: string;
+  leaveTypeEn?: string;
 }
 
 interface LeaveDetailDialogProps {
@@ -39,7 +40,7 @@ interface LeaveDetailDialogProps {
 }
 
 export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDetailDialogProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [leaveDetail, setLeaveDetail] = useState<LeaveRequest | null>(leaveRequest);
   const [loading, setLoading] = useState(false);
 
@@ -104,7 +105,16 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700">{t('leave.type')}</label>
-                <p className="text-sm">{leaveDetail.leaveType ? t(`leaveTypes.${leaveDetail.leaveType}`, leaveDetail.leaveType) : '-'}</p>
+                <p className="text-sm">
+                  {(() => {
+                    // แสดงชื่อ leave type ตามภาษา
+                    if (i18n.language === 'th') {
+                      return leaveDetail.leaveTypeName || leaveDetail.leaveTypeEn || leaveDetail.leaveType || '-';
+                    } else {
+                      return leaveDetail.leaveTypeEn || leaveDetail.leaveTypeName || leaveDetail.leaveType || '-';
+                    }
+                  })()}
+                </p>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
