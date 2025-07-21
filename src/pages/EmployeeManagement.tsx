@@ -8,6 +8,7 @@ import { Eye, User, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import { useToast } from "@/hooks/use-toast";
 import {
   AlertDialog,
   AlertDialogTrigger,
@@ -45,6 +46,7 @@ function formatLeaveDays(days: number, t: (key: string) => string): string {
 const EmployeeManagement = () => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const { toast } = useToast();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [positions, setPositions] = useState<any[]>([]);
   const [departments, setDepartments] = useState<any[]>([]);
@@ -159,6 +161,11 @@ const EmployeeManagement = () => {
       if (data.success) {
         setEmployees((prev) => prev.filter((e) => e.id !== deleteTarget.id));
         setDeleteTarget(null);
+        toast({
+          title: t('system.deleteSuccess', 'ลบสำเร็จ'),
+          description: t('system.deleteUserSuccessDesc', 'ลบผู้ใช้งานสำเร็จ'),
+          className: 'border-green-500 bg-green-50 text-green-900',
+        });
       } else {
         alert(data.message || t("system.deleteFailed", "Delete failed"));
       }

@@ -368,7 +368,10 @@
     "changePassword": "เปลี่ยนรหัสผ่าน",
     "cancel":"ยกเลิก",
     "change":"เปลี่ยน",
-    "confirmDeleteUser": "คุณจะลบ User หรือไม่?"
+    "confirmDeleteUser": "คุณจะลบ User หรือไม่?",
+    "deleteSuccess": "ลบสำเร็จ",
+    "deleteSuccessDesc": "ลบใบลาสำเร็จ",
+    "deleteUserSuccessDesc": "ลบผู้ใช้งานสำเร็จ"
   },
   "error": {
     "apiConnectionError": "ข้อผิดพลาดการเชื่อมต่อ API"

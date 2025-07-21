@@ -292,6 +292,11 @@ const EmployeeDetail = () => {
       const data = await res.json();
       if (data.success) {
         setDeleteLeaveId(null);
+        toast({
+          title: t('system.deleteSuccess', 'ลบสำเร็จ'),
+          description: t('system.deleteSuccessDesc', 'ลบใบลาสำเร็จ'),
+          className: 'border-green-500 bg-green-50 text-green-900',
+        });
         fetchLeaveHistory(); // fetch leave history again
       } else {
         alert(data.message || t("system.deleteFailed", "Delete failed"));

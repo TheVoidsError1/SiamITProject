@@ -367,7 +367,10 @@
     "changePassword": "Change Password",
     "cancel":"Cancel",
     "change":"Change",
-      "confirmDeleteUser": "Do you want Delete User?"
+      "confirmDeleteUser": "Do you want Delete User?",
+    "deleteSuccess": "Delete successful",
+    "deleteSuccessDesc": "Leave deleted successfully",
+    "deleteUserSuccessDesc": "User deleted successfully"
   },
   "error": {
     "apiConnectionError": "API Connection Error"
