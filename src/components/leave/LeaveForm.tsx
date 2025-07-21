@@ -55,7 +55,16 @@ const isValidEmail = (input: string) => {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input);
 };
 
-export const LeaveForm = () => {
+// เพิ่มที่ด้านบนของไฟล์
+
+// เปลี่ยน function signature
+export interface LeaveFormProps {
+  initialData?: any;
+  onSubmit?: (data: any) => void;
+  mode?: 'create' | 'edit';
+}
+
+export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormProps) => {
   const { t, i18n } = useTranslation();
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
@@ -90,6 +99,31 @@ export const LeaveForm = () => {
     contact: '',
   });
   const [submitted, setSubmitted] = useState(false);
+  const [step, setStep] = useState(1); // เพิ่ม state สำหรับ step form
+
+  // set state จาก initialData ถ้ามี
+  useEffect(() => {
+    if (initialData) {
+      setStartDate(initialData.startDate ? new Date(initialData.startDate) : undefined);
+      setEndDate(initialData.endDate ? new Date(initialData.endDate) : undefined);
+      setLeaveType(initialData.leaveType || initialData.type || "");
+      setPersonalLeaveType(initialData.personalLeaveType || "");
+      setStartTime(initialData.startTime || "");
+      setEndTime(initialData.endTime || "");
+      setReason(initialData.reason || "");
+      setSupervisor(initialData.supervisor || "");
+      setEmployeeType(initialData.employeeType || "");
+      setContact(initialData.contact || "");
+      // แนบไฟล์เดิม (string/array)
+      if (initialData.attachments) {
+        let files = initialData.attachments;
+        if (typeof files === 'string') {
+          try { files = JSON.parse(files); } catch {}
+        }
+        setAttachments(Array.isArray(files) ? files : []);
+      }
+    }
+  }, [initialData]);
 
   useEffect(() => {
     // ดึงข้อมูล department จาก API
@@ -177,6 +211,7 @@ export const LeaveForm = () => {
     return minutes >= min && minutes <= max;
   };
 
+  // handleSubmit: ถ้า onSubmit ถูกส่งมา ให้เรียก onSubmit(data) แทน submit ปกติ
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
@@ -364,15 +399,29 @@ export const LeaveForm = () => {
       }
       // ส่ง API
       const token = localStorage.getItem('token');
-      const response = await fetch("http://localhost:3001/api/leave-request", {
-        method: "POST",
-        body: formData,
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Accept-Language': i18n.language // เพิ่ม header นี้เพื่อให้ backend ส่งข้อความตามภาษา
-        },
-      });
-      const data = await response.json();
+      let response, data;
+      if (mode === 'edit' && initialData?.id) {
+        // PUT สำหรับอัปเดตใบลา
+        response = await fetch(`http://localhost:3001/api/leave-request/${initialData.id}`, {
+          method: "PUT",
+          body: formData,
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Accept-Language': i18n.language
+          },
+        });
+      } else {
+        // POST สำหรับสร้างใหม่
+        response = await fetch("http://localhost:3001/api/leave-request", {
+          method: "POST",
+          body: formData,
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Accept-Language': i18n.language
+          },
+        });
+      }
+      data = await response.json();
       if (!response.ok) {
         // ถ้ามี message จาก backend ให้แสดงใน toast
         toast({
@@ -382,23 +431,36 @@ export const LeaveForm = () => {
         });
         return;
       }
-      toast({
-        title: t('leave.leaveRequestSuccess'),
-        description: t('leave.leaveRequestSuccessDesc'),
-      });
-      // Reset form
-      setStartDate(undefined);
-      setEndDate(undefined);
-      setLeaveType("");
-      setPersonalLeaveType("");
-      setStartTime("");
-      setEndTime("");
-      setReason("");
-      setSupervisor("");
-      setEmployeeType("");
-      setAttachments([]);
-      setContact("");
-      if (formRef.current) formRef.current.reset();
+      if (mode === 'edit') {
+        toast({
+          title: t('leave.updateSuccess', 'อัปเดตใบลาสำเร็จ'),
+          description: t('leave.updateSuccessDesc', 'แก้ไขข้อมูลใบลาสำเร็จ'),
+          variant: 'default',
+          className: 'border-green-500 bg-green-50 text-green-900',
+        });
+      } else {
+        toast({
+          title: t('leave.leaveRequestSuccess'),
+          description: t('leave.leaveRequestSuccessDesc'),
+        });
+      }
+      // Reset form เฉพาะ create
+      if (mode !== 'edit') {
+        setStartDate(undefined);
+        setEndDate(undefined);
+        setLeaveType("");
+        setPersonalLeaveType("");
+        setStartTime("");
+        setEndTime("");
+        setReason("");
+        setSupervisor("");
+        setEmployeeType("");
+        setAttachments([]);
+        setContact("");
+        if (formRef.current) formRef.current.reset();
+      }
+      // ถ้ามี onSubmit callback ให้เรียก (เช่นปิด modal)
+      if (onSubmit) onSubmit(data);
     } catch (err: any) {
       toast({
         title: t('error.title'),
@@ -464,6 +526,202 @@ export const LeaveForm = () => {
       setEndDate(undefined);
     }
   };
+
+  // --- Step Form เฉพาะโหมด edit ---
+  if (mode === 'edit') {
+    return (
+      <form ref={formRef} onSubmit={handleSubmit} className="space-y-6 max-h-[70vh] overflow-y-auto">
+        {/* Leave Type (เลือกได้) */}
+        <div className="space-y-2">
+          <Label htmlFor="leave-type" className="text-sm font-medium">
+            {t('leave.leaveType')}{submitted && !leaveType && <span className="text-red-500">*</span>}
+          </Label>
+          <Select value={leaveType} onValueChange={handleLeaveTypeChange}>
+            <SelectTrigger>
+              <SelectValue placeholder={t('leave.selectLeaveType')} />
+            </SelectTrigger>
+            <SelectContent>
+              {leaveTypes.map((type) => (
+                <SelectItem key={type.id} value={type.id}>
+                  {i18n.language.startsWith('th') ? type.leave_type_th : type.leave_type_en}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.leaveType && <p className="text-red-500 text-xs mt-1">{errors.leaveType}</p>}
+        </div>
+
+        {/* Personal Leave Type Selection (ถ้ามี) */}
+        {isPersonalLeave && (
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">
+              {t('leave.personalLeaveType')}{submitted && !personalLeaveType && <span className="text-red-500">*</span>}
+            </Label>
+            <Select value={personalLeaveType} onValueChange={handlePersonalLeaveTypeChange}>
+              <SelectTrigger>
+                <SelectValue placeholder={t('leave.selectPersonalLeaveType')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="day">{t('leave.dayLeave')}</SelectItem>
+                <SelectItem value="hour">{t('leave.hourLeave')}</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.personalLeaveType && <p className="text-red-500 text-xs mt-1">{errors.personalLeaveType}</p>}
+          </div>
+        )}
+
+        {/* Date Range - Show only for day leave or non-personal leave */}
+        {(!isPersonalLeave || personalLeaveType === "day") && (
+          <DateRangePicker
+            startDate={startDate}
+            endDate={endDate}
+            onStartDateChange={setStartDate}
+            onEndDateChange={setEndDate}
+            disabled={isHourlyLeave}
+            minDate={isPersonalLeave && personalLeaveType === "day" ? new Date() : undefined}
+            submitted={submitted}
+          />
+        )}
+
+        {/* Time Selection for Hourly Leave */}
+        {isPersonalLeave && isHourlyLeave && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">{t('leave.startTime')}{submitted && !startTime && <span className="text-red-500">*</span>}</Label>
+              <Input
+                type="time"
+                value={startTime}
+                onChange={e => setStartTime(e.target.value)}
+              />
+              {errors.startTime && <p className="text-red-500 text-xs mt-1">{errors.startTime}</p>}
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">{t('leave.endTime')}{submitted && !endTime && <span className="text-red-500">*</span>}</Label>
+              <Input
+                type="time"
+                value={endTime}
+                onChange={e => setEndTime(e.target.value)}
+              />
+              {errors.endTime && <p className="text-red-500 text-xs mt-1">{errors.endTime}</p>}
+            </div>
+            {timeError && (
+              <div className="col-span-2 text-red-500 text-sm mt-1">{timeError}</div>
+            )}
+          </div>
+        )}
+
+        {/* Supervisor */}
+        <div className="space-y-2">
+          <Label htmlFor="supervisor">{t('leave.supervisor')}{submitted && !supervisor && <span className="text-red-500">*</span>}</Label>
+          <Select
+            value={supervisor}
+            onValueChange={setSupervisor}
+          >
+            <SelectTrigger id="supervisor">
+              <SelectValue placeholder={t('leave.selectSupervisor')} />
+            </SelectTrigger>
+            <SelectContent>
+              {admins.map((admin) => (
+                <SelectItem key={admin.id} value={admin.id}>
+                  {admin.admin_name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {errors.supervisor && <p className="text-red-500 text-xs mt-1">{errors.supervisor}</p>}
+        </div>
+
+        {/* Reason */}
+        <div className="space-y-2">
+          <Label htmlFor="reason" className="text-sm font-medium">
+            {t('leave.reason')}{submitted && !reason && <span className="text-red-500">*</span>}
+          </Label>
+          <Textarea
+            id="reason"
+            placeholder={t('leave.reasonPlaceholder')}
+            value={reason}
+            onChange={(e) => setReason(e.target.value)}
+            className="min-h-[100px] resize-none"
+          />
+          {errors.reason && <p className="text-red-500 text-xs mt-1">{errors.reason}</p>}
+        </div>
+
+        {/* File Upload - Show only for certain leave types */}
+        {requiresAttachmentField && (
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">
+              {t('leave.attachmentLabel')} <span className="text-red-500">*</span> <span className="text-gray-400 text-xs">{t('leave.attachmentHint')}</span>
+            </Label>
+            <FileUpload
+              attachments={attachments.filter(f => f instanceof File)}
+              onFileUpload={handleFileUpload}
+              onRemoveAttachment={removeAttachment}
+            />
+            {/* แสดงไฟล์แนบเดิม (string/URL) */}
+            {attachments.filter(f => typeof f === 'string').length > 0 && (
+              <div className="mt-2">
+                <div className="font-medium text-sm mb-1">{t('leave.oldAttachments', 'ไฟล์แนบเดิม:')}</div>
+                <ul className="space-y-1">
+                  {attachments.filter(f => typeof f === 'string').map((file, idx) => (
+                    <li key={idx} className="flex items-center gap-2">
+                      <a href={`/leave-uploads/${file}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">{file}</a>
+                      <button type="button" className="text-red-500 text-xs underline ml-2" onClick={() => {
+                        setAttachments(prev => prev.filter((f, i) => !(typeof f === 'string' && f === file && i === idx)));
+                      }}>{t('common.delete', 'ลบ')}</button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {submitted && attachments.length === 0 && (
+              <p className="text-red-500 text-xs mt-1">{t('leave.attachmentRequired') || 'กรุณาแนบไฟล์หลักฐาน'} </p>
+            )}
+          </div>
+        )}
+
+        {/* Contact Info */}
+        <div className="space-y-2">
+          <Label htmlFor="contact" className="text-sm font-medium">
+            {t('leave.contactInfo')}{submitted && !contact && <span className="text-red-500">*</span>}
+          </Label>
+          <Input
+            id="contact"
+            placeholder={t('leave.contactPlaceholder')}
+            className="w-full"
+            value={contact}
+            onChange={e => {
+              setContact(e.target.value);
+              // validate ทันทีที่พิมพ์
+              const val = e.target.value;
+              let err = '';
+              if (!val) {
+                err = t('leave.required');
+              } else if (/^[0-9]+$/.test(val)) {
+                if (!isValidPhoneNumber(val)) {
+                  err = t('leave.invalidPhone', 'กรุณากรอกเบอร์โทรศัพท์ที่ถูกต้อง เช่น 0912456147');
+                }
+              } else if (/[a-zA-Z@.]/.test(val)) {
+                // ถ้าเริ่มพิมพ์เป็นตัวอักษรหรือมี @ . ให้ validate เป็นอีเมลเท่านั้น
+                if (!isValidEmail(val)) {
+                  err = t('leave.invalidEmail', 'กรุณากรอกอีเมลที่ถูกต้อง เช่น example@email.com');
+                }
+              } else {
+                err = t('leave.invalidEmail', 'กรุณากรอกอีเมลที่ถูกต้อง เช่น example@email.com');
+              }
+              setErrors(prev => ({ ...prev, contact: err }));
+            }}
+          />
+          {errors.contact && <p className="text-red-500 text-xs mt-1">{errors.contact}</p>}
+        </div>
+
+        <div className="flex justify-end gap-2 pt-4">
+          <Button type="submit" className="bg-blue-600 text-white flex-1">
+            {t('leave.updateLeaveRequest', 'บันทึก')}
+          </Button>
+        </div>
+      </form>
+    );
+  }
 
   return (
     <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">

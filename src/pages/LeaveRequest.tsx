@@ -36,7 +36,7 @@ const LeaveRequest = () => {
             </CardDescription>
           </CardHeader>
           <CardContent className="p-6">
-            <LeaveForm />
+            <LeaveForm mode="create" />
           </CardContent>
         </Card>
       </div>

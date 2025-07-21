@@ -6,7 +6,7 @@ import { format } from "date-fns";
 import { th } from "date-fns/locale";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { useAuth } from '@/contexts/AuthContext';
@@ -15,9 +15,20 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+// เพิ่ม import LeaveForm
+import { LeaveForm } from "@/components/leave/LeaveForm";
+// เพิ่ม useState สำหรับ dialog edit
+import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
+
 
 const LeaveHistory = () => {
   const { t, i18n } = useTranslation();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  const [editLeave, setEditLeave] = useState<any | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [leaveHistory, setLeaveHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -50,6 +61,112 @@ const LeaveHistory = () => {
   const [singleDate, setSingleDate] = useState<Date | undefined>(undefined);
 
   const { showSessionExpiredDialog } = useAuth();
+
+  const [deleteLeaveId, setDeleteLeaveId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const fetchLeaveHistory = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        showSessionExpiredDialog();
+        return;
+      }
+      let url = `/api/leave-history?page=${page}&limit=${limit}`;
+      if (filterLeaveType) url += `&leaveType=${filterLeaveType}`;
+      if (filterMonth) url += `&month=${filterMonth}`;
+      if (filterYear) url += `&year=${filterYear}`;
+      if (filterStatus) url += `&status=${filterStatus}`;
+      if (singleDate) {
+        url += `&date=${format(singleDate, 'yyyy-MM-dd')}`;
+      }
+      const res = await fetch(url, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.status === 401) {
+        showSessionExpiredDialog();
+        return;
+      }
+      const data = await res.json();
+      if (data.status === "success") {
+        setLeaveHistory(data.data);
+        setTotalPages(data.totalPages || 1);
+        setSummary(data.summary || null);
+      } else {
+        setError(data.message || "Unknown error");
+      }
+    } catch (err: any) {
+      setError(err.message || "Unknown error");
+    } finally {
+      setLoading(false);
+    }
+  }, [page, filterMonth, filterYear, limit, filterLeaveType, filterStatus, singleDate, showSessionExpiredDialog]);
+
+  useEffect(() => {
+    fetchLeaveHistory();
+  }, [fetchLeaveHistory]);
+
+  const handleDeleteLeave = async () => {
+    if (!deleteLeaveId) return;
+    setDeleting(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/leave-request/${deleteLeaveId}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
+      const data = await res.json();
+      if (data.success) {
+        setDeleteLeaveId(null);
+        setPage(1); // รีเฟรช leaveHistory
+        fetchLeaveHistory(); // ดึงข้อมูลใหม่ทันทีหลังลบ
+        toast({
+          title: t('system.deleteSuccess', 'ลบใบลาสำเร็จ'),
+          description: t('system.deleteSuccessDesc', 'ใบลาถูกลบเรียบร้อยแล้ว'),
+          variant: 'destructive',
+          className: 'border-red-500 bg-red-50 text-red-900',
+        });
+      } else {
+        alert(data.message || t("system.deleteFailed", "Delete failed"));
+      }
+    } catch (e) {
+      alert(t("system.deleteFailed", "Delete failed"));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // --- เพิ่มฟังก์ชันสำหรับดึงข้อมูลใบลาจาก backend ---
+  const handleEditLeave = async (leaveId: string) => {
+    setEditLeave(null); // reset ก่อน
+    setShowEditDialog(true); // เปิด dialog ทันที (option: ใส่ loading)
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/leave-request/${leaveId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        const leave = data.data;
+        const mapped = {
+          id: leave.id,
+          leaveType: leave.type || leave.leaveType || '',
+          personalLeaveType: leave.personalLeaveType || '',
+          startDate: leave.startDate ? new Date(leave.startDate) : undefined,
+          endDate: leave.endDate ? new Date(leave.endDate) : undefined,
+          startTime: leave.startTime || '',
+          endTime: leave.endTime || '',
+          reason: leave.reason || '',
+          supervisor: leave.supervisor || leave.supervisorId || '',
+          contact: leave.contact || '',
+          attachments: leave.attachments || [],
+          employeeType: leave.employeeType || '',
+        };
+        setEditLeave(mapped);
+      }
+    } catch (e) {
+      // handle error
+    }
+  };
 
   // Fetch leave types from backend
   useEffect(() => {
@@ -93,50 +210,6 @@ const LeaveHistory = () => {
     };
     fetchFilters();
   }, []);
-
-  useEffect(() => {
-    const fetchLeaveHistory = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          showSessionExpiredDialog();
-          return;
-        }
-        // --- ส่ง page, limit, month, year, leaveType ไป backend ---
-        let url = `/api/leave-history?page=${page}&limit=${limit}`;
-        if (filterLeaveType) url += `&leaveType=${filterLeaveType}`;
-        if (filterMonth) url += `&month=${filterMonth}`;
-        if (filterYear) url += `&year=${filterYear}`;
-        if (filterStatus) url += `&status=${filterStatus}`;
-        // --- เงื่อนไขใหม่: ถ้าเลือก singleDate ให้ filter ด้วย createdAt (date param) ---
-        if (singleDate) {
-          url += `&date=${format(singleDate, 'yyyy-MM-dd')}`;
-        }
-        const res = await fetch(url, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.status === 401) {
-          showSessionExpiredDialog();
-          return;
-        }
-        const data = await res.json();
-        if (data.status === "success") {
-          setLeaveHistory(data.data);
-          setTotalPages(data.totalPages || 1);
-          setSummary(data.summary || null); // <-- set summary
-        } else {
-          setError(data.message || "Unknown error");
-        }
-      } catch (err: any) {
-        setError(err.message || "Unknown error");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchLeaveHistory();
-  }, [page, filterMonth, filterYear, limit, filterLeaveType, filterStatus, singleDate]);
 
   // ฟังก์ชันล้าง filter ทั้งหมด
   const clearAllFilters = () => {
@@ -591,10 +664,38 @@ const LeaveHistory = () => {
                           )}
                         </div>
                       )}
-                      <div className="flex justify-end mt-4">
+                      <div className="flex justify-end mt-6 gap-3">
                         <Button size="sm" variant="outline" onClick={() => { setSelectedLeave(leave); setShowDetailDialog(true); }}>
                           {t('common.viewDetails')}
                         </Button>
+                        {leave.status === "pending" && (
+                          <>
+                            <Button size="sm" variant="outline" onClick={() => handleEditLeave(leave.id)}>
+                              {t('common.edit')}
+                            </Button>
+                            <AlertDialog>
+                              <AlertDialogTrigger asChild>
+                                <Button size="sm" variant="destructive" onClick={() => setDeleteLeaveId(leave.id)}>
+                                  {t('system.delete', 'Delete')}
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>{t('system.confirmDelete', 'Confirm Delete')}</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {t('system.confirmDeleteLeave', 'Are you sure you want to delete this leave request?')}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel disabled={deleting}>{t('common.cancel', 'Cancel')}</AlertDialogCancel>
+                                  <AlertDialogAction disabled={deleting} onClick={handleDeleteLeave}>
+                                    {deleting ? t('common.loading', 'Loading...') : t('system.confirm', 'Confirm')}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          </>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
@@ -658,31 +759,88 @@ const LeaveHistory = () => {
             <DialogDescription>
               {selectedLeave && (
                 <div className="space-y-2 text-gray-700">
-                  <div><b>{t('leave.type')}:</b> {getLeaveTypeLabel(selectedLeave.type)}</div>
-                  <div><b>{t('leave.status')}:</b> {getStatusBadge(selectedLeave.status)}</div>
-                  <div><b>{t('leave.startDate')}:</b> {formatDateLocalized(selectedLeave.startDate)}</div>
-                  <div><b>{t('leave.endDate')}:</b> {formatDateLocalized(selectedLeave.endDate)}</div>
+                  <div><b>{t('leave.type', 'ประเภทการลา')}:</b> {getLeaveTypeLabel(selectedLeave.type)}</div>
+                  <div><b>{t('leave.status', 'สถานะ')}:</b> {getStatusBadge(selectedLeave.status)}</div>
+                  <div><b>{t('leave.startDate', 'วันที่เริ่ม')}:</b> {formatDateLocalized(selectedLeave.startDate)}</div>
+                  <div><b>{t('leave.endDate', 'วันที่สิ้นสุด')}:</b> {formatDateLocalized(selectedLeave.endDate)}</div>
                   {selectedLeave.startTime && selectedLeave.endTime && (
-                    <div><b>{t('leave.leaveTime')}:</b> {selectedLeave.startTime} - {selectedLeave.endTime} ({calcHours(selectedLeave.startTime, selectedLeave.endTime)} {hourUnit})</div>
+                    <div><b>{t('leave.leaveTime', 'ช่วงเวลา')}:</b> {selectedLeave.startTime} - {selectedLeave.endTime} ({calcHours(selectedLeave.startTime, selectedLeave.endTime)} {hourUnit})</div>
                   )}
-                  <div><b>{t('leave.duration')}:</b> {selectedLeave.days} {t('leave.day')}</div>
-                  <div><b>{t('leave.reason')}:</b> {selectedLeave.reason}</div>
+                  <div><b>{t('leave.duration', 'ระยะเวลา')}:</b> {selectedLeave.days} {t('leave.day', 'วัน')}</div>
+                  <div><b>{t('leave.reason', 'เหตุผล')}:</b> {selectedLeave.reason}</div>
                   {selectedLeave.approvedBy && (
-                    <div><b>{t('leave.approvedBy')}:</b> {selectedLeave.approvedBy}</div>
+                    <div><b>{t('leave.approvedBy', 'ผู้อนุมัติ')}:</b> {selectedLeave.approvedBy}</div>
                   )}
                   {selectedLeave.rejectedBy && (
-                    <div><b>{t('leave.rejectedBy')}:</b> {selectedLeave.rejectedBy}</div>
+                    <div><b>{t('leave.rejectedBy', 'ผู้ไม่อนุมัติ')}:</b> {selectedLeave.rejectedBy}</div>
                   )}
                   {selectedLeave.rejectionReason && (
-                    <div><b>{t('leave.rejectionReason')}:</b> {selectedLeave.rejectionReason}</div>
+                    <div><b>{t('leave.rejectionReason', 'เหตุผลที่ไม่อนุมัติ')}:</b> {selectedLeave.rejectionReason}</div>
                   )}
-                  <div><b>{t('leave.submittedDate')}:</b> {formatDateLocalized(selectedLeave.submittedDate)}</div>
+                  <div><b>{t('leave.submittedDate', 'วันที่ส่งคำขอ')}:</b> {formatDateLocalized(selectedLeave.submittedDate)}</div>
                 </div>
               )}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex justify-center mt-4">
-            <Button onClick={() => setShowDetailDialog(false)}>{t('common.ok')}</Button>
+            <Button onClick={() => setShowDetailDialog(false)}>{t('common.ok', 'ตกลง')}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Dialog แก้ไขใบลา */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-2xl w-full rounded-xl shadow-2xl p-6 bg-white/95">
+          <DialogHeader>
+            <DialogTitle>{t('leave.editTitle', 'แก้ไขใบลา')}</DialogTitle>
+          </DialogHeader>
+          <LeaveForm
+            initialData={editLeave}
+            mode="edit"
+            onSubmit={async (data) => {
+              // เรียก API สำหรับอัปเดตใบลา
+              const token = localStorage.getItem('token');
+              // ใช้ FormData สำหรับแนบไฟล์ (รองรับทั้งกรณีมี/ไม่มีไฟล์ใหม่)
+              const formData = new FormData();
+              formData.append('leaveType', data.leaveType);
+              if (data.personalLeaveType) formData.append('personalLeaveType', data.personalLeaveType);
+              if (data.startDate) formData.append('startDate', data.startDate instanceof Date ? data.startDate.toISOString() : data.startDate);
+              if (data.endDate) formData.append('endDate', data.endDate instanceof Date ? data.endDate.toISOString() : data.endDate);
+              if (data.startTime) formData.append('startTime', data.startTime);
+              if (data.endTime) formData.append('endTime', data.endTime);
+              if (data.reason) formData.append('reason', data.reason);
+              if (data.supervisor) formData.append('supervisor', data.supervisor);
+              if (data.contact) formData.append('contact', data.contact);
+              if (data.employeeType) formData.append('employeeType', data.employeeType);
+              // แนบไฟล์ใหม่ (File object เท่านั้น)
+              if (data.attachments && Array.isArray(data.attachments)) {
+                data.attachments.forEach((file) => {
+                  if (file instanceof File) formData.append('attachments', file);
+                });
+              }
+              // ส่ง API
+              const res = await fetch(`/api/leave-request/${editLeave.id}`, {
+                method: 'PUT',
+                headers: { Authorization: `Bearer ${token}` },
+                body: formData,
+              });
+              if (res.ok) {
+                setShowEditDialog(false);
+                setEditLeave(null);
+                setPage(1);
+                toast({
+                  title: t('leave.updateSuccess', 'อัปเดตใบลาสำเร็จ'),
+                  description: t('leave.updateSuccessDesc', 'แก้ไขข้อมูลใบลาสำเร็จ'),
+                  variant: 'default',
+                  className: 'border-green-500 bg-green-50 text-green-900',
+                });
+                fetchLeaveHistory(); // รีเฟรชข้อมูลทันที ไม่ต้อง reload ทั้งหน้า
+              } else {
+                // handle error
+              }
+            }}
+          />
+          <DialogFooter className="flex justify-center mt-4">
+            <Button variant="outline" onClick={() => setShowEditDialog(false)}>{t('common.cancel', 'ยกเลิก')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

@@ -884,6 +884,40 @@
        }
      });
 
+     // PUT /api/leave-request/:id (update leave request)
+     router.put('/:id', upload.array('attachments', 10), async (req, res) => {
+       try {
+         const leaveRepo = AppDataSource.getRepository('LeaveRequest');
+         const { id } = req.params;
+         const leave = await leaveRepo.findOneBy({ id });
+         if (!leave) return res.status(404).json({ success: false, message: 'Leave request not found' });
+         // อัปเดตฟิลด์ที่ส่งมา
+         const {
+           leaveType, personalLeaveType, startDate, endDate,
+           startTime, endTime, reason, supervisor, contact
+         } = req.body;
+         if (leaveType !== undefined) leave.leaveType = leaveType;
+         if (personalLeaveType !== undefined) leave.personalLeaveType = personalLeaveType;
+         if (startDate !== undefined) leave.startDate = startDate;
+         if (endDate !== undefined) leave.endDate = endDate;
+         if (startTime !== undefined) leave.startTime = startTime;
+         if (endTime !== undefined) leave.endTime = endTime;
+         if (reason !== undefined) leave.reason = reason;
+         if (supervisor !== undefined) leave.supervisor = supervisor;
+         if (contact !== undefined) leave.contact = contact;
+         // แนบไฟล์ใหม่ (ถ้ามี)
+         const attachmentsArr = req.files ? req.files.map(f => f.filename) : [];
+         if (attachmentsArr.length > 0) {
+           leave.attachments = JSON.stringify(attachmentsArr);
+           leave.imgLeave = attachmentsArr.length === 1 ? attachmentsArr[0] : null;
+         }
+         await leaveRepo.save(leave);
+         res.json({ success: true, data: leave, message: 'Leave request updated' });
+       } catch (err) {
+         res.status(500).json({ success: false, message: err.message });
+       }
+     });
+
      // GET /api/leave-request/detail/:id - For dialog details
      router.get('/detail/:id', async (req, res) => {
        try {
