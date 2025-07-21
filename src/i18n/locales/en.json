@@ -81,7 +81,9 @@
     "confirm": "Confirm",
     "month": "Month",
     "year": "Year",
-    "close": "Close"
+    "close": "Close",
+    "add": "Add",
+    "update": "Update"
   },
   "leave": {
     "leaveRequest": "Leave Request",
@@ -201,6 +203,7 @@
     "12": "December"
   },
   "departments": {
+    "departments": "Departments",
     "itDepartment": "IT Department",
     "humanResources": "Human Resources",
     "marketing": "Marketing",
@@ -213,11 +216,13 @@
     "noDepartment": "No Department"
   },
   "positions": {
+    "positions": "Positions",
     "employee": "Employee",
     "intern": "Intern",
     "notSpecified": "Prefer not to specify",
     "selectPosition": "Select Position",
-    "noPosition": "No Position"
+    "noPosition": "No Position",
+    "position": "Position"
   },
   "employeeTypes": {
     "employee": "Employee",
@@ -243,7 +248,8 @@
     "quickActionsDesc": "Access frequently used functions",
     "recentLeaveStats": "Recent Leave Statistics",
     "recentLeaveStatsDesc": "Overview of leave usage",
-    "fillCompleteInfo": "Please fill out complete information"
+    "fillCompleteInfo": "Please fill out complete information",
+    "manageAllDesc": "Manage positions, departments, and leave types for Siam IT Co., Ltd."
   },
   "profile": {
     "personalInfo": "Personal Information",

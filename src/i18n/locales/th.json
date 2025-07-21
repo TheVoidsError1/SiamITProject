@@ -80,7 +80,9 @@
     "confirm": "ยืนยัน",
     "month": "เดือน",
     "year": "ปี",
-    "close": "ปิด"
+    "close": "ปิด",
+    "add": "เพิ่ม",
+    "update": "อัปเดต"
   },
   "leave": {
     "leaveRequest": "ขอลา",
@@ -202,6 +204,7 @@
     "12": "ธันวาคม"
   },
   "departments": {
+    "departments": "แผนก",
     "itDepartment": "ฝ่ายไอที",
     "humanResources": "แผนกทรัพยากรบุคคล",
     "marketing": "แผนกการตลาด",
@@ -214,11 +217,13 @@
     "noDepartment": "ไม่มีแผนก"
   },
   "positions": {
+    "positions": "ตำแหน่ง",
     "employee": "พนักงาน",
     "intern": "เด็กฝึกงาน",
     "notSpecified": "ไม่ต้องการระบุ",
     "selectPosition": "เลือกตำแหน่ง",
-    "noPosition": "ไม่มีตำแหน่ง"
+    "noPosition": "ไม่มีตำแหน่ง",
+    "position": "ตำแหน่ง"
   },
   "employeeTypes": {
     "employee": "พนักงาน",
@@ -244,7 +249,8 @@
     "quickActionsDesc": "เข้าถึงฟังก์ชันที่ใช้บ่อย",
     "recentLeaveStats": "สถิติการลาล่าสุด",
     "recentLeaveStatsDesc": "ภาพรวมการใช้สิทธิการลา",
-    "fillCompleteInfo": "กรุณากรอกข้อมูลให้ครบถ้วน"
+    "fillCompleteInfo": "กรุณากรอกข้อมูลให้ครบถ้วน",
+    "manageAllDesc": "จัดการตำแหน่ง แผนก และประเภทการลา สำหรับบริษัท สยาม ไอที จำกัด"
   },
   "profile": {
     "personalInfo": "ข้อมูลส่วนตัว",
