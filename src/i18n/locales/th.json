@@ -220,7 +220,7 @@
     "intern": "นักศึกษาฝึกงาน",
     "notSpecified": "ไม่ต้องการระบุ",
     "selectPosition": "เลือกตำแหน่ง",
-    "noPosition": "ไม่มีตำแหน่ง"
+    "noPosition": "ไม่มีตำแหน่ง",
     "noPosition": "ไม่มีตำแหน่ง"
   },
   "employeeTypes": {
@@ -248,7 +248,7 @@
     "recentLeaveStats": "สถิติการลาล่าสุด",
     "recentLeaveStatsDesc": "ภาพรวมการใช้สิทธิการลา",
     "fillCompleteInfo": "กรุณากรอกข้อมูลให้ครบถ้วน",
-    "manageAllDesc": "จัดการตำแหน่ง แผนก และประเภทการลาทั้งหมด"
+    "manageAllDesc": "จัดการตำแหน่ง แผนก และประเภทการลาทั้งหมด",
     "fillCompleteInfo": "กรุณากรอกข้อมูลให้ครบถ้วน"
   },
   "profile": {
