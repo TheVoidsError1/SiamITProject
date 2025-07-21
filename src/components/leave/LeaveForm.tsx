@@ -33,6 +33,14 @@ function autoFormatTimeInput(value: string) {
   return digits;
 }
 
+// ฟังก์ชันแปลงวันที่เป็น yyyy-mm-dd ตาม local time (ไม่ใช่ UTC)
+function formatDateLocal(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 const isValidPhoneNumber = (input: string) => {
   // เฉพาะตัวเลข, 9-10 หลัก, ขึ้นต้น 0, ไม่ใช่เลขซ้ำหมด เช่น 0000000000
   if (!/^[0-9]{9,10}$/.test(input)) return false;
@@ -339,8 +347,8 @@ export const LeaveForm = () => {
       const formData = new FormData();
       formData.append("leaveType", leaveType);
       if (personalLeaveType) formData.append("personalLeaveType", personalLeaveType);
-      if (startDate) formData.append("startDate", startDate.toISOString().split("T")[0]);
-      if (endDate) formData.append("endDate", endDate.toISOString().split("T")[0]);
+      if (startDate) formData.append("startDate", formatDateLocal(startDate));
+      if (endDate) formData.append("endDate", formatDateLocal(endDate));
       if (startTime) formData.append("startTime", startTime);
       if (endTime) formData.append("endTime", endTime);
       formData.append("reason", reason);

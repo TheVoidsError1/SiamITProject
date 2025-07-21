@@ -31,6 +31,14 @@
      }
    }
 
+   // ใช้ฟังก์ชันแปลงวันที่ให้เป็น Local Time (แก้บัค -1 วัน)
+   function parseLocalDate(dateStr) {
+     if (!dateStr) return null;
+     // dateStr: 'YYYY-MM-DD'
+     const [year, month, day] = dateStr.split('-').map(Number);
+     return new Date(year, month - 1, day);
+   }
+
    module.exports = (AppDataSource) => {
      const router = express.Router();
 
@@ -106,7 +114,7 @@
            }
            const quota = quotaRow.quota;
            // 2. คำนวณ leave ที่ใช้ไปในปีนี้ (approved เฉพาะ leaveType นี้)
-           const year = (new Date(startDate)).getFullYear();
+           const year = (parseLocalDate(startDate)).getFullYear();
            const startOfYear = new Date(year, 0, 1);
            const endOfYear = new Date(year, 11, 31, 23, 59, 59, 999);
            const { Between } = require('typeorm');
@@ -174,16 +182,16 @@
                if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
                requestHours += durationHours;
              } else if (startDate && endDate) {
-               const start = new Date(startDate);
-               const end = new Date(endDate);
+               const start = parseLocalDate(startDate);
+               const end = parseLocalDate(endDate);
                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
                if (days < 0 || isNaN(days)) days = 0;
                requestHours += days * 9;
              }
            } else {
              if (startDate && endDate) {
-               const start = new Date(startDate);
-               const end = new Date(endDate);
+               const start = parseLocalDate(startDate);
+               const end = parseLocalDate(endDate);
                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
                if (days < 0 || isNaN(days)) days = 0;
                requestHours += days * 9;
