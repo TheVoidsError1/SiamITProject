@@ -145,7 +145,8 @@ module.exports = (AppDataSource) => {
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
       const leaveType = leaveTypeRepo.create({
         leave_type_en: req.body.leave_type_en,
-        leave_type_th: req.body.leave_type_th
+        leave_type_th: req.body.leave_type_th,
+        require_attachment: req.body.require_attachment ?? false
       });
       const saved = await leaveTypeRepo.save(leaveType);
       res.status(201).json({ success: true, data: saved, message: 'Created leave type successfully' });
@@ -164,6 +165,9 @@ module.exports = (AppDataSource) => {
       }
       leaveType.leave_type_en = req.body.leave_type_en;
       leaveType.leave_type_th = req.body.leave_type_th;
+      if (typeof req.body.require_attachment !== 'undefined') {
+        leaveType.require_attachment = req.body.require_attachment;
+      }
       const updated = await leaveTypeRepo.save(leaveType);
       res.json({ success: true, data: updated, message: 'Updated leave type successfully' });
     } catch (err) {

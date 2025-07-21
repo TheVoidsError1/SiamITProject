@@ -64,7 +64,8 @@ export const LeaveForm = () => {
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
   const [departments, setDepartments] = useState<{ id: number; department_name_th: string; department_name_en: string }[]>([]);
-  const [leaveTypes, setLeaveTypes] = useState<{ id: string; leave_type_th: string; leave_type_en: string }[]>([]);
+  // Update leaveTypes state type to include require_attachment
+  const [leaveTypes, setLeaveTypes] = useState<{ id: string; leave_type_th: string; leave_type_en: string; require_attachment?: boolean }[]>([]);
   const [positions, setPositions] = useState<{ id: string; position_name_th: string; position_name_en: string }[]>([]);
   const [admins, setAdmins] = useState<{ id: string; admin_name: string }[]>([]);
   const { user } = useAuth();
@@ -82,6 +83,10 @@ export const LeaveForm = () => {
     contact: '',
   });
   const [submitted, setSubmitted] = useState(false);
+
+  // Dynamic attachment requirement based on selected leave type
+  const selected = leaveTypes.find(type => type.id === leaveType);
+  const requiresAttachmentField = !!selected?.require_attachment;
 
   useEffect(() => {
     // ดึงข้อมูล department จาก API
@@ -324,7 +329,6 @@ export const LeaveForm = () => {
     }
 
     // Check if attachment is required for certain leave types
-    const requiresAttachmentField = ["sick", "maternity", "emergency"].includes(leaveType);
     if (requiresAttachmentField && attachments.length === 0) {
       toast({
         title: t('leave.attachmentRequired'),
@@ -411,19 +415,6 @@ export const LeaveForm = () => {
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
-  // const selectedLeaveType = leaveTypes.find(type => type.id === leaveType);
-  // const requiresAttachmentField = selectedLeaveType?.requiresAttachment || false;
-  // const hasTimeOption = selectedLeaveType?.hasTimeOption || false;
-  // หมายเหตุ: ถ้าต้องการใช้ requiresAttachmentField หรือ hasTimeOption ต้องเพิ่มฟิลด์นี้ใน leaveType ที่ backend ด้วย
-  // ฟีเจอร์แนบไฟล์: เฉพาะ sick, emergency, maternity
-  const requiresAttachmentField = (() => {
-    // สมมุติว่า leave_type ในฐานข้อมูลเป็นภาษาอังกฤษ (sick, emergency, maternity)
-    const selected = leaveTypes.find(type => type.id === leaveType);
-    if (!selected) return false;
-    const name = selected.leave_type_en?.toLowerCase();
-    return name === 'sick' || name === 'emergency' || name === 'maternity';
-  })();
-  const hasTimeOption = false; // ปิดฟีเจอร์เลือกเวลาแบบ dynamic ชั่วคราว
   // ตรวจสอบว่า leave_type ที่เลือกคือ 'personal' (ลากิจ)
   const isPersonalLeave = (() => {
     const selected = leaveTypes.find(type => type.id === leaveType);

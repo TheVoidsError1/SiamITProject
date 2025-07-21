@@ -24,7 +24,7 @@ const ManageAll: React.FC = () => {
 
   // Leave type state
   const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
-  const [leaveTypeForm, setLeaveTypeForm] = useState<{ name_en: string; name_th: string }>({ name_en: '', name_th: '' });
+  const [leaveTypeForm, setLeaveTypeForm] = useState<{ name_en: string; name_th: string; require_attachment: boolean }>({ name_en: '', name_th: '', require_attachment: false });
   const [editingLeaveTypeId, setEditingLeaveTypeId] = useState<string | null>(null);
 
   // Add state for inline editing
@@ -93,12 +93,16 @@ const ManageAll: React.FC = () => {
 
   // Leave type handlers
   const handleLeaveTypeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setLeaveTypeForm({ ...leaveTypeForm, [e.target.name]: e.target.value });
+    const { name, value, type, checked } = e.target;
+    setLeaveTypeForm(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
   };
   const handleEditLeaveType = (id: string) => {
     const lt = leaveTypes.find(lt => lt.id === id);
     if (lt) {
-      setLeaveTypeForm({ name_en: lt.leave_type_en, name_th: lt.leave_type_th });
+      setLeaveTypeForm({ name_en: lt.leave_type_en, name_th: lt.leave_type_th, require_attachment: !!lt.require_attachment });
       setEditingLeaveTypeId(id);
     }
   };
@@ -124,7 +128,8 @@ const ManageAll: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           leave_type_en: leaveTypeForm.name_en,
-          leave_type_th: leaveTypeForm.name_th
+          leave_type_th: leaveTypeForm.name_th,
+          require_attachment: leaveTypeForm.require_attachment
         })
       });
       setEditingLeaveTypeId(null);
@@ -142,7 +147,8 @@ const ManageAll: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           leave_type_en: leaveTypeForm.name_en,
-          leave_type_th: leaveTypeForm.name_th
+          leave_type_th: leaveTypeForm.name_th,
+          require_attachment: leaveTypeForm.require_attachment
         })
       });
       // Refresh leave types
@@ -154,7 +160,7 @@ const ManageAll: React.FC = () => {
           }
         });
     }
-    setLeaveTypeForm({ name_en: '', name_th: '' });
+    setLeaveTypeForm({ name_en: '', name_th: '', require_attachment: false });
   };
 
   const startInlineEdit = (pos: any) => {
@@ -242,11 +248,11 @@ const ManageAll: React.FC = () => {
   };
 
   // Add state for inline editing leave type
-  const [inlineLeaveTypeEdit, setInlineLeaveTypeEdit] = useState<null | { id: string; name_en: string; name_th: string }>(null);
+  const [inlineLeaveTypeEdit, setInlineLeaveTypeEdit] = useState<null | { id: string; name_en: string; name_th: string; require_attachment: boolean }>(null);
   const [inlineLeaveTypeError, setInlineLeaveTypeError] = useState<string | null>(null);
 
   const startInlineLeaveTypeEdit = (lt: any) => {
-    setInlineLeaveTypeEdit({ id: lt.id, name_en: lt.leave_type_en, name_th: lt.leave_type_th });
+    setInlineLeaveTypeEdit({ id: lt.id, name_en: lt.leave_type_en, name_th: lt.leave_type_th, require_attachment: !!lt.require_attachment });
   };
   const cancelInlineLeaveTypeEdit = () => setInlineLeaveTypeEdit(null);
   const handleInlineLeaveTypeEditChange = (field: string, value: string) => {
@@ -261,7 +267,8 @@ const ManageAll: React.FC = () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         leave_type_en: inlineLeaveTypeEdit.name_en,
-        leave_type_th: inlineLeaveTypeEdit.name_th
+        leave_type_th: inlineLeaveTypeEdit.name_th,
+        require_attachment: inlineLeaveTypeEdit.require_attachment
       })
     });
     const data = await res.json();
@@ -576,6 +583,16 @@ const ManageAll: React.FC = () => {
                       <form onSubmit={handleLeaveTypeSubmit} className="mb-6 flex gap-2 items-end bg-blue-50 rounded-xl p-6 shadow-sm">
                         <Input name="name_en" value={leaveTypeForm.name_en} onChange={handleLeaveTypeChange} placeholder="Leave Type Name (EN)" required className="md:w-64" />
                         <Input name="name_th" value={leaveTypeForm.name_th} onChange={handleLeaveTypeChange} placeholder="Leave Type Name (TH)" required className="md:w-64" />
+                        <label className="flex items-center gap-2 text-sm font-medium">
+                          <input
+                            type="checkbox"
+                            name="require_attachment"
+                            checked={leaveTypeForm.require_attachment}
+                            onChange={e => setLeaveTypeForm(prev => ({ ...prev, require_attachment: e.target.checked }))}
+                            className="accent-blue-600 h-4 w-4"
+                          />
+                          Require Attachment
+                        </label>
                         <Button type="submit" className="btn-primary">{editingLeaveTypeId ? 'Update' : 'Add'}</Button>
                       </form>
                       <div className="overflow-x-auto rounded-xl shadow">
@@ -584,6 +601,7 @@ const ManageAll: React.FC = () => {
                             <tr className="bg-blue-100 text-blue-900">
                               <th className="p-3">Leave Type (EN)</th>
                               <th className="p-3">Leave Type (TH)</th>
+                              <th className="p-3">Require Attachment</th>
                               <th className="p-3">Actions</th>
                             </tr>
                           </thead>
@@ -598,6 +616,46 @@ const ManageAll: React.FC = () => {
                                     <td className="p-3 font-medium">
                                       <Input value={inlineLeaveTypeEdit.name_th} onChange={e => handleInlineLeaveTypeEditChange('name_th', e.target.value)} className="w-32" />
                                     </td>
+                                    <td className="p-3 font-medium text-center">
+                                      <label style={{ display: 'inline-block', position: 'relative', width: 40, height: 24 }}>
+                                        <input
+                                          type="checkbox"
+                                          checked={inlineLeaveTypeEdit?.id === lt.id ? !!inlineLeaveTypeEdit.require_attachment : !!lt.require_attachment}
+                                          onChange={inlineLeaveTypeEdit?.id === lt.id ? (e => setInlineLeaveTypeEdit(edit => edit ? { ...edit, require_attachment: e.target.checked } : edit)) : undefined}
+                                          style={{ opacity: 0, width: 0, height: 0 }}
+                                          tabIndex={-1}
+                                          readOnly={inlineLeaveTypeEdit?.id !== lt.id}
+                                        />
+                                        <span
+                                          style={{
+                                            position: 'absolute',
+                                            cursor: 'pointer',
+                                            top: 0,
+                                            left: 0,
+                                            right: 0,
+                                            bottom: 0,
+                                            background: (inlineLeaveTypeEdit?.id === lt.id ? !!inlineLeaveTypeEdit.require_attachment : !!lt.require_attachment) ? '#64b5f6' : '#ccc',
+                                            borderRadius: 24,
+                                            transition: 'background 0.2s',
+                                            display: 'block',
+                                          }}
+                                        >
+                                          <span
+                                            style={{
+                                              position: 'absolute',
+                                              left: (inlineLeaveTypeEdit?.id === lt.id ? !!inlineLeaveTypeEdit.require_attachment : !!lt.require_attachment) ? 20 : 2,
+                                              top: 2,
+                                              width: 20,
+                                              height: 20,
+                                              background: '#fff',
+                                              borderRadius: '50%',
+                                              transition: 'left 0.2s',
+                                              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                                            }}
+                                          />
+                                        </span>
+                                      </label>
+                                    </td>
                                     <td className="p-3 flex gap-2">
                                       <Button variant="outline" onClick={saveInlineLeaveTypeEdit}>Save</Button>
                                       <Button variant="destructive" onClick={cancelInlineLeaveTypeEdit}>Cancel</Button>
@@ -607,6 +665,45 @@ const ManageAll: React.FC = () => {
                                   <>
                                     <td className="p-3 font-medium">{lt.leave_type_en}</td>
                                     <td className="p-3 font-medium">{lt.leave_type_th}</td>
+                                    <td className="p-3 font-medium text-center">
+                                      <label style={{ display: 'inline-block', position: 'relative', width: 40, height: 24 }}>
+                                        <input
+                                          type="checkbox"
+                                          checked={!!lt.require_attachment}
+                                          readOnly
+                                          style={{ opacity: 0, width: 0, height: 0 }}
+                                          tabIndex={-1}
+                                        />
+                                        <span
+                                          style={{
+                                            position: 'absolute',
+                                            cursor: 'pointer',
+                                            top: 0,
+                                            left: 0,
+                                            right: 0,
+                                            bottom: 0,
+                                            background: !!lt.require_attachment ? '#64b5f6' : '#ccc',
+                                            borderRadius: 24,
+                                            transition: 'background 0.2s',
+                                            display: 'block',
+                                          }}
+                                        >
+                                          <span
+                                            style={{
+                                              position: 'absolute',
+                                              left: !!lt.require_attachment ? 20 : 2,
+                                              top: 2,
+                                              width: 20,
+                                              height: 20,
+                                              background: '#fff',
+                                              borderRadius: '50%',
+                                              transition: 'left 0.2s',
+                                              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                                            }}
+                                          />
+                                        </span>
+                                      </label>
+                                    </td>
                                     <td className="p-3 flex gap-2">
                                       <Button variant="outline" onClick={() => startInlineLeaveTypeEdit(lt)}>Edit</Button>
                                       <Button variant="destructive" onClick={() => handleDeleteLeaveType(lt.id)}>Delete</Button>
@@ -616,7 +713,7 @@ const ManageAll: React.FC = () => {
                               </tr>
                             ))}
                             {inlineLeaveTypeEdit && inlineLeaveTypeError && (
-                              <tr><td colSpan={3} className="text-red-600 font-semibold mt-2">{inlineLeaveTypeError}</td></tr>
+                              <tr><td colSpan={4} className="text-red-600 font-semibold mt-2">{inlineLeaveTypeError}</td></tr>
                             )}
                           </tbody>
                         </table>
