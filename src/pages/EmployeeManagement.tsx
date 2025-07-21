@@ -56,8 +56,10 @@ const EmployeeManagement = () => {
   const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
   useEffect(() => {
-    fetch("http://localhost:3001/api/employees")
+    fetch(`${API_BASE_URL}/api/employees`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.data)) {
@@ -82,14 +84,14 @@ const EmployeeManagement = () => {
 
   // ดึงตำแหน่ง
   useEffect(() => {
-    fetch("http://localhost:3001/api/positions")
+    fetch(`${API_BASE_URL}/api/positions`)
       .then((res) => res.json())
       .then((data) => {
         if (data.status === 'success' && Array.isArray(data.data)) {
           setPositions(data.data);
         }
       });
-    fetch("http://localhost:3001/api/departments")
+    fetch(`${API_BASE_URL}/api/departments`)
       .then((res) => res.json())
       .then((data) => {
         if (data.status === 'success' && Array.isArray(data.data)) {
@@ -149,11 +151,11 @@ const EmployeeManagement = () => {
     setDeleting(true);
     let url = "";
     if (deleteTarget.role === "superadmin") {
-      url = `http://localhost:3001/api/superadmin/${deleteTarget.id}`;
+      url = `${API_BASE_URL}/api/superadmin/${deleteTarget.id}`;
     } else if (deleteTarget.role === "admin") {
-      url = `http://localhost:3001/api/admins/${deleteTarget.id}`;
+      url = `${API_BASE_URL}/api/admins/${deleteTarget.id}`;
     } else {
-      url = `http://localhost:3001/api/users/${deleteTarget.id}`;
+      url = `${API_BASE_URL}/api/users/${deleteTarget.id}`;
     }
     try {
       const res = await fetch(url, { method: "DELETE" });

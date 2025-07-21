@@ -30,16 +30,17 @@ const SuperAdminList: React.FC = () => {
   const [error, setError] = useState<{ email?: string; full_name?: string; general?: string }>({});
 
   const lang = i18n.language.startsWith('th') ? 'th' : 'en';
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/departments')
+    fetch(`${API_BASE_URL}/departments`)
       .then(res => res.json())
       .then(data => {
         let depts = data.data.map((d: any) => ({ id: d.id, department_name_th: d.department_name_th, department_name_en: d.department_name_en }));
         setDepartments(depts);
       })
       .catch(() => setDepartments([]));
-    fetch('http://localhost:3001/api/positions')
+    fetch(`${API_BASE_URL}/positions`)
       .then(res => res.json())
       .then(data => {
         let pos = data.data.map((p: any) => ({ id: p.id, position_name_th: p.position_name_th, position_name_en: p.position_name_en }));
@@ -69,7 +70,7 @@ const SuperAdminList: React.FC = () => {
     }
     setLoading(true);
     try {
-      const url = 'http://localhost:3001/api/create-user-with-role';
+      const url = `${API_BASE_URL}/create-user-with-role`;
       const payload = {
         role: form.role,
         name: form.full_name,

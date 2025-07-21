@@ -26,6 +26,8 @@ import {
   AlertDialogCancel,
 } from "@/components/ui/alert-dialog";
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const EmployeeDetail = () => {
   const { id } = useParams();
   const location = useLocation();
@@ -98,7 +100,7 @@ const EmployeeDetail = () => {
     params.push(`page=${leavePage}`);
     params.push(`limit=6`);
     const query = params.length > 0 ? `?${params.join("&")}` : "";
-    fetch(`http://localhost:3001/api/employee/${id}/leave-history${query}`)
+    fetch(`${API_BASE_URL}/api/employee/${id}/leave-history${query}`)
       .then(res => res.json())
       .then(data => {
         if (data.success) {
@@ -141,7 +143,7 @@ const EmployeeDetail = () => {
   };
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/departments')
+    fetch(`${API_BASE_URL}/api/departments`)
       .then(res => {
         if (res.status === 401) {
           showSessionExpiredDialog();
@@ -154,7 +156,7 @@ const EmployeeDetail = () => {
       })
       .catch(() => setDepartments([]));
 
-    fetch('http://localhost:3001/api/positions')
+    fetch(`${API_BASE_URL}/api/positions`)
       .then(res => {
         if (res.status === 401) {
           showSessionExpiredDialog();
@@ -179,7 +181,7 @@ const EmployeeDetail = () => {
       setLeaveTypesLoading(true);
       setLeaveTypesError(null);
       try {
-        const res = await fetch('/api/leave-types');
+        const res = await fetch(`${API_BASE_URL}/api/leave-types`);
         const data = await res.json();
         if (data.success) {
           setLeaveTypes(data.data);
@@ -231,7 +233,7 @@ const EmployeeDetail = () => {
         email: editData.email,
       };
       if (editData.password && editData.password.trim() !== '') payload.password = editData.password;
-      const response = await fetch(`http://localhost:3001/api/employee/${id}` , {
+      const response = await fetch(`${API_BASE_URL}/api/employee/${id}` , {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -244,7 +246,7 @@ const EmployeeDetail = () => {
         });
         setIsEditing(false);
         // Refresh profile data
-        const res = await fetch(`http://localhost:3001/api/employee/${id}`);
+        const res = await fetch(`${API_BASE_URL}/api/employee/${id}`);
         const empData = await res.json();
         if (empData.success) setEmployee(empData.data);
       } else {
@@ -288,7 +290,7 @@ const EmployeeDetail = () => {
     if (!deleteLeaveId) return;
     setDeleting(true);
     try {
-      const res = await fetch(`http://localhost:3001/api/leave-request/${deleteLeaveId}`, { method: "DELETE" });
+      const res = await fetch(`${API_BASE_URL}/api/leave-request/${deleteLeaveId}`, { method: "DELETE" });
       const data = await res.json();
       if (data.success) {
         setDeleteLeaveId(null);
@@ -313,7 +315,7 @@ const EmployeeDetail = () => {
     if (!id) return;
     setLoading(true);
     setError(null);
-    fetch(`http://localhost:3001/api/employee/${id}`)
+    fetch(`${API_BASE_URL}/api/employee/${id}`)
       .then(res => res.json())
       .then(data => {
         if (data.success) {

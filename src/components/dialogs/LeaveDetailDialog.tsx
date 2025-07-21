@@ -44,10 +44,12 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
   const [leaveDetail, setLeaveDetail] = useState<LeaveRequest | null>(leaveRequest);
   const [loading, setLoading] = useState(false);
 
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
   useEffect(() => {
     if (open && leaveRequest?.id) {
       setLoading(true);
-      fetch(`http://localhost:3001/api/leave-request/detail/${leaveRequest.id}`)
+      fetch(`${API_BASE_URL}/api/leave-request/detail/${leaveRequest.id}`)
         .then(res => res.json())
         .then(data => {
           if (data.success) {

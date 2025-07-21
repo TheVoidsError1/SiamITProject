@@ -83,17 +83,19 @@ const superadminExtraItems = [
   },
 ];
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 export function AppSidebar() {
   const { t, i18n } = useTranslation();
   const location = useLocation();
   const { user, logout } = useAuth();
   const { toast } = useToast();
   // Use avatar URL from user context if available, otherwise fetch it
-  const avatarUrl = user?.avatar_url ? `http://localhost:3001${user.avatar_url}` : null;
+  const avatarUrl = user?.avatar_url ? `${API_BASE_URL}${user.avatar_url}` : null;
 
   const [positions, setPositions] = useState<any[]>([]);
   useEffect(() => {
-    fetch('http://localhost:3001/api/positions')
+    fetch(`${API_BASE_URL}/api/positions`)
       .then(res => res.json())
       .then(data => {
         setPositions(data.data || []);

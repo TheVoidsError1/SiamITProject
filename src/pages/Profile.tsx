@@ -76,6 +76,8 @@ const Profile = () => {
     return value;
   };
 
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
   // Fetch profile from backend on mount
   useEffect(() => {
     if (!positionsLoaded || !departmentsLoaded) return;
@@ -89,7 +91,7 @@ const Profile = () => {
           showSessionExpiredDialog();
           return;
         }
-        const res = await axios.get('http://localhost:3001/api/profile', {
+        const res = await axios.get(`${API_BASE_URL}/api/profile`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = res.data.data;
@@ -142,12 +144,12 @@ const Profile = () => {
           return;
         }
         
-        const res = await axios.get('http://localhost:3001/api/avatar', {
+        const res = await axios.get(`${API_BASE_URL}/api/avatar`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
         if (res.data.success && res.data.avatar_url) {
-          setAvatarUrl(`http://localhost:3001${res.data.avatar_url}`);
+          setAvatarUrl(`${API_BASE_URL}${res.data.avatar_url}`);
           // Only update user context if avatar_url is not already set
           if (!user?.avatar_url) {
             updateUser({ avatar_url: res.data.avatar_url });
@@ -164,7 +166,7 @@ const Profile = () => {
   }, []); // Remove updateUser from dependencies
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/positions')
+    fetch(`${API_BASE_URL}/api/positions`)
       .then(res => res.json())
       .then(data => {
         const pos = data.data.map((p: any) => ({
@@ -177,7 +179,7 @@ const Profile = () => {
       })
       .catch(() => setPositionsLoaded(true));
 
-    fetch('http://localhost:3001/api/departments')
+    fetch(`${API_BASE_URL}/api/departments`)
       .then(res => res.json())
       .then(data => {
         const depts = data.data.map((d: any) => ({
@@ -200,7 +202,7 @@ const Profile = () => {
           showSessionExpiredDialog();
           return;
         }
-        const res = await axios.get('http://localhost:3001/api/leave-quota/me', {
+        const res = await axios.get(`${API_BASE_URL}/api/leave-quota/me`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         // Log backend debug info to browser console
@@ -225,7 +227,7 @@ const Profile = () => {
     // Fetch all leave types for display (not just those with quota)
     const fetchAllLeaveTypes = async () => {
       try {
-        const res = await axios.get('http://localhost:3001/api/leave-types');
+        const res = await axios.get(`${API_BASE_URL}/api/leave-types`);
         const data = res.data.data;
         if (res.data.success) {
           setAllLeaveTypes(data);
@@ -287,7 +289,7 @@ const Profile = () => {
         return;
       }
 
-      const response = await axios.post('http://localhost:3001/api/avatar', formData, {
+      const response = await axios.post(`${API_BASE_URL}/api/avatar`, formData, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'multipart/form-data' 
@@ -295,7 +297,7 @@ const Profile = () => {
       });
 
       if (response.data.success) {
-        setAvatarUrl(`http://localhost:3001${response.data.avatar_url}`);
+        setAvatarUrl(`${API_BASE_URL}${response.data.avatar_url}`);
         // Update user context with new avatar URL
         updateUser({ avatar_url: response.data.avatar_url });
       toast({ title: t('profile.uploadSuccess') });
@@ -336,7 +338,7 @@ const Profile = () => {
         department_id: formData.department,  // <-- use _id for backend compatibility
       };
 
-      const response = await axios.put('http://localhost:3001/api/profile', requestData, {
+      const response = await axios.put(`${API_BASE_URL}/api/profile`, requestData, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'

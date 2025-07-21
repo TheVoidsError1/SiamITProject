@@ -35,9 +35,11 @@ const Register = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
   // ดึงข้อมูลจาก API
   useEffect(() => {
-    fetch('http://localhost:3001/api/departments')
+    fetch(`${API_BASE_URL}/api/departments`)
       .then(res => res.json())
       .then(data => {
         const depts = data.data.map((d: any) => ({
@@ -49,7 +51,7 @@ const Register = () => {
       })
       .catch(() => setDepartments([]));
 
-    fetch('http://localhost:3001/api/positions')
+    fetch(`${API_BASE_URL}/api/positions`)
       .then(res => res.json())
       .then(data => {
         const pos = data.data.map((p: any) => ({
@@ -65,7 +67,7 @@ const Register = () => {
   // เพิ่ม department ใหม่
   const handleAddDepartment = async () => {
     if (!newDepartment) return;
-    const res = await fetch('http://localhost:3001/api/departments', {
+    const res = await fetch(`${API_BASE_URL}/api/departments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ department_name: newDepartment }),
@@ -79,7 +81,7 @@ const Register = () => {
   // เพิ่ม position ใหม่
   const handleAddPosition = async () => {
     if (!newPosition) return;
-    const res = await fetch('http://localhost:3001/api/positions', {
+    const res = await fetch(`${API_BASE_URL}/api/positions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ position_name: newPosition }),

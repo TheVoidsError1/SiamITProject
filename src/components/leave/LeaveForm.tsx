@@ -155,7 +155,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
     const fetchDepartments = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch("http://localhost:3001/api/departments", {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/departments`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
@@ -174,7 +174,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
     const fetchLeaveTypes = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch("http://localhost:3001/api/leave-types", {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/leave-types`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
@@ -193,7 +193,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
     const fetchPositions = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch("http://localhost:3001/api/positions", {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/positions`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
@@ -212,7 +212,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
     const fetchAdmins = async () => {
       try {
         const token = localStorage.getItem('token');
-        const res = await fetch("http://localhost:3001/api/admins", {
+        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/admins`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = await res.json();
@@ -431,7 +431,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
       let response, data;
       if (mode === 'edit' && initialData?.id) {
         // PUT สำหรับอัปเดตใบลา
-        response = await fetch(`http://localhost:3001/api/leave-request/${initialData.id}`, {
+        response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/leave-request/${initialData.id}`, {
           method: "PUT",
           body: formData,
           headers: {
@@ -441,7 +441,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
         });
       } else {
         // POST สำหรับสร้างใหม่
-        response = await fetch("http://localhost:3001/api/leave-request", {
+        response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/leave-request`, {
           method: "POST",
           body: formData,
           headers: {

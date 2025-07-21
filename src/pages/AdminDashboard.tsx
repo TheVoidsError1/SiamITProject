@@ -31,6 +31,8 @@ type LeaveRequest = {
 // --- เพิ่ม helper สำหรับ clamp ข้อความ ---
 const clampLines = 3;
 
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 const AdminDashboard = () => {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
@@ -191,7 +193,7 @@ const AdminDashboard = () => {
       return;
     }
     const approverName = localStorage.getItem('user_name');
-    fetch(`http://localhost:3001/api/leave-request/${approvingRequest.id}/status`, {
+    fetch(`${API_BASE_URL}/api/leave-request/${approvingRequest.id}/status`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -229,7 +231,7 @@ const AdminDashboard = () => {
       toast({ title: "ไม่พบ token", description: "กรุณาเข้าสู่ระบบใหม่", variant: "destructive" });
       return;
     }
-    fetch(`http://localhost:3001/api/leave-request/${rejectingRequest.id}/status`, {
+    fetch(`${API_BASE_URL}/api/leave-request/${rejectingRequest.id}/status`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -268,7 +270,7 @@ const AdminDashboard = () => {
       showSessionExpiredDialog();
       return;
     }
-    fetch("http://localhost:3001/api/leave-request/pending", {
+    fetch(`${API_BASE_URL}/api/leave-request/pending`, {
       headers: { Authorization: `Bearer ${token}` }
     })
       .then((res) => res.json())
@@ -296,7 +298,7 @@ const AdminDashboard = () => {
       return;
     }
     // --- ส่ง page, limit, month, year, status, dateRange ไป backend ---
-    let url = `http://localhost:3001/api/leave-request/history?page=${historyPage}&limit=${historyLimit}`;
+    let url = `${API_BASE_URL}/api/leave-request/history?page=${historyPage}&limit=${historyLimit}`;
     if (filterMonth) url += `&month=${filterMonth}`;
     if (filterYear) url += `&year=${filterYear}`;
     if (historyStatusFilter) url += `&status=${historyStatusFilter}`;
@@ -351,7 +353,7 @@ const AdminDashboard = () => {
           return;
         }
         // --- ส่ง page, limit ไป backend ---
-        let url = `http://localhost:3001/api/leave-request/pending?page=${pendingPage}&limit=${pendingLimit}`;
+        let url = `${API_BASE_URL}/api/leave-request/pending?page=${pendingPage}&limit=${pendingLimit}`;
         if (pendingFilterLeaveType) url += `&leaveType=${pendingFilterLeaveType}`;
         // ถ้าเลือกวันเดียว (pendingSingleDate) ให้ filter ด้วย createdAt (param date)
         if (pendingSingleDate) {
@@ -393,7 +395,7 @@ const AdminDashboard = () => {
   }, [t, historyPage, filterMonth, filterYear, historyLimit, historyStatusFilter, dateRange, recentSingleDate]);
 
   useEffect(() => {
-    let url = "http://localhost:3001/api/leave-request/dashboard-stats";
+    let url = `${API_BASE_URL}/api/leave-request/dashboard-stats`;
     const params = [];
     if (filterMonth) params.push(`month=${filterMonth}`);
     if (filterYear) params.push(`year=${filterYear}`);
@@ -416,7 +418,7 @@ const AdminDashboard = () => {
           showSessionExpiredDialog();
           return;
         }
-        const res = await fetch('http://localhost:3001/api/departments', {
+        const res = await fetch(`${API_BASE_URL}/api/departments`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.status === 401) {
@@ -437,7 +439,7 @@ const AdminDashboard = () => {
           showSessionExpiredDialog();
           return;
         }
-        const res = await fetch('http://localhost:3001/api/positions', {
+        const res = await fetch(`${API_BASE_URL}/api/positions`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (res.status === 401) {
