@@ -218,12 +218,12 @@
   },
   "positions": {
     "positions": "ตำแหน่ง",
+    "position": "ตำแหน่ง",
     "employee": "พนักงาน",
-    "intern": "เด็กฝึกงาน",
+    "intern": "นักศึกษาฝึกงาน",
     "notSpecified": "ไม่ต้องการระบุ",
     "selectPosition": "เลือกตำแหน่ง",
-    "noPosition": "ไม่มีตำแหน่ง",
-    "position": "ตำแหน่ง"
+    "noPosition": "ไม่มีตำแหน่ง"
   },
   "employeeTypes": {
     "employee": "พนักงาน",
@@ -250,7 +250,7 @@
     "recentLeaveStats": "สถิติการลาล่าสุด",
     "recentLeaveStatsDesc": "ภาพรวมการใช้สิทธิการลา",
     "fillCompleteInfo": "กรุณากรอกข้อมูลให้ครบถ้วน",
-    "manageAllDesc": "จัดการตำแหน่ง แผนก และประเภทการลา สำหรับบริษัท สยาม ไอที จำกัด"
+    "manageAllDesc": "จัดการตำแหน่ง แผนก และประเภทการลาทั้งหมด"
   },
   "profile": {
     "personalInfo": "ข้อมูลส่วนตัว",

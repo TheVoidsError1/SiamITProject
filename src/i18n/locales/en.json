@@ -217,12 +217,12 @@
   },
   "positions": {
     "positions": "Positions",
+    "position": "Position",
     "employee": "Employee",
     "intern": "Intern",
     "notSpecified": "Prefer not to specify",
     "selectPosition": "Select Position",
-    "noPosition": "No Position",
-    "position": "Position"
+    "noPosition": "No Position"
   },
   "employeeTypes": {
     "employee": "Employee",
@@ -249,7 +249,7 @@
     "recentLeaveStats": "Recent Leave Statistics",
     "recentLeaveStatsDesc": "Overview of leave usage",
     "fillCompleteInfo": "Please fill out complete information",
-    "manageAllDesc": "Manage positions, departments, and leave types for Siam IT Co., Ltd."
+    "manageAllDesc": "Manage all positions, departments, and leave types"
   },
   "profile": {
     "personalInfo": "Personal Information",
