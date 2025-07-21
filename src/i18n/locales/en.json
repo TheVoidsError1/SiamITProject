@@ -81,9 +81,7 @@
     "confirm": "Confirm",
     "month": "Month",
     "year": "Year",
-    "close": "Close",
-    "add": "Add",
-    "update": "Update"
+    "close": "Close"
   },
   "leave": {
     "leaveRequest": "Leave Request",
@@ -203,7 +201,6 @@
     "12": "December"
   },
   "departments": {
-    "departments": "Departments",
     "itDepartment": "IT Department",
     "humanResources": "Human Resources",
     "marketing": "Marketing",
@@ -222,6 +219,7 @@
     "intern": "Intern",
     "notSpecified": "Prefer not to specify",
     "selectPosition": "Select Position",
+    "noPosition": "No Position"
     "noPosition": "No Position"
   },
   "employeeTypes": {
@@ -250,6 +248,7 @@
     "recentLeaveStatsDesc": "Overview of leave usage",
     "fillCompleteInfo": "Please fill out complete information",
     "manageAllDesc": "Manage all positions, departments, and leave types"
+    "fillCompleteInfo": "Please fill out complete information"
   },
   "profile": {
     "personalInfo": "Personal Information",

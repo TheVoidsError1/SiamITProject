@@ -80,9 +80,7 @@
     "confirm": "ยืนยัน",
     "month": "เดือน",
     "year": "ปี",
-    "close": "ปิด",
-    "add": "เพิ่ม",
-    "update": "อัปเดต"
+    "close": "ปิด"
   },
   "leave": {
     "leaveRequest": "ขอลา",
@@ -204,7 +202,6 @@
     "12": "ธันวาคม"
   },
   "departments": {
-    "departments": "แผนก",
     "itDepartment": "ฝ่ายไอที",
     "humanResources": "แผนกทรัพยากรบุคคล",
     "marketing": "แผนกการตลาด",
@@ -223,6 +220,7 @@
     "intern": "นักศึกษาฝึกงาน",
     "notSpecified": "ไม่ต้องการระบุ",
     "selectPosition": "เลือกตำแหน่ง",
+    "noPosition": "ไม่มีตำแหน่ง"
     "noPosition": "ไม่มีตำแหน่ง"
   },
   "employeeTypes": {
@@ -251,6 +249,7 @@
     "recentLeaveStatsDesc": "ภาพรวมการใช้สิทธิการลา",
     "fillCompleteInfo": "กรุณากรอกข้อมูลให้ครบถ้วน",
     "manageAllDesc": "จัดการตำแหน่ง แผนก และประเภทการลาทั้งหมด"
+    "fillCompleteInfo": "กรุณากรอกข้อมูลให้ครบถ้วน"
   },
   "profile": {
     "personalInfo": "ข้อมูลส่วนตัว",
