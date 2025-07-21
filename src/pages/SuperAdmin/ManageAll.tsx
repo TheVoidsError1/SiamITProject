@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
+import { useToast } from '@/hooks/use-toast';
 
 // Mock data for demonstration
 // Remove mockDepartments
@@ -399,6 +400,29 @@ const ManageAll: React.FC = () => {
       });
   };
 
+  const { toast } = useToast();
+
+  // Add a handler for toggling require_attachment
+  const handleToggleRequireAttachment = async (lt: any) => {
+    const newValue = !lt.require_attachment;
+    try {
+      const res = await fetch(`http://localhost:3001/api/leave-types/${lt.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          leave_type_en: lt.leave_type_en,
+          leave_type_th: lt.leave_type_th,
+          require_attachment: newValue
+        })
+      });
+      if (!res.ok) throw new Error('Failed to update');
+      setLeaveTypes(prev => prev.map(l => l.id === lt.id ? { ...l, require_attachment: newValue } : l));
+      toast({ title: 'Updated', description: 'Require Attachment updated', variant: 'default' });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Failed to update', variant: 'destructive' });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col">
       {/* Page header */}
@@ -670,7 +694,7 @@ const ManageAll: React.FC = () => {
                                         <input
                                           type="checkbox"
                                           checked={!!lt.require_attachment}
-                                          readOnly
+                                          onChange={() => handleToggleRequireAttachment(lt)}
                                           style={{ opacity: 0, width: 0, height: 0 }}
                                           tabIndex={-1}
                                         />
