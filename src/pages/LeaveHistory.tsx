@@ -168,6 +168,29 @@ const LeaveHistory = () => {
     }
   };
 
+  // เพิ่มฟังก์ชันใหม่สำหรับดึงรายละเอียดใบลาจาก backend
+  const handleViewDetails = async (leaveId: string) => {
+    setSelectedLeave(null);
+    setShowDetailDialog(true); // เปิด dialog ทันที (option: ใส่ loading)
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/leave-request/detail/${leaveId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        // map ให้แน่ใจว่ามี startDate และ submittedDate ที่ frontend ใช้
+        setSelectedLeave({
+          ...data.data,
+          startDate: data.data.startDate || data.data.leaveDate || '-',
+          submittedDate: data.data.createdAt || data.data.submittedDate || '-',
+        });
+      }
+    } catch (e) {
+      // handle error
+    }
+  };
+
   // Fetch leave types from backend
   useEffect(() => {
     const fetchLeaveTypes = async () => {
@@ -308,7 +331,9 @@ const LeaveHistory = () => {
 
   // เพิ่มฟังก์ชันแปลงวันที่ตามภาษา
   const formatDateLocalized = (dateStr: string) => {
+    if (!dateStr) return '-';
     const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return '-';
     if (i18n.language === 'th') {
       // แปลงปีเป็น พ.ศ.
       const buddhistYear = date.getFullYear() + 543;
@@ -665,7 +690,7 @@ const LeaveHistory = () => {
                         </div>
                       )}
                       <div className="flex justify-end mt-6 gap-3">
-                        <Button size="sm" variant="outline" onClick={() => { setSelectedLeave(leave); setShowDetailDialog(true); }}>
+                        <Button size="sm" variant="outline" onClick={() => handleViewDetails(leave.id)}>
                           {t('common.viewDetails')}
                         </Button>
                         {leave.status === "pending" && (
@@ -756,30 +781,108 @@ const LeaveHistory = () => {
         <DialogContent className="max-w-lg">
           <DialogHeader>
             <DialogTitle>{t('leave.detailTitle', 'รายละเอียดการลา')}</DialogTitle>
-            <DialogDescription>
-              {selectedLeave && (
-                <div className="space-y-2 text-gray-700">
-                  <div><b>{t('leave.type', 'ประเภทการลา')}:</b> {getLeaveTypeLabel(selectedLeave.type)}</div>
-                  <div><b>{t('leave.status', 'สถานะ')}:</b> {getStatusBadge(selectedLeave.status)}</div>
-                  <div><b>{t('leave.startDate', 'วันที่เริ่ม')}:</b> {formatDateLocalized(selectedLeave.startDate)}</div>
-                  <div><b>{t('leave.endDate', 'วันที่สิ้นสุด')}:</b> {formatDateLocalized(selectedLeave.endDate)}</div>
-                  {selectedLeave.startTime && selectedLeave.endTime && (
-                    <div><b>{t('leave.leaveTime', 'ช่วงเวลา')}:</b> {selectedLeave.startTime} - {selectedLeave.endTime} ({calcHours(selectedLeave.startTime, selectedLeave.endTime)} {hourUnit})</div>
-                  )}
-                  <div><b>{t('leave.duration', 'ระยะเวลา')}:</b> {selectedLeave.days} {t('leave.day', 'วัน')}</div>
-                  <div><b>{t('leave.reason', 'เหตุผล')}:</b> {selectedLeave.reason}</div>
-                  {selectedLeave.approvedBy && (
-                    <div><b>{t('leave.approvedBy', 'ผู้อนุมัติ')}:</b> {selectedLeave.approvedBy}</div>
-                  )}
-                  {selectedLeave.rejectedBy && (
-                    <div><b>{t('leave.rejectedBy', 'ผู้ไม่อนุมัติ')}:</b> {selectedLeave.rejectedBy}</div>
-                  )}
-                  {selectedLeave.rejectionReason && (
-                    <div><b>{t('leave.rejectionReason', 'เหตุผลที่ไม่อนุมัติ')}:</b> {selectedLeave.rejectionReason}</div>
-                  )}
-                  <div><b>{t('leave.submittedDate', 'วันที่ส่งคำขอ')}:</b> {formatDateLocalized(selectedLeave.submittedDate)}</div>
-                </div>
-              )}
+            <DialogDescription asChild>
+              <div className="space-y-4 text-gray-700">
+                {selectedLeave && (
+                  <>
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-x-6">
+                      <div className="font-semibold flex items-center gap-2">
+                        <span className="text-base">{t('leave.type', 'ประเภทการลา')}:</span>
+                        <span className="text-blue-700 font-bold">{
+  i18n.language === 'th'
+    ? (selectedLeave.leaveTypeName || selectedLeave.leaveTypeEn || getLeaveTypeLabel(selectedLeave.type))
+    : (selectedLeave.leaveTypeEn || selectedLeave.leaveTypeName || getLeaveTypeLabel(selectedLeave.type))
+}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-semibold">{t('leave.status', 'สถานะ')}:</span>
+                        {getStatusBadge(selectedLeave.status)}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-blue-400" />
+                        <span className="font-semibold">{t('leave.startDate')}:</span>
+                        <span>{formatDateLocalized(selectedLeave.startDate)}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-blue-400" />
+                        <span className="font-semibold">{t('leave.endDate')}:</span>
+                        <span>{formatDateLocalized(selectedLeave.endDate)}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-yellow-500" />
+                        <span className="font-semibold">{t('leave.duration')}:</span>
+                        <span>{
+  selectedLeave.duration ||
+  selectedLeave.days ||
+  (() => {
+    if (selectedLeave.startDate && selectedLeave.endDate) {
+      const start = new Date(String(selectedLeave.startDate)).getTime();
+      const end = new Date(String(selectedLeave.endDate)).getTime();
+      if (!isNaN(start) && !isNaN(end)) {
+        return Math.abs((end - start) / (1000*60*60*24)) + 1;
+      }
+    }
+    return '-';
+  })()
+} {selectedLeave.durationType ? (selectedLeave.durationType === 'hour' ? t('leave.hour', 'ชั่วโมง') : t('leave.day', 'วัน')) : t('leave.day', 'วัน')}</span>
+                      </div>
+                    </div>
+                    <div className="border-t my-2" />
+                    <div className="flex items-start gap-2">
+                      <FileText className="w-4 h-4 text-gray-400 mt-1" />
+                      <div>
+                        <span className="font-semibold">{t('leave.reason', 'เหตุผล')}:</span>
+                        <span className="ml-2">{selectedLeave.reason}</span>
+                      </div>
+                    </div>
+                    {selectedLeave.attachments && Array.isArray(selectedLeave.attachments) && selectedLeave.attachments.length > 0 && (
+                      <div>
+                        <div className="font-semibold mb-1 flex items-center gap-2">
+                          <FileText className="w-4 h-4 text-gray-400" />
+                          {t('leave.attachmentLabel', 'ไฟล์แนบ')}:
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {selectedLeave.attachments.map((file: string, idx: number) => {
+                            const isImage = /\.(jpg|jpeg|png|gif)$/i.test(file);
+                            const isPdf = /\.(pdf)$/i.test(file);
+                            const isDoc = /\.(doc|docx)$/i.test(file);
+                            return (
+                              <div key={idx} className="flex flex-col items-center border rounded-lg p-3 bg-gray-50 shadow-sm">
+                                {isImage ? (
+                                  <a href={`/leave-uploads/${file}`} target="_blank" rel="noopener noreferrer">
+                                    <img src={`/leave-uploads/${file}`} alt={file} className="max-h-40 max-w-full rounded shadow mb-2 border" />
+                                  </a>
+                                ) : isPdf ? (
+                                  <a href={`/leave-uploads/${file}`} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center text-red-600">
+                                    <svg width="32" height="32" fill="currentColor" viewBox="0 0 24 24"><path d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8.828A2 2 0 0 0 19.414 7.414l-4.828-4.828A2 2 0 0 0 12.172 2H6zm6 1.414L18.586 10H14a2 2 0 0 1-2-2V3.414z"/></svg>
+                                    <span className="text-xs mt-1">PDF</span>
+                                  </a>
+                                ) : isDoc ? (
+                                  <a href={`/leave-uploads/${file}`} target="_blank" rel="noopener noreferrer" className="flex flex-col items-center text-blue-700">
+                                    <svg width="32" height="32" fill="currentColor" viewBox="0 0 24 24"><path d="M6 2a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8.828A2 2 0 0 0 19.414 7.414l-4.828-4.828A2 2 0 0 0 12.172 2H6zm6 1.414L18.586 10H14a2 2 0 0 1-2-2V3.414z"/></svg>
+                                    <span className="text-xs mt-1">DOC</span>
+                                  </a>
+                                ) : (
+                                  <a href={`/leave-uploads/${file}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline text-xs">
+                                    {file}
+                                  </a>
+                                )}
+                                <span className="text-xs break-all mt-1 text-gray-700">{file}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    <div className="border-t my-2" />
+                    <div className="flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-gray-400" />
+                      <span className="font-semibold">{t('leave.submittedDate', 'วันที่ส่งคำขอ')}:</span>
+                      <span>{formatDateLocalized(selectedLeave.submittedDate)}</span>
+                    </div>
+                  </>
+                )}
+              </div>
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex justify-center mt-4">

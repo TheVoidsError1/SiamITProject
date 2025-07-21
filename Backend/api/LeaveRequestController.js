@@ -957,9 +957,13 @@
 
          // Get leave type name
          let leaveTypeName = leave.leaveType;
+         let leaveTypeEn = leave.leaveType;
          if (leave.leaveType) {
            const leaveTypeObj = await leaveTypeRepo.findOneBy({ id: leave.leaveType });
-           if (leaveTypeObj && leaveTypeObj.leave_type_th) leaveTypeName = leaveTypeObj.leave_type_th;
+           if (leaveTypeObj) {
+             if (leaveTypeObj.leave_type_th) leaveTypeName = leaveTypeObj.leave_type_th;
+             if (leaveTypeObj.leave_type_en) leaveTypeEn = leaveTypeObj.leave_type_en;
+           }
          }
 
          // Format submittedDate as DD/MM/YYYY
@@ -997,11 +1001,14 @@
            data: {
              name,
              status: leave.status,
-             leaveType: leaveTypeName,
+             leaveType: leave.leaveType, // id
+             leaveTypeName, // th
+             leaveTypeEn, // en
              leaveDate,
              endDate,
              reason: leave.reason,
              submittedDate,
+             createdAt: leave.createdAt, // เพิ่มฟิลด์นี้
              attachments: parseAttachments(leave.attachments),
            }
          });
