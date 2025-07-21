@@ -20,7 +20,7 @@ const AppDataSource = new DataSource({
   host: 'localhost',
   port: 3306,
   username: 'root',
-  password: '', // ใส่รหัสผ่านของคุณ
+  password: 'password', // ใส่รหัสผ่านของคุณ
   database: 'siamitleave',
   synchronize: true, // dev only! จะสร้าง/อัปเดต table อัตโนมัติ
   logging: false,
@@ -211,6 +211,7 @@ app.use('/api', notificationBellController);
 
 const leaveQuotaController = require('./api/LeaveQuotaController')(AppDataSource);
 app.use('/api/leave-quota', leaveQuotaController);
+console.log('LeaveQuotaController registered');
 
 const superAdminController = require('./api/SuperAdminController')(AppDataSource);
 app.use('/api', superAdminController);

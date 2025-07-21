@@ -265,7 +265,6 @@ module.exports = (AppDataSource) => {
   router.get('/test-user', require('../middleware/authMiddleware'), async (req, res) => {
     try {
       const userId = req.user.userId;
-      console.log('Test user ID:', userId);
       
       const userRepo = AppDataSource.getRepository('User');
       const processRepo = AppDataSource.getRepository('ProcessCheck');
@@ -315,10 +314,13 @@ module.exports = (AppDataSource) => {
         if (positionId) debugInfo.foundIn = 'SuperAdmin';
       }
       debugInfo.positionId = positionId;
-      console.log('DEBUG /api/leave-quota/me:', debugInfo);
 
-      // Get all leave types
-      const leaveTypes = await leaveTypeRepo.find();
+      // Use the already declared leaveTypeRepo to fetch leave types as in /test endpoint
+      let leaveTypes = await leaveTypeRepo.find();
+      // Exclude Emergency leave types (case-insensitive)
+      leaveTypes = leaveTypes.filter(lt =>
+        (lt.leave_type_en?.toLowerCase() !== 'emergency' && lt.leave_type_th !== 'ลาฉุกเฉิน')
+      );
       // Get all quotas for this position
       const quotas = positionId ? await leaveQuotaRepo.find({ where: { positionId } }) : [];
       // Get all approved leave requests for this user
@@ -331,59 +333,62 @@ module.exports = (AppDataSource) => {
       }
 
       const result = leaveTypes.map(lt => {
-        const quotaRow = quotas.find(q => q.leaveTypeId === lt.id);
-        const quota = quotaRow ? quotaRow.quota : 0;
+        // Robust comparison for leaveTypeId
+        const quotaRow = quotas.find(q => String(q.leaveTypeId).trim() === String(lt.id).trim());
+        let quota = quotaRow ? quotaRow.quota : 0;
         let used = 0;
         let unit = 'day';
-        for (const lr of approvedLeaves) {
-          let leaveTypeName = lr.leaveType;
-          if (leaveTypeName && leaveTypeName.length > 20) {
-            const leaveTypeEntity = leaveTypes.find(t => t.id === leaveTypeName);
-            if (leaveTypeEntity) leaveTypeName = leaveTypeEntity.leave_type_en;
-          }
-          if (
-            leaveTypeName === lt.leave_type_en ||
-            leaveTypeName === lt.leave_type_th ||
-            leaveTypeName === lt.id
-          ) {
-            if (lt.leave_type_en?.toLowerCase() === 'personal' || lt.leave_type_th === 'ลากิจ') {
-              if (lr.startTime && lr.endTime) {
-                const startMinutes = parseTimeToMinutes(lr.startTime);
-                const endMinutes = parseTimeToMinutes(lr.endTime);
-                let durationHours = (endMinutes - startMinutes) / 60;
-                if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
-                used += durationHours;
-                unit = 'hour';
-              } else if (lr.startDate && lr.endDate) {
-                const start = new Date(lr.startDate);
-                const end = new Date(lr.endDate);
-                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-                if (days < 0 || isNaN(days)) days = 0;
-                used += days;
-                unit = 'day';
-              }
-            } else {
-              if (lr.startDate && lr.endDate) {
-                const start = new Date(lr.startDate);
-                const end = new Date(lr.endDate);
-                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-                if (days < 0 || isNaN(days)) days = 0;
-                used += days;
-                unit = 'day';
+        if (quotaRow) {
+          for (const lr of approvedLeaves) {
+            let leaveTypeName = lr.leaveType;
+            if (leaveTypeName && leaveTypeName.length > 20) {
+              const leaveTypeEntity = leaveTypes.find(t => t.id === leaveTypeName);
+              if (leaveTypeEntity) leaveTypeName = leaveTypeEntity.leave_type_en;
+            }
+            if (
+              leaveTypeName === lt.leave_type_en ||
+              leaveTypeName === lt.leave_type_th ||
+              leaveTypeName === lt.id
+            ) {
+              if (lt.leave_type_en?.toLowerCase() === 'personal' || lt.leave_type_th === 'ลากิจ') {
+                if (lr.startTime && lr.endTime) {
+                  const startMinutes = parseTimeToMinutes(lr.startTime);
+                  const endMinutes = parseTimeToMinutes(lr.endTime);
+                  let durationHours = (endMinutes - startMinutes) / 60;
+                  if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
+                  used += durationHours;
+                  unit = 'hour';
+                } else if (lr.startDate && lr.endDate) {
+                  const start = new Date(lr.startDate);
+                  const end = new Date(lr.endDate);
+                  let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                  if (days < 0 || isNaN(days)) days = 0;
+                  used += days;
+                  unit = 'day';
+                }
+              } else {
+                if (lr.startDate && lr.endDate) {
+                  const start = new Date(lr.startDate);
+                  const end = new Date(lr.endDate);
+                  let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                  if (days < 0 || isNaN(days)) days = 0;
+                  used += days;
+                  unit = 'day';
+                }
               }
             }
           }
+          if ((lt.leave_type_en?.toLowerCase() === 'personal' || lt.leave_type_th === 'ลากิจ') && unit === 'hour') {
+            quota = quota * 9;
+          }
         }
-        let quotaFinal = quota;
-        if ((lt.leave_type_en?.toLowerCase() === 'personal' || lt.leave_type_th === 'ลากิจ') && unit === 'hour') {
-          quotaFinal = quota * 9;
-        }
-        const remaining = Math.max(0, quotaFinal - used);
+        // If no quotaRow, show 0 for quota, used, remaining, and default unit
+        const remaining = Math.max(0, quota - used);
         return {
           id: lt.id,
           leave_type_en: lt.leave_type_en,
           leave_type_th: lt.leave_type_th,
-          quota: quotaFinal,
+          quota: quota,
           used: Math.round(used * 100) / 100,
           remaining: Math.round(remaining * 100) / 100,
           unit,
@@ -391,9 +396,14 @@ module.exports = (AppDataSource) => {
       });
       return res.json({ success: true, data: result, debug: debugInfo });
     } catch (err) {
-      console.error('Leave quota error:', err);
       return res.status(500).json({ success: false, message: 'Internal server error' });
     }
+  });
+
+  // Catch-all route for unmatched requests (debugging)
+  router.use((req, res, next) => {
+    console.log('DEBUG: Unmatched route:', req.method, req.originalUrl);
+    next();
   });
 
   return router;
