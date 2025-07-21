@@ -81,7 +81,9 @@
     "confirm": "Confirm",
     "month": "Month",
     "year": "Year",
-    "close": "Close"
+    "close": "Close",
+    "add": "Add",
+    "update": "Update"
   },
   "leave": {
     "leaveRequest": "Leave Request",
@@ -210,7 +212,8 @@
     "customerService": "Customer Service",
     "selectDepartment": "Select Department",
     "notSpecified": "Prefer not to specify",
-    "noDepartment": "No Department"
+    "noDepartment": "No Department",
+    "departments": "Departments"
   },
   "positions": {
     "positions": "Positions",

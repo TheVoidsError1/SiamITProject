@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { SidebarTrigger } from '@/components/ui/sidebar';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 // Mock data for demonstration
@@ -400,22 +401,22 @@ const ManageAll: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex flex-col">
-      {/* Page header */}
-      <div className="w-full flex justify-end items-center pt-6 pr-8">
-        <LanguageSwitcher />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+      <div className="border-b bg-white/80 backdrop-blur-sm">
+        <div className="flex h-16 items-center px-4 gap-4">
+          <SidebarTrigger />
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold text-gray-900">{t('navigation.manageAll')}</h1>
+            <p className="text-sm text-gray-600">
+              {t('main.manageAllDesc', 'Manage positions, departments, and leave types for your organization.')}
+            </p>
+          </div>
+          <LanguageSwitcher />
+        </div>
       </div>
       <div className="flex-1 flex justify-center items-start py-10 px-2">
         <div className="w-full max-w-6xl">
           <div className="bg-white rounded-2xl shadow-xl p-8">
-            <div className="mb-6">
-              <h1 className="text-3xl font-bold text-gray-900 mb-1">
-                {t('navigation.manageAll')}
-              </h1>
-              <p className="text-gray-500 text-lg">
-                {t('main.manageAllDesc', 'Manage positions, departments, and leave types for your organization.')}
-              </p>
-            </div>
             <div className="mb-8">
               <Tabs defaultValue="positions" className="w-full">
                 <TabsList className="mb-6">
@@ -430,26 +431,27 @@ const ManageAll: React.FC = () => {
                     </div>
                     <div className="p-6">
                       <form onSubmit={handlePositionSubmit} className="mb-6 flex flex-col gap-4 bg-blue-50 rounded-xl p-6 shadow-sm">
-                        <div className="flex flex-col md:flex-row md:items-end gap-4">
-                          <Input name="name_en" value={positionForm.name_en} onChange={handlePositionChange} placeholder="Position Name (EN)" required className="md:w-64" />
-                          <Input name="name_th" value={positionForm.name_th} onChange={handlePositionChange} placeholder="Position Name (TH)" required className="md:w-64" />
-                          <div className="flex flex-wrap gap-4">
-                            {filteredLeaveTypes.map(lt => (
-                              <div key={lt.id} className="flex flex-col">
-                                <label className="text-sm font-medium text-gray-700">{lang === 'th' ? lt.leave_type_th : lt.leave_type_en}</label>
-                                <Input
-                                  type="number"
-                                  min={0}
-                                  name={`quota_${lt.id}`}
-                                  value={positionForm.quotas[lt.id] || ''}
-                                  onChange={e => handleQuotaChange(lt.id, e.target.value)}
-                                  className="w-24"
-                                  required
-                                />
-                              </div>
-                            ))}
-                          </div>
-                          <Button type="submit" className="btn-primary w-fit mt-2 md:mt-0">{editingPositionId ? 'Update' : 'Add'} Position</Button>
+                        <div className="flex flex-col md:flex-row gap-4">
+                          <Input name="name_en" value={positionForm.name_en} onChange={handlePositionChange} placeholder="Position (EN)" required className="flex-1" />
+                          <Input name="name_th" value={positionForm.name_th} onChange={handlePositionChange} placeholder="Position (TH)" required className="flex-1" />
+                        </div>
+                        <div className="flex flex-col md:flex-row gap-4">
+                          {filteredLeaveTypes.map(lt => (
+                            <div key={lt.id} className="flex flex-col flex-1">
+                              <label className="text-sm font-medium text-gray-700 mb-1">{lang === 'th' ? lt.leave_type_th : lt.leave_type_en}</label>
+                              <Input
+                                type="number"
+                                min={0}
+                                name={`quota_${lt.id}`}
+                                value={positionForm.quotas[lt.id] || ''}
+                                onChange={e => handleQuotaChange(lt.id, e.target.value)}
+                                required
+                              />
+                            </div>
+                          ))}
+                        </div>
+                        <div className="flex justify-end mt-2">
+                          <Button type="submit" className="btn-primary w-24">{editingPositionId ? t('common.update', 'Update') : t('common.add', 'Add')}</Button>
                         </div>
                         {positionError && (
                           <div className="text-red-600 font-semibold mt-2">{positionError}</div>
@@ -459,12 +461,12 @@ const ManageAll: React.FC = () => {
                         <table className="w-full table-auto bg-white rounded-xl">
                           <thead>
                             <tr className="bg-blue-100 text-blue-900">
-                              <th className="p-3">Position (EN)</th>
-                              <th className="p-3">Position (TH)</th>
+                              <th className="p-3">{t('positions.position', 'ตำแหน่ง')} (EN)</th>
+                              <th className="p-3">{t('positions.position', 'ตำแหน่ง')} (TH)</th>
                               {filteredLeaveTypes.map(lt => (
-                                <th key={lt.id} className="p-3">{lang === 'th' ? lt.leave_type_th : lt.leave_type_en} Quota</th>
+                                <th key={lt.id} className="p-3">{lang === 'th' ? lt.leave_type_th : lt.leave_type_en}</th>
                               ))}
-                              <th className="p-3">Actions</th>
+                              <th className="p-3 text-center">{t('common.actions', 'Actions')}</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -489,7 +491,7 @@ const ManageAll: React.FC = () => {
                                         />
                                       </td>
                                     ))}
-                                    <td className="p-3 flex gap-2">
+                                    <td className="p-3 flex gap-2 justify-center">
                                       <Button variant="outline" onClick={saveInlineEdit}>Save</Button>
                                       <Button variant="destructive" onClick={cancelInlineEdit}>Cancel</Button>
                                     </td>
@@ -503,9 +505,9 @@ const ManageAll: React.FC = () => {
                                         {pos.quotas.find((q: any) => q.leaveTypeId === lt.id)?.quota ?? ''}
                                       </td>
                                     ))}
-                                    <td className="p-3 flex gap-2">
-                                      <Button variant="outline" onClick={() => startInlineEdit(pos)}>Edit</Button>
-                                      <Button variant="destructive" onClick={() => handleDeletePosition(pos.id)}>Delete</Button>
+                                    <td className="p-3 flex gap-2 justify-center">
+                                      <Button variant="outline" onClick={() => startInlineEdit(pos)}>{t('common.edit', 'Edit')}</Button>
+                                      <Button variant="destructive" onClick={() => handleDeletePosition(pos.id)}>{t('common.delete', 'Delete')}</Button>
                                     </td>
                                   </>
                                 )}
@@ -526,15 +528,15 @@ const ManageAll: React.FC = () => {
                       <form onSubmit={handleDepartmentSubmit} className="mb-6 flex gap-2 items-end bg-blue-50 rounded-xl p-6 shadow-sm">
                         <Input name="name_en" value={departmentForm.name_en} onChange={handleDepartmentChange} placeholder="Department Name (EN)" required className="md:w-64" />
                         <Input name="name_th" value={departmentForm.name_th} onChange={handleDepartmentChange} placeholder="Department Name (TH)" required className="md:w-64" />
-                        <Button type="submit" className="btn-primary">{editingDepartmentId ? 'Update' : 'Add'}</Button>
+                        <Button type="submit" className="btn-primary">{editingDepartmentId ? t('common.update', 'Update') : t('common.add', 'Add')}</Button>
                       </form>
                       <div className="overflow-x-auto rounded-xl shadow">
                         <table className="w-full table-auto bg-white rounded-xl">
                           <thead>
                             <tr className="bg-blue-100 text-blue-900">
-                              <th className="p-3">Department (EN)</th>
-                              <th className="p-3">Department (TH)</th>
-                              <th className="p-3">Actions</th>
+                              <th className="p-3">{t('departments.departments', 'แผนก')} (EN)</th>
+                              <th className="p-3">{t('departments.departments', 'แผนก')} (TH)</th>
+                              <th className="p-3 text-center">{t('common.actions', 'Actions')}</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -548,7 +550,7 @@ const ManageAll: React.FC = () => {
                                     <td className="p-3 font-medium">
                                       <Input value={inlineDepartmentEdit.name_th} onChange={e => handleInlineDepartmentEditChange('name_th', e.target.value)} className="w-32" />
                                     </td>
-                                    <td className="p-3 flex gap-2">
+                                    <td className="p-3 flex gap-2 justify-center">
                                       <Button variant="outline" onClick={saveInlineDepartmentEdit}>Save</Button>
                                       <Button variant="destructive" onClick={cancelInlineDepartmentEdit}>Cancel</Button>
                                     </td>
@@ -557,9 +559,9 @@ const ManageAll: React.FC = () => {
                                   <>
                                     <td className="p-3 font-medium">{dep.department_name_en}</td>
                                     <td className="p-3 font-medium">{dep.department_name_th}</td>
-                                    <td className="p-3 flex gap-2">
-                                      <Button variant="outline" onClick={() => startInlineDepartmentEdit(dep)}>Edit</Button>
-                                      <Button variant="destructive" onClick={() => handleDeleteDepartment(dep.id)}>Delete</Button>
+                                    <td className="p-3 flex gap-2 justify-center">
+                                      <Button variant="outline" onClick={() => startInlineDepartmentEdit(dep)}>{t('common.edit', 'Edit')}</Button>
+                                      <Button variant="destructive" onClick={() => handleDeleteDepartment(dep.id)}>{t('common.delete', 'Delete')}</Button>
                                     </td>
                                   </>
                                 )}
@@ -580,29 +582,36 @@ const ManageAll: React.FC = () => {
                       <h2 className="text-lg font-bold text-white">{t('leave.leaveType', 'Leave Types')}</h2>
                     </div>
                     <div className="p-6">
-                      <form onSubmit={handleLeaveTypeSubmit} className="mb-6 flex gap-2 items-end bg-blue-50 rounded-xl p-6 shadow-sm">
-                        <Input name="name_en" value={leaveTypeForm.name_en} onChange={handleLeaveTypeChange} placeholder="Leave Type Name (EN)" required className="md:w-64" />
-                        <Input name="name_th" value={leaveTypeForm.name_th} onChange={handleLeaveTypeChange} placeholder="Leave Type Name (TH)" required className="md:w-64" />
-                        <label className="flex items-center gap-2 text-sm font-medium">
-                          <input
-                            type="checkbox"
-                            name="require_attachment"
-                            checked={leaveTypeForm.require_attachment}
-                            onChange={e => setLeaveTypeForm(prev => ({ ...prev, require_attachment: e.target.checked }))}
-                            className="accent-blue-600 h-4 w-4"
-                          />
-                          Require Attachment
-                        </label>
-                        <Button type="submit" className="btn-primary">{editingLeaveTypeId ? 'Update' : 'Add'}</Button>
+                      <form onSubmit={handleLeaveTypeSubmit} className="mb-6 flex items-end bg-blue-50 rounded-xl p-6 shadow-sm">
+                        <div className="flex flex-1 gap-2 items-end">
+                          <Input name="name_en" value={leaveTypeForm.name_en} onChange={handleLeaveTypeChange} placeholder="Leave Type Name (EN)" required className="md:w-64" />
+                          <Input name="name_th" value={leaveTypeForm.name_th} onChange={handleLeaveTypeChange} placeholder="Leave Type Name (TH)" required className="md:w-64" />
+                          <div className="flex items-center gap-3 ml-2">
+                            <input
+                              type="checkbox"
+                              name="require_attachment"
+                              checked={leaveTypeForm.require_attachment}
+                              onChange={e => setLeaveTypeForm(prev => ({ ...prev, require_attachment: e.target.checked }))}
+                              className="accent-blue-600 h-5 w-5 rounded border-gray-300 focus:ring-2 focus:ring-blue-400 transition-all"
+                              id="require-attachment-checkbox"
+                            />
+                            <label htmlFor="require-attachment-checkbox" className="text-base font-medium select-none cursor-pointer">
+                              {t('leave.requiresAttachment', 'Require Attachment')}
+                            </label>
+                          </div>
+                        </div>
+                        <div className="flex-1 flex justify-end">
+                          <Button type="submit" className="btn-primary">{editingLeaveTypeId ? t('common.update', 'Update') : t('common.add', 'Add')}</Button>
+                        </div>
                       </form>
                       <div className="overflow-x-auto rounded-xl shadow">
                         <table className="w-full table-auto bg-white rounded-xl">
                           <thead>
                             <tr className="bg-blue-100 text-blue-900">
-                              <th className="p-3">Leave Type (EN)</th>
-                              <th className="p-3">Leave Type (TH)</th>
-                              <th className="p-3">Require Attachment</th>
-                              <th className="p-3">Actions</th>
+                              <th className="p-3">{t('leave.leaveType', 'ประเภทการลา')} (EN)</th>
+                              <th className="p-3">{t('leave.leaveType', 'ประเภทการลา')} (TH)</th>
+                              <th className="p-3">{t('leave.requiresAttachment', 'Require Attachment')}</th>
+                              <th className="p-3 text-center">{t('common.actions', 'Actions')}</th>
                             </tr>
                           </thead>
                           <tbody>
@@ -656,7 +665,7 @@ const ManageAll: React.FC = () => {
                                         </span>
                                       </label>
                                     </td>
-                                    <td className="p-3 flex gap-2">
+                                    <td className="p-3 flex gap-2 justify-center">
                                       <Button variant="outline" onClick={saveInlineLeaveTypeEdit}>Save</Button>
                                       <Button variant="destructive" onClick={cancelInlineLeaveTypeEdit}>Cancel</Button>
                                     </td>
@@ -704,9 +713,11 @@ const ManageAll: React.FC = () => {
                                         </span>
                                       </label>
                                     </td>
-                                    <td className="p-3 flex gap-2">
-                                      <Button variant="outline" onClick={() => startInlineLeaveTypeEdit(lt)}>Edit</Button>
-                                      <Button variant="destructive" onClick={() => handleDeleteLeaveType(lt.id)}>Delete</Button>
+                                    <td className="p-3 text-center">
+                                      <div className="flex gap-2 justify-center">
+                                        <Button variant="outline" onClick={() => startInlineLeaveTypeEdit(lt)}>{t('common.edit', 'Edit')}</Button>
+                                        <Button variant="destructive" onClick={() => handleDeleteLeaveType(lt.id)}>{t('common.delete', 'Delete')}</Button>
+                                      </div>
                                     </td>
                                   </>
                                 )}

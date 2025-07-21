@@ -80,7 +80,9 @@
     "confirm": "ยืนยัน",
     "month": "เดือน",
     "year": "ปี",
-    "close": "ปิด"
+    "close": "ปิด",
+    "add": "เพิ่ม",
+    "update": "อัปเดต"
   },
   "leave": {
     "leaveRequest": "ขอลา",
@@ -211,7 +213,8 @@
     "customerService": "แผนกบริการลูกค้า",
     "selectDepartment": "เลือกแผนก",
     "notSpecified": "ไม่ต้องการระบุ",
-    "noDepartment": "ไม่มีแผนก"
+    "noDepartment": "ไม่มีแผนก",
+    "departments": "แผนก"
   },
   "positions": {
     "positions": "ตำแหน่ง",
