@@ -176,7 +176,9 @@
     "allTypes": "ทั้งหมด",
     "attachmentHint": "(ใบรับรองแพทย์, เอกสารรับรอง ฯลฯ)",
     "invalidPhone": "กรุณากรอกเบอร์โทรศัพท์ที่ถูกต้อง เช่น 0912456147",
-    "invalidEmail": "กรุณากรอกอีเมลที่ถูกต้อง เช่น example@email.com"
+    "invalidEmail": "กรุณากรอกอีเมลที่ถูกต้อง เช่น example@email.com",
+    "durationType": "ประเภทระยะเวลา",
+    "selectDurationType": "เลือกประเภทระยะเวลา"
   },
   "leaveTypes": {
     "ลาพักร้อน": "ลาพักร้อน",

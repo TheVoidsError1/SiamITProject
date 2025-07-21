@@ -172,7 +172,9 @@
     "noHistoryForPeriod": "No leave history for this period.",
     "allTypes": "All types",
     "invalidPhone": "Please enter a valid phone number, e.g. 0912456147",
-    "invalidEmail": "Please enter a valid email address, e.g. example@email.com"
+    "invalidEmail": "Please enter a valid email address, e.g. example@email.com",
+    "durationType": "Duration Type",
+    "selectDurationType": "Select duration type"
   },
   "leaveTypes": {
     "ลาพักร้อน": "Vacation Leave",
