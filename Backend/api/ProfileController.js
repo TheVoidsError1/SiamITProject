@@ -698,10 +698,9 @@ module.exports = (AppDataSource) => {
       const leaveRequests = await leaveRequestRepo.find({ where: { Repid: repid, status: 'approved' } });
 
       // 6. For each leave type, calculate quota and used (sick, personal, vacation, maternity)
-      const allowedTypes = ['sick', 'personal', 'vacation', 'maternity', 'ลาป่วย', 'ลากิจ', 'ลาพักผ่อน', 'ลาคลอด'];
+      // Remove allowedTypes filter to show all leave types
       const result = [];
       for (const leaveType of leaveTypes) {
-        if (!allowedTypes.includes(leaveType.leave_type_en?.toLowerCase()) && !allowedTypes.includes(leaveType.leave_type_th)) continue;
         // Find quota for this leave type
         const quotaRow = quotas.find(q => q.leaveTypeId === leaveType.id);
         const quota = quotaRow ? quotaRow.quota : 0;

@@ -13,6 +13,7 @@ module.exports = new EntitySchema({
         },
         leave_type_en: { type: 'varchar' },
         leave_type_th: { type: 'varchar' },
+        require_attachment: { type: 'boolean', default: false, nullable: false },
     },
 
 })

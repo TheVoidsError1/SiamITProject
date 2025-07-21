@@ -69,7 +69,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
   const [leaveType, setLeaveType] = useState("");
-  const [personalLeaveType, setPersonalLeaveType] = useState("");
+  const [durationType, setDurationType] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [reason, setReason] = useState("");
@@ -81,7 +81,8 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
   const [departments, setDepartments] = useState<{ id: number; department_name_th: string; department_name_en: string }[]>([]);
-  const [leaveTypes, setLeaveTypes] = useState<{ id: string; leave_type_th: string; leave_type_en: string }[]>([]);
+  // Update leaveTypes state type to include require_attachment
+  const [leaveTypes, setLeaveTypes] = useState<{ id: string; leave_type_th: string; leave_type_en: string; require_attachment?: boolean }[]>([]);
   const [positions, setPositions] = useState<{ id: string; position_name_th: string; position_name_en: string }[]>([]);
   const [admins, setAdmins] = useState<{ id: string; admin_name: string }[]>([]);
   const { user } = useAuth();
@@ -99,7 +100,31 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
     contact: '',
   });
   const [submitted, setSubmitted] = useState(false);
+  const [personalLeaveType, setPersonalLeaveType] = useState("");
+
+  // Dynamic attachment requirement based on selected leave type
+  const selected = leaveTypes.find(type => type.id === leaveType);
+  const requiresAttachmentField = !!selected?.require_attachment;
   const [step, setStep] = useState(1); // เพิ่ม state สำหรับ step form
+
+  // Helper: isPersonalLeave, isHourlyLeave
+  const isPersonalLeave = leaveType === "personal";
+  const isHourlyLeave = personalLeaveType === "hour";
+
+  const handlePersonalLeaveTypeChange = (value: string) => {
+    setPersonalLeaveType(value);
+    // Reset date/time fields when changing type
+    setStartTime("");
+    setEndTime("");
+    if (value === "hour") {
+      const today = new Date();
+      setStartDate(today);
+      setEndDate(today);
+    } else {
+      setStartDate(undefined);
+      setEndDate(undefined);
+    }
+  };
 
   // set state จาก initialData ถ้ามี
   useEffect(() => {
@@ -232,7 +257,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
       newErrors.leaveType = t('leave.required');
       hasError = true;
     }
-    if (isPersonalLeave && !personalLeaveType) {
+    if (!durationType) {
       newErrors.personalLeaveType = t('leave.required');
       hasError = true;
     }
@@ -240,11 +265,11 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
       newErrors.startDate = t('leave.required');
       hasError = true;
     }
-    if ((!isPersonalLeave || personalLeaveType === 'day') && !endDate) {
+    if ((durationType === "day" || durationType === "hour") && !endDate) {
       newErrors.endDate = t('leave.required');
       hasError = true;
     }
-    if (isPersonalLeave && personalLeaveType === 'hour') {
+    if (durationType === "hour") {
       if (!startTime) {
         newErrors.startTime = t('leave.required');
         hasError = true;
@@ -300,16 +325,16 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
 
     // Check personal leave type validation
     if (leaveType === "personal") {
-      if (!personalLeaveType) {
+      if (!durationType) {
         toast({
-          title: t('leave.selectPersonalLeave'),
-          description: t('leave.selectPersonalLeaveDesc'),
+          title: t('leave.selectDurationType'),
+          description: t('leave.selectDurationTypeDesc'),
           variant: "destructive",
         });
         return;
       }
       
-      if (personalLeaveType === "hour") {
+      if (durationType === "hour") {
         if (!startTime || !endTime) {
           toast({
             title: t('leave.specifyTime'),
@@ -349,7 +374,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
         }
       }
       
-      if (personalLeaveType === "day" && !endDate) {
+      if (durationType === "day" && !endDate) {
         toast({
           title: t('leave.selectEndDate'),
           description: t('leave.selectEndDateDesc'),
@@ -367,7 +392,6 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
     }
 
     // Check if attachment is required for certain leave types
-    const requiresAttachmentField = ["sick", "maternity", "emergency"].includes(leaveType);
     if (requiresAttachmentField && attachments.length === 0) {
       toast({
         title: t('leave.attachmentRequired'),
@@ -381,9 +405,14 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
     try {
       const formData = new FormData();
       formData.append("leaveType", leaveType);
-      if (personalLeaveType) formData.append("personalLeaveType", personalLeaveType);
-      if (startDate) formData.append("startDate", formatDateLocal(startDate));
-      if (endDate) formData.append("endDate", formatDateLocal(endDate));
+      if (durationType) formData.append("durationType", durationType);
+      // Use only formatDateLocal and check type
+      if (startDate instanceof Date && !isNaN(startDate.getTime())) {
+        formData.append("startDate", formatDateLocal(startDate));
+      }
+      if (endDate instanceof Date && !isNaN(endDate.getTime())) {
+        formData.append("endDate", formatDateLocal(endDate));
+      }
       if (startTime) formData.append("startTime", startTime);
       if (endTime) formData.append("endTime", endTime);
       formData.append("reason", reason);
@@ -449,7 +478,6 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
         setStartDate(undefined);
         setEndDate(undefined);
         setLeaveType("");
-        setPersonalLeaveType("");
         setStartTime("");
         setEndTime("");
         setReason("");
@@ -461,6 +489,23 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
       }
       // ถ้ามี onSubmit callback ให้เรียก (เช่นปิด modal)
       if (onSubmit) onSubmit(data);
+      toast({
+        title: t('leave.leaveRequestSuccess'),
+        description: t('leave.leaveRequestSuccessDesc'),
+      });
+      // Reset form
+      setStartDate(undefined);
+      setEndDate(undefined);
+      setLeaveType("");
+      setDurationType("");
+      setStartTime("");
+      setEndTime("");
+      setReason("");
+      setSupervisor("");
+      setEmployeeType("");
+      setAttachments([]);
+      setContact("");
+      if (formRef.current) formRef.current.reset();
     } catch (err: any) {
       toast({
         title: t('error.title'),
@@ -481,40 +526,19 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
-  // const selectedLeaveType = leaveTypes.find(type => type.id === leaveType);
-  // const requiresAttachmentField = selectedLeaveType?.requiresAttachment || false;
-  // const hasTimeOption = selectedLeaveType?.hasTimeOption || false;
-  // หมายเหตุ: ถ้าต้องการใช้ requiresAttachmentField หรือ hasTimeOption ต้องเพิ่มฟิลด์นี้ใน leaveType ที่ backend ด้วย
-  // ฟีเจอร์แนบไฟล์: เฉพาะ sick, emergency, maternity
-  const requiresAttachmentField = (() => {
-    // สมมุติว่า leave_type ในฐานข้อมูลเป็นภาษาอังกฤษ (sick, emergency, maternity)
-    const selected = leaveTypes.find(type => type.id === leaveType);
-    if (!selected) return false;
-    const name = selected.leave_type_en?.toLowerCase();
-    return name === 'sick' || name === 'emergency' || name === 'maternity';
-  })();
-  const hasTimeOption = false; // ปิดฟีเจอร์เลือกเวลาแบบ dynamic ชั่วคราว
-  // ตรวจสอบว่า leave_type ที่เลือกคือ 'personal' (ลากิจ)
-  const isPersonalLeave = (() => {
-    const selected = leaveTypes.find(type => type.id === leaveType);
-    if (!selected) return false;
-    return selected.leave_type_en?.toLowerCase() === 'personal';
-  })();
-  const isHourlyLeave = personalLeaveType === "hour";
-
   // Reset fields เมื่อเปลี่ยน leaveType
   const handleLeaveTypeChange = (value: string) => {
     setLeaveType(value);
-    setPersonalLeaveType("");
+    setDurationType("");
     setStartDate(undefined);
     setEndDate(undefined);
     setStartTime("");
     setEndTime("");
   };
 
-  // Reset fields เมื่อเปลี่ยน personalLeaveType
-  const handlePersonalLeaveTypeChange = (value: string) => {
-    setPersonalLeaveType(value);
+  // Reset fields เมื่อเปลี่ยน durationType
+  const handleDurationTypeChange = (value: string) => {
+    setDurationType(value);
     setStartTime("");
     setEndTime("");
     if (value === "hour") {
@@ -748,95 +772,90 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
       {/* เงื่อนไข: แสดงฟิลด์ที่เหลือเมื่อเลือก Leave Type แล้ว */}
       {leaveType && (
         <>
-          {/* Personal Leave Type Selection */}
-          {isPersonalLeave && (
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">
-                {t('leave.personalLeaveType')}{submitted && !personalLeaveType && <span className="text-red-500">*</span>}
-              </Label>
-              <Select value={personalLeaveType} onValueChange={handlePersonalLeaveTypeChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder={t('leave.selectPersonalLeaveType')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="day">{t('leave.dayLeave')}</SelectItem>
-                  <SelectItem value="hour">{t('leave.hourLeave')}</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.personalLeaveType && <p className="text-red-500 text-xs mt-1">{errors.personalLeaveType}</p>}
-              {/* Display selected date for hourly leave (move here) */}
-              {isHourlyLeave && (
+          {/* Duration Type Selection (Day/Hour) for all leave types */}
+          <div className="space-y-2">
+            <Label className="text-sm font-medium">
+              {t('leave.durationType')}{submitted && !durationType && <span className="text-red-500">*</span>}
+            </Label>
+            <Select value={durationType} onValueChange={handleDurationTypeChange}>
+              <SelectTrigger>
+                <SelectValue placeholder={t('leave.selectDurationType')} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="day">{t('leave.dayLeave')}</SelectItem>
+                <SelectItem value="hour">{t('leave.hourLeave')}</SelectItem>
+              </SelectContent>
+            </Select>
+            {errors.personalLeaveType && <p className="text-red-500 text-xs mt-1">{errors.personalLeaveType}</p>}
+          </div>
+
+          {/* Only show date/time fields after durationType is selected */}
+          {durationType === "hour" && (
+            <>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">{t('leave.leaveDate')}</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start text-left font-normal"
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {startDate ? (
+                        i18n.language.startsWith('en')
+                          ? startDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
+                          : startDate.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
+                      ) : (
+                        <span>{t('leave.selectDate')}</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={startDate}
+                      onSelect={setStartDate}
+                      initialFocus
+                      disabled={date => date < new Date(new Date().setHours(0,0,0,0))}
+                    />
+                  </PopoverContent>
+                </Popover>
+                {errors.startDate && <p className="text-red-500 text-xs mt-1">{errors.startDate}</p>}
+                {errors.endDate && <p className="text-red-500 text-xs mt-1">{errors.endDate}</p>}
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label className="text-sm font-medium">{t('leave.leaveDate')}</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {startDate ? (
-                          i18n.language.startsWith('en')
-                            ? startDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-                            : startDate.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
-                        ) : (
-                          <span>{t('leave.selectDate')}</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={startDate}
-                        onSelect={setStartDate}
-                        initialFocus
-                        disabled={date => date < new Date(new Date().setHours(0,0,0,0))}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                  {errors.startDate && <p className="text-red-500 text-xs mt-1">{errors.startDate}</p>}
-                  {errors.endDate && <p className="text-red-500 text-xs mt-1">{errors.endDate}</p>}
+                  <Label className="text-sm font-medium">{t('leave.startTime')}{submitted && !startTime && <span className="text-red-500">*</span>}</Label>
+                  <Input
+                    type="time"
+                    value={startTime}
+                    onChange={e => setStartTime(e.target.value)}
+                  />
+                  {errors.startTime && <p className="text-red-500 text-xs mt-1">{errors.startTime}</p>}
                 </div>
-              )}
-            </div>
-          )}
-
-          {/* Time Selection for Hourly Leave */}
-          {isPersonalLeave && isHourlyLeave && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">{t('leave.startTime')}{submitted && !startTime && <span className="text-red-500">*</span>}</Label>
-                <Input
-                  type="time"
-                  value={startTime}
-                  onChange={e => setStartTime(e.target.value)}
-                />
-                {errors.startTime && <p className="text-red-500 text-xs mt-1">{errors.startTime}</p>}
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">{t('leave.endTime')}{submitted && !endTime && <span className="text-red-500">*</span>}</Label>
+                  <Input
+                    type="time"
+                    value={endTime}
+                    onChange={e => setEndTime(e.target.value)}
+                  />
+                  {errors.endTime && <p className="text-red-500 text-xs mt-1">{errors.endTime}</p>}
+                </div>
+                {timeError && (
+                  <div className="col-span-2 text-red-500 text-sm mt-1">{timeError}</div>
+                )}
               </div>
-              <div className="space-y-2">
-                <Label className="text-sm font-medium">{t('leave.endTime')}{submitted && !endTime && <span className="text-red-500">*</span>}</Label>
-                <Input
-                  type="time"
-                  value={endTime}
-                  onChange={e => setEndTime(e.target.value)}
-                />
-                {errors.endTime && <p className="text-red-500 text-xs mt-1">{errors.endTime}</p>}
-              </div>
-              {timeError && (
-                <div className="col-span-2 text-red-500 text-sm mt-1">{timeError}</div>
-              )}
-            </div>
+            </>
           )}
-
-          {/* Date Range - Show only for day leave or non-personal leave */}
-          {(!isPersonalLeave || personalLeaveType === "day") && (
+          {durationType === "day" && (
             <DateRangePicker
               startDate={startDate}
               endDate={endDate}
               onStartDateChange={setStartDate}
               onEndDateChange={setEndDate}
-              disabled={isHourlyLeave}
-              minDate={isPersonalLeave && personalLeaveType === "day" ? new Date() : undefined}
+              disabled={false}
+              minDate={new Date()}
               submitted={submitted}
             />
           )}

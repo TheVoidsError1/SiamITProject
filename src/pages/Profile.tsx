@@ -42,6 +42,7 @@ const Profile = () => {
   const [leaveLoading, setLeaveLoading] = useState(true);
   const { enabled: pushNotificationEnabled, setEnabled: setPushNotificationEnabled } = usePushNotification();
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [allLeaveTypes, setAllLeaveTypes] = useState<any[]>([]);
 
   const getKeyByLabel = (label: string, options: string[], tPrefix: string) => {
     for (const key of options) {
@@ -221,6 +222,24 @@ const Profile = () => {
   }, []);
 
   useEffect(() => {
+    // Fetch all leave types for display (not just those with quota)
+    const fetchAllLeaveTypes = async () => {
+      try {
+        const res = await axios.get('http://localhost:3001/api/leave-types');
+        const data = res.data.data;
+        if (res.data.success) {
+          setAllLeaveTypes(data);
+        } else {
+          setAllLeaveTypes([]);
+        }
+      } catch {
+        setAllLeaveTypes([]);
+      }
+    };
+    fetchAllLeaveTypes();
+  }, []);
+
+  useEffect(() => {
     // This effect is no longer needed as pushNotificationEnabled is managed by usePushNotification
   }, [pushNotificationEnabled]);
 
@@ -365,6 +384,33 @@ const Profile = () => {
       setSaving(false);
     }
   };
+
+  // Debug output for leaveQuota and allLeaveTypes
+  useEffect(() => {
+    if (!leaveLoading) {
+      console.log('leaveQuota:', leaveQuota);
+      console.log('allLeaveTypes:', allLeaveTypes);
+    }
+  }, [leaveQuota, allLeaveTypes, leaveLoading]);
+
+  // Define a color palette for leave types
+  const leaveTypeColors = [
+    '#4F8A8B', // teal
+    '#F9A826', // orange
+    '#A259F7', // purple
+    '#FF6B6B', // red
+    '#43BCCD', // blue
+    '#F67280', // pink
+    '#6C5B7B', // dark purple
+    '#355C7D', // navy
+    '#99B898', // green
+    '#E84A5F', // coral
+    '#2A363B', // dark gray
+    '#FECEAB', // light orange
+    '#FF847C', // salmon
+    '#B5EAD7', // mint
+    '#C7CEEA', // lavender
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
@@ -551,48 +597,45 @@ const Profile = () => {
                 {leaveLoading ? (
                   <div>Loading...</div>
                 ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {leaveQuota
-                      .filter(item => (item.quota && item.quota > 0))
-                      .map((item, idx) => {
-                        // Pick color based on type
-                        let color = 'bg-gray-400';
-                        const type = (item.leave_type_en || item.type || item.leave_type || '').toLowerCase();
-                        if (type.includes('annual') || type.includes('vacation')) color = 'bg-blue-500';
-                        if (type.includes('sick')) color = 'bg-green-500';
-                        if (type.includes('personal')) color = 'bg-orange-500';
-                        if (type.includes('maternity')) color = 'bg-purple-500';
-                        if (type.includes('emergency')) color = 'bg-red-500';
-
-                        // Format label and units
-                        const label = item.leave_type_en || item.type || item.leave_type;
-                        const unit = item.unit === 'hour' ? t('common.hours') : t('common.days');
-                        const used = item.used || 0;
-                        const quota = item.quota || 0;
-                        const remaining = item.remaining || 0;
-                        const percent = quota > 0 ? (used / quota) * 100 : 0;
-
-                        return (
-                          <div key={item.id || label} className="space-y-3">
-                            <div className="flex justify-between items-center">
-                              <span className="text-sm font-medium">{label}</span>
-                              <span className="text-sm text-gray-500">
-                                {used}/{quota} {unit}
-                              </span>
+                  <React.Fragment>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {allLeaveTypes
+                        .filter(lt =>
+                          (lt.leave_type_en?.toLowerCase() !== 'emergency' && lt.leave_type_th !== 'ลาฉุกเฉิน')
+                        )
+                        .map((lt, idx) => {
+                          // Find quota/usage data for this leave type by id only
+                          const item = leaveQuota.find(q => q.id === lt.id);
+                          // Assign a color from the palette based on index, cycling if needed
+                          const color = leaveTypeColors[idx % leaveTypeColors.length];
+                          const label = lt.leave_type_en || lt.leave_type_th;
+                          const unit = item?.unit === 'hour' ? t('common.hours') : t('common.days');
+                          const used = (item?.used === undefined || item?.used === null) ? '-' : item.used;
+                          const quota = (item?.quota === undefined || item?.quota === null) ? '-' : item.quota;
+                          const remaining = (item?.remaining === undefined || item?.remaining === null) ? '-' : item.remaining;
+                          const percent = (typeof item?.used === 'number' && typeof item?.quota === 'number' && item?.quota > 0) ? (item.used / item.quota) * 100 : 0;
+                          return (
+                            <div key={lt.id || label} className="space-y-3">
+                              <div className="flex justify-between items-center">
+                                <span className="text-sm font-medium">{label}</span>
+                                <span className="text-sm text-gray-500">
+                                  {used}/{quota} {unit}
+                                </span>
+                              </div>
+                              <div className="w-full bg-gray-200 rounded-full h-2">
+                                <div
+                                  className="h-2 rounded-full transition-all duration-500"
+                                  style={{ width: `${Math.min(100, percent)}%`, backgroundColor: color }}
+                                ></div>
+                              </div>
+                              <div className="text-xs text-gray-500">
+                                {t('common.remaining')} {remaining} {unit}
+                              </div>
                             </div>
-                            <div className="w-full bg-gray-200 rounded-full h-2">
-                              <div
-                                className={`${color} h-2 rounded-full transition-all duration-500`}
-                                style={{ width: `${Math.min(100, percent)}%` }}
-                              ></div>
-                            </div>
-                            <div className="text-xs text-gray-500">
-                              {t('common.remaining')} {remaining} {unit}
-                            </div>
-                          </div>
-                        );
-                      })}
-                  </div>
+                          );
+                        })}
+                    </div>
+                  </React.Fragment>
                 )}
               </CardContent>
             </Card>

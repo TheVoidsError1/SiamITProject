@@ -211,6 +211,7 @@ app.use('/api', notificationBellController);
 
 const leaveQuotaController = require('./api/LeaveQuotaController')(AppDataSource);
 app.use('/api/leave-quota', leaveQuotaController);
+console.log('LeaveQuotaController registered');
 
 const superAdminController = require('./api/SuperAdminController')(AppDataSource);
 app.use('/api', superAdminController);
