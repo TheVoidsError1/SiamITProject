@@ -27,15 +27,15 @@ const LanguageSwitcher = () => {
       <DropdownMenuContent align="end" className="bg-white border shadow-lg">
         <DropdownMenuItem 
           onClick={() => changeLanguage('th')}
-          className={`cursor-pointer ${i18n.language === 'th' ? 'bg-accent' : ''}`}
+          className={`cursor-pointer ${i18n.language === 'th' ? 'bg-blue-100 text-blue-700 font-bold' : ''}`}
         >
-          ไทย
+          ไทย {i18n.language === 'th' && '✔️'}
         </DropdownMenuItem>
         <DropdownMenuItem 
           onClick={() => changeLanguage('en')}
-          className={`cursor-pointer ${i18n.language === 'en' ? 'bg-accent' : ''}`}
+          className={`cursor-pointer ${i18n.language === 'en' ? 'bg-blue-100 text-blue-700 font-bold' : ''}`}
         >
-          English
+          English {i18n.language === 'en' && '✔️'}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
