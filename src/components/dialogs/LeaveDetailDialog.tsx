@@ -139,6 +139,12 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                 <p className="text-sm">{leaveDetail.endDate || '-'}</p>
               </div>
             </div>
+            {leaveDetail.contact && (
+              <div>
+                <label className="text-sm font-medium text-gray-700">{t('leave.contactInfo')}</label>
+                <p className="text-sm">{leaveDetail.contact}</p>
+              </div>
+            )}
             <div>
               <label className="text-sm font-medium text-gray-700">{t('leave.reason')}</label>
               <p className="text-sm bg-gray-50 p-3 rounded-lg">{leaveDetail.reason || '-'}</p>
