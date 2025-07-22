@@ -131,7 +131,7 @@ const swaggerOptions = {
       title: 'SiamITLeave API',
       version: '1.0.0',
     },
-    tags: [
+    tags: [ 
       {
         name: 'Departments',
         description: 'จัดการข้อมูล Departments'

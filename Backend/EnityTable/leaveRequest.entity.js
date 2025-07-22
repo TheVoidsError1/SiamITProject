@@ -28,6 +28,6 @@ module.exports = new EntitySchema({
     rejectedTime: {type: 'timestamp', nullable: true},
     attachments: { type: 'longtext', nullable: true }, // json string ของ array ชื่อไฟล์แนบ รองรับไฟล์หลายไฟล์
     isRead: { type: 'boolean', default: false, nullable: false },
-    backadated: { type: 'boolean', default: false, nullable: false }, // สำหรับการขอลาปรับย้อนหลัง
+    backdated: { type: 'boolean', default: false, nullable: false }, // สำหรับการขอลาปรับย้อนหลัง
   },
 });

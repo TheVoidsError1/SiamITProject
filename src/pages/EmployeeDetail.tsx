@@ -694,6 +694,9 @@ const EmployeeDetail = () => {
                       <TableRow key={idx}>
                         <TableCell className="font-medium">
                           {getLeaveTypeLabel(leave.leaveTypeId || leave.leaveType)}
+                          {leave.backdated === 1 && (
+                            <span className="ml-2 bg-red-500 text-white px-2 py-0.5 rounded text-xs">ย้อนหลัง</span>
+                          )}
                         </TableCell>
                         <TableCell className="whitespace-nowrap">{leave.leaveDate}</TableCell>
                           <TableCell>{

@@ -546,6 +546,8 @@ module.exports = (AppDataSource) => {
           reason: l.reason,
           status: l.status,
           submittedDate: l.createdAt,
+          // เพิ่ม backdated
+          backdated: (l.startDate && l.createdAt && new Date(l.startDate) < new Date(l.createdAt)) ? 1 : 0,
         };
       }));
 

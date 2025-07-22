@@ -826,7 +826,12 @@
              status: leave.status,
              submittedDate: leave.createdAt,
              user: user ? { User_name: user.User_name, department: user.department, position: user.position } : null,
+             approvedBy,
+             rejectedBy,
+             rejectionReason: leave.rejectedReason || null,
              attachments: parseAttachments(leave.attachments),
+             // เพิ่ม backdated
+             backdated: (leave.startDate && leave.createdAt && new Date(leave.startDate) < new Date(leave.createdAt)) ? 1 : 0,
            };
          }));
          res.json({ status: 'success', data: result, total, page, totalPages: Math.ceil(total / limit) });
@@ -1018,6 +1023,8 @@
              submittedDate,
              createdAt: leave.createdAt, // เพิ่มฟิลด์นี้
              attachments: parseAttachments(leave.attachments),
+             // เพิ่ม backdated
+             backdated: (leave.startDate && leave.createdAt && new Date(leave.startDate) < new Date(leave.createdAt)) ? 1 : 0,
            }
          });
        } catch (err) {

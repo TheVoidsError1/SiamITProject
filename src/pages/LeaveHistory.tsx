@@ -54,6 +54,7 @@ const LeaveHistory = () => {
 
   // --- เพิ่ม state สำหรับปฏิทินและ filter ใหม่ ---
   const [filterStatus, setFilterStatus] = useState('');
+  const [filterBackdated, setFilterBackdated] = useState('all'); // all | backdated | normal
   const [showFilters, setShowFilters] = useState(false);
   const [statusOptions, setStatusOptions] = useState<string[]>([]);
   const [yearOptions, setYearOptions] = useState<number[]>([]);
@@ -82,6 +83,11 @@ const LeaveHistory = () => {
       if (singleDate) {
         url += `&date=${format(singleDate, 'yyyy-MM-dd')}`;
       }
+      if (filterBackdated === 'backdated') {
+        url += `&backdated=1`;
+      } else if (filterBackdated === 'normal') {
+        url += `&backdated=0`;
+      }
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -102,7 +108,7 @@ const LeaveHistory = () => {
     } finally {
       setLoading(false);
     }
-  }, [page, filterMonth, filterYear, limit, filterLeaveType, filterStatus, singleDate, showSessionExpiredDialog]);
+  }, [page, filterMonth, filterYear, limit, filterLeaveType, filterStatus, singleDate, filterBackdated, showSessionExpiredDialog]);
 
   useEffect(() => {
     fetchLeaveHistory();
@@ -483,7 +489,6 @@ const LeaveHistory = () => {
                       </PopoverContent>
                     </Popover>
                   </div>
-
                   {/* Leave Type Filter */}
                   <div className="space-y-2">
                     <Label>{t('leave.type', 'ประเภทการลา')}</Label>
@@ -501,7 +506,6 @@ const LeaveHistory = () => {
                       </SelectContent>
                     </Select>
                   </div>
-
                   {/* Status Filter */}
                   <div className="space-y-2">
                     <Label>{t('leave.status', 'สถานะ')}</Label>
@@ -510,7 +514,6 @@ const LeaveHistory = () => {
                         <SelectValue placeholder={t('history.allStatuses', 'ทั้งหมด')} />
                       </SelectTrigger>
                       <SelectContent>
-                        {/* ใช้ i18n สำหรับ option ทั้งหมดและแต่ละสถานะ */}
                         <SelectItem value="all">{t('history.allStatuses', 'ทั้งหมด')}</SelectItem>
                         {statusOptions.map(status => (
                           <SelectItem key={status} value={status}>{t(`leave.${status}`, status)}</SelectItem>
@@ -518,7 +521,6 @@ const LeaveHistory = () => {
                       </SelectContent>
                     </Select>
                   </div>
-
                   {/* Month/Year Filter */}
                   <div className="space-y-2">
                     <Label>{t('history.monthYear', 'เดือน/ปี')}</Label>
@@ -549,9 +551,9 @@ const LeaveHistory = () => {
                   </div>
                 </div>
 
-                {/* Clear Filters Button */}
-                <div className="flex justify-between items-center pt-2 border-t">
-                  <div className="flex items-center gap-2">
+                {/* Clear Filters Button + Backdated Filter + Results */}
+                <div className="flex flex-col md:flex-row md:justify-between md:items-center pt-2 border-t gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     {hasActiveFilters() && (
                       <Button
                         variant="outline"
@@ -564,8 +566,22 @@ const LeaveHistory = () => {
                       </Button>
                     )}
                   </div>
-                  <div className="text-sm text-gray-500">
-                    {leaveHistory.length} {t('history.results', 'ผลลัพธ์')}
+                  <div className="flex items-center gap-4 flex-wrap">
+                    {/* Backdated Filter */}
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <Label className="mr-1 text-xs font-medium text-gray-700">{t('leave.backdatedFilter', 'ย้อนหลัง/ไม่ย้อนหลัง')}</Label>
+                      <Select value={filterBackdated} onValueChange={v => setFilterBackdated(v)}>
+                        <SelectTrigger className="w-24 h-8 text-xs border-gray-200">
+                          <SelectValue placeholder={t('leave.backdatedFilter', 'ย้อนหลัง/ไม่ย้อนหลัง')} />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all" className="text-xs">{t('leave.backdatedAll', 'ทั้งหมด')}</SelectItem>
+                          <SelectItem value="backdated" className="text-xs">{t('leave.backdatedOnly', 'เฉพาะย้อนหลัง')}</SelectItem>
+                          <SelectItem value="normal" className="text-xs">{t('leave.notBackdatedOnly', 'เฉพาะไม่ย้อนหลัง')}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <span className="ml-2 text-xs text-gray-500 align-middle">{leaveHistory.length} {t('history.results', 'ผลลัพธ์')}</span>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -588,8 +604,14 @@ const LeaveHistory = () => {
                 {leaveHistory.map((leave) => (
                   <Card
                     key={leave.id}
-                    className="border border-gray-200 rounded-xl shadow-md hover:shadow-xl hover:border-blue-400 transition-shadow bg-white/90 p-6 mb-4"
+                    className="border border-gray-200 rounded-xl shadow-md hover:shadow-xl hover:border-blue-400 transition-shadow bg-white/90 p-6 mb-4 relative"
                   >
+                    {/* Badge ย้อนหลัง */}
+                    {leave.backdated === 1 && (
+                      <span className="absolute top-2 right-2 bg-red-500 text-white text-xs px-2 py-1 rounded shadow z-10">
+                        {t('leave.backdated', 'ย้อนหลัง')}
+                      </span>
+                    )}
                     <CardHeader className="pb-3 border-b border-gray-100 mb-2 bg-white/0 rounded-t-xl">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
@@ -803,6 +825,9 @@ const LeaveHistory = () => {
     ? (selectedLeave.leaveTypeName || selectedLeave.leaveTypeEn || getLeaveTypeLabel(selectedLeave.type))
     : (selectedLeave.leaveTypeEn || selectedLeave.leaveTypeName || getLeaveTypeLabel(selectedLeave.type))
 }</span>
+                        {selectedLeave.backdated === 1 && (
+                          <span className="ml-2 bg-red-500 text-white px-2 py-0.5 rounded text-xs">{t('leave.backdated', 'ย้อนหลัง')}</span>
+                        )}
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="font-semibold">{t('leave.status', 'สถานะ')}:</span>

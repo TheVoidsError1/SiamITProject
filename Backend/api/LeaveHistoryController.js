@@ -76,6 +76,10 @@ module.exports = (AppDataSource) => {
         endOfDay.setHours(23, 59, 59, 999);
         where = { ...where, createdAt: Between(startOfDay, endOfDay) };
       }
+      const backdated = req.query.backdated;
+      if (backdated === '1' || backdated === '0') {
+        where = { ...where, backdated: backdated === '1' ? true : false };
+      }
 
       // ดึง leave request ของ user (paging)
       const [leaves, total] = await Promise.all([
@@ -117,6 +121,7 @@ module.exports = (AppDataSource) => {
           const admin = await adminRepo.findOneBy({ id: leave.statusBy });
           rejectedBy = admin ? admin.admin_name + ' ผู้จัดการ' : leave.statusBy;
         }
+        // ไม่ต้องคำนวณ backdated ใหม่ ใช้ leave.backdated จาก DB
         return {
           id: leave.id,
           type: leaveTypeId, // id
@@ -134,6 +139,7 @@ module.exports = (AppDataSource) => {
           rejectedBy,
           rejectionReason: leave.rejectedReason,
           submittedDate: leave.createdAt,
+          backdated: leave.backdated ? 1 : 0,
         };
       }));
       res.json({

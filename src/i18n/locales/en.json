@@ -177,7 +177,11 @@
     "invalidPhone": "Please enter a valid phone number, e.g. 0912456147",
     "invalidEmail": "Please enter a valid email address, e.g. example@email.com",
     "durationType": "Duration Type",
-    "selectDurationType": "Select duration type"
+    "selectDurationType": "Select duration type",
+    "backdatedFilter": "Backdated/Not Backdated",
+    "backdatedAll": "All",
+    "backdatedOnly": "Backdated only",
+    "notBackdatedOnly": "Not backdated only"
   },
   "leaveTypes": {
     "ลาพักร้อน": "Vacation Leave",
