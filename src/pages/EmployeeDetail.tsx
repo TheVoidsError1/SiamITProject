@@ -694,8 +694,8 @@ const EmployeeDetail = () => {
                       <TableRow key={idx}>
                         <TableCell className="font-medium">
                           {getLeaveTypeLabel(leave.leaveTypeId || leave.leaveType)}
-                          {leave.backdated && (
-                            <span className="ml-2 inline-block"><Badge className="bg-orange-100 text-orange-800">{t('leave.backdated')}</Badge></span>
+                          {leave.backdated === 1 && (
+                            <span className="ml-2 inline-block"><Badge className="bg-red-500 text-white">{t('leave.backdated')}</Badge></span>
                           )}
                         </TableCell>
                         <TableCell className="whitespace-nowrap">{leave.leaveDate}</TableCell>
