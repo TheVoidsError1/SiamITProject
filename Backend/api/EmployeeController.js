@@ -531,6 +531,8 @@ module.exports = (AppDataSource) => {
           duration = days;
           durationType = 'day';
         }
+        // --- ส่ง backdated จาก DB เท่านั้น ---
+        const backdated = Number(l.backdated);
         return {
           id: l.id,
           leaveType: l.leaveType,
@@ -546,8 +548,8 @@ module.exports = (AppDataSource) => {
           reason: l.reason,
           status: l.status,
           submittedDate: l.createdAt,
-          // เพิ่ม backdated
-          backdated: (l.startDate && l.createdAt && new Date(l.startDate) < new Date(l.createdAt)) ? 1 : 0,
+          // ส่ง backdated จาก DB เท่านั้น
+          backdated,
         };
       }));
 
