@@ -514,7 +514,7 @@ const AdminDashboard = () => {
           <SidebarTrigger />
           <div className="flex-1">
             <h1 className="text-2xl font-bold text-gray-900">
-              {t('navigation.adminDashboard')}
+              {t('navigation.adminDashboard', i18n.language === 'th' ? 'แดชบอร์ดผู้ดูแลระบบ' : 'Admin Dashboard')}
             </h1>
             <p className="text-sm text-gray-600">
               {t('admin.dashboardDesc')}

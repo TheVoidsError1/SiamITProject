@@ -1,24 +1,23 @@
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Clock, Calendar, FileText, CheckCircle, XCircle, AlertCircle, Filter, X } from "lucide-react";
-import { format } from "date-fns";
-import { th } from "date-fns/locale";
-import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { useEffect, useState, useCallback } from "react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useAuth } from '@/contexts/AuthContext';
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { useAuth } from '@/contexts/AuthContext';
+import { format } from "date-fns";
+import { th } from "date-fns/locale";
+import { AlertCircle, Calendar, CheckCircle, Clock, FileText, Filter, X, XCircle } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 // เพิ่ม import LeaveForm
 import { LeaveForm } from "@/components/leave/LeaveForm";
 // เพิ่ม useState สำหรับ dialog edit
-import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -372,7 +371,7 @@ const LeaveHistory = () => {
         <div className="flex h-16 items-center px-4 gap-4">
           <SidebarTrigger />
           <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">{t('leave.leaveHistory')}</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t('leave.leaveHistory', i18n.language === 'th' ? 'ประวัติการลา' : 'Leave History')}</h1>
             <p className="text-sm text-gray-600">
               {t('history.leaveHistoryTitle')}
             </p>
