@@ -278,6 +278,16 @@
          }
 
          const attachmentsArr = req.files ? req.files.map(f => f.filename) : [];
+         // Determine if the leave request is backdated
+         let backdated = false;
+         if (startDate) {
+           const today = new Date();
+           today.setHours(0, 0, 0, 0);
+           const leaveStart = parseLocalDate(startDate);
+           if (leaveStart && leaveStart < today) {
+             backdated = true;
+           }
+         }
          const leaveData = {
            Repid: userId, // ใส่ user_id จาก JWT
            employeeType, // ดึงจาก user.position
@@ -292,6 +302,7 @@
            imgLeave: attachmentsArr.length === 1 ? attachmentsArr[0] : null, // backward compatible
            attachments: attachmentsArr.length > 0 ? JSON.stringify(attachmentsArr) : null,
            status: 'pending',
+           backdated, // set backdated column
          };
 
          // เพิ่มข้อมูลลงฐานข้อมูล

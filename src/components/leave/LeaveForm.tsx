@@ -679,22 +679,11 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
             value={contact}
             onChange={e => {
               setContact(e.target.value);
-              // validate ทันทีที่พิมพ์
+              // Only require non-empty value, no email/phone validation
               const val = e.target.value;
               let err = '';
               if (!val) {
                 err = t('leave.required');
-              } else if (/^[0-9]+$/.test(val)) {
-                if (!isValidPhoneNumber(val)) {
-                  err = t('leave.invalidPhone', 'กรุณากรอกเบอร์โทรศัพท์ที่ถูกต้อง เช่น 0653909024');
-                }
-              } else if (/[a-zA-Z@.]/.test(val)) {
-                // ถ้าเริ่มพิมพ์เป็นตัวอักษรหรือมี @ . ให้ validate เป็นอีเมลเท่านั้น
-                if (!isValidEmail(val)) {
-                  err = t('leave.invalidEmail', 'กรุณากรอกอีเมลที่ถูกต้อง เช่น example@email.com');
-                }
-              } else {
-                err = t('leave.invalidEmail', 'กรุณากรอกอีเมลที่ถูกต้อง เช่น example@email.com');
               }
               setErrors(prev => ({ ...prev, contact: err }));
             }}
