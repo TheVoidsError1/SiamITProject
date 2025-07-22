@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '@/hooks/use-toast';
+import { API_URL } from '@/constants/api';
 
 // Mock data for demonstration
 // Remove mockDepartments
@@ -47,7 +48,7 @@ const ManageAll: React.FC = () => {
   };
   // Helper to fetch departments
   const fetchDepartments = () => {
-    fetch('http://localhost:3001/api/departments')
+    fetch(`${API_URL}/departments`)
       .then(res => res.json())
       .then(data => {
         if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
@@ -66,7 +67,7 @@ const ManageAll: React.FC = () => {
       // TODO: Implement update logic
       setEditingDepartmentId(null);
     } else {
-      await fetch('http://localhost:3001/api/departments', {
+      await fetch(`${API_URL}/departments`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -86,7 +87,7 @@ const ManageAll: React.FC = () => {
     }
   };
   const handleDeleteDepartment = async (id: string) => {
-    await fetch(`http://localhost:3001/api/departments/${id}`, {
+    await fetch(`${API_URL}/departments/${id}`, {
       method: 'DELETE',
     });
     fetchDepartments();
@@ -108,11 +109,11 @@ const ManageAll: React.FC = () => {
     }
   };
   const handleDeleteLeaveType = async (id: string) => {
-    await fetch(`http://localhost:3001/api/leave-types/${id}`, {
+    await fetch(`${API_URL}/leave-types/${id}`, {
       method: 'DELETE',
     });
     // Refresh leave types
-    fetch('http://localhost:3001/api/leave-types')
+    fetch(`${API_URL}/leave-types`)
       .then(res => res.json())
       .then(data => {
         if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
@@ -124,7 +125,7 @@ const ManageAll: React.FC = () => {
     e.preventDefault();
     if (editingLeaveTypeId) {
       // Update leave type
-      await fetch(`http://localhost:3001/api/leave-types/${editingLeaveTypeId}`, {
+      await fetch(`${API_URL}/leave-types/${editingLeaveTypeId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -135,7 +136,7 @@ const ManageAll: React.FC = () => {
       });
       setEditingLeaveTypeId(null);
       // Refresh leave types
-      fetch('http://localhost:3001/api/leave-types')
+      fetch(`${API_URL}/leave-types`)
         .then(res => res.json())
         .then(data => {
           if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
@@ -143,7 +144,7 @@ const ManageAll: React.FC = () => {
           }
         });
     } else {
-      await fetch('http://localhost:3001/api/leave-types', {
+      await fetch(`${API_URL}/leave-types`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -153,7 +154,7 @@ const ManageAll: React.FC = () => {
         })
       });
       // Refresh leave types
-      fetch('http://localhost:3001/api/leave-types')
+      fetch(`${API_URL}/leave-types`)
         .then(res => res.json())
         .then(data => {
           if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
@@ -195,7 +196,7 @@ const ManageAll: React.FC = () => {
       }
     });
     console.log('Submitting quotasForBackend:', quotasForBackend);
-    const res = await fetch(`http://localhost:3001/api/positions-with-quotas/${inlineEdit.id}`, {
+    const res = await fetch(`${API_URL}/positions-with-quotas/${inlineEdit.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -210,7 +211,7 @@ const ManageAll: React.FC = () => {
       return;
     }
     // Refresh positions
-    fetch('http://localhost:3001/api/positions-with-quotas')
+    fetch(`${API_URL}/positions-with-quotas`)
       .then(res => res.json())
       .then(data => {
         if (data.success && Array.isArray(data.data)) {
@@ -231,7 +232,7 @@ const ManageAll: React.FC = () => {
   const saveInlineDepartmentEdit = async () => {
     if (!inlineDepartmentEdit) return;
     setInlineDepartmentError(null);
-    const res = await fetch(`http://localhost:3001/api/departments/${inlineDepartmentEdit.id}`, {
+    const res = await fetch(`${API_URL}/departments/${inlineDepartmentEdit.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -263,7 +264,7 @@ const ManageAll: React.FC = () => {
   const saveInlineLeaveTypeEdit = async () => {
     if (!inlineLeaveTypeEdit) return;
     setInlineLeaveTypeError(null);
-    const res = await fetch(`http://localhost:3001/api/leave-types/${inlineLeaveTypeEdit.id}`, {
+    const res = await fetch(`${API_URL}/leave-types/${inlineLeaveTypeEdit.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -278,7 +279,7 @@ const ManageAll: React.FC = () => {
       return;
     }
     // Refresh leave types
-    fetch('http://localhost:3001/api/leave-types')
+    fetch(`${API_URL}/leave-types`)
       .then(res => res.json())
       .then(data => {
         if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
@@ -290,7 +291,7 @@ const ManageAll: React.FC = () => {
 
   // Fetch positions with quotas on mount
   useEffect(() => {
-    fetch('http://localhost:3001/api/positions-with-quotas')
+    fetch(`${API_URL}/positions-with-quotas`)
       .then(res => res.json())
       .then(data => {
         if (data.success && Array.isArray(data.data)) {
@@ -304,7 +305,7 @@ const ManageAll: React.FC = () => {
   // Fetch departments and leave types with new structure
   useEffect(() => {
     fetchDepartments();
-    fetch('http://localhost:3001/api/leave-types')
+    fetch(`${API_URL}/leave-types`)
       .then(res => res.json())
       .then(data => {
         if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
@@ -347,7 +348,7 @@ const ManageAll: React.FC = () => {
             quotasForBackend[lt.id] = positionForm.quotas[lt.id];
           }
         });
-        const res = await fetch('http://localhost:3001/api/positions-with-quotas', {
+        const res = await fetch(`${API_URL}/positions-with-quotas`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -362,7 +363,7 @@ const ManageAll: React.FC = () => {
           return;
         }
         // Refresh positions
-        fetch('http://localhost:3001/api/positions-with-quotas')
+        fetch(`${API_URL}/positions-with-quotas`)
           .then(res => res.json())
           .then(data => {
             if (data.success && Array.isArray(data.data)) {
@@ -387,11 +388,11 @@ const ManageAll: React.FC = () => {
     }
   };
   const handleDeletePosition = async (id: string) => {
-    await fetch(`http://localhost:3001/api/positions-with-quotas/${id}`, {
+    await fetch(`${API_URL}/positions-with-quotas/${id}`, {
       method: 'DELETE',
     });
     // Refresh positions
-    fetch('http://localhost:3001/api/positions-with-quotas')
+    fetch(`${API_URL}/positions-with-quotas`)
       .then(res => res.json())
       .then(data => {
         if (data.success && Array.isArray(data.data)) {
@@ -406,7 +407,7 @@ const ManageAll: React.FC = () => {
   const handleToggleRequireAttachment = async (lt: any) => {
     const newValue = !lt.require_attachment;
     try {
-      const res = await fetch(`http://localhost:3001/api/leave-types/${lt.id}`, {
+      const res = await fetch(`${API_URL}/leave-types/${lt.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
