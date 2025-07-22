@@ -1,7 +1,5 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
-import { th } from "date-fns/locale";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -31,6 +29,7 @@ interface LeaveRequest {
   name?: string;
   leaveDate?: string;
   leaveTypeEn?: string;
+  backdated?: boolean;
 }
 
 interface LeaveDetailDialogProps {
@@ -98,6 +97,11 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
             {t('leave.detailDescription', 'Detailed information about this leave request.')}
           </DialogDescription>
         </DialogHeader>
+        {leaveDetail && leaveDetail.backdated && (
+          <div className="mb-4 p-3 bg-orange-50 border border-orange-300 text-orange-800 rounded text-center font-semibold">
+            {t('leave.backdatedNotice', 'ใบลานี้เป็นการลาย้อนหลัง')}
+          </div>
+        )}
         {leaveDetail ? (
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
@@ -116,6 +120,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                       return leaveDetail.leaveTypeEn || leaveDetail.leaveTypeName || leaveDetail.leaveType || '-';
                     }
                   })()}
+
                 </p>
               </div>
             </div>
@@ -139,6 +144,12 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                 <p className="text-sm">{leaveDetail.endDate || '-'}</p>
               </div>
             </div>
+            {leaveDetail.contact && (
+              <div>
+                <label className="text-sm font-medium text-gray-700">{t('leave.contactInfo')}</label>
+                <p className="text-sm">{leaveDetail.contact}</p>
+              </div>
+            )}
             <div>
               <label className="text-sm font-medium text-gray-700">{t('leave.reason')}</label>
               <p className="text-sm bg-gray-50 p-3 rounded-lg">{leaveDetail.reason || '-'}</p>

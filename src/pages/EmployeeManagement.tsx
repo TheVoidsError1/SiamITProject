@@ -1,25 +1,25 @@
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 import { Eye, User, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
-import {
-  AlertDialog,
-  AlertDialogTrigger,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogFooter,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogAction,
-  AlertDialogCancel,
-} from "@/components/ui/alert-dialog";
 
 // เพิ่ม type สำหรับข้อมูลพนักงาน
 interface Employee {
@@ -277,42 +277,44 @@ const EmployeeManagement = () => {
                             <TableCell>
                               <span className={`rounded-full px-2 py-0.5 text-xs font-semibold ${badgeColor}`}>{badgeText}</span>
                             </TableCell>
-                            <TableCell className="text-center flex gap-2 justify-center items-center">
-                              <Button asChild size="sm" variant="outline" className="text-xs px-2 py-1">
-                                <Link to={`/admin/employees/${employee.id}?role=${employee.role}`}>
-                                  <Eye className="w-3 h-3 mr-1" />
-                                  {t('system.seeDetails')}
-                                </Link>
-                              </Button>
-                              {/* Only superadmin can see delete, and cannot delete themselves */}
-                              {user?.role === "superadmin" && !(employee.role === "superadmin" && isMe) && (
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button
-                                      size="sm"
-                                      variant="destructive"
-                                      className="text-xs px-2 py-1"
-                                      onClick={() => setDeleteTarget(employee)}
-                                    >
-                                      {t('system.delete', 'Delete')}
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>{t('system.confirmDelete', 'Confirm Delete')}</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        {t('system.confirmDeleteUser', { name: employee.full_name })}
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel disabled={deleting}>{t('common.cancel', 'Cancel')}</AlertDialogCancel>
-                                      <AlertDialogAction disabled={deleting} onClick={handleDelete}>
-                                        {deleting ? t('common.loading', 'Loading...') : t('system.confirm', 'Confirm')}
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              )}
+                            <TableCell className="text-center">
+                              <div className="flex gap-2 justify-start items-center min-h-[36px]">
+                                <Button asChild size="sm" variant="outline" className="text-xs px-2 py-1 min-w-[110px]">
+                                  <Link to={`/admin/employees/${employee.id}?role=${employee.role}`}>
+                                    <Eye className="w-3 h-3 mr-1" />
+                                    {t('system.seeDetails')}
+                                  </Link>
+                                </Button>
+                                {/* Only superadmin can see delete, and cannot delete themselves */}
+                                {user?.role === "superadmin" && !(employee.role === "superadmin" && isMe) ? (
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        className="text-xs px-2 py-1 min-w-[80px]"
+                                        onClick={() => setDeleteTarget(employee)}
+                                      >
+                                        {t('system.delete', 'Delete')}
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>{t('system.confirmDelete', 'Confirm Delete')}</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          {t('system.confirmDeleteUser', { name: employee.full_name })}
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel disabled={deleting}>{t('common.cancel', 'Cancel')}</AlertDialogCancel>
+                                        <AlertDialogAction disabled={deleting} onClick={handleDelete}>
+                                          {deleting ? t('common.loading', 'Loading...') : t('system.confirm', 'Confirm')}
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                ) : null}
+                              </div>
                             </TableCell>
                           </TableRow>
                         );

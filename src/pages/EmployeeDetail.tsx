@@ -1,5 +1,16 @@
 import { LeaveDetailDialog } from "@/components/dialogs/LeaveDetailDialog";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,17 +25,6 @@ import { ArrowLeft, Calendar, Edit, Eye, Mail, Save, User, X } from "lucide-reac
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useParams } from "react-router-dom";
-import {
-  AlertDialog,
-  AlertDialogTrigger,
-  AlertDialogContent,
-  AlertDialogHeader,
-  AlertDialogFooter,
-  AlertDialogTitle,
-  AlertDialogDescription,
-  AlertDialogAction,
-  AlertDialogCancel,
-} from "@/components/ui/alert-dialog";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -694,8 +694,8 @@ const EmployeeDetail = () => {
                       <TableRow key={idx}>
                         <TableCell className="font-medium">
                           {getLeaveTypeLabel(leave.leaveTypeId || leave.leaveType)}
-                          {leave.backdated === 1 && (
-                            <span className="ml-2 bg-red-500 text-white px-2 py-0.5 rounded text-xs">ย้อนหลัง</span>
+                          {leave.backdated && (
+                            <span className="ml-2 inline-block"><Badge className="bg-orange-100 text-orange-800">{t('leave.backdated')}</Badge></span>
                           )}
                         </TableCell>
                         <TableCell className="whitespace-nowrap">{leave.leaveDate}</TableCell>

@@ -214,42 +214,11 @@
          // const lang = (req.headers['accept-language'] || '').toLowerCase().startsWith('en') ? 'en' : 'th';
 
          // --- Contact Validation ---
-         const contactValidationMessages = {
-           invalidEmail: {
-             en: 'Contact must be a valid email address and not start with special characters.',
-             th: 'ข้อมูลติดต่อ ต้องเป็นอีเมลที่ถูกต้องและต้องไม่ขึ้นต้นด้วยอักขระพิเศษ'
-           },
-           invalidPhone: {
-             en: 'Contact must contain only numbers (no special characters allowed).',
-             th: 'ข้อมูลติดต่อ ต้องเป็นตัวเลขเท่านั้น (ห้ามมีอักขระพิเศษ)'
-           }
-         };
-         function isValidEmail(email) {
-           // Basic email regex, disallow starting with special chars
-           return /^[a-zA-Z0-9][a-zA-Z0-9_.+-]*@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/.test(email);
-         }
-         function isValidPhone(phone) {
-           // Only digits allowed
-           return /^\d+$/.test(phone);
-         }
-         if (contact) {
-           if (contact.includes('@')) {
-             // Email
-             if (!isValidEmail(contact)) {
-               return res.status(400).json({
-                 status: 'error',
-                 message: contactValidationMessages.invalidEmail[lang]
-               });
-             }
-           } else {
-             // Phone number
-             if (!isValidPhone(contact)) {
-               return res.status(400).json({
-                 status: 'error',
-                 message: contactValidationMessages.invalidPhone[lang]
-               });
-             }
-           }
+         if (!contact) {
+           return res.status(400).json({
+             status: 'error',
+             message: lang === 'en' ? 'Contact information is required.' : 'กรุณากรอกช่องทางติดต่อ'
+           });
          }
 
          // ฟังก์ชันตรวจสอบเวลาในช่วง 09:00-18:00
@@ -278,6 +247,25 @@
          }
 
          const attachmentsArr = req.files ? req.files.map(f => f.filename) : [];
+         // Determine if the leave request is backdated
+         let backdated = false;
+         if (startDate) {
+           const today = new Date();
+           today.setHours(0, 0, 0, 0);
+           const leaveStart = parseLocalDate(startDate);
+           if (leaveStart && leaveStart < today) {
+             backdated = true;
+           } else if (leaveStart && leaveStart.getTime() === today.getTime() && startTime) {
+             // If leave is for today, check if startTime is in the past
+             const now = new Date();
+             const [startHour, startMinute] = startTime.split(":").map(Number);
+             const leaveStartDateTime = new Date(leaveStart);
+             leaveStartDateTime.setHours(startHour, startMinute, 0, 0);
+             if (leaveStartDateTime < now) {
+               backdated = true;
+             }
+           }
+         }
          const leaveData = {
            Repid: userId, // ใส่ user_id จาก JWT
            employeeType, // ดึงจาก user.position
@@ -292,6 +280,7 @@
            imgLeave: attachmentsArr.length === 1 ? attachmentsArr[0] : null, // backward compatible
            attachments: attachmentsArr.length > 0 ? JSON.stringify(attachmentsArr) : null,
            status: 'pending',
+           backdated, // set backdated column
          };
 
          // เพิ่มข้อมูลลงฐานข้อมูล
