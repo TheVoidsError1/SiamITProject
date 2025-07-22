@@ -491,6 +491,31 @@ module.exports = (AppDataSource) => {
         leaves = leaves.filter(l => l.status === status);
       }
 
+      // ===== เพิ่มส่วนนี้ก่อน paging =====
+      const allLeaves = [...leaves];
+      const approvedLeaves = allLeaves.filter(l => l.status === 'approved');
+      const totalLeaveDays = approvedLeaves
+        .filter(l => l.startDate && l.endDate && (!l.startTime || !l.endTime))
+        .reduce((sum, l) => {
+          const start = new Date(l.startDate);
+          const end = new Date(l.endDate);
+          let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+          if (days < 0 || isNaN(days)) days = 0;
+          return sum + days;
+        }, 0);
+      const totalLeaveHours = approvedLeaves
+        .filter(l => l.startTime && l.endTime)
+        .reduce((sum, l) => {
+          const [sh, sm] = l.startTime.split(":").map(Number);
+          const [eh, em] = l.endTime.split(":").map(Number);
+          let start = sh + (sm || 0) / 60;
+          let end = eh + (em || 0) / 60;
+          let diff = end - start;
+          if (diff < 0) diff += 24;
+          return sum + Math.floor(diff);
+        }, 0);
+      // ===== จบส่วนที่เพิ่ม =====
+
       // Apply paging
       const pageNum = parseInt(page);
       const limitNum = parseInt(limit);
@@ -558,7 +583,11 @@ module.exports = (AppDataSource) => {
         data: leaves, 
         total,
         page: pageNum,
-        totalPages: Math.ceil(total / limitNum)
+        totalPages: Math.ceil(total / limitNum),
+        summary: {
+          totalLeaveDays,
+          totalLeaveHours
+        }
       });
     } catch (err) {
       res.status(500).json({ success: false, message: err.message });

@@ -100,6 +100,7 @@ const AdminDashboard = () => {
   // --- เพิ่ม state สำหรับ filter ย้อนหลัง ---
   const [pendingBackdatedFilter, setPendingBackdatedFilter] = useState('all'); // all | backdated | normal
   const [historyBackdatedFilter, setHistoryBackdatedFilter] = useState('all'); // all | backdated | normal
+  const [historyFilterLeaveType, setHistoryFilterLeaveType] = useState('');
 
   // ปรับการคำนวณสถิติให้ใช้ข้อมูลจาก leave request ที่ดึงมา
   const pendingCount = pendingRequests.length;
@@ -300,22 +301,19 @@ const AdminDashboard = () => {
       showSessionExpiredDialog();
       return;
     }
-    // --- ส่ง page, limit, month, year, status, dateRange ไป backend ---
     let url = `${API_BASE_URL}/api/leave-request/history?page=${historyPage}&limit=${historyLimit}`;
     if (filterMonth) url += `&month=${filterMonth}`;
     if (filterYear) url += `&year=${filterYear}`;
-    // --- บังคับส่ง status=approved เสมอ ---
-    url += `&status=approved`;
+    url += `&status=${historyStatusFilter}`;
     if (historyBackdatedFilter === 'backdated') url += `&backdated=1`;
     else if (historyBackdatedFilter === 'normal') url += `&backdated=0`;
-    // ถ้าเลือกวันเดียว (recentSingleDate) ให้ filter ด้วย createdAt (param date)
     if (recentSingleDate) {
       url += `&date=${format(recentSingleDate, 'yyyy-MM-dd')}`;
     } else {
-      // ถ้าเลือกช่วงวันที่ ให้ filter ด้วย startDate/endDate (เหมือนเดิม)
       if (dateRange.from) url += `&startDate=${format(dateRange.from, 'yyyy-MM-dd')}`;
       if (dateRange.to) url += `&endDate=${format(dateRange.to, 'yyyy-MM-dd')}`;
     }
+    if (historyFilterLeaveType) url += `&leaveType=${historyFilterLeaveType}`;
     fetch(url, {
       headers: { Authorization: `Bearer ${token}` }
     })
@@ -330,8 +328,8 @@ const AdminDashboard = () => {
         if (data.status === "success") {
           setHistoryRequests(data.data);
           setHistoryTotalPages(data.totalPages || 1);
-          setApprovedCount(data.approvedCount || 0);   // อัปเดตตาม filter
-          setRejectedCount(data.rejectedCount || 0);   // อัปเดตตาม filter
+          setApprovedCount(data.approvedCount || 0);
+          setRejectedCount(data.rejectedCount || 0);
         } else {
           setHistoryRequests([]);
           setHistoryTotalPages(1);
@@ -400,7 +398,7 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     fetchHistoryRequests();
-  }, [t, historyPage, filterMonth, filterYear, historyLimit, historyStatusFilter, dateRange, recentSingleDate, historyBackdatedFilter]);
+  }, [t, historyPage, filterMonth, filterYear, historyLimit, historyStatusFilter, dateRange, recentSingleDate, historyBackdatedFilter, historyFilterLeaveType]);
 
   useEffect(() => {
     let url = `${API_BASE_URL}/api/leave-request/dashboard-stats`;
@@ -510,6 +508,7 @@ const AdminDashboard = () => {
     setRecentSingleDate(undefined); // ล้างวันเดียวด้วย
     setHistoryPage(1);
     setHistoryBackdatedFilter('all'); // ล้างตัวกรองย้อนหลัง
+    setHistoryFilterLeaveType(''); // ล้างตัวกรอง leave type
   };
 
   const getLeaveTypeLabel = (typeId: string) => {
@@ -615,14 +614,11 @@ const AdminDashboard = () => {
                         onChange={e => { setPendingFilterLeaveType(e.target.value); setPendingPage(1); }}
                       >
                         <option value="">{t('leave.allTypes')}</option>
-                        {pendingRequests
-                          .map(r => ({ id: r.leaveType, name_th: r.leaveTypeName_th, name_en: r.leaveTypeName_en }))
-                          .filter((v, i, a) => v.id && a.findIndex(t => t.id === v.id) === i)
-                          .map(lt => (
-                            <option key={lt.id} value={lt.id}>
-                              {i18n.language.startsWith('th') ? lt.name_th : lt.name_en}
-                            </option>
-                          ))}
+                        {pendingLeaveTypes.map(lt => (
+                          <option key={lt.id} value={lt.id}>
+                            {i18n.language.startsWith('th') ? lt.leave_type_th : lt.leave_type_en}
+                          </option>
+                        ))}
                       </select>
                     )}
                     {/* ปุ่มล้าง filter */}
@@ -825,6 +821,26 @@ const AdminDashboard = () => {
                         />
                       </PopoverContent>
                     </Popover>
+                    {/* Leave Type Filter */}
+                    <label className="text-sm font-medium">{t('leave.type')}</label>
+                    {pendingLeaveTypesLoading ? (
+                      <span className="text-gray-500 text-sm">{t('common.loading')}</span>
+                    ) : pendingLeaveTypesError ? (
+                      <span className="text-red-500 text-sm">{pendingLeaveTypesError}</span>
+                    ) : (
+                      <select
+                        className="border rounded px-2 py-1"
+                        value={historyFilterLeaveType}
+                        onChange={e => { setHistoryFilterLeaveType(e.target.value); setHistoryPage(1); }}
+                      >
+                        <option value="">{t('leave.allTypes')}</option>
+                        {pendingLeaveTypes.map(lt => (
+                          <option key={lt.id} value={lt.id}>
+                            {i18n.language.startsWith('th') ? lt.leave_type_th : lt.leave_type_en}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                     <select
                       className="border rounded px-2 py-1"
                       value={filterMonth}

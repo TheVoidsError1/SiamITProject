@@ -51,6 +51,7 @@ const EmployeeDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [leaveHistory, setLeaveHistory] = useState([]);
+  const [leaveSummary, setLeaveSummary] = useState<{ totalLeaveDays: number, totalLeaveHours: number } | null>(null); // <--- เพิ่ม state
   // เพิ่ม state สำหรับ processCheckId
   const [processCheckId, setProcessCheckId] = useState(null);
   const [departments, setDepartments] = useState<{ id: string; department_name: string; department_name_en?: string; department_name_th?: string }[]>([]);
@@ -106,14 +107,17 @@ const EmployeeDetail = () => {
         if (data.success) {
           setLeaveHistory(data.data);
           setLeaveTotalPages(data.totalPages || 1);
+          setLeaveSummary(data.summary || null); // <--- เก็บ summary
         } else {
           setLeaveHistory([]);
           setLeaveTotalPages(1);
+          setLeaveSummary(null); // <--- reset summary
         }
       })
       .catch(() => {
         setLeaveHistory([]);
         setLeaveTotalPages(1);
+        setLeaveSummary(null); // <--- reset summary
       });
   };
 
@@ -510,23 +514,6 @@ const EmployeeDetail = () => {
                 {t('employee.leaveHistoryDesc')}
               </CardDescription>
             </CardHeader>
-            {filteredLeaveHistory.length > 0 && (
-              <div className="flex justify-end px-8 mt-2">
-                <span className="text-black font-semibold text-base flex items-center">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
-                  {(() => {
-                    const approved = filteredLeaveHistory.filter(l => l.status === 'approved');
-                    const days = approved.filter(l => l.durationType === 'day').reduce((sum, l) => sum + (parseInt(l.duration) || 0), 0);
-                    const hours = approved.filter(l => l.durationType === 'hour').reduce((sum, l) => sum + (parseInt(l.duration) || 0), 0);
-                    let text = t('employee.usedLeaveDays') + ':';
-                    if (days > 0) text += ` ${days} ${t('common.days')}`;
-                    if (hours > 0) text += ` ${hours} ${t('common.hours')}`;
-                    if (days === 0 && hours === 0) text += ` 0 ${t('common.days')}`;
-                    return text;
-                  })()}
-                </span>
-              </div>
-            )}
             {/* Filter + วันลาที่ใช้ไปแล้ว (flex row) */}
             <div className="grid grid-cols-7 gap-4 items-end mb-2 px-6 mt-4">
               <div className="flex flex-col col-span-1">
