@@ -475,29 +475,58 @@
          const startDate = req.query.startDate ? new Date(req.query.startDate) : null;
          const endDate = req.query.endDate ? new Date(req.query.endDate) : null;
          let where;
-         const { Between } = require('typeorm');
+         const { Between, In } = require('typeorm');
          if (status) {
-           // กรองเฉพาะ status ที่เลือก
-           where = [{ status }];
-           if (userId) where = [{ status, Repid: userId }];
-           if (month && year) {
-             const startOfMonth = new Date(year, month - 1, 1);
-             const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
-             where = [{ status, createdAt: Between(startOfMonth, endOfMonth) }];
-             if (userId) where = [{ status, Repid: userId, createdAt: Between(startOfMonth, endOfMonth) }];
-           } else if (year) {
-             const startOfYear = new Date(year, 0, 1);
-             const endOfYear = new Date(year, 11, 31, 23, 59, 59, 999);
-             where = [{ status, createdAt: Between(startOfYear, endOfYear) }];
-             if (userId) where = [{ status, Repid: userId, createdAt: Between(startOfYear, endOfYear) }];
+           // รองรับ status หลายค่า (comma separated)
+           let statusArr = status;
+           if (typeof status === 'string' && status.includes(',')) {
+             statusArr = status.split(',').map(s => s.trim());
            }
-           // --- เพิ่ม filter ช่วงวัน ---
-           if (startDate && endDate) {
-             where = where.map(w => ({ ...w, startDate: Between(startDate, endDate) }));
-           } else if (startDate) {
-             where = where.map(w => ({ ...w, startDate: Between(startDate, new Date(3000, 0, 1)) }));
-           } else if (endDate) {
-             where = where.map(w => ({ ...w, startDate: Between(new Date(2000, 0, 1), endDate) }));
+           if (Array.isArray(statusArr)) {
+             where = statusArr.map(s => ({ status: s }));
+             if (userId) where = statusArr.map(s => ({ status: s, Repid: userId }));
+             if (month && year) {
+               const startOfMonth = new Date(year, month - 1, 1);
+               const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
+               where = statusArr.map(s => ({ status: s, createdAt: Between(startOfMonth, endOfMonth) }));
+               if (userId) where = statusArr.map(s => ({ status: s, Repid: userId, createdAt: Between(startOfMonth, endOfMonth) }));
+             } else if (year) {
+               const startOfYear = new Date(year, 0, 1);
+               const endOfYear = new Date(year, 11, 31, 23, 59, 59, 999);
+               where = statusArr.map(s => ({ status: s, createdAt: Between(startOfYear, endOfYear) }));
+               if (userId) where = statusArr.map(s => ({ status: s, Repid: userId, createdAt: Between(startOfYear, endOfYear) }));
+             }
+             // --- เพิ่ม filter ช่วงวัน ---
+             if (startDate && endDate) {
+               where = where.map(w => ({ ...w, startDate: Between(startDate, endDate) }));
+             } else if (startDate) {
+               where = where.map(w => ({ ...w, startDate: Between(startDate, new Date(3000, 0, 1)) }));
+             } else if (endDate) {
+               where = where.map(w => ({ ...w, startDate: Between(new Date(2000, 0, 1), endDate) }));
+             }
+           } else {
+             // เดิม: status เดียว
+             where = [{ status }];
+             if (userId) where = [{ status, Repid: userId }];
+             if (month && year) {
+               const startOfMonth = new Date(year, month - 1, 1);
+               const endOfMonth = new Date(year, month, 0, 23, 59, 59, 999);
+               where = [{ status, createdAt: Between(startOfMonth, endOfMonth) }];
+               if (userId) where = [{ status, Repid: userId, createdAt: Between(startOfMonth, endOfMonth) }];
+             } else if (year) {
+               const startOfYear = new Date(year, 0, 1);
+               const endOfYear = new Date(year, 11, 31, 23, 59, 59, 999);
+               where = [{ status, createdAt: Between(startOfYear, endOfYear) }];
+               if (userId) where = [{ status, Repid: userId, createdAt: Between(startOfYear, endOfYear) }];
+             }
+             // --- เพิ่ม filter ช่วงวัน ---
+             if (startDate && endDate) {
+               where = where.map(w => ({ ...w, startDate: Between(startDate, endDate) }));
+             } else if (startDate) {
+               where = where.map(w => ({ ...w, startDate: Between(startDate, new Date(3000, 0, 1)) }));
+             } else if (endDate) {
+               where = where.map(w => ({ ...w, startDate: Between(new Date(2000, 0, 1), endDate) }));
+             }
            }
          } else {
            // ไม่ได้กรอง status (default: approved, rejected, pending)

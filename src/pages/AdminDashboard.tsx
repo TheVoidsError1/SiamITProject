@@ -294,6 +294,7 @@ const AdminDashboard = () => {
       .finally(() => setLoading(false));
   };
 
+  // ปรับ fetchHistoryRequests
   const fetchHistoryRequests = () => {
     setLoading(true);
     const token = localStorage.getItem('token');
@@ -304,7 +305,12 @@ const AdminDashboard = () => {
     let url = `${API_BASE_URL}/api/leave-request/history?page=${historyPage}&limit=${historyLimit}`;
     if (filterMonth) url += `&month=${filterMonth}`;
     if (filterYear) url += `&year=${filterYear}`;
-    url += `&status=${historyStatusFilter}`;
+    // ในการสร้าง url ให้ส่ง status=approved,rejected ถ้าเลือก all
+    if (historyStatusFilter === 'all') {
+      url += `&status=approved,rejected`;
+    } else if (historyStatusFilter !== 'all') {
+      url += `&status=${historyStatusFilter}`;
+    }
     if (historyBackdatedFilter === 'backdated') url += `&backdated=1`;
     else if (historyBackdatedFilter === 'normal') url += `&backdated=0`;
     if (recentSingleDate) {
@@ -326,7 +332,9 @@ const AdminDashboard = () => {
       })
       .then(data => {
         if (data.status === "success") {
-          setHistoryRequests(data.data);
+          let filtered = data.data;
+          // ไม่ต้อง filter ฝั่ง frontend เพื่อให้แสดงครบตามจำนวน items per page ที่ backend ส่งมา
+          setHistoryRequests(filtered);
           setHistoryTotalPages(data.totalPages || 1);
           setApprovedCount(data.approvedCount || 0);
           setRejectedCount(data.rejectedCount || 0);
@@ -872,6 +880,7 @@ const AdminDashboard = () => {
                       value={historyStatusFilter}
                       onChange={e => { setHistoryStatusFilter(e.target.value); setHistoryPage(1); }}
                     >
+                      <option value="all">{t('leave.allStatus', 'All status')}</option>
                       <option value="approved">{t('leave.approved')}</option>
                       <option value="rejected">{t('leave.rejected')}</option>
                     </select>
