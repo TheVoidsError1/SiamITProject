@@ -42,27 +42,45 @@ const Register = () => {
     fetch(`${API_BASE_URL}/api/departments`)
       .then(res => res.json())
       .then(data => {
-        const depts = data.data.map((d: any) => ({
-          id: d.id,
-          department_name_en: d.department_name_en,
-          department_name_th: d.department_name_th
-        }));
-        setDepartments(depts);
+        if (data && data.data && Array.isArray(data.data)) {
+          const depts = data.data.map((d: any) => ({ id: d.id, department_name_th: d.department_name_th, department_name_en: d.department_name_en }));
+          const noDepartmentItem = depts.find(d => d.department_name_en === 'No Department');
+          const otherDepts = depts.filter(d => d.department_name_en !== 'No Department');
+          otherDepts.sort((a, b) => {
+            const nameA = lang === 'th' ? a.department_name_th : a.department_name_en;
+            const nameB = lang === 'th' ? b.department_name_th : b.department_name_en;
+            return (nameA || '').localeCompare(nameB || '');
+          });
+          const sortedDepts = [...otherDepts];
+          if (noDepartmentItem) {
+            sortedDepts.push(noDepartmentItem);
+          }
+          setDepartments(sortedDepts);
+        }
       })
       .catch(() => setDepartments([]));
 
     fetch(`${API_BASE_URL}/api/positions`)
       .then(res => res.json())
       .then(data => {
-        const pos = data.data.map((p: any) => ({
-          id: p.id,
-          position_name_en: p.position_name_en,
-          position_name_th: p.position_name_th
-        }));
-        setPositions(pos);
+        if (data && data.data && Array.isArray(data.data)) {
+          const pos = data.data.map((p: any) => ({ id: p.id, position_name_th: p.position_name_th, position_name_en: p.position_name_en }));
+          const noPositionItem = pos.find(p => p.position_name_en === 'No Position');
+          const otherPos = pos.filter(p => p.position_name_en !== 'No Position');
+          otherPos.sort((a, b) => {
+            const nameA = lang === 'th' ? a.position_name_th : a.position_name_en;
+            const nameB = lang === 'th' ? b.position_name_th : b.position_name_en;
+            return (nameA || '').localeCompare(nameB || '');
+          });
+          const sortedPositions = [...otherPos];
+          if (noPositionItem) {
+            sortedPositions.push(noPositionItem);
+          }
+          setPositions(sortedPositions);
+        }
       })
       .catch(() => setPositions([]));
-  }, []);
+  }, [lang]);
 
   // เพิ่ม department ใหม่
   const handleAddDepartment = async () => {

@@ -474,6 +474,18 @@ const Profile = () => {
                       {t('employee.superadmin', 'Superadmin')}
                     </Badge>
                   )}
+                  {user?.role === 'admin' && (
+                    <Badge className="flex items-center gap-1 bg-blue-100 text-blue-800 border border-blue-300">
+                      <Shield className="h-3 w-3" />
+                      {t('employee.admin', 'Admin')}
+                    </Badge>
+                  )}
+                  {user && user.role !== 'admin' && user.role !== 'superadmin' && (
+                    <Badge className="flex items-center gap-1 bg-green-100 text-green-800 border border-green-300">
+                      <User className="h-3 w-3" />
+                      {t('employee.employee', 'Employee')}
+                    </Badge>
+                  )}
                   <Badge variant="outline" className="flex items-center gap-1">
                     <Building className="h-3 w-3" />
                     {

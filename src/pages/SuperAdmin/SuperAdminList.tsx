@@ -33,21 +33,47 @@ const SuperAdminList: React.FC = () => {
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/departments`)
+    fetch(`${API_BASE_URL}/api/departments`)
       .then(res => res.json())
       .then(data => {
-        let depts = data.data.map((d: any) => ({ id: d.id, department_name_th: d.department_name_th, department_name_en: d.department_name_en }));
-        setDepartments(depts);
+        if (data && data.data && Array.isArray(data.data)) {
+          const depts = data.data.map((d: any) => ({ id: d.id, department_name_th: d.department_name_th, department_name_en: d.department_name_en }));
+          const noDepartmentItem = depts.find(d => d.department_name_en === 'No Department');
+          const otherDepts = depts.filter(d => d.department_name_en !== 'No Department');
+          otherDepts.sort((a, b) => {
+            const nameA = lang === 'th' ? a.department_name_th : a.department_name_en;
+            const nameB = lang === 'th' ? b.department_name_th : b.department_name_en;
+            return (nameA || '').localeCompare(nameB || '');
+          });
+          const sortedDepts = [...otherDepts];
+          if (noDepartmentItem) {
+            sortedDepts.push(noDepartmentItem);
+          }
+          setDepartments(sortedDepts);
+        }
       })
       .catch(() => setDepartments([]));
-    fetch(`${API_BASE_URL}/positions`)
+    fetch(`${API_BASE_URL}/api/positions`)
       .then(res => res.json())
       .then(data => {
-        let pos = data.data.map((p: any) => ({ id: p.id, position_name_th: p.position_name_th, position_name_en: p.position_name_en }));
-        setPositions(pos);
+        if (data && data.data && Array.isArray(data.data)) {
+          const pos = data.data.map((p: any) => ({ id: p.id, position_name_th: p.position_name_th, position_name_en: p.position_name_en }));
+          const noPositionItem = pos.find(p => p.position_name_en === 'No Position');
+          const otherPos = pos.filter(p => p.position_name_en !== 'No Position');
+          otherPos.sort((a, b) => {
+            const nameA = lang === 'th' ? a.position_name_th : a.position_name_en;
+            const nameB = lang === 'th' ? b.position_name_th : b.position_name_en;
+            return (nameA || '').localeCompare(nameB || '');
+          });
+          const sortedPositions = [...otherPos];
+          if (noPositionItem) {
+            sortedPositions.push(noPositionItem);
+          }
+          setPositions(sortedPositions);
+        }
       })
       .catch(() => setPositions([]));
-  }, []);
+  }, [lang]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
