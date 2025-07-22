@@ -177,7 +177,10 @@
     "invalidPhone": "Please enter a valid phone number, e.g. 0912456147",
     "invalidEmail": "Please enter a valid email address, e.g. example@email.com",
     "durationType": "Duration Type",
-    "selectDurationType": "Select duration type"
+    "selectDurationType": "Select duration type",
+    "backdated": "Backdated",
+    "backdatedNotice": "This leave request is backdated.",
+    "contactMethod": "Contact Method"
   },
   "leaveTypes": {
     "ลาพักร้อน": "Vacation Leave",

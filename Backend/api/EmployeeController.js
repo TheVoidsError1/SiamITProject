@@ -546,6 +546,7 @@ module.exports = (AppDataSource) => {
           reason: l.reason,
           status: l.status,
           submittedDate: l.createdAt,
+          backdated: l.backdated, // เพิ่มฟิลด์นี้
         };
       }));
 

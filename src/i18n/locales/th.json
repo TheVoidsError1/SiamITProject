@@ -178,7 +178,10 @@
     "invalidPhone": "กรุณากรอกเบอร์โทรศัพท์ที่ถูกต้อง เช่น 0912456147",
     "invalidEmail": "กรุณากรอกอีเมลที่ถูกต้อง เช่น example@email.com",
     "durationType": "ประเภทระยะเวลา",
-    "selectDurationType": "เลือกประเภทระยะเวลา"
+    "selectDurationType": "เลือกประเภทระยะเวลา",
+    "backdated": "ลาย้อนหลัง",
+    "backdatedNotice": "ใบลานี้เป็นการลาย้อนหลัง",
+    "contactMethod": "ช่องทางการติดต่อ"
   },
   "leaveTypes": {
     "ลาพักร้อน": "ลาพักร้อน",
