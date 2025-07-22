@@ -129,6 +129,7 @@
     "reasonPlaceholder": "Enter reason for leave",
     "contactInfo": "Contact Information",
     "contactPlaceholder": "Phone number or email",
+    "contactFreePlaceholder": "Contact information (e.g. Line, Facebook, etc.)",
     "submitLeave": "Submit Leave Request",
     "requiresAttachment": "Requires attachment",
     "attachmentRequired": "Attachment required",

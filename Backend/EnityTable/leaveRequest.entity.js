@@ -12,7 +12,6 @@ module.exports = new EntitySchema({
     },
     Repid: { type: 'varchar', nullable: true}, // Repid  ของ ProcessCheck เชื่อมกับ id ของ ProcessCheck
     employeeType: { type: 'varchar' },
-    supervisor: { type: 'varchar', nullable: true } , // supervisor เชื่อมกับ id ของ admin
     leaveType: { type: 'varchar' },
     startDate: { type: 'date' },
     endDate: { type: 'date' },

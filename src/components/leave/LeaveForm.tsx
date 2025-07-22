@@ -17,6 +17,7 @@ import { CalendarIcon } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { format } from "date-fns";
 import { th, enUS } from "date-fns/locale";
+import { API_URL } from '@/constants/api';
 
 // ฟังก์ชัน validate เวลา HH:mm (24 ชั่วโมง)
 function isValidTimeFormat(timeStr: string): boolean {
@@ -294,24 +295,9 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
       newErrors.reason = t('leave.required');
       hasError = true;
     }
-    if (!supervisor) {
-      newErrors.supervisor = t('leave.required');
-      hasError = true;
-    }
     if (!contact) {
       newErrors.contact = t('leave.required');
       hasError = true;
-    } else if (/^[0-9]+$/.test(contact)) {
-      // ถ้ากรอกเป็นตัวเลข ต้องเป็นเบอร์โทรจริง
-      if (!isValidPhoneNumber(contact)) {
-        newErrors.contact = t('leave.invalidPhone', 'กรุณากรอกเบอร์โทรศัพท์ที่ถูกต้อง เช่น 0653909024');
-        hasError = true;
-      }
-    } else if (contact.includes('@') || contact.includes('.')) {
-      if (!isValidEmail(contact)) {
-        newErrors.contact = t('leave.invalidEmail', 'กรุณากรอกอีเมลที่ถูกต้อง เช่น example@email.com');
-        hasError = true;
-      }
     }
     setErrors(newErrors);
     if (hasError) {
@@ -602,7 +588,6 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
             onStartDateChange={setStartDate}
             onEndDateChange={setEndDate}
             disabled={isHourlyLeave}
-            minDate={isPersonalLeave && personalLeaveType === "day" ? new Date() : undefined}
             submitted={submitted}
           />
         )}
@@ -633,27 +618,6 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
             )}
           </div>
         )}
-
-        {/* Supervisor */}
-        <div className="space-y-2">
-          <Label htmlFor="supervisor">{t('leave.supervisor')}{submitted && !supervisor && <span className="text-red-500">*</span>}</Label>
-          <Select
-            value={supervisor}
-            onValueChange={setSupervisor}
-          >
-            <SelectTrigger id="supervisor">
-              <SelectValue placeholder={t('leave.selectSupervisor')} />
-            </SelectTrigger>
-            <SelectContent>
-              {admins.map((admin) => (
-                <SelectItem key={admin.id} value={admin.id}>
-                  {admin.admin_name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {errors.supervisor && <p className="text-red-500 text-xs mt-1">{errors.supervisor}</p>}
-        </div>
 
         {/* Reason */}
         <div className="space-y-2">
@@ -710,7 +674,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
           </Label>
           <Input
             id="contact"
-            placeholder={t('leave.contactPlaceholder')}
+            placeholder={t('leave.contactFreePlaceholder')}
             className="w-full"
             value={contact}
             onChange={e => {
@@ -722,7 +686,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
                 err = t('leave.required');
               } else if (/^[0-9]+$/.test(val)) {
                 if (!isValidPhoneNumber(val)) {
-                  err = t('leave.invalidPhone', 'กรุณากรอกเบอร์โทรศัพท์ที่ถูกต้อง เช่น 0912456147');
+                  err = t('leave.invalidPhone', 'กรุณากรอกเบอร์โทรศัพท์ที่ถูกต้อง เช่น 0653909024');
                 }
               } else if (/[a-zA-Z@.]/.test(val)) {
                 // ถ้าเริ่มพิมพ์เป็นตัวอักษรหรือมี @ . ให้ validate เป็นอีเมลเท่านั้น
@@ -816,7 +780,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
                       selected={startDate}
                       onSelect={setStartDate}
                       initialFocus
-                      disabled={date => date < new Date(new Date().setHours(0,0,0,0))}
+                      // Allow any date
                     />
                   </PopoverContent>
                 </Popover>
@@ -829,6 +793,8 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
                   <Input
                     type="time"
                     value={startTime}
+                    min="09:00"
+                    max="18:00"
                     onChange={e => setStartTime(e.target.value)}
                   />
                   {errors.startTime && <p className="text-red-500 text-xs mt-1">{errors.startTime}</p>}
@@ -838,6 +804,8 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
                   <Input
                     type="time"
                     value={endTime}
+                    min="09:00"
+                    max="18:00"
                     onChange={e => setEndTime(e.target.value)}
                   />
                   {errors.endTime && <p className="text-red-500 text-xs mt-1">{errors.endTime}</p>}
@@ -855,31 +823,10 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
               onStartDateChange={setStartDate}
               onEndDateChange={setEndDate}
               disabled={false}
-              minDate={new Date()}
+              // Remove minDate restriction
               submitted={submitted}
             />
           )}
-
-          {/* Supervisor */}
-          <div className="space-y-2">
-            <Label htmlFor="supervisor">{t('leave.supervisor')}{submitted && !supervisor && <span className="text-red-500">*</span>}</Label>
-            <Select
-              value={supervisor}
-              onValueChange={setSupervisor}
-            >
-              <SelectTrigger id="supervisor">
-                <SelectValue placeholder={t('leave.selectSupervisor')} />
-              </SelectTrigger>
-              <SelectContent>
-                {admins.map((admin) => (
-                  <SelectItem key={admin.id} value={admin.id}>
-                    {admin.admin_name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.supervisor && <p className="text-red-500 text-xs mt-1">{errors.supervisor}</p>}
-          </div>
 
           {/* Reason */}
           <div className="space-y-2">
@@ -920,7 +867,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
             </Label>
             <Input
               id="contact"
-              placeholder={t('leave.contactPlaceholder')}
+              placeholder={t('leave.contactFreePlaceholder')}
               className="w-full"
               value={contact}
               onChange={e => {

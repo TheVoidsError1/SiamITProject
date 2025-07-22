@@ -134,6 +134,7 @@
     "reasonPlaceholder": "กรอกเหตุผลในการลา",
     "contactInfo": "ช่องทางติดต่อ",
     "contactPlaceholder": "หมายเลขโทรศัพท์หรืออีเมล",
+    "contactFreePlaceholder": "ช่องทางติดต่อ (เช่น Line, Facebook, ฯลฯ)",
     "submitLeave": "ส่งคำขอลา",
     "requiresAttachment": "ต้องแนบเอกสาร",
     "attachmentRequired": "จำเป็นต้องแนบเอกสาร",

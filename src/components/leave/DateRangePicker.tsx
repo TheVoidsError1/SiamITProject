@@ -31,7 +31,8 @@ export const DateRangePicker = ({
   // กำหนด minDate เป็นวันนี้ (เวลา 00:00:00) เสมอ
   const today = new Date();
   today.setHours(0,0,0,0);
-  const minDateToUse = minDate || today;
+  // Use minDate only if provided
+  const minDateToUse = minDate;
   // Dynamic locale
   const currentLocale = i18n.language === 'th' ? th : enUS;
   return (
@@ -59,7 +60,7 @@ export const DateRangePicker = ({
               selected={startDate}
               onSelect={onStartDateChange}
               initialFocus
-              disabled={date => date < minDateToUse}
+              disabled={minDateToUse ? (date => date < minDateToUse) : undefined}
             />
           </PopoverContent>
         </Popover>
@@ -88,7 +89,7 @@ export const DateRangePicker = ({
               selected={endDate}
               onSelect={onEndDateChange}
               initialFocus
-              disabled={date => date < minDateToUse}
+              disabled={minDateToUse ? (date => date < minDateToUse) : undefined}
             />
           </PopoverContent>
         </Popover>
