@@ -85,7 +85,8 @@ const AdminDashboard = () => {
   const [pendingLeaveTypesLoading, setPendingLeaveTypesLoading] = useState(false);
   const [pendingLeaveTypesError, setPendingLeaveTypesError] = useState<string | null>(null);
   const [pendingFilterLeaveType, setPendingFilterLeaveType] = useState('');
-  const [historyStatusFilter, setHistoryStatusFilter] = useState('');
+  // --- state สำหรับ filter สถานะ ---
+  const [historyStatusFilter, setHistoryStatusFilter] = useState('approved'); // default เป็น approved
   // --- เพิ่ม state สำหรับ show more/less ของแต่ละ request ---
   const [expandedRejection, setExpandedRejection] = useState<{ [id: string]: boolean }>({});
   const [showApproveDialog, setShowApproveDialog] = useState(false);
@@ -97,6 +98,9 @@ const AdminDashboard = () => {
   // 1. เพิ่ม state
   const [pendingSingleDate, setPendingSingleDate] = useState<Date | undefined>(undefined);
   const [recentSingleDate, setRecentSingleDate] = useState<Date | undefined>(undefined);
+  // --- เพิ่ม state สำหรับ filter ย้อนหลัง ---
+  const [pendingBackdatedFilter, setPendingBackdatedFilter] = useState('all'); // all | backdated | normal
+  const [historyBackdatedFilter, setHistoryBackdatedFilter] = useState('all'); // all | backdated | normal
 
   // ปรับการคำนวณสถิติให้ใช้ข้อมูลจาก leave request ที่ดึงมา
   const pendingCount = pendingRequests.length;
@@ -301,7 +305,10 @@ const AdminDashboard = () => {
     let url = `${API_BASE_URL}/api/leave-request/history?page=${historyPage}&limit=${historyLimit}`;
     if (filterMonth) url += `&month=${filterMonth}`;
     if (filterYear) url += `&year=${filterYear}`;
-    if (historyStatusFilter) url += `&status=${historyStatusFilter}`;
+    // --- บังคับส่ง status=approved เสมอ ---
+    url += `&status=approved`;
+    if (historyBackdatedFilter === 'backdated') url += `&backdated=1`;
+    else if (historyBackdatedFilter === 'normal') url += `&backdated=0`;
     // ถ้าเลือกวันเดียว (recentSingleDate) ให้ filter ด้วย createdAt (param date)
     if (recentSingleDate) {
       url += `&date=${format(recentSingleDate, 'yyyy-MM-dd')}`;
@@ -355,6 +362,8 @@ const AdminDashboard = () => {
         // --- ส่ง page, limit ไป backend ---
         let url = `${API_BASE_URL}/api/leave-request/pending?page=${pendingPage}&limit=${pendingLimit}`;
         if (pendingFilterLeaveType) url += `&leaveType=${pendingFilterLeaveType}`;
+        if (pendingBackdatedFilter === 'backdated') url += `&backdated=1`;
+        else if (pendingBackdatedFilter === 'normal') url += `&backdated=0`;
         // ถ้าเลือกวันเดียว (pendingSingleDate) ให้ filter ด้วย createdAt (param date)
         if (pendingSingleDate) {
           url += `&date=${format(pendingSingleDate, 'yyyy-MM-dd')}`;
@@ -388,11 +397,11 @@ const AdminDashboard = () => {
       }
     };
     fetchPending();
-  }, [t, pendingPage, pendingLimit, pendingFilterLeaveType, pendingDateRange, pendingSingleDate]);
+  }, [t, pendingPage, pendingLimit, pendingFilterLeaveType, pendingDateRange, pendingSingleDate, pendingBackdatedFilter]);
 
   useEffect(() => {
     fetchHistoryRequests();
-  }, [t, historyPage, filterMonth, filterYear, historyLimit, historyStatusFilter, dateRange, recentSingleDate]);
+  }, [t, historyPage, filterMonth, filterYear, historyLimit, historyStatusFilter, dateRange, recentSingleDate, historyBackdatedFilter]);
 
   useEffect(() => {
     let url = `${API_BASE_URL}/api/leave-request/dashboard-stats`;
@@ -491,15 +500,17 @@ const AdminDashboard = () => {
     setPendingDateRange({ from: undefined, to: undefined });
     setPendingSingleDate(undefined); // ล้างวันเดียวด้วย
     setPendingPage(1);
+    setPendingBackdatedFilter('all'); // ล้างตัวกรองย้อนหลัง
   };
   // ฟังก์ชันล้างตัวกรองสำหรับ history/recent
   const clearHistoryFilters = () => {
     setFilterMonth('');
     setFilterYear('');
-    setHistoryStatusFilter('');
+    setHistoryStatusFilter('approved'); // default กลับเป็น approved
     setDateRange({ from: undefined, to: undefined });
     setRecentSingleDate(undefined); // ล้างวันเดียวด้วย
     setHistoryPage(1);
+    setHistoryBackdatedFilter('all'); // ล้างตัวกรองย้อนหลัง
   };
 
   const getLeaveTypeLabel = (typeId: string) => {
@@ -624,6 +635,15 @@ const AdminDashboard = () => {
                       {t('history.clearFilter')}
                     </button>
                   </div>
+                  {/* Pending Tab Filter */}
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-medium">ย้อนหลัง</label>
+                    <select className="border rounded px-2 py-1 text-xs" value={pendingBackdatedFilter} onChange={e => { setPendingBackdatedFilter(e.target.value); setPendingPage(1); }}>
+                      <option value="all">ทั้งหมด</option>
+                      <option value="backdated">เฉพาะย้อนหลัง</option>
+                      <option value="normal">เฉพาะไม่ย้อนหลัง</option>
+                    </select>
+                  </div>
                   {loading ? (
                     <div className="text-center py-10 text-gray-500">{t('common.loading')}</div>
                   ) : error ? (
@@ -647,9 +667,14 @@ const AdminDashboard = () => {
                               </h3>
                               <p className="text-sm text-gray-600">{i18n.language.startsWith('th') ? request.leaveTypeName_th : request.leaveTypeName_en}</p>
                             </div>
-                            <Badge variant="outline" className="text-orange-600 border-orange-200">
-                              {t('admin.pending')}
-                            </Badge>
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className="text-orange-600 border-orange-200">
+                                {t('admin.pending')}
+                              </Badge>
+                              {request.backdated === 1 && (
+                                <span className="bg-red-500 text-white px-2 py-0.5 rounded text-xs ml-1">ย้อนหลัง</span>
+                              )}
+                            </div>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                             <div>
@@ -832,7 +857,6 @@ const AdminDashboard = () => {
                       value={historyStatusFilter}
                       onChange={e => { setHistoryStatusFilter(e.target.value); setHistoryPage(1); }}
                     >
-                      <option value="">{t('admin.allStatuses', 'ทุกสถานะ')}</option>
                       <option value="approved">{t('leave.approved')}</option>
                       <option value="rejected">{t('leave.rejected')}</option>
                     </select>
@@ -844,9 +868,18 @@ const AdminDashboard = () => {
                       {t('history.clearFilter')}
                     </button>
                   </div>
+                  {/* History Tab Filter */}
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-medium">ย้อนหลัง</label>
+                    <select className="border rounded px-2 py-1 text-xs" value={historyBackdatedFilter} onChange={e => { setHistoryBackdatedFilter(e.target.value); setHistoryPage(1); }}>
+                      <option value="all">ทั้งหมด</option>
+                      <option value="backdated">เฉพาะย้อนหลัง</option>
+                      <option value="normal">เฉพาะไม่ย้อนหลัง</option>
+                    </select>
+                  </div>
                   {loading ? (
                     <div className="text-center py-10 text-gray-500">{t('common.loading')}</div>
-                  ) : historyRequests.filter(request => request.status !== "pending").length === 0 ? (
+                  ) : historyRequests.length === 0 ? (
                     <div className="text-center text-gray-500 py-10">
                       {filterMonth || filterYear
                         ? t('admin.noDataForSelectedMonthYear', 'ไม่พบข้อมูลในเดือน/ปีที่เลือก')
@@ -854,7 +887,7 @@ const AdminDashboard = () => {
                     </div>
                   ) : (
                     <div className="space-y-4">
-                      {historyRequests.filter(request => request.status !== "pending").map((request) => {
+                      {historyRequests.map((request) => {
                         // คำนวณจำนวนวันลา
                         const start = new Date(request.startDate);
                         const end = new Date(request.endDate);
@@ -875,24 +908,29 @@ const AdminDashboard = () => {
                             className="relative border border-gray-200 rounded-lg p-6 flex flex-col gap-4"
                           >
                             {/* Badge มุมขวาบน */}
-                            <Badge
-                              className={
-                                (request.status === "approved"
-                                  ? "bg-green-100 text-green-800 border-green-200"
-                                  : "bg-red-100 text-red-800 border-red-200") +
-                                " flex items-center absolute right-6 top-6"
-                              }
-                            >
-                              {request.status === "approved" ? (
-                                <>
-                                  <CheckCircle className="w-4 h-4 mr-1" /> {t('admin.approved')}
-                                </>
-                              ) : (
-                                <>
-                                  <XCircle className="w-4 h-4 mr-1" /> {t('admin.rejected')}
-                                </>
+                            <div className="flex items-center gap-2 absolute right-6 top-6">
+                              <Badge
+                                className={
+                                  (request.status === "approved"
+                                    ? "bg-green-100 text-green-800 border-green-200"
+                                    : "bg-red-100 text-red-800 border-red-200") +
+                                  " flex items-center"
+                                }
+                              >
+                                {request.status === "approved" ? (
+                                  <>
+                                    <CheckCircle className="w-4 h-4 mr-1" /> {t('admin.approved')}
+                                  </>
+                                ) : (
+                                  <>
+                                    <XCircle className="w-4 h-4 mr-1" /> {t('admin.rejected')}
+                                  </>
+                                )}
+                              </Badge>
+                              {(request.backdated === 1 || request.backdated === true) && (
+                                <span className="bg-red-500 text-white px-2 py-0.5 rounded text-xs ml-0.5">{t('leave.backdated', 'ย้อนหลัง')}</span>
                               )}
-                            </Badge>
+                            </div>
 
                             {/* ข้อมูล leave หลัก */}
                             <div className="flex-1">

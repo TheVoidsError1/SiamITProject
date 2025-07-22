@@ -353,6 +353,63 @@
            endOfDay.setHours(23, 59, 59, 999);
            where = { ...where, createdAt: Between(startOfDay, endOfDay) };
          }
+         // --- เพิ่ม filter backdated ---
+         const backdatedParam = req.query.backdated;
+         let backdatedFiltered = false;
+         if (backdatedParam === '1' || backdatedParam === '0') {
+           // ดึงข้อมูลทั้งหมดก่อน filter
+           let all = await leaveRepo.find({ where, order: { createdAt: 'DESC' } });
+           if (backdatedParam === '1') {
+             all = all.filter(l => l.startDate && l.createdAt && new Date(l.startDate) < new Date(l.createdAt));
+           } else if (backdatedParam === '0') {
+             all = all.filter(l => l.startDate && l.createdAt && new Date(l.startDate) >= new Date(l.createdAt));
+           }
+           // paginate ด้วยตัวเอง
+           const total = all.length;
+           const page = parseInt(req.query.page) || 1;
+           const limit = parseInt(req.query.limit) || 4;
+           const skip = (page - 1) * limit;
+           const paged = all.slice(skip, skip + limit);
+           // join user/leaveType เหมือนเดิม
+           const result = await Promise.all(paged.map(async (leave) => {
+             let user = null;
+             let leaveTypeObj = null;
+             if (leave.Repid) {
+               user = await userRepo.findOneBy({ id: leave.Repid });
+               if (!user) {
+                 const adminRepo = AppDataSource.getRepository('Admin');
+                 const admin = await adminRepo.findOneBy({ id: leave.Repid });
+                 if (admin) {
+                   user = { User_name: admin.admin_name, department: admin.department, position: admin.position };
+                 } else {
+                   const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+                   const superadmin = await superadminRepo.findOneBy({ id: leave.Repid });
+                   if (superadmin) {
+                     user = { User_name: superadmin.superadmin_name, department: superadmin.department, position: superadmin.position };
+                   }
+                 }
+               } else {
+                 user = { User_name: user.User_name, department: user.department, position: user.position };
+               }
+             }
+             let leaveTypeName_th = null;
+             let leaveTypeName_en = null;
+             if (leave.leaveType) {
+               leaveTypeObj = await leaveTypeRepo.findOneBy({ id: leave.leaveType });
+               leaveTypeName_th = leaveTypeObj ? leaveTypeObj.leave_type_th : leave.leaveType;
+               leaveTypeName_en = leaveTypeObj ? leaveTypeObj.leave_type_en : leave.leaveType;
+             }
+             return {
+               ...leave,
+               user: user ? { User_name: user.User_name, department: user.department, position: user.position } : null,
+               leaveTypeName_th,
+               leaveTypeName_en,
+               attachments: parseAttachments(leave.attachments),
+               backdated: (leave.startDate && leave.createdAt && new Date(leave.startDate) < new Date(leave.createdAt)) ? 1 : 0,
+             };
+           }));
+           return res.json({ status: 'success', data: result, total, page, totalPages: Math.ceil(total / limit), message: lang === 'th' ? 'ดึงข้อมูลสำเร็จ' : 'Fetch success' });
+         }
          // ดึง leave requests ที่ pending (paging)
          const [pendingLeaves, total] = await Promise.all([
            leaveRepo.find({
@@ -400,6 +457,7 @@
              leaveTypeName_th,
              leaveTypeName_en,
              attachments: parseAttachments(leave.attachments),
+             backdated: (leave.startDate && leave.createdAt && new Date(leave.startDate) < new Date(leave.createdAt)) ? 1 : 0,
            };
          }));
          res.json({ status: 'success', data: result, total, page, totalPages: Math.ceil(total / limit), message: lang === 'th' ? 'ดึงข้อมูลสำเร็จ' : 'Fetch success' });
@@ -513,6 +571,13 @@
              return { ...w, createdAt: Between(startOfDay, endOfDay) };
            });
          }
+         // --- เพิ่ม filter backdated (ใช้ field จริงจาก database) ---
+         const backdatedParamH = req.query.backdated;
+         if (backdatedParamH === '1' || backdatedParamH === '0') {
+           where = Array.isArray(where)
+             ? where.map(w => ({ ...w, backdated: Number(backdatedParamH) }))
+             : { ...where, backdated: Number(backdatedParamH) };
+         }
          // --- เพิ่ม paging ---
          const page = parseInt(req.query.page) || 1;
          const limit = parseInt(req.query.limit) || 5;
@@ -605,6 +670,8 @@
              rejectedBy,
              rejectionReason: leave.rejectedReason || null,
              attachments: parseAttachments(leave.attachments),
+             // ส่ง backdated ตรงจาก db
+             backdated: leave.backdated,
            };
          }));
          res.json({ status: 'success', data: result, total, page, totalPages: Math.ceil(total / limit), approvedCount, rejectedCount, message: lang === 'th' ? 'ดึงข้อมูลสำเร็จ' : 'Fetch success' });
