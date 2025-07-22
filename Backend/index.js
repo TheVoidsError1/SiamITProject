@@ -34,7 +34,6 @@ const AppDataSource = new DataSource({
     require('./EnityTable/leaveType.js'),
     require('./EnityTable/department.js'),
     require('./EnityTable/leaveQuota.js'),
-    require('./EnityTable/leaveRequestLate.js')
   ],
 });
 
