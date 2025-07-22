@@ -1,20 +1,19 @@
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from "@/hooks/use-toast";
 import { differenceInCalendarDays, format } from "date-fns";
 import { th } from "date-fns/locale";
-import { AlertCircle, CheckCircle, Clock, Eye, TrendingUp, Users, XCircle, FileText } from "lucide-react";
-import React, { useEffect, useState } from "react";
+import { AlertCircle, Calendar, CheckCircle, Clock, Eye, FileText, Users, XCircle } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useAuth } from '@/contexts/AuthContext';
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "lucide-react";
 
 type LeaveRequest = {
   id: number;
@@ -515,7 +514,7 @@ const AdminDashboard = () => {
           <SidebarTrigger />
           <div className="flex-1">
             <h1 className="text-2xl font-bold text-gray-900">
-              {t('navigation.adminDashboard')}
+              {t('navigation.adminDashboard', i18n.language === 'th' ? 'แดชบอร์ดผู้ดูแลระบบ' : 'Admin Dashboard')}
             </h1>
             <p className="text-sm text-gray-600">
               {t('admin.dashboardDesc')}
@@ -1081,7 +1080,7 @@ const AdminDashboard = () => {
                       <span className="font-semibold text-blue-800">{t('leave.submittedDate', 'วันที่ส่งคำขอ')}:</span> {selectedRequest.createdAt ? selectedRequest.createdAt.split('T')[0] : "-"}
                     </div>
                     <div>
-                      <span className="font-semibold text-blue-800">{t('leave.contact', 'เบอร์ติดต่อ')}:</span> {selectedRequest.contact || "-"}
+                      <span className="font-semibold text-blue-800">{t('leave.contactMethod', 'ช่องทางการติดต่อ')}:</span> {selectedRequest.contact || "-"}
                     </div>
                     <div>
                       <span className="font-semibold text-blue-800">{t('leave.leaveTime', 'เวลาที่ลา:')}</span> {selectedRequest?.startTime && selectedRequest?.endTime
