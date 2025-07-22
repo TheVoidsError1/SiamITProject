@@ -255,6 +255,15 @@
            const leaveStart = parseLocalDate(startDate);
            if (leaveStart && leaveStart < today) {
              backdated = true;
+           } else if (leaveStart && leaveStart.getTime() === today.getTime() && startTime) {
+             // If leave is for today, check if startTime is in the past
+             const now = new Date();
+             const [startHour, startMinute] = startTime.split(":").map(Number);
+             const leaveStartDateTime = new Date(leaveStart);
+             leaveStartDateTime.setHours(startHour, startMinute, 0, 0);
+             if (leaveStartDateTime < now) {
+               backdated = true;
+             }
            }
          }
          const leaveData = {
