@@ -671,7 +671,7 @@ const AdminDashboard = () => {
                                 {t('admin.pending')}
                               </Badge>
                               {request.backdated === 1 && (
-                                <span className="bg-red-500 text-white px-2 py-0.5 rounded text-xs ml-1">ย้อนหลัง</span>
+                                <span className="bg-red-500 text-white px-2 py-0.5 rounded text-xs ml-0.5">{t('leave.backdated', 'ย้อนหลัง')}</span>
                               )}
                             </div>
                           </div>
@@ -926,7 +926,7 @@ const AdminDashboard = () => {
                                   </>
                                 )}
                               </Badge>
-                              {(request.backdated === 1 || request.backdated === true) && (
+                              {request.backdated === 1 && (
                                 <span className="bg-red-500 text-white px-2 py-0.5 rounded text-xs ml-0.5">{t('leave.backdated', 'ย้อนหลัง')}</span>
                               )}
                             </div>

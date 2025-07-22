@@ -394,7 +394,7 @@
                leaveTypeName_th,
                leaveTypeName_en,
                attachments: parseAttachments(leave.attachments),
-               backdated: (leave.startDate && leave.createdAt && new Date(leave.startDate) < new Date(leave.createdAt)) ? 1 : 0,
+               backdated: Number(leave.backdated),
              };
            }));
            return res.json({ status: 'success', data: result, total, page, totalPages: Math.ceil(total / limit), message: lang === 'th' ? 'ดึงข้อมูลสำเร็จ' : 'Fetch success' });
@@ -446,7 +446,7 @@
              leaveTypeName_th,
              leaveTypeName_en,
              attachments: parseAttachments(leave.attachments),
-             backdated: (leave.startDate && leave.createdAt && new Date(leave.startDate) < new Date(leave.createdAt)) ? 1 : 0,
+             backdated: Number(leave.backdated),
            };
          }));
          res.json({ status: 'success', data: result, total, page, totalPages: Math.ceil(total / limit), message: lang === 'th' ? 'ดึงข้อมูลสำเร็จ' : 'Fetch success' });
@@ -660,7 +660,7 @@
              rejectionReason: leave.rejectedReason || null,
              attachments: parseAttachments(leave.attachments),
              // ส่ง backdated ตรงจาก db
-             backdated: leave.backdated,
+             backdated: Number(leave.backdated),
            };
          }));
          res.json({ status: 'success', data: result, total, page, totalPages: Math.ceil(total / limit), approvedCount, rejectedCount, message: lang === 'th' ? 'ดึงข้อมูลสำเร็จ' : 'Fetch success' });
@@ -887,7 +887,7 @@
              rejectionReason: leave.rejectedReason || null,
              attachments: parseAttachments(leave.attachments),
              // เพิ่ม backdated
-             backdated: (leave.startDate && leave.createdAt && new Date(leave.startDate) < new Date(leave.createdAt)) ? 1 : 0,
+             backdated: Number(leave.backdated),
            };
          }));
          res.json({ status: 'success', data: result, total, page, totalPages: Math.ceil(total / limit) });
@@ -1080,7 +1080,7 @@
              createdAt: leave.createdAt, // เพิ่มฟิลด์นี้
              attachments: parseAttachments(leave.attachments),
              // เพิ่ม backdated
-             backdated: (leave.startDate && leave.createdAt && new Date(leave.startDate) < new Date(leave.createdAt)) ? 1 : 0,
+             backdated: Number(leave.backdated),
            }
          });
        } catch (err) {
