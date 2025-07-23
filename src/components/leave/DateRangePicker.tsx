@@ -89,7 +89,8 @@ export const DateRangePicker = ({
               selected={endDate}
               onSelect={onEndDateChange}
               initialFocus
-              disabled={minDateToUse ? (date => date < minDateToUse) : undefined}
+              // ปรับ logic: endDate เลือกได้ไม่น้อยกว่า startDate
+              disabled={startDate ? (date => date < startDate) : undefined}
             />
           </PopoverContent>
         </Popover>
