@@ -35,7 +35,8 @@
     "pleaseLoginAgain": "กรุณาเข้าสู่ระบบใหม่",
     "passwordRequired": "กรุณากรอกรหัสผ่านใหม่ และ กรุณายืนยันรหัสผ่าน",
     "role": "บทบาท",
-    "selectRole": "เลือกบทบาท"
+    "selectRole": "เลือกบทบาท",
+    "loginAgain": "กรุณาเข้าสู่ระบบใหม่"
   },
   "navigation": {
     "home": "หน้าหลัก",

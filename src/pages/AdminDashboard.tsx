@@ -110,6 +110,13 @@ const AdminDashboard = () => {
   const [pendingRecentSingleDate, setPendingRecentSingleDate] = useState(recentSingleDate);
   const [pendingHistoryBackdatedFilter, setPendingHistoryBackdatedFilter] = useState(historyBackdatedFilter);
 
+  // --- เพิ่ม state สำหรับ pending filter (Pending Tab) ---
+  const [pendingPendingFilterLeaveType, setPendingPendingFilterLeaveType] = useState(pendingFilterLeaveType);
+  const [pendingPendingDateRange, setPendingPendingDateRange] = useState(pendingDateRange);
+  const [pendingPendingSingleDate, setPendingPendingSingleDate] = useState(pendingSingleDate);
+  const [pendingPendingBackdatedFilter, setPendingPendingBackdatedFilter] = useState(pendingBackdatedFilter);
+  const [pendingPendingPage, setPendingPendingPage] = useState(pendingPage);
+
   // ปรับการคำนวณสถิติให้ใช้ข้อมูลจาก leave request ที่ดึงมา
   const pendingCount = pendingRequests.length;
   const approvedThisMonth = recentRequests.filter(r => {
@@ -542,6 +549,30 @@ const AdminDashboard = () => {
     setPendingHistoryBackdatedFilter('all');
   };
 
+  // --- ฟังก์ชัน apply filter ---
+  const applyPendingFilters = () => {
+    setPendingFilterLeaveType(pendingPendingFilterLeaveType);
+    setPendingDateRange(pendingPendingDateRange);
+    setPendingSingleDate(pendingPendingSingleDate);
+    setPendingBackdatedFilter(pendingPendingBackdatedFilter);
+    setPendingPage(1);
+  };
+
+  // --- ปรับ clearPendingFilters ให้รีเซ็ต pending ด้วย ---
+  const clearPendingFilters = () => {
+    setPendingFilterLeaveType('');
+    setPendingDateRange({ from: undefined, to: undefined });
+    setPendingSingleDate(undefined);
+    setPendingPage(1);
+    setPendingBackdatedFilter('all');
+    // reset pending
+    setPendingPendingFilterLeaveType('');
+    setPendingPendingDateRange({ from: undefined, to: undefined });
+    setPendingPendingSingleDate(undefined);
+    setPendingPendingBackdatedFilter('all');
+    setPendingPendingPage(1);
+  };
+
   const getLeaveTypeLabel = (typeId: string) => {
     const found = pendingLeaveTypes.find(lt => lt.id === typeId || lt.leave_type === typeId);
     if (!found) return typeId;
@@ -612,6 +643,7 @@ const AdminDashboard = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-6">
+                  {/* Pending Tab Filter */}
                   <div className="flex flex-wrap gap-4 items-center mb-6">
                     {/* Date Range Picker for Pending */}
                     <Popover>
@@ -621,14 +653,14 @@ const AdminDashboard = () => {
                           className="w-48 min-w-[180px] max-w-full justify-start text-left font-normal whitespace-nowrap"
                         >
                           <Calendar className="mr-2 h-4 w-4" />
-                          {pendingSingleDate ? format(pendingSingleDate, "dd/MM/yyyy") : t('history.selectSingleDate', 'เลือกวันเดียว')}
+                          {pendingPendingSingleDate ? format(pendingPendingSingleDate, "dd/MM/yyyy") : t('history.selectSingleDate', 'เลือกวันเดียว')}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
                         <CalendarComponent
                           mode="single"
-                          selected={pendingSingleDate}
-                          onSelect={date => setPendingSingleDate(date)}
+                          selected={pendingPendingSingleDate}
+                          onSelect={date => setPendingPendingSingleDate(date)}
                         />
                       </PopoverContent>
                     </Popover>
@@ -640,9 +672,9 @@ const AdminDashboard = () => {
                       <span className="text-red-500 text-sm">{pendingLeaveTypesError}</span>
                     ) : (
                       <select
-                        className="border rounded px-2 py-1"
-                        value={pendingFilterLeaveType}
-                        onChange={e => { setPendingFilterLeaveType(e.target.value); setPendingPage(1); }}
+                        className="border rounded px-2 py-1 min-w-[120px]"
+                        value={pendingPendingFilterLeaveType}
+                        onChange={e => setPendingPendingFilterLeaveType(e.target.value)}
                       >
                         <option value="">{t('leave.allTypes')}</option>
                         {pendingLeaveTypes.map(lt => (
@@ -652,23 +684,32 @@ const AdminDashboard = () => {
                         ))}
                       </select>
                     )}
-                    {/* ปุ่มล้าง filter */}
+                    {/* Backdated Filter (ย้ายขึ้นมาแถวเดียวกัน) */}
+                    <label className="text-sm font-medium">{t('leave.backdatedLabel')}</label>
+                    <select
+                      className="border rounded px-2 py-1 min-w-[120px]"
+                      value={pendingPendingBackdatedFilter}
+                      onChange={e => setPendingPendingBackdatedFilter(e.target.value)}
+                    >
+                      <option value="all">{t('leave.backdatedAll')}</option>
+                      <option value="backdated">{t('leave.backdatedOnly')}</option>
+                      <option value="normal">{t('leave.notBackdatedOnly')}</option>
+                    </select>
+                    {/* ปุ่มยืนยัน/ล้าง filter */}
                     <button
-                      className="ml-2 px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm"
-                      onClick={clearHistoryFilters}
+                      className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm"
+                      onClick={applyPendingFilters}
+                      type="button"
+                    >
+                      {t('common.confirm', 'ยืนยัน')}
+                    </button>
+                    <button
+                      className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm"
+                      onClick={clearPendingFilters}
                       type="button"
                     >
                       {t('history.clearFilter')}
                     </button>
-                  </div>
-                  {/* Pending Tab Filter */}
-                  <div className="flex items-center gap-2">
-                    <label className="text-xs font-medium">{t('leave.backdatedLabel', 'ย้อนหลัง')}</label>
-                    <select className="border rounded px-2 py-1 text-xs" value={pendingBackdatedFilter} onChange={e => { setPendingBackdatedFilter(e.target.value); setPendingPage(1); }}>
-                      <option value="all">{t('leave.backdatedAll', 'ทั้งหมด')}</option>
-                      <option value="backdated">{t('leave.backdatedOnly', 'เฉพาะย้อนหลัง')}</option>
-                      <option value="normal">{t('leave.notBackdatedOnly', 'เฉพาะไม่ย้อนหลัง')}</option>
-                    </select>
                   </div>
                   {loading ? (
                     <div className="text-center py-10 text-gray-500">{t('common.loading')}</div>
@@ -823,9 +864,10 @@ const AdminDashboard = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-6">
+                  {/* --- ใน JSX ส่วน Recent History Filter --- */}
                   <div className="flex flex-wrap gap-4 items-center mb-6">
                     <label className="text-sm font-medium">{t('history.filterByMonthYear')}</label>
-                    {/* Date Range Picker */}
+                    {/* Date Picker */}
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
@@ -852,7 +894,7 @@ const AdminDashboard = () => {
                       <span className="text-red-500 text-sm">{pendingLeaveTypesError}</span>
                     ) : (
                       <select
-                        className="border rounded px-2 py-1"
+                        className="border rounded px-2 py-1 min-w-[120px]"
                         value={pendingHistoryFilterLeaveType}
                         onChange={e => setPendingHistoryFilterLeaveType(e.target.value)}
                       >
@@ -865,7 +907,7 @@ const AdminDashboard = () => {
                       </select>
                     )}
                     <select
-                      className="border rounded px-2 py-1"
+                      className="border rounded px-2 py-1 min-w-[120px]"
                       value={pendingFilterMonth}
                       onChange={e => {
                         const value = e.target.value ? Number(e.target.value) : '';
@@ -891,7 +933,7 @@ const AdminDashboard = () => {
                       onChange={e => setPendingFilterYear(e.target.value ? Number(e.target.value) : '')}
                     />
                     <select
-                      className="border rounded px-2 py-1"
+                      className="border rounded px-2 py-1 min-w-[120px]"
                       value={pendingHistoryStatusFilter}
                       onChange={e => setPendingHistoryStatusFilter(e.target.value)}
                     >
@@ -899,7 +941,18 @@ const AdminDashboard = () => {
                       <option value="approved">{t('leave.approved')}</option>
                       <option value="rejected">{t('leave.rejected')}</option>
                     </select>
-                    {/* ปุ่มยืนยัน */}
+                    {/* Backdated Filter (ย้ายขึ้นมาแถวเดียวกัน) */}
+                    <label className="text-sm font-medium">{t('leave.backdatedLabel')}</label>
+                    <select
+                      className="border rounded px-2 py-1 min-w-[120px]"
+                      value={pendingHistoryBackdatedFilter}
+                      onChange={e => setPendingHistoryBackdatedFilter(e.target.value)}
+                    >
+                      <option value="all">{t('leave.backdatedAll')}</option>
+                      <option value="backdated">{t('leave.backdatedOnly')}</option>
+                      <option value="normal">{t('leave.notBackdatedOnly')}</option>
+                    </select>
+                    {/* ปุ่มยืนยัน/ล้างตัวกรอง */}
                     <button
                       className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm"
                       onClick={applyHistoryFilters}
@@ -916,14 +969,14 @@ const AdminDashboard = () => {
                     </button>
                   </div>
                   {/* History Tab Filter */}
-                  <div className="flex items-center gap-2">
+                  {/* <div className="flex items-center gap-2">
                     <label className="text-xs font-medium">{t('leave.backdatedLabel', 'ย้อนหลัง')}</label>
                     <select className="border rounded px-2 py-1 text-xs" value={historyBackdatedFilter} onChange={e => { setHistoryBackdatedFilter(e.target.value); setHistoryPage(1); }}>
                       <option value="all">{t('leave.backdatedAll', 'ทั้งหมด')}</option>
                       <option value="backdated">{t('leave.backdatedOnly', 'เฉพาะย้อนหลัง')}</option>
                       <option value="normal">{t('leave.notBackdatedOnly', 'เฉพาะไม่ย้อนหลัง')}</option>
                     </select>
-                  </div>
+                  </div> */}
                   {loading ? (
                     <div className="text-center py-10 text-gray-500">{t('common.loading')}</div>
                   ) : historyRequests.length === 0 ? (
@@ -1217,22 +1270,13 @@ const AdminDashboard = () => {
                                   ) : (
                                     <a
                                       href={fileUrl}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
+                                      download
                                       className="flex items-center gap-2 px-3 py-2 border rounded bg-gray-50 hover:bg-gray-100 text-blue-700"
                                       style={{ marginTop: 8 }}
                                     >
                                       <span role="img" aria-label="file">📄</span> {file}
                                     </a>
                                   )}
-                                  {/* ปุ่มดาวน์โหลด */}
-                                  <a
-                                    href={fileUrl}
-                                    download
-                                    className="mt-1 text-xs text-blue-600 underline hover:text-blue-800"
-                                  >
-                                    {t('common.download', 'ดาวน์โหลด')}
-                                  </a>
                                 </div>
                               );
                             })}
