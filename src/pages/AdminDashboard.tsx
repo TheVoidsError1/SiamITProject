@@ -723,13 +723,13 @@ const AdminDashboard = () => {
                       />
                     </div>
                     <div className="flex flex-col min-w-[120px]">
-                      <label className="text-xs font-medium mb-1">{t('leave.status', 'Status')}</label>
+                      <label className="text-xs font-medium mb-1">{t('leave.backdatedLabel', 'Backdated')}</label>
                       <select
                         className="border rounded px-2 py-1"
                         value={pendingPendingBackdatedFilter}
                         onChange={e => setPendingPendingBackdatedFilter(e.target.value)}
                       >
-                        <option value="all">{t('leave.allStatus', 'All status')}</option>
+                        <option value="all">{t('leave.backdatedAll', 'All')}</option>
                         <option value="backdated">{t('leave.backdatedOnly', 'Backdated only')}</option>
                         <option value="normal">{t('leave.notBackdatedOnly', 'Non-backdated only')}</option>
                       </select>
@@ -966,10 +966,9 @@ const AdminDashboard = () => {
                         value={pendingHistoryStatusFilter}
                         onChange={e => setPendingHistoryStatusFilter(e.target.value)}
                       >
-                        <option value="all">{t('leave.allStatus', 'All status')}</option>
+                        <option value="all">{t('admin.allStatuses', 'All status')}</option>
                         <option value="approved">{t('leave.approved', 'Approved')}</option>
                         <option value="rejected">{t('leave.rejected', 'Rejected')}</option>
-                        <option value="backdated">{t('leave.backdated', 'Backdated')}</option>
                       </select>
                     </div>
                     <div className="flex flex-col min-w-[120px]">
