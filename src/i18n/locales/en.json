@@ -193,9 +193,15 @@
     "notBackdatedOnly": "Non-backdated only"
   },
   "leaveTypes": {
-    "ลาพักร้อน": "Vacation Leave",
-    "ลาป่วย": "Sick Leave", 
+    "all": "All",
+    "Emergency": "Emergency Leave",
+    "Vacation": "Vacation Leave",
+    "Sick": "Sick Leave",
+    "Maternity": "Maternity Leave",
+    "Personal": "Personal Leave",
     "ลากิจ": "Personal Leave",
+    "ลาพักร้อน": "Vacation Leave",
+    "ลาป่วย": "Sick Leave",
     "ลาคลอด": "Maternity Leave",
     "ลาฉุกเฉิน": "Emergency Leave",
     "ลาพักผ่อน": "Annual Leave",
@@ -203,6 +209,8 @@
   },
   "months": {
     "all": "All",
+    "month": "Month",
+    "year": "Year",
     "1": "January",
     "2": "February",
     "3": "March",
@@ -418,7 +426,10 @@
     "leaveHistoryDesc": "Employee leave history",
     "name": "name",
     "superadmin": "Superadmin",
-    "setNewPassword": "Set a new password"
+    "setNewPassword": "Set a new password",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel"
   },
   "notification": {
     "title": "Notifications",
@@ -432,8 +443,49 @@
     "markAllAsRead": "Mark All as Read"
   },
   "usedLeaveDaysText": "Used leave days:",
+  "leave": {
+    "leaveHistory": "Leave History",
+    "type": "Leave Type",
+    "date": "Leave Date",
+    "duration": "Duration",
+    "reason": "Reason",
+    "status": "Status",
+    "approved": "Approved",
+    "pending": "Pending",
+    "rejected": "Rejected",
+    "submittedDate": "Submitted Date",
+    "backdated": "Backdated",
+    "backdatedFilter": "Leave Timing",
+    "allBackdated": "All",
+    "notBackdated": "Non-backdated",
+    "noHistoryForPeriod": "No leave history for this period.",
+    "allTypes": "All types",
+    "invalidPhone": "Please enter a valid phone number, e.g. 0912456147",
+    "invalidEmail": "Please enter a valid email address, e.g. example@email.com",
+    "durationType": "Duration Type",
+    "selectDurationType": "Select duration type",
+    "backdatedNotice": "This leave request is backdated.",
+    "contactMethod": "Contact Method",
+    "backdatedLabel": "Backdated",
+    "backdatedAll": "All",
+    "backdatedOnly": "Backdated only",
+    "notBackdatedOnly": "Non-backdated only"
+  },
   "common": {
     "days": "days",
-    "hours": "hours"
+    "hours": "hours",
+    "reset": "Reset",
+    "confirm": "Confirm",
+    "actions": "Actions",
+    "viewDetails": "View Details",
+    "delete": "Delete",
+    "back": "Back"
+  },
+  "status": {
+    "all": "All",
+    "approved": "Approved",
+    "pending": "Pending",
+    "rejected": "Rejected",
+    "status": "Status"
   }
 }

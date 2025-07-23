@@ -81,6 +81,9 @@ const EmployeeDetail = () => {
   const [showYearError, setShowYearError] = useState(false);
   const [showStatusError, setShowStatusError] = useState(false);
 
+  // เพิ่ม state สำหรับ force render เมื่อเปลี่ยนภาษา
+  const [langVersion, setLangVersion] = useState(0);
+
   // --- สร้างรายการปี (ย้อนหลัง 3 ปี) ---
   const currentYear = new Date().getFullYear();
   const yearOptions = [currentYear, currentYear-1, currentYear-2];
@@ -206,6 +209,11 @@ const EmployeeDetail = () => {
     };
     fetchLeaveTypes();
   }, []);
+
+  // useEffect สำหรับเปลี่ยนภาษาแล้ว force render dropdown label
+  useEffect(() => {
+    setLangVersion(v => v + 1);
+  }, [i18n.language]);
 
   // อ่าน role จาก query string
   const queryParams = new URLSearchParams(location.search);
@@ -488,17 +496,17 @@ const EmployeeDetail = () => {
                       <>
                         <Button onClick={handleSave} size="sm" className="bg-green-600 hover:bg-green-700">
                           <Save className="w-4 h-4 mr-2" />
-                          {t('common.save')}
+                          {t('employee.save')}
                         </Button>
                         <Button onClick={handleCancel} size="sm" variant="outline">
                           <X className="w-4 h-4 mr-2" />
-                          {t('common.cancel')}
+                          {t('employee.cancel')}
                         </Button>
                       </>
                     ) : (
                       <Button onClick={handleEdit} size="sm" variant="outline">
                         <Edit className="w-4 h-4 mr-2" />
-                        {t('common.edit')}
+                        {t('employee.edit')}
                       </Button>
                     )}
                   </div>
@@ -541,19 +549,20 @@ const EmployeeDetail = () => {
               <div className="flex flex-col col-span-1">
                 <label className="text-xs text-gray-500 mb-1">{t('leave.type')}</label>
                 <Select value={pendingFilterType} onValueChange={v => { setPendingFilterType(v); setShowTypeError(false); }}>
-                  <SelectTrigger className="min-w-[9rem] w-36">{
-                    !pendingFilterType || pendingFilterType === '' || pendingFilterType === 'all'
-                      ? t('leave.all', 'All')
-                      : (() => {
-                          const found = leaveTypes.find(lt => lt.id === pendingFilterType);
-                          if (found) {
-                            return i18n.language.startsWith('th') ? found.leave_type_th : found.leave_type_en;
-                          }
-                          return pendingFilterType;
-                        })()
-                  }</SelectTrigger>
+                  <SelectTrigger className="min-w-[9rem] w-36">
+                    {(() => {
+                      if (!pendingFilterType || pendingFilterType === '' || pendingFilterType === 'all') {
+                        return t('leaveTypes.all');
+                      }
+                      const found = leaveTypes.find(lt => lt.id === pendingFilterType);
+                      if (found) {
+                        return i18n.language.startsWith('th') ? found.leave_type_th : found.leave_type_en;
+                      }
+                      return pendingFilterType;
+                    })()}
+                  </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">{t('leave.all', 'All')}</SelectItem>
+                    <SelectItem value="all">{t('leaveTypes.all')}</SelectItem>
                     {leaveTypesLoading ? (
                       <div className="px-2 py-1 text-gray-500">{t('common.loading')}</div>
                     ) : leaveTypesError ? (
@@ -561,7 +570,12 @@ const EmployeeDetail = () => {
                     ) : (
                       leaveTypes.map(lt => (
                         <SelectItem key={lt.id} value={lt.id}>
-                          {i18n.language.startsWith('th') ? lt.leave_type_th : lt.leave_type_en}
+                          {lt.leave_type === 'all'
+                            ? t('leaveTypes.all')
+                            : t(`leaveTypes.${lt.leave_type}`) !== `leaveTypes.${lt.leave_type}`
+                              ? t(`leaveTypes.${lt.leave_type}`)
+                              : (i18n.language.startsWith('th') ? lt.leave_type_th : lt.leave_type_en)
+                          }
                         </SelectItem>
                       ))
                     )}
@@ -570,43 +584,26 @@ const EmployeeDetail = () => {
                 {showTypeError && <span className="text-red-500 text-xs absolute right-2 top-0">*</span>}
               </div>
               <div className="flex flex-col col-span-1">
-                <label className="text-xs text-gray-500 mb-1">{t('common.month')}</label>
+                <label className="text-xs text-gray-500 mb-1">{t('months.month')}</label>
                 <Select value={pendingFilterMonth} onValueChange={v => { setPendingFilterMonth(v); setShowMonthError(false); }}>
-                  <SelectTrigger className="min-w-[9rem] w-36">{
-                    !pendingFilterMonth || pendingFilterMonth === ''
-                      ? t('common.month')
-                      : pendingFilterMonth === 'all'
-                        ? t('months.all')
-                        : t(`months.${pendingFilterMonth}`)
-                  }</SelectTrigger>
+                  <SelectTrigger className="min-w-[9rem] w-36">
+                    {pendingFilterMonth === 'all' ? t('months.all') : t(`months.${pendingFilterMonth}`)}
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">{t('months.all')}</SelectItem>
-                    <SelectItem value="1">{t('months.1')}</SelectItem>
-                    <SelectItem value="2">{t('months.2')}</SelectItem>
-                    <SelectItem value="3">{t('months.3')}</SelectItem>
-                    <SelectItem value="4">{t('months.4')}</SelectItem>
-                    <SelectItem value="5">{t('months.5')}</SelectItem>
-                    <SelectItem value="6">{t('months.6')}</SelectItem>
-                    <SelectItem value="7">{t('months.7')}</SelectItem>
-                    <SelectItem value="8">{t('months.8')}</SelectItem>
-                    <SelectItem value="9">{t('months.9')}</SelectItem>
-                    <SelectItem value="10">{t('months.10')}</SelectItem>
-                    <SelectItem value="11">{t('months.11')}</SelectItem>
-                    <SelectItem value="12">{t('months.12')}</SelectItem>
+                    {[...Array(12)].map((_, i) => (
+                      <SelectItem key={i+1} value={String(i+1)}>{t(`months.${i+1}`)}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 {showMonthError && <span className="text-red-500 text-xs absolute right-2 top-0">*</span>}
               </div>
               <div className="flex flex-col col-span-1">
-                <label className="text-xs text-gray-500 mb-1">{t('common.year')}</label>
+                <label className="text-xs text-gray-500 mb-1">{t('months.year')}</label>
                 <Select value={pendingFilterYear} onValueChange={v => { setPendingFilterYear(v); setShowYearError(false); }}>
-                  <SelectTrigger className="min-w-[9rem] w-36">{
-                    !pendingFilterYear || pendingFilterYear === ''
-                      ? t('common.year')
-                      : pendingFilterYear === 'all'
-                        ? t('months.all')
-                        : (i18n.language === 'th' ? (parseInt(pendingFilterYear) + 543) : pendingFilterYear)
-                  }</SelectTrigger>
+                  <SelectTrigger className="min-w-[9rem] w-36">
+                    {pendingFilterYear === 'all' ? t('months.all') : (i18n.language === 'th' ? (parseInt(pendingFilterYear)+543) : pendingFilterYear)}
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">{t('months.all')}</SelectItem>
                     {yearOptions.map(y => (
@@ -619,20 +616,18 @@ const EmployeeDetail = () => {
                 {showYearError && <span className="text-red-500 text-xs absolute right-2 top-0">*</span>}
               </div>
               <div className="flex flex-col col-span-1">
-                <label className="text-xs text-gray-500 mb-1">{t('common.status')}</label>
+                <label className="text-xs text-gray-500 mb-1">{t('status.status')}</label>
                 <Select value={pendingFilterStatus} onValueChange={v => { setPendingFilterStatus(v); setShowStatusError(false); }}>
-                  <SelectTrigger className="min-w-[9rem] w-36">{
-                    !pendingFilterStatus || pendingFilterStatus === ''
-                      ? t('common.status')
-                      : pendingFilterStatus === 'all'
-                        ? t('months.all')
-                        : t(`leave.${pendingFilterStatus}`)
-                  }</SelectTrigger>
+                  <SelectTrigger className="min-w-[9rem] w-36">
+                    {pendingFilterStatus === 'all'
+                      ? t('status.all')
+                      : t(`status.${pendingFilterStatus}`)}
+                  </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">{t('months.all')}</SelectItem>
-                    <SelectItem value="approved">{t('leave.approved')}</SelectItem>
-                    <SelectItem value="pending">{t('leave.pending')}</SelectItem>
-                    <SelectItem value="rejected">{t('leave.rejected')}</SelectItem>
+                    <SelectItem value="all">{t('status.all')}</SelectItem>
+                    <SelectItem value="approved">{t('status.approved')}</SelectItem>
+                    <SelectItem value="pending">{t('status.pending')}</SelectItem>
+                    <SelectItem value="rejected">{t('status.rejected')}</SelectItem>
                   </SelectContent>
                 </Select>
                 {showStatusError && <span className="text-red-500 text-xs absolute right-2 top-0">*</span>}
@@ -728,13 +723,17 @@ const EmployeeDetail = () => {
                           )}
                         </TableCell>
                         <TableCell className="whitespace-nowrap">{leave.leaveDate}</TableCell>
-                          <TableCell>{
-                            leave.durationType === 'hour'
-                              ? `${parseInt(leave.duration)} ${t('common.hours')}`
-                              : leave.durationType === 'day'
-                                ? `${leave.duration} ${t('common.days')}`
-                                : ''
-                          }</TableCell>
+                        <TableCell>
+                          {(() => {
+                            if (leave.durationType === 'hour' && leave.durationHours) {
+                              return `${leave.durationHours} ${t('common.hours')}`;
+                            }
+                            if (leave.durationType === 'day') {
+                              return `${leave.duration} ${t('common.days')}`;
+                            }
+                            return '';
+                          })()}
+                        </TableCell>
                         <TableCell className="max-w-[100px] truncate">{leave.reason}</TableCell>
                         <TableCell>
                           <Badge
@@ -744,7 +743,13 @@ const EmployeeDetail = () => {
                               ${leave.status === 'rejected' ? 'bg-red-100 text-red-800' : ''}
                             `}
                           >
-                            {leave.status === 'approved' ? t('leave.approved') : leave.status === 'pending' ? t('leave.pending') : leave.status === 'rejected' ? t('leave.rejected') : leave.status}
+                            {leave.status === 'approved'
+                              ? t('status.approved')
+                              : leave.status === 'pending'
+                                ? t('status.pending')
+                                : leave.status === 'rejected'
+                                  ? t('status.rejected')
+                                  : leave.status}
                           </Badge>
                         </TableCell>
                         <TableCell>{leave.submittedDate ? new Date(leave.submittedDate).toLocaleDateString('en-CA') : ''}</TableCell>
@@ -766,7 +771,7 @@ const EmployeeDetail = () => {
                                   variant="destructive"
                                   onClick={() => setDeleteLeaveId(leave.id)}
                                 >
-                                  {t('system.delete', 'Delete')}
+                                  {t('common.delete')}
                                 </Button>
                               </AlertDialogTrigger>
                               <AlertDialogContent>

@@ -99,7 +99,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
         </DialogHeader>
         {leaveDetail && leaveDetail.backdated && (
           <div className="mb-4 p-3 bg-orange-50 border border-orange-300 text-orange-800 rounded text-center font-semibold">
-            {t('leave.backdatedNotice', 'ใบลานี้เป็นการลาย้อนหลัง')}
+            {t('leave.backdatedNotice')}
           </div>
         )}
         {leaveDetail ? (
@@ -113,12 +113,14 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                 <label className="text-sm font-medium text-gray-700">{t('leave.type')}</label>
                 <p className="text-sm">
                   {(() => {
-                    // แสดงชื่อ leave type ตามภาษา
-                    if (i18n.language === 'th') {
-                      return leaveDetail.leaveTypeName || leaveDetail.leaveTypeEn || leaveDetail.leaveType || '-';
-                    } else {
-                      return leaveDetail.leaveTypeEn || leaveDetail.leaveTypeName || leaveDetail.leaveType || '-';
+                    // ใช้ i18n leaveTypes
+                    const key = leaveDetail.leaveTypeName || leaveDetail.leaveTypeEn || leaveDetail.leaveType;
+                    if (key && t(`leaveTypes.${key}`) !== `leaveTypes.${key}`) {
+                      return t(`leaveTypes.${key}`);
                     }
+                    return i18n.language === 'th'
+                      ? leaveDetail.leaveTypeName || leaveDetail.leaveTypeEn || leaveDetail.leaveType || '-'
+                      : leaveDetail.leaveTypeEn || leaveDetail.leaveTypeName || leaveDetail.leaveType || '-';
                   })()}
 
                 </p>
