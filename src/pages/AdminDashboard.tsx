@@ -322,7 +322,7 @@ const AdminDashboard = () => {
     if (filterYear) url += `&year=${filterYear}`;
     // ในการสร้าง url ให้ส่ง status=approved,rejected ถ้าเลือก all
     if (historyStatusFilter === 'all') {
-      url += `&status=approved,rejected`;
+      url += `&status=approved,rejected,backdated`;
     } else if (historyStatusFilter !== 'all') {
       url += `&status=${historyStatusFilter}`;
     }
@@ -387,6 +387,7 @@ const AdminDashboard = () => {
         // --- ส่ง page, limit ไป backend ---
         let url = `${API_BASE_URL}/api/leave-request/pending?page=${pendingPage}&limit=${pendingLimit}`;
         if (pendingFilterLeaveType) url += `&leaveType=${pendingFilterLeaveType}`;
+        // --- ปรับ logic filter ใน fetchPending ---
         if (pendingBackdatedFilter === 'backdated') url += `&backdated=1`;
         else if (pendingBackdatedFilter === 'normal') url += `&backdated=0`;
         // ถ้าเลือกวันเดียว (pendingSingleDate) ให้ filter ด้วย createdAt (param date)
@@ -643,73 +644,106 @@ const AdminDashboard = () => {
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-6">
-                  {/* Pending Tab Filter */}
-                  <div className="flex flex-wrap gap-4 items-center mb-6">
-                    {/* Date Range Picker for Pending */}
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="w-48 min-w-[180px] max-w-full justify-start text-left font-normal whitespace-nowrap"
-                        >
-                          <Calendar className="mr-2 h-4 w-4" />
-                          {pendingPendingSingleDate ? format(pendingPendingSingleDate, "dd/MM/yyyy") : t('history.selectSingleDate', 'เลือกวันเดียว')}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <CalendarComponent
-                          mode="single"
-                          selected={pendingPendingSingleDate}
-                          onSelect={date => setPendingPendingSingleDate(date)}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    {/* Leave Type Filter เดิม */}
-                    <label className="text-sm font-medium">{t('leave.type')}</label>
-                    {pendingLeaveTypesLoading ? (
-                      <span className="text-gray-500 text-sm">{t('common.loading')}</span>
-                    ) : pendingLeaveTypesError ? (
-                      <span className="text-red-500 text-sm">{pendingLeaveTypesError}</span>
-                    ) : (
+                  {/* --- ใน JSX ส่วน Pending Tab Filter --- */}
+                  <div className="mb-2 flex flex-wrap gap-4 items-end">
+                    <div className="flex flex-col min-w-[140px]">
+                      <label className="text-xs font-medium mb-1">{t('leave.type', 'Leave Type')}</label>
                       <select
-                        className="border rounded px-2 py-1 min-w-[120px]"
+                        className="border rounded px-2 py-1"
                         value={pendingPendingFilterLeaveType}
                         onChange={e => setPendingPendingFilterLeaveType(e.target.value)}
                       >
-                        <option value="">{t('leave.allTypes')}</option>
+                        <option value="">{t('leave.type', 'Leave Type')}</option>
                         {pendingLeaveTypes.map(lt => (
                           <option key={lt.id} value={lt.id}>
                             {i18n.language.startsWith('th') ? lt.leave_type_th : lt.leave_type_en}
                           </option>
                         ))}
                       </select>
-                    )}
-                    {/* Backdated Filter (ย้ายขึ้นมาแถวเดียวกัน) */}
-                    <label className="text-sm font-medium">{t('leave.backdatedLabel')}</label>
-                    <select
-                      className="border rounded px-2 py-1 min-w-[120px]"
-                      value={pendingPendingBackdatedFilter}
-                      onChange={e => setPendingPendingBackdatedFilter(e.target.value)}
-                    >
-                      <option value="all">{t('leave.backdatedAll')}</option>
-                      <option value="backdated">{t('leave.backdatedOnly')}</option>
-                      <option value="normal">{t('leave.notBackdatedOnly')}</option>
-                    </select>
-                    {/* ปุ่มยืนยัน/ล้าง filter */}
-                    <button
-                      className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm"
-                      onClick={applyPendingFilters}
-                      type="button"
-                    >
-                      {t('common.confirm', 'ยืนยัน')}
-                    </button>
-                    <button
-                      className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm"
-                      onClick={clearPendingFilters}
-                      type="button"
-                    >
-                      {t('history.clearFilter')}
-                    </button>
+                    </div>
+                    <div className="flex flex-col min-w-[120px]">
+                      <label className="text-xs font-medium mb-1">{t('history.month', 'Month')}</label>
+                      <select
+                        className="border rounded px-2 py-1"
+                        value={pendingPendingDateRange.from ? (pendingPendingDateRange.from.getMonth() + 1) : ''}
+                        onChange={e => {
+                          const month = e.target.value ? Number(e.target.value) : '';
+                          if (month) {
+                            const now = new Date();
+                            setPendingPendingDateRange({
+                              from: new Date(now.getFullYear(), month - 1, 1),
+                              to: new Date(now.getFullYear(), month, 0)
+                            });
+                          } else {
+                            setPendingPendingDateRange({ from: undefined, to: undefined });
+                          }
+                        }}
+                      >
+                        <option value="">{t('history.allMonths', 'All months')}</option>
+                        {monthNames.map((name, i) => (
+                          <option key={i+1} value={i+1}>{name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex flex-col min-w-[120px]">
+                      <label className="text-xs font-medium mb-1">{t('history.year', 'Year')}</label>
+                      <input
+                        type="number"
+                        className="border rounded px-2 py-1"
+                        placeholder={t('history.year', 'Year')}
+                        value={pendingPendingDateRange.from ? pendingPendingDateRange.from.getFullYear() : ''}
+                        min={2000}
+                        max={2100}
+                        onChange={e => {
+                          const year = e.target.value ? Number(e.target.value) : '';
+                          if (year && pendingPendingDateRange.from) {
+                            setPendingPendingDateRange({
+                              from: new Date(year, pendingPendingDateRange.from.getMonth(), 1),
+                              to: new Date(year, pendingPendingDateRange.from.getMonth() + 1, 0)
+                            });
+                          } else if (year) {
+                            setPendingPendingDateRange({
+                              from: new Date(year, 0, 1),
+                              to: new Date(year, 11, 31)
+                            });
+                          } else {
+                            setPendingPendingDateRange({ from: undefined, to: undefined });
+                          }
+                        }}
+                      />
+                    </div>
+                    <div className="flex flex-col min-w-[120px]">
+                      <label className="text-xs font-medium mb-1">{t('leave.status', 'Status')}</label>
+                      <select
+                        className="border rounded px-2 py-1"
+                        value={pendingPendingBackdatedFilter}
+                        onChange={e => setPendingPendingBackdatedFilter(e.target.value)}
+                      >
+                        <option value="all">{t('leave.allStatus', 'All status')}</option>
+                        <option value="backdated">{t('leave.backdatedOnly', 'Backdated only')}</option>
+                        <option value="normal">{t('leave.notBackdatedOnly', 'Non-backdated only')}</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col min-w-[80px]">
+                      <label className="text-xs font-medium mb-1 opacity-0">{t('common.confirm', 'Confirm')}</label>
+                      <button
+                        className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                        onClick={applyPendingFilters}
+                        type="button"
+                      >
+                        {t('common.confirm', 'Confirm')}
+                      </button>
+                    </div>
+                    <div className="flex flex-col min-w-[80px]">
+                      <label className="text-xs font-medium mb-1 opacity-0">{t('history.clearFilter', 'Clear filter')}</label>
+                      <button
+                        className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm"
+                        onClick={clearPendingFilters}
+                        type="button"
+                      >
+                        {t('history.clearFilter', 'Clear filter')}
+                      </button>
+                    </div>
                   </div>
                   {loading ? (
                     <div className="text-center py-10 text-gray-500">{t('common.loading')}</div>
@@ -738,8 +772,14 @@ const AdminDashboard = () => {
                               <Badge variant="outline" className="text-orange-600 border-orange-200">
                                 {t('admin.pending')}
                               </Badge>
-                              {request.backdated === 1 && (
-                                <span className="bg-red-500 text-white px-2 py-0.5 rounded text-xs ml-0.5">{t('leave.backdated', 'ย้อนหลัง')}</span>
+                              {request.backdated === 1 ? (
+                                <span className="bg-red-500 text-white px-2 py-0.5 rounded text-xs ml-0.5">
+                                  {t('leave.backdated', 'ย้อนหลัง')}
+                                </span>
+                              ) : (
+                                <span className="bg-green-500 text-white px-2 py-0.5 rounded text-xs ml-0.5">
+                                  {t('leave.notBackdated', 'ไม่ย้อนหลัง')}
+                                </span>
                               )}
                             </div>
                           </div>
@@ -865,108 +905,99 @@ const AdminDashboard = () => {
                 </CardHeader>
                 <CardContent className="p-6">
                   {/* --- ใน JSX ส่วน Recent History Filter --- */}
-                  <div className="flex flex-wrap gap-4 items-center mb-6">
-                    <label className="text-sm font-medium">{t('history.filterByMonthYear')}</label>
-                    {/* Date Picker */}
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="w-48 min-w-[180px] max-w-full justify-start text-left font-normal whitespace-nowrap"
-                        >
-                          <Calendar className="mr-2 h-4 w-4" />
-                          {pendingRecentSingleDate ? format(pendingRecentSingleDate, "dd/MM/yyyy") : t('history.selectSingleDate', 'เลือกวันเดียว')}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <CalendarComponent
-                          mode="single"
-                          selected={pendingRecentSingleDate}
-                          onSelect={date => setPendingRecentSingleDate(date)}
-                        />
-                      </PopoverContent>
-                    </Popover>
-                    {/* Leave Type Filter */}
-                    <label className="text-sm font-medium">{t('leave.type')}</label>
-                    {pendingLeaveTypesLoading ? (
-                      <span className="text-gray-500 text-sm">{t('common.loading')}</span>
-                    ) : pendingLeaveTypesError ? (
-                      <span className="text-red-500 text-sm">{pendingLeaveTypesError}</span>
-                    ) : (
+                  <div className="mb-2 flex flex-wrap gap-4 items-end">
+                    <div className="flex flex-col min-w-[140px]">
+                      <label className="text-xs font-medium mb-1">{t('leave.type', 'Leave Type')}</label>
                       <select
-                        className="border rounded px-2 py-1 min-w-[120px]"
+                        className="border rounded px-2 py-1"
                         value={pendingHistoryFilterLeaveType}
                         onChange={e => setPendingHistoryFilterLeaveType(e.target.value)}
                       >
-                        <option value="">{t('leave.allTypes')}</option>
+                        <option value="">{t('leave.type', 'Leave Type')}</option>
                         {pendingLeaveTypes.map(lt => (
                           <option key={lt.id} value={lt.id}>
                             {i18n.language.startsWith('th') ? lt.leave_type_th : lt.leave_type_en}
                           </option>
                         ))}
                       </select>
-                    )}
-                    <select
-                      className="border rounded px-2 py-1 min-w-[120px]"
-                      value={pendingFilterMonth}
-                      onChange={e => {
-                        const value = e.target.value ? Number(e.target.value) : '';
-                        setPendingFilterMonth(value);
-                        if (value && !pendingFilterYear) {
-                          const currentYear = new Date().getFullYear();
-                          setPendingFilterYear(currentYear);
-                        }
-                      }}
-                    >
-                      <option value="">{t('history.allMonths')}</option>
-                      {monthNames.map((name, i) => (
-                        <option key={i+1} value={i+1}>{name}</option>
-                      ))}
-                    </select>
-                    <input
-                      type="number"
-                      className="border rounded px-2 py-1 w-24"
-                      placeholder={t('history.year')}
-                      value={pendingFilterYear}
-                      min={2000}
-                      max={2100}
-                      onChange={e => setPendingFilterYear(e.target.value ? Number(e.target.value) : '')}
-                    />
-                    <select
-                      className="border rounded px-2 py-1 min-w-[120px]"
-                      value={pendingHistoryStatusFilter}
-                      onChange={e => setPendingHistoryStatusFilter(e.target.value)}
-                    >
-                      <option value="all">{t('leave.allStatus', 'All status')}</option>
-                      <option value="approved">{t('leave.approved')}</option>
-                      <option value="rejected">{t('leave.rejected')}</option>
-                    </select>
-                    {/* Backdated Filter (ย้ายขึ้นมาแถวเดียวกัน) */}
-                    <label className="text-sm font-medium">{t('leave.backdatedLabel')}</label>
-                    <select
-                      className="border rounded px-2 py-1 min-w-[120px]"
-                      value={pendingHistoryBackdatedFilter}
-                      onChange={e => setPendingHistoryBackdatedFilter(e.target.value)}
-                    >
-                      <option value="all">{t('leave.backdatedAll')}</option>
-                      <option value="backdated">{t('leave.backdatedOnly')}</option>
-                      <option value="normal">{t('leave.notBackdatedOnly')}</option>
-                    </select>
-                    {/* ปุ่มยืนยัน/ล้างตัวกรอง */}
-                    <button
-                      className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm"
-                      onClick={applyHistoryFilters}
-                      type="button"
-                    >
-                      {t('common.confirm', 'ยืนยัน')}
-                    </button>
-                    <button
-                      className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm"
-                      onClick={clearHistoryFilters}
-                      type="button"
-                    >
-                      {t('history.clearFilter')}
-                    </button>
+                    </div>
+                    <div className="flex flex-col min-w-[120px]">
+                      <label className="text-xs font-medium mb-1">{t('history.month', 'Month')}</label>
+                      <select
+                        className="border rounded px-2 py-1"
+                        value={pendingFilterMonth}
+                        onChange={e => {
+                          const value = e.target.value ? Number(e.target.value) : '';
+                          setPendingFilterMonth(value);
+                          if (value && !pendingFilterYear) {
+                            const currentYear = new Date().getFullYear();
+                            setPendingFilterYear(currentYear);
+                          }
+                        }}
+                      >
+                        <option value="">{t('history.allMonths', 'All months')}</option>
+                        {monthNames.map((name, i) => (
+                          <option key={i+1} value={i+1}>{name}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex flex-col min-w-[120px]">
+                      <label className="text-xs font-medium mb-1">{t('history.year', 'Year')}</label>
+                      <input
+                        type="number"
+                        className="border rounded px-2 py-1"
+                        placeholder={t('history.year', 'Year')}
+                        value={pendingFilterYear}
+                        min={2000}
+                        max={2100}
+                        onChange={e => setPendingFilterYear(e.target.value ? Number(e.target.value) : '')}
+                      />
+                    </div>
+                    <div className="flex flex-col min-w-[120px]">
+                      <label className="text-xs font-medium mb-1">{t('leave.status', 'Status')}</label>
+                      <select
+                        className="border rounded px-2 py-1"
+                        value={pendingHistoryStatusFilter}
+                        onChange={e => setPendingHistoryStatusFilter(e.target.value)}
+                      >
+                        <option value="all">{t('leave.allStatus', 'All status')}</option>
+                        <option value="approved">{t('leave.approved', 'Approved')}</option>
+                        <option value="rejected">{t('leave.rejected', 'Rejected')}</option>
+                        <option value="backdated">{t('leave.backdated', 'Backdated')}</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col min-w-[120px]">
+                      <label className="text-xs font-medium mb-1">{t('leave.backdatedLabel', 'Backdated')}</label>
+                      <select
+                        className="border rounded px-2 py-1"
+                        value={pendingHistoryBackdatedFilter}
+                        onChange={e => setPendingHistoryBackdatedFilter(e.target.value)}
+                      >
+                        <option value="all">{t('leave.backdatedAll', 'All')}</option>
+                        <option value="backdated">{t('leave.backdatedOnly', 'Backdated only')}</option>
+                        <option value="normal">{t('leave.notBackdatedOnly', 'Non-backdated only')}</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col min-w-[80px]">
+                      <label className="text-xs font-medium mb-1 opacity-0">{t('common.confirm', 'Confirm')}</label>
+                      <button
+                        className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white font-bold"
+                        onClick={applyHistoryFilters}
+                        type="button"
+                      >
+                        {t('common.confirm', 'Confirm')}
+                      </button>
+                    </div>
+                    <div className="flex flex-col min-w-[80px]">
+                      <label className="text-xs font-medium mb-1 opacity-0">{t('history.clearFilter', 'Clear filter')}</label>
+                      <button
+                        className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm"
+                        onClick={clearHistoryFilters}
+                        type="button"
+                      >
+                        {t('history.clearFilter', 'Clear filter')}
+                      </button>
+                    </div>
                   </div>
                   {/* History Tab Filter */}
                   {/* <div className="flex items-center gap-2">
@@ -1027,8 +1058,11 @@ const AdminDashboard = () => {
                                   </>
                                 )}
                               </Badge>
-                              {request.backdated === 1 && (
+                              {/* --- ใน Recent History Tab (badge) --- */}
+                              {request.backdated === 1 ? (
                                 <span className="bg-red-500 text-white px-2 py-0.5 rounded text-xs ml-0.5">{t('leave.backdated', 'ย้อนหลัง')}</span>
+                              ) : (
+                                <span className="bg-green-500 text-white px-2 py-0.5 rounded text-xs ml-0.5">{t('leave.notBackdated', 'ไม่ย้อนหลัง')}</span>
                               )}
                             </div>
 
