@@ -431,5 +431,9 @@
     "markAsRead": "Mark as Read",
     "markAllAsRead": "Mark All as Read"
   },
-  "usedLeaveDaysText": "Used leave days: {{count}} days"
+  "usedLeaveDaysText": "Used leave days:",
+  "common": {
+    "days": "days",
+    "hours": "hours"
+  }
 }

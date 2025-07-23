@@ -455,5 +455,5 @@
     "setNewPassword": "ตั้งรหัสผ่านใหม่",
     "name": "ชื่อ"
   },
-  "usedLeaveDaysText": "วันลาที่ใช้ไปแล้ว: {{count}} วัน"
+  "usedLeaveDaysText": "วันลาที่ใช้ไปแล้ว:"
 }

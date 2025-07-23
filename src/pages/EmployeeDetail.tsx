@@ -520,7 +520,19 @@ const EmployeeDetail = () => {
               <div className="flex justify-end px-6 mt-2">
                 <div className="flex items-center gap-2 text-black font-bold text-xl">
                   <Calendar className="w-5 h-5 mr-1 text-black" />
-                  <span>{t('usedLeaveDaysText', { count: leaveSummary.totalLeaveDays })}</span>
+                  {(() => {
+                    const total = leaveSummary.totalLeaveDays ?? 0;
+                    const days = Math.floor(total);
+                    const hours = Math.round((total - days) * 9); // 1 วัน = 9 ชั่วโมง
+                    return (
+                      <span>
+                        {t('usedLeaveDaysText')}
+                        {days > 0 ? `${days} ${t('common.days')}` : ''}
+                        {hours > 0 ? ` ${hours} ${t('common.hours')}` : ''}
+                        {days === 0 && hours === 0 ? `0 ${t('common.hours')}` : ''}
+                      </span>
+                    );
+                  })()}
                 </div>
               </div>
             )}

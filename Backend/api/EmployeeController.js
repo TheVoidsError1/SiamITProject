@@ -587,6 +587,31 @@ module.exports = (AppDataSource) => {
         };
       }));
 
+      // ===== เพิ่มส่วนนี้: คำนวณวันลาทั้งหมดที่อนุมัติแล้ว (ไม่สน filter) =====
+      const allApprovedLeaves = await leaveRepo.find({ where: { Repid: id, status: 'approved' } });
+      let totalLeaveDaysAllApproved = 0;
+      let totalLeaveHoursAllApproved = 0;
+      allApprovedLeaves.forEach(l => {
+        if (l.startDate && l.endDate && (!l.startTime || !l.endTime)) {
+          const start = new Date(l.startDate);
+          const end = new Date(l.endDate);
+          let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+          if (days < 0 || isNaN(days)) days = 0;
+          totalLeaveDaysAllApproved += days;
+        } else if (l.startTime && l.endTime) {
+          const [sh, sm] = l.startTime.split(":").map(Number);
+          const [eh, em] = l.endTime.split(":").map(Number);
+          let start = sh + (sm || 0) / 60;
+          let end = eh + (em || 0) / 60;
+          let diff = end - start;
+          if (diff < 0) diff += 24;
+          totalLeaveHoursAllApproved += Math.floor(diff);
+        }
+      });
+      // รวมชั่วโมงเป็นวัน (1 วัน = 9 ชั่วโมง)
+      const totalLeaveDaysFinal = totalLeaveDaysAllApproved + (totalLeaveHoursAllApproved / 9);
+      // ===== จบส่วนเพิ่ม =====
+
       res.json({ 
         success: true, 
         data: leaves, 
@@ -594,8 +619,8 @@ module.exports = (AppDataSource) => {
         page: pageNum,
         totalPages: Math.ceil(total / limitNum),
         summary: {
-          totalLeaveDays,
-          totalLeaveHours
+          totalLeaveDays: Math.round(totalLeaveDaysFinal * 100) / 100, // ส่งเป็นทศนิยม 2 ตำแหน่ง
+          totalLeaveHours,
         }
       });
     } catch (err) {
