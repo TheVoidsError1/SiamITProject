@@ -1263,7 +1263,7 @@ const AdminDashboard = () => {
                       <span className="font-semibold text-blue-800">{t('leave.submittedDate', 'วันที่ส่งคำขอ')}:</span> {selectedRequest.createdAt ? selectedRequest.createdAt.split('T')[0] : "-"}
                     </div>
                     <div>
-                      <span className="font-semibold text-blue-800">{t('leave.contactMethod', 'ช่องทางการติดต่อ')}:</span> {selectedRequest.contact || selectedRequest.contactInfo || selectedRequest.user?.contact || "-"}
+                      <span className="font-semibold text-blue-800">{t('leave.contactMethod', 'ช่องทางการติดต่อ')}:</span> {selectedRequest.contact || selectedRequest.contactInfo || selectedRequest.user?.contact || selectedRequest.data?.contact || "-"}
                     </div>
                     <div>
                       <span className="font-semibold text-blue-800">{t('leave.leaveTime', 'เวลาที่ลา:')}</span> {selectedRequest?.startTime && selectedRequest?.endTime

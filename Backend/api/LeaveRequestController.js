@@ -688,6 +688,7 @@
              rejectedBy,
              rejectionReason: leave.rejectedReason || null,
              attachments: parseAttachments(leave.attachments),
+             contact: leave.contact || null,
              // ส่ง backdated ตรงจาก db
              backdated: Number(leave.backdated),
            };
@@ -1108,6 +1109,7 @@
              submittedDate,
              createdAt: leave.createdAt, // เพิ่มฟิลด์นี้
              attachments: parseAttachments(leave.attachments),
+             contact: leave.contact || null,
              // เพิ่ม backdated
              backdated: Number(leave.backdated),
            }
