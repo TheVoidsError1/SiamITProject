@@ -85,6 +85,7 @@
     "update": "อัปเดต"
   },
   "leave": {
+    "all": "ทั้งหมด",
     "leaveRequest": "ขอลา",
     "leaveHistory": "ประวัติการลา",
     "leaveType": "ประเภทการลา",
@@ -181,7 +182,11 @@
     "selectDurationType": "เลือกประเภทระยะเวลา",
     "backdated": "ลาย้อนหลัง",
     "backdatedNotice": "ใบลานี้เป็นการลาย้อนหลัง",
-    "contactMethod": "ช่องทางการติดต่อ"
+    "contactMethod": "ช่องทางการติดต่อ",
+    "backdatedFilter": "ประเภทการลา",
+    "allBackdated": "ทั้งหมด",
+    "backdated": "ลาย้อนหลัง",
+    "notBackdated": "ลาไม่ย้อนหลัง"
   },
   "leaveTypes": {
     "ลาพักร้อน": "ลาพักร้อน",
@@ -442,5 +447,6 @@
     "markAllAsRead": "อ่านทั้งหมด",
     "setNewPassword": "ตั้งรหัสผ่านใหม่",
     "name": "ชื่อ"
-  }
+  },
+  "usedLeaveDaysText": "วันลาที่ใช้ไปแล้ว: {{count}} วัน"
 }

@@ -441,7 +441,7 @@ module.exports = (AppDataSource) => {
   router.get('/employee/:id/leave-history', async (req, res) => {
     try {
       const { id } = req.params;
-      const { leaveType, month, year, status, page = 1, limit = 6 } = req.query;
+      const { leaveType, month, year, status, page = 1, limit = 6, backdated } = req.query;
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
       const userRepo = AppDataSource.getRepository('User');
@@ -489,6 +489,15 @@ module.exports = (AppDataSource) => {
       // Filter ตาม status
       if (status && status !== 'all') {
         leaves = leaves.filter(l => l.status === status);
+      }
+
+      // ===== เพิ่ม filter ตาม backdated ก่อนแบ่งหน้า =====
+      if (typeof backdated !== 'undefined' && backdated !== 'all') {
+        if (backdated === '1') {
+          leaves = leaves.filter(l => Number(l.backdated) === 1);
+        } else if (backdated === '0') {
+          leaves = leaves.filter(l => !l.backdated || Number(l.backdated) === 0);
+        }
       }
 
       // ===== เพิ่มส่วนนี้ก่อน paging =====
