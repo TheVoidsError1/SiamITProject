@@ -604,7 +604,7 @@
          const [processedLeaves, total] = await Promise.all([
            leaveRepo.find({
              where,
-             order: { id: 'DESC' },
+             order: { createdAt: 'DESC' },
              skip,
              take: limit
            }),

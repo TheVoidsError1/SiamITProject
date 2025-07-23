@@ -85,7 +85,7 @@ const AdminDashboard = () => {
   const [pendingLeaveTypesError, setPendingLeaveTypesError] = useState<string | null>(null);
   const [pendingFilterLeaveType, setPendingFilterLeaveType] = useState('');
   // --- state สำหรับ filter สถานะ ---
-  const [historyStatusFilter, setHistoryStatusFilter] = useState('approved'); // default เป็น approved
+  const [historyStatusFilter, setHistoryStatusFilter] = useState('all'); // default เป็น all (All status)
   // --- เพิ่ม state สำหรับ show more/less ของแต่ละ request ---
   const [expandedRejection, setExpandedRejection] = useState<{ [id: string]: boolean }>({});
   const [showApproveDialog, setShowApproveDialog] = useState(false);
@@ -333,7 +333,12 @@ const AdminDashboard = () => {
       .then(data => {
         if (data.status === "success") {
           let filtered = data.data;
-          // ไม่ต้อง filter ฝั่ง frontend เพื่อให้แสดงครบตามจำนวน items per page ที่ backend ส่งมา
+          // เรียงลำดับตาม createdAt จากใหม่ไปเก่า (ล่าสุดขึ้นก่อน)
+          filtered = filtered.sort((a, b) => {
+            const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return dateB - dateA;
+          });
           setHistoryRequests(filtered);
           setHistoryTotalPages(data.totalPages || 1);
           setApprovedCount(data.approvedCount || 0);
@@ -1152,47 +1157,86 @@ const AdminDashboard = () => {
                     </div>
               
                   </div>
-                  {(Array.isArray(selectedRequest.attachments) && selectedRequest.attachments.length > 0) ? (
-                    <div className="flex flex-col items-center mt-4">
-                      <span className="font-semibold mb-2 text-blue-800">{t('leave.attachment', 'ไฟล์แนบ')}:</span>
-                      <div className="flex flex-wrap gap-4 justify-center">
-                        {selectedRequest.attachments.map((file: string, idx: number) => {
-                          const ext = file.split('.').pop()?.toLowerCase();
-                          const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext || '');
-                          return isImage ? (
-                            <img
-                              key={file}
-                              src={`/leave-uploads/${file}`}
-                              alt={`แนบไฟล์ ${idx + 1}`}
-                              className="rounded-xl border-2 border-blue-200 shadow max-w-xs bg-white"
-                              style={{ marginTop: 8 }}
-                            />
-                          ) : (
-                            <a
-                              key={file}
-                              href={`/leave-uploads/${file}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="flex items-center gap-2 px-3 py-2 border rounded bg-gray-50 hover:bg-gray-100 text-blue-700"
-                              style={{ marginTop: 8 }}
-                            >
-                              <span role="img" aria-label="file">📄</span> {file}
-                            </a>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ) : selectedRequest.imgLeave && (
-                    <div className="flex flex-col items-center mt-4">
-                      <span className="font-semibold mb-2 text-blue-800">{t('leave.attachment', 'ไฟล์แนบ')}:</span>
-                      <img
-                        src={`/leave-uploads/${selectedRequest.imgLeave}`}
-                        alt="แนบไฟล์"
-                        className="rounded-xl border-2 border-blue-200 shadow max-w-xs bg-white"
-                        style={{ marginTop: 8 }}
-                      />
-                    </div>
-                  )}
+                  {/* Section: Attachments/Images */}
+                  {(() => {
+                    // รองรับทั้ง array และ string หลาย field
+                    const files =
+                      (Array.isArray(selectedRequest.attachments) && selectedRequest.attachments.length > 0)
+                        ? selectedRequest.attachments
+                        : (typeof selectedRequest.attachments === 'string' && selectedRequest.attachments)
+                          ? [selectedRequest.attachments]
+                          : (Array.isArray(selectedRequest.attachment) && selectedRequest.attachment.length > 0)
+                            ? selectedRequest.attachment
+                            : (typeof selectedRequest.attachment === 'string' && selectedRequest.attachment)
+                              ? [selectedRequest.attachment]
+                              : (Array.isArray(selectedRequest.file) && selectedRequest.file.length > 0)
+                                ? selectedRequest.file
+                                : (typeof selectedRequest.file === 'string' && selectedRequest.file)
+                                  ? [selectedRequest.file]
+                                  : [];
+                    // imgLeave (string)
+                    const imgLeave = selectedRequest.imgLeave;
+                    if (files.length > 0) {
+                      return (
+                        <div className="flex flex-col items-center mt-4">
+                          <span className="font-semibold mb-2 text-blue-800">{t('leave.attachment', 'ไฟล์แนบ')}:</span>
+                          <div className="flex flex-wrap gap-4 justify-center">
+                            {files.map((file: string, idx: number) => {
+                              const ext = file.split('.').pop()?.toLowerCase();
+                              const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext || '');
+                              const fileUrl = `/leave-uploads/${file}`;
+                              return (
+                                <div key={file} className="flex flex-col items-center">
+                                  {isImage ? (
+                                    <a href={fileUrl} target="_blank" rel="noopener noreferrer">
+                                      <img
+                                        src={fileUrl}
+                                        alt={`แนบไฟล์ ${idx + 1}`}
+                                        className="rounded-xl border-2 border-blue-200 shadow max-w-xs bg-white"
+                                        style={{ marginTop: 8 }}
+                                      />
+                                    </a>
+                                  ) : (
+                                    <a
+                                      href={fileUrl}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center gap-2 px-3 py-2 border rounded bg-gray-50 hover:bg-gray-100 text-blue-700"
+                                      style={{ marginTop: 8 }}
+                                    >
+                                      <span role="img" aria-label="file">📄</span> {file}
+                                    </a>
+                                  )}
+                                  {/* ปุ่มดาวน์โหลด */}
+                                  <a
+                                    href={fileUrl}
+                                    download
+                                    className="mt-1 text-xs text-blue-600 underline hover:text-blue-800"
+                                  >
+                                    {t('common.download', 'ดาวน์โหลด')}
+                                  </a>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    } else if (imgLeave) {
+                      // กรณี imgLeave เป็น string
+                      return (
+                        <div className="flex flex-col items-center mt-4">
+                          <span className="font-semibold mb-2 text-blue-800">{t('leave.attachment', 'ไฟล์แนบ')}:</span>
+                          <img
+                            src={`/leave-uploads/${imgLeave}`}
+                            alt="แนบไฟล์"
+                            className="rounded-xl border-2 border-blue-200 shadow max-w-xs bg-white"
+                            style={{ marginTop: 8 }}
+                          />
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
                 </div>
               )}
             </DialogDescription>
