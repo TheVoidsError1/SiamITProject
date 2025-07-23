@@ -735,13 +735,13 @@ const AdminDashboard = () => {
                       </select>
                     </div>
                     <div className="flex flex-col min-w-[80px]">
-                      <label className="text-xs font-medium mb-1 opacity-0">{t('common.confirm', 'Confirm')}</label>
+                      <label className="text-xs font-medium mb-1 opacity-0">{t('common.confirm')}</label>
                       <button
                         className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white font-bold"
                         onClick={applyPendingFilters}
                         type="button"
                       >
-                        {t('common.confirm', 'Confirm')}
+                        {t('common.confirm')}
                       </button>
                     </div>
                     <div className="flex flex-col min-w-[80px]">
@@ -751,7 +751,7 @@ const AdminDashboard = () => {
                         onClick={clearPendingFilters}
                         type="button"
                       >
-                        {t('history.clearFilter', 'Clear filter')}
+                        {t('history.clearFilter')}
                       </button>
                     </div>
                   </div>
@@ -984,13 +984,13 @@ const AdminDashboard = () => {
                       </select>
                     </div>
                     <div className="flex flex-col min-w-[80px]">
-                      <label className="text-xs font-medium mb-1 opacity-0">{t('common.confirm', 'Confirm')}</label>
+                      <label className="text-xs font-medium mb-1 opacity-0">{t('common.confirm')}</label>
                       <button
                         className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white font-bold"
                         onClick={applyHistoryFilters}
                         type="button"
                       >
-                        {t('common.confirm', 'Confirm')}
+                        {t('common.confirm')}
                       </button>
                     </div>
                     <div className="flex flex-col min-w-[80px]">
@@ -1000,7 +1000,7 @@ const AdminDashboard = () => {
                         onClick={clearHistoryFilters}
                         type="button"
                       >
-                        {t('history.clearFilter', 'Clear filter')}
+                        {t('history.clearFilter')}
                       </button>
                     </div>
                   </div>
@@ -1363,7 +1363,7 @@ const AdminDashboard = () => {
           />
           <DialogFooter className="flex gap-2 justify-end mt-4">
             <Button variant="outline" onClick={() => setShowRejectDialog(false)}>{t('common.back', 'ย้อนกลับ')}</Button>
-            <Button variant="destructive" onClick={confirmReject} disabled={!rejectReason.trim()}>{t('common.confirm', 'ยืนยัน')}</Button>
+            <Button variant="destructive" onClick={confirmReject} disabled={!rejectReason.trim()}>{t('common.confirm')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1379,7 +1379,7 @@ const AdminDashboard = () => {
           </DialogHeader>
           <DialogFooter className="flex gap-2 justify-end mt-4">
             <Button variant="outline" onClick={() => setShowApproveDialog(false)}>{t('common.cancel', 'ยกเลิก')}</Button>
-            <Button className="bg-green-600 hover:bg-green-700" onClick={confirmApprove}>{t('common.confirm', 'ยืนยัน')}</Button>
+            <Button className="bg-green-600 hover:bg-green-700" onClick={confirmApprove}>{t('common.confirm')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
