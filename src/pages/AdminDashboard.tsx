@@ -1034,8 +1034,8 @@ const AdminDashboard = () => {
                         const end = new Date(request.endDate);
                         const leaveDays = differenceInCalendarDays(end, start) + 1;
                         // แปลงวันที่เป็นภาษาไทย
-                        const startStr = formatDateLocalized(request.startDate);
-                        const endStr = formatDateLocalized(request.endDate);
+                        const startStr = formatDateOnly(request.startDate);
+                        const endStr = formatDateOnly(request.endDate);
                         // วันที่อนุมัติ/ไม่อนุมัติ
                         let statusDate = "-";
                         if (request.status === "approved" && request.approvedTime) {
