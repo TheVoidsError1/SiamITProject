@@ -86,6 +86,7 @@
     "update": "Update"
   },
   "leave": {
+    "all": "All",
     "leaveRequest": "Leave Request",
     "leaveHistory": "Leave History",
     "leaveType": "Leave Type",
@@ -181,10 +182,10 @@
     "backdated": "Backdated",
     "backdatedNotice": "This leave request is backdated.",
     "contactMethod": "Contact Method",
-    "backdatedFilter": "Backdated/Not Backdated",
-    "backdatedAll": "All",
-    "backdatedOnly": "Backdated only",
-    "notBackdatedOnly": "Not backdated only",
+    "backdatedFilter": "Leave Timing",
+    "allBackdated": "All",
+    "backdated": "Backdated",
+    "notBackdated": "Non-backdated",
     "backdatedLabel": "Backdated",
     "backdatedAll": "All",
     "backdatedOnly": "Backdated only",
@@ -427,5 +428,6 @@
     "rejectedDesc": "Your request was rejected.",
     "markAsRead": "Mark as Read",
     "markAllAsRead": "Mark All as Read"
-  }
+  },
+  "usedLeaveDaysText": "Used leave days: {{count}} days"
 }

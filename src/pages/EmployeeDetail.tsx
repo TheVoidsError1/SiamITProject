@@ -66,11 +66,13 @@ const EmployeeDetail = () => {
   const [pendingFilterMonth, setPendingFilterMonth] = useState("all");
   const [pendingFilterYear, setPendingFilterYear] = useState("all");
   const [pendingFilterStatus, setPendingFilterStatus] = useState("all");
+  const [pendingFilterBackdated, setPendingFilterBackdated] = useState("all"); // เพิ่ม state สำหรับ backdated
   // state สำหรับค่าฟิลเตอร์ที่ใช้งานจริง (active)
   const [filterType, setFilterType] = useState("all");
   const [filterMonth, setFilterMonth] = useState("all");
   const [filterYear, setFilterYear] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [filterBackdated, setFilterBackdated] = useState("all"); // เพิ่ม state สำหรับ backdated
   // state สำหรับ error ของ filter
   const [filterError, setFilterError] = useState("");
   // state สำหรับแสดง * สีแดงแต่ละ filter
@@ -98,6 +100,7 @@ const EmployeeDetail = () => {
       params.push(`year=${filterYear}`);
     }
     if (filterStatus && filterStatus !== "all") params.push(`status=${filterStatus}`);
+    if (filterBackdated && filterBackdated !== "all") params.push(`backdated=${filterBackdated}`); // เพิ่ม backdated เข้า params
     params.push(`page=${leavePage}`);
     params.push(`limit=6`);
     const query = params.length > 0 ? `?${params.join("&")}` : "";
@@ -125,16 +128,16 @@ const EmployeeDetail = () => {
   useEffect(() => {
     fetchLeaveHistory();
     // eslint-disable-next-line
-  }, [id, t, filterType, filterMonth, filterYear, filterStatus, leavePage]);
+  }, [id, t, filterType, filterMonth, filterYear, filterStatus, filterBackdated, leavePage]);
 
-  // filteredLeaveHistory = leaveHistory (ไม่ต้อง filter ฝั่ง frontend)
-  const filteredLeaveHistory = leaveHistory;
+  // ลบ filteredLeaveHistory ออก
 
   const resetFilters = () => {
     setPendingFilterType("all");
     setPendingFilterMonth("all");
     setPendingFilterYear("all");
     setPendingFilterStatus("all");
+    setPendingFilterBackdated("all"); // reset backdated
     setShowTypeError(false);
     setShowMonthError(false);
     setShowYearError(false);
@@ -144,6 +147,7 @@ const EmployeeDetail = () => {
     setFilterMonth("all");
     setFilterYear("all");
     setFilterStatus("all");
+    setFilterBackdated("all"); // reset backdated
   };
 
   useEffect(() => {
@@ -505,15 +509,21 @@ const EmployeeDetail = () => {
 
           {/* Leave History Card */}
           <Card className="border-0 shadow-lg">
-            <CardHeader className="gradient-bg text-white rounded-t-lg">
-              <CardTitle className="flex items-center gap-2">
+            <div className="gradient-bg text-white rounded-t-lg px-6 pt-6 pb-2">
+              <div className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
-                {t('leave.leaveHistory')}
-              </CardTitle>
-              <CardDescription className="text-blue-100">
-                {t('employee.leaveHistoryDesc')}
-              </CardDescription>
-            </CardHeader>
+                <span className="text-lg font-bold">{t('leave.leaveHistory')}</span>
+              </div>
+              <div className="text-blue-100 text-sm">{t('employee.leaveHistoryDesc')}</div>
+            </div>
+            {leaveSummary && leaveSummary.totalLeaveDays > 0 && (
+              <div className="flex justify-end px-6 mt-2">
+                <div className="flex items-center gap-2 text-black font-bold text-xl">
+                  <Calendar className="w-5 h-5 mr-1 text-black" />
+                  <span>{t('usedLeaveDaysText', { count: leaveSummary.totalLeaveDays })}</span>
+                </div>
+              </div>
+            )}
             {/* Filter + วันลาที่ใช้ไปแล้ว (flex row) */}
             <div className="grid grid-cols-7 gap-4 items-end mb-2 px-6 mt-4">
               <div className="flex flex-col col-span-1">
@@ -521,7 +531,7 @@ const EmployeeDetail = () => {
                 <Select value={pendingFilterType} onValueChange={v => { setPendingFilterType(v); setShowTypeError(false); }}>
                   <SelectTrigger className="min-w-[9rem] w-36">{
                     !pendingFilterType || pendingFilterType === '' || pendingFilterType === 'all'
-                      ? t('leave.type')
+                      ? t('leave.all', 'All')
                       : (() => {
                           const found = leaveTypes.find(lt => lt.id === pendingFilterType);
                           if (found) {
@@ -531,7 +541,7 @@ const EmployeeDetail = () => {
                         })()
                   }</SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">{t('months.all')}</SelectItem>
+                    <SelectItem value="all">{t('leave.all', 'All')}</SelectItem>
                     {leaveTypesLoading ? (
                       <div className="px-2 py-1 text-gray-500">{t('common.loading')}</div>
                     ) : leaveTypesError ? (
@@ -615,6 +625,24 @@ const EmployeeDetail = () => {
                 </Select>
                 {showStatusError && <span className="text-red-500 text-xs absolute right-2 top-0">*</span>}
               </div>
+              {/* เพิ่ม filter Backdated */}
+              <div className="flex flex-col col-span-1">
+                <label className="text-xs text-gray-500 mb-1">{t('leave.backdatedFilter')}</label>
+                <Select value={pendingFilterBackdated} onValueChange={v => setPendingFilterBackdated(v)}>
+                  <SelectTrigger className="min-w-[9rem] w-36">
+                    {pendingFilterBackdated === "all"
+                      ? t('leave.allBackdated')
+                      : pendingFilterBackdated === "1"
+                        ? t('leave.backdated')
+                        : t('leave.notBackdated')}
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">{t('leave.allBackdated')}</SelectItem>
+                    <SelectItem value="1">{t('leave.backdated')}</SelectItem>
+                    <SelectItem value="0">{t('leave.notBackdated')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="flex flex-col col-span-1">
                 <Button variant="outline" className="w-full h-10" onClick={resetFilters}>{t('common.reset') || 'รีเซ็ต'}</Button>
               </div>
@@ -630,7 +658,8 @@ const EmployeeDetail = () => {
                       pendingFilterType === "all" &&
                       pendingFilterMonth === "all" &&
                       pendingFilterYear === "all" &&
-                      pendingFilterStatus === "all"
+                      pendingFilterStatus === "all" &&
+                      pendingFilterBackdated === "all"
                     ) {
                       setFilterError(t('leave.pleaseSelectAtLeastOne') || "โปรดเลือกอย่างน้อย 1 ตัวเลือก");
                       return;
@@ -649,6 +678,7 @@ const EmployeeDetail = () => {
                     setFilterMonth(pendingFilterMonth);
                     setFilterYear(pendingFilterYear);
                     setFilterStatus(pendingFilterStatus);
+                    setFilterBackdated(pendingFilterBackdated); // set filter backdated
                   }}>{t('common.confirm') || 'ยืนยัน'}</Button>
               </div>
               <div className="col-span-2"></div>
@@ -657,7 +687,7 @@ const EmployeeDetail = () => {
               <div className="text-red-600 text-sm px-6 mt-1">{filterError}</div>
             )}
             <CardContent className="p-6">
-              {filteredLeaveHistory.length === 0 ? (
+              {leaveHistory.length === 0 ? (
                 <div className="flex justify-center items-center py-8">
                   <div className="bg-yellow-100 border border-yellow-300 text-yellow-800 px-6 py-4 rounded text-center text-base font-medium shadow-sm">
                     {t('leave.noHistoryForPeriod')}
@@ -677,7 +707,7 @@ const EmployeeDetail = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredLeaveHistory.map((leave, idx) => (
+                    {leaveHistory.map((leave, idx) => (
                       <TableRow key={idx}>
                         <TableCell className="font-medium">
                           {getLeaveTypeLabel(leave.leaveTypeId || leave.leaveType)}
@@ -750,7 +780,7 @@ const EmployeeDetail = () => {
                 </Table>
               )}
             </CardContent>
-            {leaveTotalPages > 1 && filteredLeaveHistory.length > 0 && (
+            {leaveTotalPages > 1 && leaveHistory.length > 0 && (
               <div className="flex justify-center mt-4 gap-1">
                 {Array.from({ length: leaveTotalPages }, (_, i) => (
                   <button
