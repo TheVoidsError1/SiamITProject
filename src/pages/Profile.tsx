@@ -18,6 +18,14 @@ import { Switch } from "@/components/ui/switch";
 import { usePushNotification } from "@/contexts/PushNotificationContext";
 import ChangePasswordDialog from "@/components/dialogs/ChangePasswordDialog";
 
+// Helper function: Convert decimal days to days and hours (1 day = 9 hours)
+const convertToDayHour = (value: number) => {
+  if (typeof value !== 'number' || isNaN(value)) return { days: '-', hours: '-' };
+  const days = Math.floor(value);
+  const hours = Math.round((value - days) * 9 * 100) / 100; // 2 decimal places
+  return { days, hours };
+};
+
 const Profile = () => {
   const { t, i18n } = useTranslation();
   const { user, updateUser, showSessionExpiredDialog } = useAuth();
@@ -247,27 +255,22 @@ const Profile = () => {
 
   // New leaveStats for new API response
   const leaveStats = leaveQuota.map(item => {
-    // For personal leave, split days/hours
-    const isPersonal =
-      item.leave_type_en?.toLowerCase() === 'personal' ||
-      item.leave_type_th === 'ลากิจ';
-    const usedDays = isPersonal ? Math.floor(item.used) : item.used;
-    const usedHours = isPersonal ? Math.round((item.used % 1) * 9) : 0;
-    const remainingDays = isPersonal ? Math.floor(item.remaining) : item.remaining;
-    const remainingHours = isPersonal ? Math.round((item.remaining % 1) * 9) : 0;
     return {
       label: i18n.language.startsWith('th') ? (item.leave_type_th || item.leave_type_en) : (item.leave_type_en || item.leave_type_th),
-      used: usedDays,
-      usedHour: usedHours,
+      used: { days: item.used_day ?? '-', hours: item.used_hour ?? '-' },
       quota: item.quota,
-      color: isPersonal ? 'bg-orange-500' :
+      color:
+        item.leave_type_en?.toLowerCase() === 'personal' || item.leave_type_th === 'ลากิจ' ? 'bg-orange-500' :
         item.leave_type_en?.toLowerCase() === 'vacation' ? 'bg-blue-500' :
         item.leave_type_en?.toLowerCase() === 'sick' ? 'bg-green-500' :
         item.leave_type_en?.toLowerCase() === 'maternity' ? 'bg-purple-500' :
         'bg-gray-400',
       type: item.leave_type_en,
-      remaining: remainingDays,
-      remainingHour: remainingHours,
+      remaining: { days: item.remaining_day ?? '-', hours: item.remaining_hour ?? '-' },
+      quotaRaw: item.quota,
+      usedRaw: item.used_day + (item.used_hour / 9),
+      remainingRaw: item.remaining_day + (item.remaining_hour / 9),
+      unit: 'day',
     };
   });
 
@@ -618,22 +621,19 @@ const Profile = () => {
                           (lt.leave_type_en?.toLowerCase() !== 'emergency' && lt.leave_type_th !== 'ลาฉุกเฉิน')
                         )
                         .map((lt, idx) => {
-                          // Find quota/usage data for this leave type by id only
-                          const item = leaveQuota.find(q => q.id === lt.id);
-                          // Assign a color from the palette based on index, cycling if needed
+                          const item = leaveStats.find(q => q.type === lt.leave_type_en);
                           const color = leaveTypeColors[idx % leaveTypeColors.length];
                           const label = lt.leave_type_en || lt.leave_type_th;
-                          const unit = item?.unit === 'hour' ? t('common.hours') : t('common.days');
-                          const used = (item?.used === undefined || item?.used === null) ? '-' : item.used;
-                          const quota = (item?.quota === undefined || item?.quota === null) ? '-' : item.quota;
-                          const remaining = (item?.remaining === undefined || item?.remaining === null) ? '-' : item.remaining;
-                          const percent = (typeof item?.used === 'number' && typeof item?.quota === 'number' && item?.quota > 0) ? (item.used / item.quota) * 100 : 0;
+                          const quota = item?.quotaRaw ?? '-';
+                          const used = item?.used ?? { days: '-', hours: '-' };
+                          const remaining = item?.remaining ?? { days: '-', hours: '-' };
+                          const percent = (typeof item?.usedRaw === 'number' && typeof item?.quotaRaw === 'number' && item?.quotaRaw > 0) ? (item.usedRaw / item.quotaRaw) * 100 : 0;
                           return (
                             <div key={lt.id || label} className="space-y-3">
                               <div className="flex justify-between items-center">
                                 <span className="text-sm font-medium">{label}</span>
                                 <span className="text-sm text-gray-500">
-                                  {used}/{quota} {unit}
+                                  {used.days} วัน{used.hours !== 0 ? ` ${used.hours} ชั่วโมง` : ''} / {quota} วัน
                                 </span>
                               </div>
                               <div className="w-full bg-gray-200 rounded-full h-2">
@@ -643,7 +643,7 @@ const Profile = () => {
                                 ></div>
                               </div>
                               <div className="text-xs text-gray-500">
-                                {t('common.remaining')} {remaining} {unit}
+                                เหลือ {remaining.days} วัน{remaining.hours !== 0 ? ` ${remaining.hours} ชั่วโมง` : ''}
                               </div>
                             </div>
                           );

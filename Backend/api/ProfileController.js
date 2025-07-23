@@ -697,8 +697,14 @@ module.exports = (AppDataSource) => {
       const leaveTypes = await leaveTypeRepo.find();
       const leaveRequests = await leaveRequestRepo.find({ where: { Repid: repid, status: 'approved' } });
 
+      // Helper: แปลงค่าทศนิยมวันเป็นวัน/ชั่วโมง (1 วัน = 9 ชม.)
+      function toDayHour(val) {
+        const day = Math.floor(val);
+        const hour = Math.round((val - day) * 9);
+        return { day, hour };
+      }
+
       // 6. For each leave type, calculate quota and used (sick, personal, vacation, maternity)
-      // Remove allowedTypes filter to show all leave types
       const result = [];
       for (const leaveType of leaveTypes) {
         // Find quota for this leave type
@@ -749,14 +755,17 @@ module.exports = (AppDataSource) => {
           }
         }
         const remaining = Math.max(0, quota - used);
+        const usedObj = toDayHour(used);
+        const remainingObj = toDayHour(remaining);
         result.push({
           id: leaveType.id,
           leave_type_en: leaveType.leave_type_en,
           leave_type_th: leaveType.leave_type_th,
-          quota,
-          used: Math.round(used * 100) / 100,
-          remaining: Math.round(remaining * 100) / 100,
-          unit: (leaveType.leave_type_en?.toLowerCase() === 'personal' || leaveType.leave_type_th === 'ลากิจ') ? 'hour' : 'day',
+          quota: quota,
+          used_day: usedObj.day,
+          used_hour: usedObj.hour,
+          remaining_day: remainingObj.day,
+          remaining_hour: remainingObj.hour
         });
       }
       return res.json({ success: true, data: result });
