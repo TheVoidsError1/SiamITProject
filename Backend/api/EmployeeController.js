@@ -503,26 +503,28 @@ module.exports = (AppDataSource) => {
       // ===== เพิ่มส่วนนี้ก่อน paging =====
       const allLeaves = [...leaves];
       const approvedLeaves = allLeaves.filter(l => l.status === 'approved');
-      const totalLeaveDays = approvedLeaves
-        .filter(l => l.startDate && l.endDate && (!l.startTime || !l.endTime))
-        .reduce((sum, l) => {
+      let totalLeaveDays = 0;
+      let totalLeaveHours = 0;
+      approvedLeaves.forEach(l => {
+        if (l.startDate && l.endDate && (!l.startTime || !l.endTime)) {
           const start = new Date(l.startDate);
           const end = new Date(l.endDate);
           let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
           if (days < 0 || isNaN(days)) days = 0;
-          return sum + days;
-        }, 0);
-      const totalLeaveHours = approvedLeaves
-        .filter(l => l.startTime && l.endTime)
-        .reduce((sum, l) => {
+          totalLeaveDays += days;
+        } else if (l.startTime && l.endTime) {
           const [sh, sm] = l.startTime.split(":").map(Number);
           const [eh, em] = l.endTime.split(":").map(Number);
           let start = sh + (sm || 0) / 60;
           let end = eh + (em || 0) / 60;
           let diff = end - start;
           if (diff < 0) diff += 24;
-          return sum + Math.floor(diff);
-        }, 0);
+          totalLeaveHours += Math.floor(diff);
+        }
+      });
+      // รวมชั่วโมงเป็นวัน (1 วัน = 9 ชั่วโมง)
+      const summaryDays = totalLeaveDays + Math.floor(totalLeaveHours / 9);
+      const summaryHours = totalLeaveHours % 9;
       // ===== จบส่วนที่เพิ่ม =====
 
       // Apply paging
@@ -546,24 +548,27 @@ module.exports = (AppDataSource) => {
         // --- เพิ่มการคำนวณ duration/durationType ---
         let duration = 0;
         let durationType = 'day';
-        if ((leaveTypeName_th === 'ลากิจ' || leaveTypeName_en === 'personal') && l.startTime && l.endTime) {
-          // ลากิจแบบชั่วโมง
+        let durationHours = 0;
+        if (l.startTime && l.endTime) {
+          // ลาชั่วโมง
           const [sh, sm] = l.startTime.split(":").map(Number);
           const [eh, em] = l.endTime.split(":").map(Number);
           let start = sh + (sm || 0) / 60;
           let end = eh + (em || 0) / 60;
           let diff = end - start;
           if (diff < 0) diff += 24;
-          duration = Math.floor(diff); // ปัดเศษลงเป็นจำนวนเต็มชั่วโมง
           durationType = 'hour';
+          durationHours = Math.floor(diff);
+          duration = 0;
         } else if (l.startDate && l.endDate) {
-          // ลาทั้งหมดแบบวัน
+          // ลาวัน
           const start = new Date(l.startDate);
           const end = new Date(l.endDate);
           let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
           if (days < 0 || isNaN(days)) days = 0;
-          duration = days;
           durationType = 'day';
+          duration = days;
+          durationHours = 0;
         }
         // --- ส่ง backdated จาก DB เท่านั้น ---
         const backdated = Number(l.backdated);
@@ -579,6 +584,7 @@ module.exports = (AppDataSource) => {
           endTime: l.endTime || null,
           duration,
           durationType,
+          durationHours: durationType === 'hour' ? durationHours : undefined,
           reason: l.reason,
           status: l.status,
           submittedDate: l.createdAt,
@@ -619,8 +625,9 @@ module.exports = (AppDataSource) => {
         page: pageNum,
         totalPages: Math.ceil(total / limitNum),
         summary: {
-          totalLeaveDays: Math.round(totalLeaveDaysFinal * 100) / 100, // ส่งเป็นทศนิยม 2 ตำแหน่ง
-          totalLeaveHours,
+          days: summaryDays,
+          hours: summaryHours,
+          totalLeaveDays: summaryDays + summaryHours / 9, // สำหรับ compat เดิม
         }
       });
     } catch (err) {

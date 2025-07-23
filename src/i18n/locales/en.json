@@ -193,9 +193,15 @@
     "notBackdatedOnly": "Non-backdated only"
   },
   "leaveTypes": {
-    "ลาพักร้อน": "Vacation Leave",
-    "ลาป่วย": "Sick Leave", 
+    "all": "All",
+    "Emergency": "Emergency Leave",
+    "Vacation": "Vacation Leave",
+    "Sick": "Sick Leave",
+    "Maternity": "Maternity Leave",
+    "Personal": "Personal Leave",
     "ลากิจ": "Personal Leave",
+    "ลาพักร้อน": "Vacation Leave",
+    "ลาป่วย": "Sick Leave",
     "ลาคลอด": "Maternity Leave",
     "ลาฉุกเฉิน": "Emergency Leave",
     "ลาพักผ่อน": "Annual Leave",
@@ -203,6 +209,8 @@
   },
   "months": {
     "all": "All",
+    "month": "Month",
+    "year": "Year",
     "1": "January",
     "2": "February",
     "3": "March",
@@ -395,7 +403,8 @@
       "confirmDeleteUser": "Do you want Delete User?",
     "deleteSuccess": "Delete successful",
     "deleteSuccessDesc": "Leave deleted successfully",
-    "deleteUserSuccessDesc": "User deleted successfully"
+    "deleteUserSuccessDesc": "User deleted successfully",
+    "delete": "Delete"
   },
   "error": {
     "apiConnectionError": "API Connection Error"
@@ -418,7 +427,10 @@
     "leaveHistoryDesc": "Employee leave history",
     "name": "name",
     "superadmin": "Superadmin",
-    "setNewPassword": "Set a new password"
+    "setNewPassword": "Set a new password",
+    "edit": "Edit",
+    "save": "Save",
+    "cancel": "Cancel"
   },
   "notification": {
     "title": "Notifications",
