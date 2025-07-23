@@ -184,6 +184,16 @@ const AdminDashboard = () => {
     return format(date, 'dd MMM yyyy, HH:mm');
   };
 
+  // --- เพิ่มฟังก์ชันแปลงวันที่แบบไม่มีเวลา ---
+  const formatDateOnly = (dateStr: string) => {
+    const date = new Date(dateStr);
+    if (i18n.language === 'th') {
+      const buddhistYear = date.getFullYear() + 543;
+      return `${date.getDate().toString().padStart(2, '0')} ${format(date, 'MMM', { locale: th })} ${buddhistYear}`;
+    }
+    return format(date, 'dd MMM yyyy');
+  };
+
   // --- เพิ่มฟังก์ชันคำนวณชั่วโมง ---
   const calcHours = (start: string, end: string) => {
     if (!start || !end) return null;
@@ -788,8 +798,8 @@ const AdminDashboard = () => {
                               <p className="text-sm font-medium text-gray-700">{t('leave.date')}:</p>
                               <p className="text-sm text-gray-600">
                                 {request.startTime && request.endTime
-                                  ? `${formatDateLocalized(request.startDate)} - ${formatDateLocalized(request.endDate)} (${calcHours(request.startTime, request.endTime)} ${hourUnit}, ${request.startTime} - ${request.endTime})`
-                                  : `${formatDateLocalized(request.startDate)} - ${formatDateLocalized(request.endDate)}`}
+                                  ? `${formatDateOnly(request.startDate)} - ${formatDateOnly(request.endDate)} (${calcHours(request.startTime, request.endTime)} ${hourUnit}, ${request.startTime} - ${request.endTime})`
+                                  : `${formatDateOnly(request.startDate)} - ${formatDateOnly(request.endDate)}`}
                               </p>
                             </div>
                             <div>
