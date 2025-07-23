@@ -82,7 +82,8 @@
     "year": "ปี",
     "close": "ปิด",
     "add": "เพิ่ม",
-    "update": "อัปเดต"
+    "update": "อัปเดต",
+    "allMonths": "ทุกเดือน"
   },
   "leave": {
     "leaveRequest": "ขอลา",
@@ -253,10 +254,11 @@
     "quickActions": "เมนูด่วน",
     "quickActionsDesc": "เข้าถึงฟังก์ชันที่ใช้บ่อย",
     "recentLeaveStats": "สถิติการลาล่าสุด",
-    "recentLeaveStatsDesc": "ภาพรวมการใช้สิทธิการลา",
+    "recentLeaveStatsDesc": "การใช้สิทธิการลาล่าสุด",
     "fillCompleteInfo": "กรุณากรอกข้อมูลให้ครบถ้วน",
     "manageAllDesc": "จัดการตำแหน่ง แผนก และประเภทการลาทั้งหมด",
-    "fillCompleteInfo": "กรุณากรอกข้อมูลให้ครบถ้วน"
+    "fillCompleteInfo": "กรุณากรอกข้อมูลให้ครบถ้วน",
+    "backdatedRequests": "ใบลาย้อนหลัง"
   },
   "profile": {
     "personalInfo": "ข้อมูลส่วนตัว",

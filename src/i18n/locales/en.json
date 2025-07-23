@@ -83,7 +83,8 @@
     "year": "Year",
     "close": "Close",
     "add": "Add",
-    "update": "Update"
+    "update": "Update",
+    "allMonths": "All Months"
   },
   "leave": {
     "leaveRequest": "Leave Request",
@@ -256,10 +257,11 @@
     "quickActions": "Quick Actions",
     "quickActionsDesc": "Access frequently used functions",
     "recentLeaveStats": "Recent Leave Statistics",
-    "recentLeaveStatsDesc": "Overview of leave usage",
+    "recentLeaveStatsDesc": "Latest leave requests",
     "fillCompleteInfo": "Please fill out complete information",
     "manageAllDesc": "Manage all positions, departments, and leave types",
-    "fillCompleteInfo": "Please fill out complete information"
+    "fillCompleteInfo": "Please fill out complete information",
+    "backdatedRequests": "Backdated Requests"
   },
   "profile": {
     "personalInfo": "Personal Information",

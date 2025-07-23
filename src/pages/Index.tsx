@@ -46,15 +46,26 @@ const Index = () => {
   const [recentLeaveStats, setRecentLeaveStats] = useState<Record<string, { days: number; hours: number; quota?: number }>>({});
   const [loadingRecentStats, setLoadingRecentStats] = useState(true);
   const [errorRecentStats, setErrorRecentStats] = useState("");
-  // Days remaining state
-  const [daysRemaining, setDaysRemaining] = useState<{ days: number, hours: number } | null>(null);
-  const [loadingDaysRemaining, setLoadingDaysRemaining] = useState(true);
-  const [errorDaysRemaining, setErrorDaysRemaining] = useState("");
+  // Days remaining state (now for backdated requests)
+  const [backdatedCount, setBackdatedCount] = useState<number | null>(null);
+  const [loadingBackdated, setLoadingBackdated] = useState(true);
+  const [errorBackdated, setErrorBackdated] = useState("");
   // Days used state
   const [daysUsed, setDaysUsed] = useState<{ days: number, hours: number } | null>(null);
   const [loadingDaysUsed, setLoadingDaysUsed] = useState(true);
   const [errorDaysUsed, setErrorDaysUsed] = useState("");
-  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
+  // Recent leave requests state
+  const [recentLeaves, setRecentLeaves] = useState<Array<{
+    leavetype: string,
+    leavetype_th?: string,
+    leavetype_en?: string,
+    duration: string,
+    startdate: string,
+    status: string
+  }>>([]);
+  const [loadingRecentLeaves, setLoadingRecentLeaves] = useState(true);
+  const [errorRecentLeaves, setErrorRecentLeaves] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
   const [showMonthPicker, setShowMonthPicker] = useState(false);
   // เพิ่ม state สำหรับ days used จาก filter
@@ -134,32 +145,83 @@ const Index = () => {
   }, [selectedMonth, selectedYear, t, logout]);
 
   useEffect(() => {
-    setLoadingDaysRemaining(true);
-    setErrorDaysRemaining("");
+    setLoadingBackdated(true);
+    setErrorBackdated("");
     const token = localStorage.getItem("token");
-    let url = `/api/leave-days-remaining`;
-    if (selectedYear) url += `?year=${selectedYear}`;
+    let url = "/api/my-backdated";
+    if (selectedMonth && selectedYear) url += `?month=${selectedMonth}&year=${selectedYear}`;
+    else if (selectedYear) url += `?year=${selectedYear}`;
     fetchWithAuth(url, {
       headers: {
         Authorization: token ? `Bearer ${token}` : undefined,
       },
     }, logout, showSessionExpiredDialog)
-      .then((res) => res && res.json())
+      ?.then((res) => res && res.json())
       .then((data) => {
         if (data.status === "success" && data.data) {
-          setDaysRemaining(data.data);
+          setBackdatedCount(data.data.count);
         } else {
-          setErrorDaysRemaining(t('error.apiConnectionError'));
+          setErrorBackdated(t('error.apiConnectionError'));
         }
       })
-      .catch(() => setErrorDaysRemaining(t('error.apiConnectionError')))
-      .finally(() => setLoadingDaysRemaining(false));
-  }, [selectedYear, t, logout]);
+      .catch(() => setErrorBackdated(t('error.apiConnectionError')))
+      .finally(() => setLoadingBackdated(false));
+  }, [selectedMonth, selectedYear, t, logout]);
 
   // useEffect เรียก fetchDashboardStats เมื่อ selectedMonth/selectedYear เปลี่ยน
   useEffect(() => {
     fetchDashboardStats(selectedMonth, selectedYear);
     // eslint-disable-next-line
+  }, [selectedMonth, selectedYear, t, logout]);
+
+  // Fetch days used
+  useEffect(() => {
+    setLoadingDaysUsed(true);
+    setErrorDaysUsed("");
+    const token = localStorage.getItem("token");
+    let url = `/api/day-used`;
+    if (selectedMonth && selectedYear) url += `?month=${selectedMonth}&year=${selectedYear}`;
+    else if (selectedYear) url += `?year=${selectedYear}`;
+    fetchWithAuth(url, {
+      headers: {
+        Authorization: token ? `Bearer ${token}` : undefined,
+      },
+    }, logout, showSessionExpiredDialog)
+      ?.then((res) => res && res.json())
+      .then((data) => {
+        if (data.status === "success" && data.data) {
+          setDaysUsed(data.data);
+        } else {
+          setErrorDaysUsed(t('error.apiConnectionError'));
+        }
+      })
+      .catch(() => setErrorDaysUsed(t('error.apiConnectionError')))
+      .finally(() => setLoadingDaysUsed(false));
+  }, [selectedMonth, selectedYear, t, logout]);
+
+  // Fetch recent leave requests
+  useEffect(() => {
+    setLoadingRecentLeaves(true);
+    setErrorRecentLeaves("");
+    const token = localStorage.getItem("token");
+    let url = `/api/recent-leave-requests`;
+    if (selectedMonth && selectedYear) url += `?month=${selectedMonth}&year=${selectedYear}`;
+    else if (selectedYear) url += `?year=${selectedYear}`;
+    fetchWithAuth(url, {
+      headers: {
+        Authorization: token ? `Bearer ${token}` : undefined,
+      },
+    }, logout, showSessionExpiredDialog)
+      ?.then((res) => res && res.json())
+      .then((data) => {
+        if (data.status === "success" && data.data) {
+          setRecentLeaves(data.data);
+        } else {
+          setErrorRecentLeaves(t('error.apiConnectionError'));
+        }
+      })
+      .catch(() => setErrorRecentLeaves(t('error.apiConnectionError')))
+      .finally(() => setLoadingRecentLeaves(false));
   }, [selectedMonth, selectedYear, t, logout]);
 
   // Localized date formatter for dashboard welcome section
@@ -190,43 +252,6 @@ const Index = () => {
               {t('main.welcomeMessage')}
             </p>
           </div>
-          <Popover open={showMonthPicker} onOpenChange={setShowMonthPicker}>
-            <PopoverTrigger asChild>
-              <Button variant="outline" size="sm" className="flex items-center gap-2">
-                <CalendarIcon className="w-4 h-4 text-blue-600" />
-                <span className="text-sm">{selectedMonth}/{selectedYear}</span>
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-auto p-2">
-              <div className="flex flex-col items-center">
-                <div className="flex gap-2 mb-2">
-                  <Button size="icon" variant="ghost" onClick={() => setSelectedYear(y => y - 1)}>
-                    &lt;
-                  </Button>
-                  <span className="font-semibold text-lg">{selectedYear}</span>
-                  <Button size="icon" variant="ghost" onClick={() => setSelectedYear(y => y + 1)}>
-                    &gt;
-                  </Button>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  {[...Array(12)].map((_, i) => (
-                    <Button
-                      key={i}
-                      size="sm"
-                      variant={selectedMonth === i + 1 ? "default" : "outline"}
-                      className="w-16"
-                      onClick={() => {
-                        setSelectedMonth(i + 1);
-                        setShowMonthPicker(false);
-                      }}
-                    >
-                      {format(new Date(selectedYear, i, 1), "MMM", { locale: i18n.language === 'th' ? th : undefined })}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </PopoverContent>
-          </Popover>
           <LanguageSwitcher />
         </div>
       </div>
@@ -240,54 +265,89 @@ const Index = () => {
             <p className="text-base text-blue-100 mb-3">
               {t('main.today')} {formatFullDateLocalized(new Date())}
             </p>
-            <Link to="/leave-request">
-              <Button 
-                size="sm" 
-                variant="secondary"
-                className="bg-white text-blue-600 hover:bg-blue-50 font-medium px-6 py-4 text-base"
-              >
-                {t('main.newLeaveRequest')}
-              </Button>
-            </Link>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              {/* Removed New Leave Request button */}
+              <Popover open={showMonthPicker} onOpenChange={setShowMonthPicker}>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" size="sm" className="flex items-center gap-2 bg-white/80 text-blue-700 border-blue-200">
+                    <CalendarIcon className="w-4 h-4 text-blue-600" />
+                    <span className="text-sm">
+                      {selectedMonth ? `${selectedMonth}/${selectedYear}` : `${selectedYear}`}
+                    </span>
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-2">
+                  <div className="flex flex-col items-center">
+                    <div className="flex gap-2 mb-2">
+                      <Button size="icon" variant="ghost" onClick={() => setSelectedYear(y => y - 1)}>
+                        &lt;
+                      </Button>
+                      <span className="font-semibold text-lg">{selectedYear}</span>
+                      <Button size="icon" variant="ghost" onClick={() => setSelectedYear(y => y + 1)}>
+                        &gt;
+                      </Button>
+                    </div>
+                    <div className="grid grid-cols-3 gap-2 mb-2">
+                      <Button
+                        size="sm"
+                        variant={selectedMonth === null ? "default" : "outline"}
+                        className="w-16"
+                        onClick={() => {
+                          setSelectedMonth(null);
+                          setShowMonthPicker(false);
+                        }}
+                      >
+                        {t('common.allMonths')}
+                      </Button>
+                      {[...Array(12)].map((_, i) => (
+                        <Button
+                          key={i}
+                          size="sm"
+                          variant={selectedMonth === i + 1 ? "default" : "outline"}
+                          className="w-16"
+                          onClick={() => {
+                            setSelectedMonth(i + 1);
+                            setShowMonthPicker(false);
+                          }}
+                        >
+                          {format(new Date(selectedYear, i, 1), "MMM", { locale: i18n.language === 'th' ? th : undefined })}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+            </div>
           </div>
           <div className="absolute top-0 right-0 w-40 h-40 rounded-full rainbow-gradient opacity-20 -translate-y-1/2 translate-x-1/2"></div>
         </div>
 
         {/* Stats Grid */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {/* Days Remaining Card (API-connected) */}
+          {/* Backdated Requests Card (API-connected) */}
           <Card className="hover:shadow-lg transition-all duration-300 hover:-translate-y-1 border-0 shadow-md p-2">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
-                <div className="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                  <Calendar className="w-5 h-5 text-blue-600" />
+                <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center">
+                  <Calendar className="w-5 h-5 text-red-600" />
                 </div>
               </div>
             </CardHeader>
             <CardContent>
               <div className="space-y-0.5">
                 <p className="text-2xl font-bold">
-                  {loadingDaysRemaining ? (
+                  {loadingBackdated ? (
                     <span>{t('common.loading')}</span>
-                  ) : errorDaysRemaining ? (
-                    <span className="text-red-500">{errorDaysRemaining}</span>
-                  ) : daysRemaining ? (
-                    <>
-                      <span className="font-bold">{daysRemaining.days}</span>
-                      <span className="text-base font-normal text-muted-foreground ml-1">{t('common.days')}</span>
-                      {daysRemaining.hours > 0 && (
-                        <>
-                          <span className="font-bold ml-2">{daysRemaining.hours}</span>
-                          <span className="text-base font-normal text-muted-foreground ml-1">{t('common.hour')}</span>
-                        </>
-                      )}
-                    </>
+                  ) : errorBackdated ? (
+                    <span className="text-red-500">{errorBackdated}</span>
+                  ) : backdatedCount !== null ? (
+                    <span className="font-bold">{backdatedCount}</span>
                   ) : (
                     <span>-</span>
                   )}
                 </p>
                 <p className="text-base text-muted-foreground">
-                  {t('main.daysRemaining')}
+                  {t('main.backdatedRequests', 'Backdated Requests')}
                 </p>
               </div>
             </CardContent>
@@ -304,21 +364,23 @@ const Index = () => {
             <CardContent>
               <div className="space-y-0.5">
                 <p className="text-2xl font-bold">
-                  {loadingRecentStats ? (
+                  {loadingDaysUsed ? (
                     <span>{t('common.loading')}</span>
-                  ) : errorRecentStats ? (
-                    <span className="text-red-500">{errorRecentStats}</span>
-                  ) : (
+                  ) : errorDaysUsed ? (
+                    <span className="text-red-500">{errorDaysUsed}</span>
+                  ) : daysUsed ? (
                     <>
-                      <span className="font-bold">{recentTotalDays}</span>
+                      <span className="font-bold">{daysUsed.days}</span>
                       <span className="text-base font-normal text-muted-foreground ml-1">{t('common.days')}</span>
-                      {recentTotalHours > 0 && (
+                      {daysUsed.hours > 0 && (
                         <>
-                          <span className="font-bold ml-2">{recentTotalHours}</span>
+                          <span className="font-bold ml-2">{daysUsed.hours}</span>
                           <span className="text-base font-normal text-muted-foreground ml-1">{t('common.hour')}</span>
                         </>
                       )}
                     </>
+                  ) : (
+                    <span>-</span>
                   )}
                 </p>
                 <p className="text-base text-muted-foreground">
@@ -389,7 +451,7 @@ const Index = () => {
             </CardContent>
           </Card>
 
-          {/* ปรับ Recent Leave Statistics ให้แสดง leaveType ทุกประเภท */}
+          {/* Recent Leave Statistics (3 latest leave requests) */}
           <Card className="border-0 shadow-md p-2">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg font-bold">
@@ -401,58 +463,32 @@ const Index = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {loadingRecentStats ? (
+              {loadingRecentLeaves ? (
                 <div className="text-center py-3 text-gray-500 text-base">{t('common.loading')}</div>
-              ) : errorRecentStats ? (
-                <div className="text-center py-3 text-red-500 text-base">{errorRecentStats}</div>
+              ) : errorRecentLeaves ? (
+                <div className="text-center py-3 text-red-500 text-base">{errorRecentLeaves}</div>
+              ) : recentLeaves.length === 0 ? (
+                <div className="text-center py-3 text-gray-500 text-base">{t('leave.noHistory')}</div>
               ) : (
                 <div className="space-y-2">
-                  {Object.keys(recentLeaveStats).length === 0 ? (
-                    <div className="text-center py-3 text-gray-500 text-base">
-                      {t('leave.noHistory', 'ไม่มีประวัติการลา')}
+                  <div className="grid grid-cols-4 gap-2 font-semibold text-base text-muted-foreground pb-1 border-b">
+                    <span>{t('leave.leaveType', 'Leave Type')}</span>
+                    <span>{t('leave.duration', 'Duration')}</span>
+                    <span>{t('leave.status', 'Status')}</span>
+                    <span>{t('leave.startDate', 'Start Date')}</span>
+                  </div>
+                  {recentLeaves.map((leave, idx) => (
+                    <div key={idx} className="grid grid-cols-4 gap-2 items-center border-b last:border-b-0 py-2">
+                      <span className="text-base font-medium">{
+                        i18n.language === 'th'
+                          ? (leave.leavetype_th || leave.leavetype || t(`leaveTypes.${leave.leavetype}`, leave.leavetype))
+                          : (leave.leavetype_en || leave.leavetype || t(`leaveTypes.${leave.leavetype}_en`, leave.leavetype))
+                      }</span>
+                      <span className="text-base">{leave.duration}</span>
+                      <span className={`text-base font-semibold ${leave.status === 'approved' ? 'text-green-600' : leave.status === 'pending' ? 'text-yellow-600' : 'text-red-600'}`}>{t(`leave.statuses.${leave.status}`, leave.status)}</span>
+                      <span className="text-base text-muted-foreground">{leave.startdate ? new Date(leave.startdate).toLocaleDateString(i18n.language === 'th' ? 'th-TH' : 'en-US') : '-'}</span>
                     </div>
-                  ) : (
-                    <>
-                      {Object.entries(recentLeaveStats).map(([type, stat]) => (
-                        <div className="flex justify-between items-center" key={type}>
-                          <span className="text-base">{t(`leaveTypes.${type}`, type)}</span>
-                          <span className="font-medium text-base">
-                            {(() => {
-                              const d = stat.days;
-                              const h = stat.hours;
-                              // ถ้าเป็น Emergency Leave (ลาฉุกเฉิน) ไม่ต้องแสดง quota
-                              const isEmergency = [
-                                t('leaveTypes.Emergency Leave', 'Emergency Leave'),
-                                t('leaveTypes.ลาฉุกเฉิน', 'ลาฉุกเฉิน'),
-                                'Emergency Leave',
-                                'ลาฉุกเฉิน'
-                              ].includes(type);
-                              const quota = (!isEmergency && stat.quota !== undefined) ? stat.quota : null;
-                              const hourLabel = t('common.hour', 'ชั่วโมง');
-                              let used = '';
-                              if (d > 0 && h > 0) used = `${d} ${t('common.days')} ${h} ${hourLabel}`;
-                              else if (d > 0) used = `${d} ${t('common.days')}`;
-                              else if (h > 0) used = `${h} ${hourLabel}`;
-                              else used = `0 ${t('common.days')}`;
-                              return quota !== null ? `${used} / ${quota} ${t('common.days')}` : used;
-                            })()}
-                          </span>
-                        </div>
-                      ))}
-                      {/* รวมวันและชั่วโมงทั้งหมด */}
-                      <div className="flex justify-between items-center font-bold border-t pt-2 mt-2">
-                        <span className="text-base">{t('common.total', 'รวม')}</span>
-                        <span className="font-medium text-base">
-                          {(() => {
-                            if (recentTotalDays > 0 && recentTotalHours > 0) return `${recentTotalDays} ${t('common.days')} ${recentTotalHours} ${t('common.hour', 'ชั่วโมง')}`;
-                            if (recentTotalDays > 0) return `${recentTotalDays} ${t('common.days')}`;
-                            if (recentTotalHours > 0) return `${recentTotalHours} ${t('common.hour', 'ชั่วโมง')}`;
-                            return `0 ${t('common.days')}`;
-                          })()}
-                        </span>
-                      </div>
-                    </>
-                  )}
+                  ))}
                 </div>
               )}
             </CardContent>
