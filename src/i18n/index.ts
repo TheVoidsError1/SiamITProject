@@ -15,8 +15,8 @@ i18n
         translation: enTranslations
       }
     },
-    lng: 'en', // default language is now English
-    fallbackLng: 'en', // fallback is also English
+    lng: localStorage.getItem('i18nextLng') || 'th', // default language is Thai or last selected
+    fallbackLng: 'th', // fallback is Thai
     interpolation: {
       escapeValue: false
     }

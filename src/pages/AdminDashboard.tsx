@@ -102,6 +102,14 @@ const AdminDashboard = () => {
   const [historyBackdatedFilter, setHistoryBackdatedFilter] = useState('all'); // all | backdated | normal
   const [historyFilterLeaveType, setHistoryFilterLeaveType] = useState('');
 
+  // --- เพิ่ม state สำหรับ pending filter (Recent History) ---
+  const [pendingFilterMonth, setPendingFilterMonth] = useState(filterMonth);
+  const [pendingFilterYear, setPendingFilterYear] = useState(filterYear);
+  const [pendingHistoryStatusFilter, setPendingHistoryStatusFilter] = useState(historyStatusFilter);
+  const [pendingHistoryFilterLeaveType, setPendingHistoryFilterLeaveType] = useState(historyFilterLeaveType);
+  const [pendingRecentSingleDate, setPendingRecentSingleDate] = useState(recentSingleDate);
+  const [pendingHistoryBackdatedFilter, setPendingHistoryBackdatedFilter] = useState(historyBackdatedFilter);
+
   // ปรับการคำนวณสถิติให้ใช้ข้อมูลจาก leave request ที่ดึงมา
   const pendingCount = pendingRequests.length;
   const approvedThisMonth = recentRequests.filter(r => {
@@ -504,24 +512,34 @@ const AdminDashboard = () => {
     fetchLeaveTypes();
   }, []);
 
-  // ฟังก์ชันล้างตัวกรองสำหรับ pending
-  const clearPendingFilters = () => {
-    setPendingFilterLeaveType('');
-    setPendingDateRange({ from: undefined, to: undefined });
-    setPendingSingleDate(undefined); // ล้างวันเดียวด้วย
-    setPendingPage(1);
-    setPendingBackdatedFilter('all'); // ล้างตัวกรองย้อนหลัง
+  // --- ฟังก์ชัน apply filter ---
+  const applyHistoryFilters = () => {
+    setFilterMonth(pendingFilterMonth);
+    setFilterYear(pendingFilterYear);
+    setHistoryStatusFilter(pendingHistoryStatusFilter);
+    setHistoryFilterLeaveType(pendingHistoryFilterLeaveType);
+    setRecentSingleDate(pendingRecentSingleDate);
+    setHistoryBackdatedFilter(pendingHistoryBackdatedFilter);
+    setHistoryPage(1);
   };
-  // ฟังก์ชันล้างตัวกรองสำหรับ history/recent
+
+  // --- ปรับ clearHistoryFilters ให้รีเซ็ต pending ด้วย ---
   const clearHistoryFilters = () => {
     setFilterMonth('');
     setFilterYear('');
-    setHistoryStatusFilter('approved'); // default กลับเป็น approved
+    setHistoryStatusFilter('all');
     setDateRange({ from: undefined, to: undefined });
-    setRecentSingleDate(undefined); // ล้างวันเดียวด้วย
+    setRecentSingleDate(undefined);
     setHistoryPage(1);
-    setHistoryBackdatedFilter('all'); // ล้างตัวกรองย้อนหลัง
-    setHistoryFilterLeaveType(''); // ล้างตัวกรอง leave type
+    setHistoryBackdatedFilter('all');
+    setHistoryFilterLeaveType('');
+    // reset pending
+    setPendingFilterMonth('');
+    setPendingFilterYear('');
+    setPendingHistoryStatusFilter('all');
+    setPendingHistoryFilterLeaveType('');
+    setPendingRecentSingleDate(undefined);
+    setPendingHistoryBackdatedFilter('all');
   };
 
   const getLeaveTypeLabel = (typeId: string) => {
@@ -637,7 +655,7 @@ const AdminDashboard = () => {
                     {/* ปุ่มล้าง filter */}
                     <button
                       className="ml-2 px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm"
-                      onClick={clearPendingFilters}
+                      onClick={clearHistoryFilters}
                       type="button"
                     >
                       {t('history.clearFilter')}
@@ -645,11 +663,11 @@ const AdminDashboard = () => {
                   </div>
                   {/* Pending Tab Filter */}
                   <div className="flex items-center gap-2">
-                    <label className="text-xs font-medium">ย้อนหลัง</label>
+                    <label className="text-xs font-medium">{t('leave.backdatedLabel', 'ย้อนหลัง')}</label>
                     <select className="border rounded px-2 py-1 text-xs" value={pendingBackdatedFilter} onChange={e => { setPendingBackdatedFilter(e.target.value); setPendingPage(1); }}>
-                      <option value="all">ทั้งหมด</option>
-                      <option value="backdated">เฉพาะย้อนหลัง</option>
-                      <option value="normal">เฉพาะไม่ย้อนหลัง</option>
+                      <option value="all">{t('leave.backdatedAll', 'ทั้งหมด')}</option>
+                      <option value="backdated">{t('leave.backdatedOnly', 'เฉพาะย้อนหลัง')}</option>
+                      <option value="normal">{t('leave.notBackdatedOnly', 'เฉพาะไม่ย้อนหลัง')}</option>
                     </select>
                   </div>
                   {loading ? (
@@ -785,14 +803,6 @@ const AdminDashboard = () => {
                           </select>
                           <span className="ml-2 text-sm text-gray-500">{t('admin.itemsPerPage')}</span>
                           <span className="ml-2 text-sm text-gray-500">{t('admin.pageInfo', { page: pendingPage, totalPages: pendingTotalPages })}</span>
-                          {/* ปุ่มล้าง filter */}
-                          <button
-                            className="ml-2 px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm"
-                            onClick={clearPendingFilters}
-                            type="button"
-                          >
-                            {t('history.clearFilter')}
-                          </button>
                         </div>
                       )}
                     </div>
@@ -823,14 +833,14 @@ const AdminDashboard = () => {
                           className="w-48 min-w-[180px] max-w-full justify-start text-left font-normal whitespace-nowrap"
                         >
                           <Calendar className="mr-2 h-4 w-4" />
-                          {recentSingleDate ? format(recentSingleDate, "dd/MM/yyyy") : t('history.selectSingleDate', 'เลือกวันเดียว')}
+                          {pendingRecentSingleDate ? format(pendingRecentSingleDate, "dd/MM/yyyy") : t('history.selectSingleDate', 'เลือกวันเดียว')}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0" align="start">
                         <CalendarComponent
                           mode="single"
-                          selected={recentSingleDate}
-                          onSelect={date => setRecentSingleDate(date)}
+                          selected={pendingRecentSingleDate}
+                          onSelect={date => setPendingRecentSingleDate(date)}
                         />
                       </PopoverContent>
                     </Popover>
@@ -843,8 +853,8 @@ const AdminDashboard = () => {
                     ) : (
                       <select
                         className="border rounded px-2 py-1"
-                        value={historyFilterLeaveType}
-                        onChange={e => { setHistoryFilterLeaveType(e.target.value); setHistoryPage(1); }}
+                        value={pendingHistoryFilterLeaveType}
+                        onChange={e => setPendingHistoryFilterLeaveType(e.target.value)}
                       >
                         <option value="">{t('leave.allTypes')}</option>
                         {pendingLeaveTypes.map(lt => (
@@ -856,13 +866,13 @@ const AdminDashboard = () => {
                     )}
                     <select
                       className="border rounded px-2 py-1"
-                      value={filterMonth}
+                      value={pendingFilterMonth}
                       onChange={e => {
                         const value = e.target.value ? Number(e.target.value) : '';
-                        setFilterMonth(value);
-                        if (value && !filterYear) {
+                        setPendingFilterMonth(value);
+                        if (value && !pendingFilterYear) {
                           const currentYear = new Date().getFullYear();
-                          setFilterYear(currentYear);
+                          setPendingFilterYear(currentYear);
                         }
                       }}
                     >
@@ -875,22 +885,30 @@ const AdminDashboard = () => {
                       type="number"
                       className="border rounded px-2 py-1 w-24"
                       placeholder={t('history.year')}
-                      value={filterYear}
+                      value={pendingFilterYear}
                       min={2000}
                       max={2100}
-                      onChange={e => setFilterYear(e.target.value ? Number(e.target.value) : '')}
+                      onChange={e => setPendingFilterYear(e.target.value ? Number(e.target.value) : '')}
                     />
                     <select
                       className="border rounded px-2 py-1"
-                      value={historyStatusFilter}
-                      onChange={e => { setHistoryStatusFilter(e.target.value); setHistoryPage(1); }}
+                      value={pendingHistoryStatusFilter}
+                      onChange={e => setPendingHistoryStatusFilter(e.target.value)}
                     >
                       <option value="all">{t('leave.allStatus', 'All status')}</option>
                       <option value="approved">{t('leave.approved')}</option>
                       <option value="rejected">{t('leave.rejected')}</option>
                     </select>
+                    {/* ปุ่มยืนยัน */}
                     <button
-                      className="ml-2 px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm"
+                      className="px-3 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white text-sm"
+                      onClick={applyHistoryFilters}
+                      type="button"
+                    >
+                      {t('common.confirm', 'ยืนยัน')}
+                    </button>
+                    <button
+                      className="px-3 py-1 rounded bg-gray-200 hover:bg-gray-300 text-sm"
                       onClick={clearHistoryFilters}
                       type="button"
                     >
@@ -899,11 +917,11 @@ const AdminDashboard = () => {
                   </div>
                   {/* History Tab Filter */}
                   <div className="flex items-center gap-2">
-                    <label className="text-xs font-medium">ย้อนหลัง</label>
+                    <label className="text-xs font-medium">{t('leave.backdatedLabel', 'ย้อนหลัง')}</label>
                     <select className="border rounded px-2 py-1 text-xs" value={historyBackdatedFilter} onChange={e => { setHistoryBackdatedFilter(e.target.value); setHistoryPage(1); }}>
-                      <option value="all">ทั้งหมด</option>
-                      <option value="backdated">เฉพาะย้อนหลัง</option>
-                      <option value="normal">เฉพาะไม่ย้อนหลัง</option>
+                      <option value="all">{t('leave.backdatedAll', 'ทั้งหมด')}</option>
+                      <option value="backdated">{t('leave.backdatedOnly', 'เฉพาะย้อนหลัง')}</option>
+                      <option value="normal">{t('leave.notBackdatedOnly', 'เฉพาะไม่ย้อนหลัง')}</option>
                     </select>
                   </div>
                   {loading ? (

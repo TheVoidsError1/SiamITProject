@@ -184,7 +184,11 @@
     "backdatedFilter": "Backdated/Not Backdated",
     "backdatedAll": "All",
     "backdatedOnly": "Backdated only",
-    "notBackdatedOnly": "Not backdated only"
+    "notBackdatedOnly": "Not backdated only",
+    "backdatedLabel": "Backdated",
+    "backdatedAll": "All",
+    "backdatedOnly": "Backdated only",
+    "notBackdatedOnly": "Non-backdated only"
   },
   "leaveTypes": {
     "ลาพักร้อน": "Vacation Leave",

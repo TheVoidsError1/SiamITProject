@@ -181,7 +181,11 @@
     "selectDurationType": "เลือกประเภทระยะเวลา",
     "backdated": "ลาย้อนหลัง",
     "backdatedNotice": "ใบลานี้เป็นการลาย้อนหลัง",
-    "contactMethod": "ช่องทางการติดต่อ"
+    "contactMethod": "ช่องทางการติดต่อ",
+    "backdatedLabel": "ย้อนหลัง",
+    "backdatedAll": "ทั้งหมด",
+    "backdatedOnly": "เฉพาะย้อนหลัง",
+    "notBackdatedOnly": "เฉพาะไม่ย้อนหลัง"
   },
   "leaveTypes": {
     "ลาพักร้อน": "ลาพักร้อน",
