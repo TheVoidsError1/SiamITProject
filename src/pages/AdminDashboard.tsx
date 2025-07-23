@@ -786,11 +786,7 @@ const AdminDashboard = () => {
                                 <span className="bg-red-500 text-white px-2 py-0.5 rounded text-xs ml-0.5">
                                   {t('leave.backdated', 'ย้อนหลัง')}
                                 </span>
-                              ) : (
-                                <span className="bg-green-500 text-white px-2 py-0.5 rounded text-xs ml-0.5">
-                                  {t('leave.notBackdated', 'ไม่ย้อนหลัง')}
-                                </span>
-                              )}
+                              ) : null}
                             </div>
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
@@ -1071,9 +1067,7 @@ const AdminDashboard = () => {
                               {/* --- ใน Recent History Tab (badge) --- */}
                               {request.backdated === 1 ? (
                                 <span className="bg-red-500 text-white px-2 py-0.5 rounded text-xs ml-0.5">{t('leave.backdated', 'ย้อนหลัง')}</span>
-                              ) : (
-                                <span className="bg-green-500 text-white px-2 py-0.5 rounded text-xs ml-0.5">{t('leave.notBackdated', 'ไม่ย้อนหลัง')}</span>
-                              )}
+                              ) : null}
                             </div>
 
                             {/* ข้อมูล leave หลัก */}
