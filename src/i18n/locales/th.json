@@ -85,6 +85,7 @@
     "add": "เพิ่ม",
     "update": "อัปเดต",
     "allMonths": "ทุกเดือน"
+    
   },
   "leave": {
     "all": "ทั้งหมด",
@@ -188,14 +189,15 @@
     "backdated": "ลาย้อนหลัง",
     "backdatedNotice": "ใบลานี้เป็นการลาย้อนหลัง",
     "contactMethod": "ช่องทางการติดต่อ",
-    "backdatedFilter": "ประเภทการลา",
+    "backdatedFilter": "เฉพาะย้อนหลัง",
     "allBackdated": "ทั้งหมด",
     "backdated": "ลาย้อนหลัง",
     "notBackdated": "ลาไม่ย้อนหลัง",
     "backdatedLabel": "ย้อนหลัง",
     "backdatedAll": "ทั้งหมด",
     "backdatedOnly": "เฉพาะย้อนหลัง",
-    "notBackdatedOnly": "เฉพาะไม่ย้อนหลัง"
+    "notBackdatedOnly": "เฉพาะไม่ย้อนหลัง",
+    "statusAll": "ทั้งหมด"
   },
   "leaveTypes": {
     "all": "ทั้งหมด",
