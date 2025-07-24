@@ -436,7 +436,8 @@
     "edit": "Edit",
     "save": "Save",
     "cancel": "Cancel",
-    "adminCannotEditSuperadmin": "Admin cannot edit superadmin"
+    "adminCannotEditSuperadmin": "Admin cannot edit superadmin",
+    "noEmployeesFound": "No employees found"
   },
   "notification": {
     "title": "Notifications",

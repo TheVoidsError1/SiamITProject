@@ -323,6 +323,12 @@ const EmployeeManagement = () => {
               </div>
               {loading ? (
                 <div className="text-sm">{t('common.loading')}</div>
+              ) : paginatedEmployees.length === 0 ? (
+                <div className="flex justify-center items-center py-8">
+                  <div className="bg-yellow-100 border border-yellow-300 text-yellow-800 px-6 py-4 rounded text-center text-base font-medium shadow-sm">
+                    {t('employee.noEmployeesFound', 'ไม่พบข้อมูลพนักงานตามเงื่อนไขที่เลือก')}
+                  </div>
+                </div>
               ) : (
                 <>
                   <Table>

@@ -450,7 +450,8 @@
     "edit": "แก้ไข",
     "save": "บันทึก",
     "cancel": "ยกเลิก",
-    "adminCannotEditSuperadmin": "ผู้ดูแลระบบไม่สามารถแก้ไขซูเปอร์แอดมิน"
+    "adminCannotEditSuperadmin": "ผู้ดูแลระบบไม่สามารถแก้ไขซูเปอร์แอดมิน",
+    "noEmployeesFound": "ไม่พบข้อมูลพนักงานตามเงื่อนไขที่เลือก"
   },
   "notification": {
     "title": "การแจ้งเตือน",

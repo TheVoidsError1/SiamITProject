@@ -96,7 +96,7 @@ const SuperAdminList: React.FC = () => {
     }
     setLoading(true);
     try {
-      const url = `${API_BASE_URL}/create-user-with-role`;
+      const url = `${API_BASE_URL}/api/create-user-with-role`;
       const payload = {
         role: form.role,
         name: form.full_name,
