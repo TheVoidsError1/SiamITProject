@@ -97,7 +97,8 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
             {t('leave.detailDescription', 'Detailed information about this leave request.')}
           </DialogDescription>
         </DialogHeader>
-        {leaveDetail && leaveDetail.backdated && (
+         {/* แสดงข้อความเฉพาะใบลาย้อนหลัง */}
+        {leaveDetail && Boolean(leaveDetail.backdated) && (
           <div className="mb-4 p-3 bg-orange-50 border border-orange-300 text-orange-800 rounded text-center font-semibold">
             {t('leave.backdatedNotice')}
           </div>
