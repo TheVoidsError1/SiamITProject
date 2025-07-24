@@ -641,12 +641,12 @@ const EmployeeDetail = () => {
                       ? t('leave.allBackdated')
                       : pendingFilterBackdated === "1"
                         ? t('leave.backdated')
-                        : t('leave.notBackdated')}
+                        : t('leave.notBackdatedOnly')}
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">{t('leave.allBackdated')}</SelectItem>
                     <SelectItem value="1">{t('leave.backdated')}</SelectItem>
-                    <SelectItem value="0">{t('leave.notBackdated')}</SelectItem>
+                    <SelectItem value="0">{t('leave.notBackdatedOnly')}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

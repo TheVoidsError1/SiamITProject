@@ -1,17 +1,15 @@
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from "@/hooks/use-toast";
 import { differenceInCalendarDays, format } from "date-fns";
 import { th } from "date-fns/locale";
-import { AlertCircle, Calendar, CheckCircle, Clock, Eye, FileText, Users, XCircle } from "lucide-react";
+import { AlertCircle, CheckCircle, Clock, Eye, FileText, Users, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -723,7 +721,7 @@ const AdminDashboard = () => {
                       />
                     </div>
                     <div className="flex flex-col min-w-[120px]">
-                      <label className="text-xs font-medium mb-1">{t('leave.backdatedLabel', 'Backdated')}</label>
+                      <label className="text-xs font-medium mb-1">{t('leave.backdatedOnly', 'Backdated')}</label>
                       <select
                         className="border rounded px-2 py-1"
                         value={pendingPendingBackdatedFilter}
@@ -972,7 +970,7 @@ const AdminDashboard = () => {
                       </select>
                     </div>
                     <div className="flex flex-col min-w-[120px]">
-                      <label className="text-xs font-medium mb-1">{t('leave.backdatedLabel', 'Backdated')}</label>
+                      <label className="text-xs font-medium mb-1">{t('leave.backdatedOnly', 'Backdated')}</label>
                       <select
                         className="border rounded px-2 py-1"
                         value={pendingHistoryBackdatedFilter}

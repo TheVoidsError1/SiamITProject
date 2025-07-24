@@ -183,7 +183,7 @@
     "backdated": "Backdated",
     "backdatedNotice": "This leave request is backdated.",
     "contactMethod": "Contact Method",
-    "backdatedFilter": "Leave Timing",
+    "backdatedFilter": "Backdated only",
     "allBackdated": "All",
     "backdated": "Backdated",
     "notBackdated": "Non-backdated",
@@ -443,5 +443,12 @@
     "markAsRead": "Mark as Read",
     "markAllAsRead": "Mark All as Read"
   },
-  "usedLeaveDaysText": "Used leave days:"
+  "usedLeaveDaysText": "Used leave days:",
+  "status": {
+    "all": "All",
+    "approved": "Approved",
+    "pending": "Pending",
+    "rejected": "Rejected",
+    "status": "Status"
+  }
 }
