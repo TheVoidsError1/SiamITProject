@@ -1401,9 +1401,9 @@ const AdminDashboard = () => {
       <Dialog open={showApproveDialog} onOpenChange={setShowApproveDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{t('admin.confirmApproveTitle', 'ยืนยันการอนุมัติ')}</DialogTitle>
+            <DialogTitle>{t('admin.approveConfirmTitle', 'ยืนยันการอนุมัติ')}</DialogTitle>
             <DialogDescription>
-              {t('admin.confirmApproveDesc', 'คุณต้องการอนุมัติคำขอนี้ใช่หรือไม่?')}
+              {t('admin.approveConfirmDesc', { name: approvingRequest?.employeeName || '' })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2 justify-end mt-4">

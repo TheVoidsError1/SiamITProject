@@ -381,7 +381,11 @@
     "rejectReasonTitle": "Please specify the reason for rejection",
     "rejectReasonPlaceholder": "Enter reason...",
     "allStatuses": "All statuses",
-    "noDataForSelectedMonthYear": "No data for the selected month/year"
+    "noDataForSelectedMonthYear": "No data for the selected month/year",
+    "approveConfirmTitle": "Confirm Approval",
+    "rejectConfirmTitle": "Confirm Rejection",
+    "approveConfirmDesc": "Do you want to approve {{name}}'s leave request?",
+    "rejectConfirmDesc": "Do you want to reject {name}'s leave request?"
   },
   "system": {
     "onlineLeaveSystem": "Online Leave System",

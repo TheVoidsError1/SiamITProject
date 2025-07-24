@@ -386,7 +386,11 @@
     "rejectReasonTitle": "กรุณาระบุเหตุผลในการไม่อนุมัติ",
     "rejectReasonPlaceholder": "กรอกเหตุผล...",
     "allStatuses": "ทุกสถานะ",
-    "noDataForSelectedMonthYear": "ไม่พบข้อมูลในเดือน/ปีที่เลือก"
+    "noDataForSelectedMonthYear": "ไม่พบข้อมูลในเดือน/ปีที่เลือก",
+    "approveConfirmTitle": "ยืนยันการอนุมัติ",
+    "rejectConfirmTitle": "ยืนยันการไม่อนุมัติ",
+    "approveConfirmDesc": "คุณต้องการอนุมัติคำขอลาของ {{name}} ใช่หรือไม่?",
+    "rejectConfirmDesc": "คุณต้องการไม่อนุมัติคำขอลาของ {{name}} ใช่หรือไม่?"
   },
   "system": {
     "onlineLeaveSystem": "ระบบลาออนไลน์",
