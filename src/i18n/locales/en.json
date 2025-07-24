@@ -190,7 +190,8 @@
     "backdatedLabel": "Backdated",
     "backdatedAll": "All",
     "backdatedOnly": "Backdated only",
-    "notBackdatedOnly": "Non-backdated only"
+    "notBackdatedOnly": "Non-backdated only",
+    "statusAll": "All"
   },
   "leaveTypes": {
     "all": "All",

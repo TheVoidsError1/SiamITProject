@@ -85,6 +85,7 @@
     "add": "เพิ่ม",
     "update": "อัปเดต",
     "allMonths": "ทุกเดือน"
+    
   },
   "leave": {
     "all": "ทั้งหมด",
@@ -195,7 +196,8 @@
     "backdatedLabel": "ย้อนหลัง",
     "backdatedAll": "ทั้งหมด",
     "backdatedOnly": "เฉพาะย้อนหลัง",
-    "notBackdatedOnly": "เฉพาะไม่ย้อนหลัง"
+    "notBackdatedOnly": "เฉพาะไม่ย้อนหลัง",
+    "statusAll": "ทั้งหมด"
   },
   "leaveTypes": {
     "all": "ทั้งหมด",
