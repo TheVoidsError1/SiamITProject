@@ -175,7 +175,7 @@
     "durationHour": "hour",
     "pleaseSelectAtLeastOne": "Please select at least one option",
     "noHistoryForPeriod": "No leave history for this period.",
-    "allTypes": "All types",
+    "allTypes": "All",
     "invalidPhone": "Please enter a valid phone number, e.g. 0912456147",
     "invalidEmail": "Please enter a valid email address, e.g. example@email.com",
     "durationType": "Duration Type",
@@ -191,7 +191,7 @@
     "backdatedAll": "All",
     "backdatedOnly": "Backdated only",
     "notBackdatedOnly": "Non-backdated only",
-    "statusAll": "All"
+    "statusAll": "All status"
   },
   "leaveTypes": {
     "all": "All",

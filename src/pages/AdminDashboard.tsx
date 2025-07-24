@@ -72,7 +72,7 @@ const AdminDashboard = () => {
   });
   const [departments, setDepartments] = useState<{ id: string; department_name_th: string; department_name_en: string }[]>([]);
   const [positions, setPositions] = useState<{ id: string; position_name_th: string; position_name_en: string }[]>([]);
-  // --- เพิ่ม state สำหรับ filter เดือน/ปี ---
+  // --- เพิ่ม state สำหรับ filter เดือน/ปี (ใช้ filter จริง) ---
   const [filterMonth, setFilterMonth] = useState<number | ''>('');
   const [filterYear, setFilterYear] = useState<number | ''>('');
   // --- เพิ่ม state สำหรับ items per page ---
@@ -114,6 +114,9 @@ const AdminDashboard = () => {
   const [pendingPendingSingleDate, setPendingPendingSingleDate] = useState(pendingSingleDate);
   const [pendingPendingBackdatedFilter, setPendingPendingBackdatedFilter] = useState(pendingBackdatedFilter);
   const [pendingPendingPage, setPendingPendingPage] = useState(pendingPage);
+  // เพิ่ม state สำหรับ month/year
+  const [pendingPendingMonth, setPendingPendingMonth] = useState<number | ''>('');
+  const [pendingPendingYear, setPendingPendingYear] = useState<number | ''>('');
 
   // ปรับการคำนวณสถิติให้ใช้ข้อมูลจาก leave request ที่ดึงมา
   const pendingCount = pendingRequests.length;
@@ -392,20 +395,19 @@ const AdminDashboard = () => {
           showSessionExpiredDialog();
           return;
         }
-        // --- ส่ง page, limit ไป backend ---
         let url = `${API_BASE_URL}/api/leave-request/pending?page=${pendingPage}&limit=${pendingLimit}`;
         if (pendingFilterLeaveType) url += `&leaveType=${pendingFilterLeaveType}`;
-        // --- ปรับ logic filter ใน fetchPending ---
         if (pendingBackdatedFilter === 'backdated') url += `&backdated=1`;
         else if (pendingBackdatedFilter === 'normal') url += `&backdated=0`;
-        // ถ้าเลือกวันเดียว (pendingSingleDate) ให้ filter ด้วย createdAt (param date)
         if (pendingSingleDate) {
           url += `&date=${format(pendingSingleDate, 'yyyy-MM-dd')}`;
         } else {
-          // ถ้าเลือกช่วงวันที่ ให้ filter ด้วย startDate/endDate (เหมือนเดิม)
           if (pendingDateRange.from) url += `&startDate=${format(pendingDateRange.from, 'yyyy-MM-dd')}`;
           if (pendingDateRange.to) url += `&endDate=${format(pendingDateRange.to, 'yyyy-MM-dd')}`;
         }
+        // ใช้ filterMonth, filterYear (ไม่ใช่ pendingPendingMonth/Year)
+        if (filterMonth) url += `&month=${filterMonth}`;
+        if (filterYear) url += `&year=${filterYear}`;
         const res = await fetch(url, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -431,7 +433,7 @@ const AdminDashboard = () => {
       }
     };
     fetchPending();
-  }, [t, pendingPage, pendingLimit, pendingFilterLeaveType, pendingDateRange, pendingSingleDate, pendingBackdatedFilter]);
+  }, [t, pendingPage, pendingLimit, pendingFilterLeaveType, pendingDateRange, pendingSingleDate, pendingBackdatedFilter, filterMonth, filterYear]);
 
   useEffect(() => {
     fetchHistoryRequests();
@@ -565,6 +567,8 @@ const AdminDashboard = () => {
     setPendingSingleDate(pendingPendingSingleDate);
     setPendingBackdatedFilter(pendingPendingBackdatedFilter);
     setPendingPage(1);
+    setFilterMonth(pendingPendingMonth);
+    setFilterYear(pendingPendingYear);
   };
 
   // --- ปรับ clearPendingFilters ให้รีเซ็ต pending ด้วย ---
@@ -574,12 +578,15 @@ const AdminDashboard = () => {
     setPendingSingleDate(undefined);
     setPendingPage(1);
     setPendingBackdatedFilter('all');
-    // reset pending
     setPendingPendingFilterLeaveType('');
     setPendingPendingDateRange({ from: undefined, to: undefined });
     setPendingPendingSingleDate(undefined);
     setPendingPendingBackdatedFilter('all');
     setPendingPendingPage(1);
+    setPendingPendingMonth('');
+    setPendingPendingYear('');
+    setFilterMonth('');
+    setFilterYear('');
   };
 
   const getLeaveTypeLabel = (typeId: string) => {
@@ -734,17 +741,13 @@ const AdminDashboard = () => {
                       <label className="text-xs font-medium mb-1">{t('history.month', 'Month')}</label>
                       <select
                         className="border rounded px-2 py-1"
-                        value={pendingPendingDateRange.from ? (pendingPendingDateRange.from.getMonth() + 1) : ''}
+                        value={pendingPendingMonth}
                         onChange={e => {
                           const month = e.target.value ? Number(e.target.value) : '';
-                          if (month) {
-                            const now = new Date();
-                            setPendingPendingDateRange({
-                              from: new Date(now.getFullYear(), month - 1, 1),
-                              to: new Date(now.getFullYear(), month, 0)
-                            });
-                          } else {
-                            setPendingPendingDateRange({ from: undefined, to: undefined });
+                          setPendingPendingMonth(month);
+                          // ถ้าเลือกเดือนแต่ยังไม่ได้เลือกปี ให้ default เป็นปีปัจจุบัน
+                          if (month && !pendingPendingYear) {
+                            setPendingPendingYear(new Date().getFullYear());
                           }
                         }}
                       >
@@ -760,25 +763,10 @@ const AdminDashboard = () => {
                         type="number"
                         className="border rounded px-2 py-1"
                         placeholder={t('history.year', 'Year')}
-                        value={pendingPendingDateRange.from ? pendingPendingDateRange.from.getFullYear() : ''}
+                        value={pendingPendingYear}
                         min={2000}
                         max={2100}
-                        onChange={e => {
-                          const year = e.target.value ? Number(e.target.value) : '';
-                          if (year && pendingPendingDateRange.from) {
-                            setPendingPendingDateRange({
-                              from: new Date(year, pendingPendingDateRange.from.getMonth(), 1),
-                              to: new Date(year, pendingPendingDateRange.from.getMonth() + 1, 0)
-                            });
-                          } else if (year) {
-                            setPendingPendingDateRange({
-                              from: new Date(year, 0, 1),
-                              to: new Date(year, 11, 31)
-                            });
-                          } else {
-                            setPendingPendingDateRange({ from: undefined, to: undefined });
-                          }
-                        }}
+                        onChange={e => setPendingPendingYear(e.target.value ? Number(e.target.value) : '')}
                       />
                     </div>
                     <div className="flex flex-col min-w-[120px]">
