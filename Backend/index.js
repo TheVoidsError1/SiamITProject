@@ -20,7 +20,7 @@ const AppDataSource = new DataSource({
   host: 'localhost',
   port: 3306,
   username: 'root',
-  password: '', // ใส่รหัสผ่านของคุณ
+  password: 'password', // ใส่รหัสผ่านของคุณ
   database: 'siamitleave',
   synchronize: true, // dev only! จะสร้าง/อัปเดต table อัตโนมัติ
   logging: false,
@@ -49,8 +49,10 @@ app.use(bodyParser.json());
 
 const allowedOrigins = [
   'http://localhost:8081',
-  'http://192.168.50.64:8081',
-  'http://192.168.50.125:8081',
+  'http://192.168.50.64:8081',//test
+  'http://192.168.50.125:8081',//test
+  'http://192.168.50.90:8081',//yorch
+  'http://192.168.50.54:8081',//kot
   'http://localhost:3000',
   'http://localhost:3001',
   'http://localhost:8080'
@@ -217,6 +219,6 @@ console.log('LeaveQuotaController registered');
 const superAdminController = require('./api/SuperAdminController')(AppDataSource);
 app.use('/api', superAdminController);
 
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`Server is running on http://localhost:${port}`);
 }); 
