@@ -349,7 +349,10 @@
     "showMore": "ดูเพิ่มเติม",
     "showLess": "ย่อ",
     "selectSingleDate": "เลือกวันเดียว",
-    "singleDate": "เฉพาะวัน"
+    "singleDate": "เฉพาะวัน",
+    "allPositions": "ทุกตำแหน่ง",
+    "allRoles": "ทุกสิทธิ์",
+    "allDepartments": "ทุกแผนก"
   },
   "admin": {
     "pendingRequests": "คำขอรออนุมัติ",
@@ -421,7 +424,9 @@
     "deleteError": "ลบไม่สำเร็จ"
   },
   "error": {
-    "apiConnectionError": "ข้อผิดพลาดการเชื่อมต่อ API"
+    "apiConnectionError": "ข้อผิดพลาดการเชื่อมต่อ API",
+    "title": "ข้อผิดพลาด",
+    "message": "ข้อผิดพลาดในการเชื่อมต่อ API"
   },
   "leaveDetail": {
     "details": "รายละเอียดใบลา",
@@ -464,7 +469,8 @@
     "setNewPassword": "ตั้งรหัสผ่านใหม่",
     "edit": "แก้ไข",
     "save": "บันทึก",
-    "cancel": "ยกเลิก"
+    "cancel": "ยกเลิก",
+    "adminCannotEditSuperadmin": "ผู้ดูแลระบบไม่สามารถแก้ไขซูเปอร์แอดมิน"
   },
   "notification": {
     "title": "การแจ้งเตือน",

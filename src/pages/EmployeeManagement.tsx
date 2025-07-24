@@ -55,6 +55,12 @@ const EmployeeManagement = () => {
   const itemsPerPage = 4;
   const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [pendingPositionFilter, setPendingPositionFilter] = useState<string>("");
+  const [pendingDepartmentFilter, setPendingDepartmentFilter] = useState<string>("");
+  const [pendingRoleFilter, setPendingRoleFilter] = useState<string>("");
+  const [positionFilter, setPositionFilter] = useState<string>("");
+  const [departmentFilter, setDepartmentFilter] = useState<string>("");
+  const [roleFilter, setRoleFilter] = useState<string>("");
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -112,8 +118,14 @@ const EmployeeManagement = () => {
     return i18n.language === 'th' ? found.department_name_th : found.department_name_en;
   };
 
-  const totalPages = Math.ceil(employees.length / itemsPerPage);
-  const paginatedEmployees = employees.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  // ฟังก์ชันกรองข้อมูล
+  const filteredEmployees = employees.filter(emp =>
+    (positionFilter === "" || emp.position === positionFilter) &&
+    (departmentFilter === "" || emp.department === departmentFilter) &&
+    (roleFilter === "" || emp.role === roleFilter)
+  );
+  const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
+  const paginatedEmployees = filteredEmployees.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const REGULAR_EMPLOYEE_POSITION_ID = '354653a2-123a-48f4-86fd-22412c25c50e';
   const stats = [
@@ -223,16 +235,92 @@ const EmployeeManagement = () => {
 
           {/* Employee List */}
           <Card className="border-0 shadow-lg">
-            <CardHeader className="gradient-bg text-white rounded-t-lg p-3">
-              <CardTitle className="flex items-center gap-2 text-lg">
-                <Users className="w-4 h-4" />
-                {t('system.employeeList')}
-              </CardTitle>
-              <CardDescription className="text-blue-100 text-xs">
-                {t('system.allEmployeesInterns')}
-              </CardDescription>
-            </CardHeader>
+            <div className="gradient-bg text-white rounded-t-lg px-6 pt-6 pb-2">
+              <div className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                <span className="text-lg font-bold">{t('system.employeeList', 'Employee List')}</span>
+              </div>
+              <div className="text-blue-100 text-sm">{t('system.allEmployeesInterns', 'All Employees and Interns')}</div>
+            </div>
             <CardContent className="p-3">
+              {/* Filter UI */}
+              <div className="flex flex-wrap gap-2 mb-4 items-end">
+                <div className="flex flex-col">
+                  <label className="text-xs text-gray-500 mb-1">{t('auth.position')}</label>
+                  <select
+                    className="border rounded px-2 py-1 text-sm min-w-[9rem]"
+                    value={pendingPositionFilter}
+                    onChange={e => setPendingPositionFilter(e.target.value)}
+                  >
+                    <option value="">{t('auth.allPositions', 'ทุกตำแหน่ง')}</option>
+                    {positions.map((pos: any) => (
+                      <option key={pos.id} value={pos.id}>
+                        {i18n.language === 'th' ? pos.position_name_th : pos.position_name_en}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex flex-col">
+                  <label className="text-xs text-gray-500 mb-1">{t('auth.department')}</label>
+                  <select
+                    className="border rounded px-2 py-1 text-sm min-w-[9rem]"
+                    value={pendingDepartmentFilter}
+                    onChange={e => setPendingDepartmentFilter(e.target.value)}
+                  >
+                    <option value="">{t('auth.allDepartments', 'ทุกแผนก')}</option>
+                    {departments.map((dep: any) => (
+                      <option key={dep.id} value={dep.id}>
+                        {i18n.language === 'th' ? dep.department_name_th : dep.department_name_en}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="flex flex-col">
+                  <label className="text-xs text-gray-500 mb-1">{t('auth.role')}</label>
+                  <select
+                    className="border rounded px-2 py-1 text-sm min-w-[9rem]"
+                    value={pendingRoleFilter}
+                    onChange={e => setPendingRoleFilter(e.target.value)}
+                  >
+                    <option value="">{t('auth.allRoles', 'ทุกสถานะ')}</option>
+                    <option value="user">{t('employee.employee', 'Employee')}</option>
+                    <option value="admin">{t('employee.admin', 'Admin')}</option>
+                    <option value="superadmin">{t('employee.superadmin', 'Superadmin')}</option>
+                    <option value="intern">{t('employee.intern', 'Intern')}</option>
+                  </select>
+                </div>
+                <div className="flex flex-col">
+                  <button
+                    className="w-full h-10 bg-blue-500 hover:bg-blue-600 text-white rounded px-4 mt-5"
+                    onClick={e => {
+                      e.preventDefault();
+                      setPositionFilter(pendingPositionFilter);
+                      setDepartmentFilter(pendingDepartmentFilter);
+                      setRoleFilter(pendingRoleFilter);
+                      setCurrentPage(1);
+                    }}
+                  >
+                    {t('common.confirm', 'ยืนยัน')}
+                  </button>
+                </div>
+                <div className="flex flex-col">
+                  <button
+                    className="w-full h-10 border border-gray-300 rounded px-4 mt-5 bg-white text-gray-700"
+                    onClick={e => {
+                      e.preventDefault();
+                      setPendingPositionFilter("");
+                      setPendingDepartmentFilter("");
+                      setPendingRoleFilter("");
+                      setPositionFilter("");
+                      setDepartmentFilter("");
+                      setRoleFilter("");
+                      setCurrentPage(1);
+                    }}
+                  >
+                    {t('common.reset', 'รีเซ็ต')}
+                  </button>
+                </div>
+              </div>
               {loading ? (
                 <div className="text-sm">{t('common.loading')}</div>
               ) : (

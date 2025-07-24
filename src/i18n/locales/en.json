@@ -36,7 +36,10 @@
     "role": "Role",
     "selectRole": "Select Role",
     "sessionExpiredDesc": "Your session has expired. Please login again.",
-    "loginAgain": "Login Again"
+    "loginAgain": "Login Again",
+    "allPositions": "All Positions",
+    "allRoles": "All Roles",
+    "allDepartments": "All Departments"
   },
   "navigation": {
     "home": "Home",
@@ -415,7 +418,9 @@
     "deleteError": "Delete failed"
   },
   "error": {
-    "apiConnectionError": "API Connection Error"
+    "apiConnectionError": "API Connection Error",
+    "title": "Error",
+    "message": "Error in API connection"
   },
   "employee": {
     "details": "Employee Details",
@@ -438,7 +443,8 @@
     "setNewPassword": "Set a new password",
     "edit": "Edit",
     "save": "Save",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "adminCannotEditSuperadmin": "Admin cannot edit superadmin"
   },
   "notification": {
     "title": "Notifications",
