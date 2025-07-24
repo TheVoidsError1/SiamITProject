@@ -590,6 +590,30 @@ const AdminDashboard = () => {
     return i18n.language.startsWith('th') ? found.leave_type_th : found.leave_type_en;
   };
 
+  // Add a function to fetch leave request details by ID for recent history
+  const handleViewDetailsWithFetch = async (request: any) => {
+    setShowDetailDialog(true);
+    setSelectedRequest(null); // Show loading state if needed
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        showSessionExpiredDialog();
+        return;
+      }
+      const res = await fetch(`${API_BASE_URL}/api/leave-request/detail/${request.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setSelectedRequest({ ...data.data, ...request });
+      } else {
+        setSelectedRequest(request); // fallback
+      }
+    } catch {
+      setSelectedRequest(request); // fallback
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="border-b bg-white/80 backdrop-blur-sm">
@@ -1145,7 +1169,7 @@ const AdminDashboard = () => {
                               <div className="flex justify-end">
                                 <button
                                   className="px-4 py-1 rounded border border-blue-500 text-blue-600 hover:bg-blue-50 text-xs font-medium transition"
-                                  onClick={() => handleViewDetails(request)}
+                                  onClick={() => handleViewDetailsWithFetch(request)}
                                 >
                                   <Eye className="w-4 h-4 inline mr-1" /> {t('admin.viewDetails', 'ดูรายละเอียด')}
                                 </button>
@@ -1216,129 +1240,134 @@ const AdminDashboard = () => {
         >
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold mb-2 text-center text-blue-900">{t('leave.detailTitle', 'รายละเอียดการลา')}</DialogTitle>
-            <DialogDescription asChild>
-              {selectedRequest && (
-                <div className="space-y-3 text-gray-700">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
-                    <div>
-                      <span className="font-semibold text-blue-800">{t('leave.employeeName', 'ชื่อพนักงาน')}:</span> {typeof selectedRequest.user === "string"
-                        ? JSON.parse(selectedRequest.user).User_name
-                        : selectedRequest.user?.User_name || "-"}
-                    </div>
-                    <div>
-                      <span className="font-semibold text-blue-800">{t('leave.position', 'ตำแหน่ง')}:</span> {(() => {
-                        const posId = selectedRequest.user?.position || selectedRequest.employeeType;
-                        const pos = positions.find(p => p.id === posId);
-                        const posName = pos ? (i18n.language.startsWith('th') ? pos.position_name_th : pos.position_name_en) : posId || "-";
-                        return String(t(`positions.${posName}`, posName)) || String(posName) || '';
-                      })()}
-                    </div>
-                    <div>
-                      <span className="font-semibold text-blue-800">{t('leave.department', 'แผนก')}:</span> {(() => {
-                        const deptId = selectedRequest.user?.department;
-                        const dept = departments.find(d => d.id === deptId);
-                        const deptName = dept ? (i18n.language.startsWith('th') ? dept.department_name_th : dept.department_name_en) : deptId || "-";
-                        return String(t(`departments.${deptName}`, deptName)) || String(deptName) || '';
-                      })()}
-                    </div>
-                    <div>
-                      <span className="font-semibold text-blue-800">{t('leave.type', 'ประเภทการลา')}:</span> {i18n.language.startsWith('th') ? selectedRequest.leaveTypeName_th : selectedRequest.leaveTypeName_en}
-                    </div>
-                    <div>
-                      <span className="font-semibold text-blue-800">{t('leave.reason', 'เหตุผล')}:</span> {selectedRequest.reason}
-                    </div>
-                    <div>
-                      <span className="font-semibold text-blue-800">{t('leave.date', 'วันที่ลา')}:</span> {formatDateOnly(selectedRequest.startDate)} - {formatDateOnly(selectedRequest.endDate)}{selectedRequest.startTime && selectedRequest.endTime
-                        ? ` (${calcHours(selectedRequest.startTime, selectedRequest.endTime)} ${hourUnit}, ${selectedRequest.startTime} - ${selectedRequest.endTime})`
-                        : ''}
-                    </div>
-                    <div>
-                      <span className="font-semibold text-blue-800">{t('leave.submittedDate', 'วันที่ส่งคำขอ')}:</span> {selectedRequest.createdAt ? selectedRequest.createdAt.split('T')[0] : "-"}
-                    </div>
-                    <div>
-                      <span className="font-semibold text-blue-800">{t('leave.contactMethod', 'ช่องทางการติดต่อ')}:</span> {selectedRequest.contact || selectedRequest.contactInfo || selectedRequest.user?.contact || selectedRequest.data?.contact || "-"}
-                    </div>
-                    <div>
-                      <span className="font-semibold text-blue-800">{t('leave.leaveTime', 'เวลาที่ลา:')}</span> {selectedRequest?.startTime && selectedRequest?.endTime
-                        ? `${selectedRequest.startTime} - ${selectedRequest.endTime}`
-                        : t('leave.noHourlyLeave', 'ไม่มีการลาเป็น ชม.')}
-                    </div>
-              
-                  </div>
-                  {/* Section: Attachments/Images */}
-                  {(() => {
-                    // รองรับทั้ง array และ string หลาย field
-                    const files =
-                      (Array.isArray(selectedRequest.attachments) && selectedRequest.attachments.length > 0)
-                        ? selectedRequest.attachments
-                        : (typeof selectedRequest.attachments === 'string' && selectedRequest.attachments)
-                          ? [selectedRequest.attachments]
-                          : (Array.isArray(selectedRequest.attachment) && selectedRequest.attachment.length > 0)
-                            ? selectedRequest.attachment
-                            : (typeof selectedRequest.attachment === 'string' && selectedRequest.attachment)
-                              ? [selectedRequest.attachment]
-                              : (Array.isArray(selectedRequest.file) && selectedRequest.file.length > 0)
-                                ? selectedRequest.file
-                                : (typeof selectedRequest.file === 'string' && selectedRequest.file)
-                                  ? [selectedRequest.file]
-                                  : [];
-                    // imgLeave (string)
-                    const imgLeave = selectedRequest.imgLeave;
-                    if (files.length > 0) {
-                      return (
-                        <div className="flex flex-col items-center mt-4">
-                          <span className="font-semibold mb-2 text-blue-800">{t('leave.attachment', 'ไฟล์แนบ')}:</span>
-                          <div className="flex flex-wrap gap-4 justify-center">
-                            {files.map((file: string, idx: number) => {
-                              const ext = file.split('.').pop()?.toLowerCase();
-                              const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext || '');
-                              const fileUrl = `/leave-uploads/${file}`;
-                              return (
-                                <div key={file} className="flex flex-col items-center">
-                                  {isImage ? (
-                                    <a href={fileUrl} target="_blank" rel="noopener noreferrer">
-                                      <img
-                                        src={fileUrl}
-                                        alt={`แนบไฟล์ ${idx + 1}`}
-                                        className="rounded-xl border-2 border-blue-200 shadow max-w-xs bg-white"
-                                        style={{ marginTop: 8 }}
-                                      />
-                                    </a>
-                                  ) : (
-                                    <a
-                                      href={fileUrl}
-                                      download
-                                      className="flex items-center gap-2 px-3 py-2 border rounded bg-gray-50 hover:bg-gray-100 text-blue-700"
-                                      style={{ marginTop: 8 }}
-                                    >
-                                      <span role="img" aria-label="file">📄</span> {file}
-                                    </a>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    } else if (imgLeave) {
-                      // กรณี imgLeave เป็น string
-                      return (
-                        <div className="flex flex-col items-center mt-4">
-                          <span className="font-semibold mb-2 text-blue-800">{t('leave.attachment', 'ไฟล์แนบ')}:</span>
-                          <img
-                            src={`/leave-uploads/${imgLeave}`}
-                            alt="แนบไฟล์"
-                            className="rounded-xl border-2 border-blue-200 shadow max-w-xs bg-white"
-                            style={{ marginTop: 8 }}
-                          />
-                        </div>
-                      );
-                    }
-                    return null;
-                  })()}
-                </div>
-              )}
+            <DialogDescription>
+              {selectedRequest ? '' : ''}
             </DialogDescription>
+            {selectedRequest && (
+              <div className="space-y-3 text-gray-700">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
+                  <div>
+                    <span className="font-semibold text-blue-800">{t('leave.employeeName', 'ชื่อพนักงาน')}:</span> {typeof selectedRequest.user === "string"
+                      ? JSON.parse(selectedRequest.user).User_name
+                      : selectedRequest.user?.User_name || "-"}
+                  </div>
+                  <div>
+                    <span className="font-semibold text-blue-800">{t('leave.position', 'ตำแหน่ง')}:</span> {(() => {
+                      const posId = selectedRequest.user?.position || selectedRequest.employeeType;
+                      const pos = positions.find(p => p.id === posId);
+                      const posName = pos ? (i18n.language.startsWith('th') ? pos.position_name_th : pos.position_name_en) : posId || "-";
+                      return String(t(`positions.${posName}`, posName)) || String(posName) || '';
+                    })()}
+                  </div>
+                  <div>
+                    <span className="font-semibold text-blue-800">{t('leave.department', 'แผนก')}:</span> {(() => {
+                      const deptId = selectedRequest.user?.department;
+                      const dept = departments.find(d => d.id === deptId);
+                      const deptName = dept ? (i18n.language.startsWith('th') ? dept.department_name_th : dept.department_name_en) : deptId || "-";
+                      return String(t(`departments.${deptName}`, deptName)) || String(deptName) || '';
+                    })()}
+                  </div>
+                  <div>
+                    <span className="font-semibold text-blue-800">{t('leave.type', 'ประเภทการลา')}:</span> {
+  i18n.language.startsWith('th')
+    ? (selectedRequest.leaveTypeName_th || getLeaveTypeLabel(selectedRequest.leaveType) || selectedRequest.leaveTypeName_en || selectedRequest.leaveType)
+    : (selectedRequest.leaveTypeName_en || getLeaveTypeLabel(selectedRequest.leaveType) || selectedRequest.leaveTypeName_th || selectedRequest.leaveType)
+}
+                  </div>
+                  <div>
+                    <span className="font-semibold text-blue-800">{t('leave.reason', 'เหตุผล')}:</span> {selectedRequest.reason}
+                  </div>
+                  <div>
+                    <span className="font-semibold text-blue-800">{t('leave.date', 'วันที่ลา')}:</span> {formatDateOnly(selectedRequest.startDate)} - {formatDateOnly(selectedRequest.endDate)}{selectedRequest.startTime && selectedRequest.endTime
+                    ? ` (${calcHours(selectedRequest.startTime, selectedRequest.endTime)} ${hourUnit}, ${selectedRequest.startTime} - ${selectedRequest.endTime})`
+                    : ''}
+                  </div>
+                  <div>
+                    <span className="font-semibold text-blue-800">{t('leave.submittedDate', 'วันที่ส่งคำขอ')}:</span> {selectedRequest.createdAt ? selectedRequest.createdAt.split('T')[0] : "-"}
+                  </div>
+                  <div>
+                    <span className="font-semibold text-blue-800">{t('leave.contactMethod', 'ช่องทางการติดต่อ')}:</span> {selectedRequest.contact || selectedRequest.contactInfo || selectedRequest.user?.contact || selectedRequest.data?.contact || "-"}
+                  </div>
+                  <div>
+                    <span className="font-semibold text-blue-800">{t('leave.leaveTime', 'เวลาที่ลา:')}</span> {selectedRequest?.startTime && selectedRequest?.endTime
+                    ? `${selectedRequest.startTime} - ${selectedRequest.endTime}`
+                    : t('leave.noHourlyLeave', 'ไม่มีการลาเป็น ชม.')}
+                  </div>
+              
+                </div>
+                {/* Section: Attachments/Images */}
+                {(() => {
+                  // รองรับทั้ง array และ string หลาย field
+                  const files =
+                    (Array.isArray(selectedRequest.attachments) && selectedRequest.attachments.length > 0)
+                      ? selectedRequest.attachments
+                      : (typeof selectedRequest.attachments === 'string' && selectedRequest.attachments)
+                        ? [selectedRequest.attachments]
+                        : (Array.isArray(selectedRequest.attachment) && selectedRequest.attachment.length > 0)
+                          ? selectedRequest.attachment
+                          : (typeof selectedRequest.attachment === 'string' && selectedRequest.attachment)
+                            ? [selectedRequest.attachment]
+                            : (Array.isArray(selectedRequest.file) && selectedRequest.file.length > 0)
+                              ? selectedRequest.file
+                              : (typeof selectedRequest.file === 'string' && selectedRequest.file)
+                                ? [selectedRequest.file]
+                                : [];
+                  // imgLeave (string)
+                  const imgLeave = selectedRequest.imgLeave;
+                  if (files.length > 0) {
+                    return (
+                      <div className="flex flex-col items-center mt-4">
+                        <span className="font-semibold mb-2 text-blue-800">{t('leave.attachment', 'ไฟล์แนบ')}:</span>
+                        <div className="flex flex-wrap gap-4 justify-center">
+                          {files.map((file: string, idx: number) => {
+                            const ext = file.split('.').pop()?.toLowerCase();
+                            const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext || '');
+                            const fileUrl = `/leave-uploads/${file}`;
+                            return (
+                              <div key={file} className="flex flex-col items-center">
+                                {isImage ? (
+                                  <a href={fileUrl} target="_blank" rel="noopener noreferrer">
+                                    <img
+                                      src={fileUrl}
+                                      alt={`แนบไฟล์ ${idx + 1}`}
+                                      className="rounded-xl border-2 border-blue-200 shadow max-w-xs bg-white"
+                                      style={{ marginTop: 8 }}
+                                    />
+                                  </a>
+                                ) : (
+                                  <a
+                                    href={fileUrl}
+                                    download
+                                    className="flex items-center gap-2 px-3 py-2 border rounded bg-gray-50 hover:bg-gray-100 text-blue-700"
+                                    style={{ marginTop: 8 }}
+                                  >
+                                    <span role="img" aria-label="file">📄</span> {file}
+                                  </a>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  } else if (imgLeave) {
+                    // กรณี imgLeave เป็น string
+                    return (
+                      <div className="flex flex-col items-center mt-4">
+                        <span className="font-semibold mb-2 text-blue-800">{t('leave.attachment', 'ไฟล์แนบ')}:</span>
+                        <img
+                          src={`/leave-uploads/${imgLeave}`}
+                          alt="แนบไฟล์"
+                          className="rounded-xl border-2 border-blue-200 shadow max-w-xs bg-white"
+                          style={{ marginTop: 8 }}
+                        />
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
+              </div>
+            )}
           </DialogHeader>
           <DialogFooter className="flex justify-center mt-6">
             <Button className="px-8 py-2 text-lg rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow" onClick={() => setShowDetailDialog(false)}>
