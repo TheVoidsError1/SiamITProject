@@ -408,7 +408,10 @@
     "deleteSuccess": "Delete successful",
     "deleteSuccessDesc": "Leave deleted successfully",
     "deleteUserSuccessDesc": "User deleted successfully",
-    "delete": "Delete"
+    "delete": "Delete",
+    "confirmDeleteLeave": "Confirm Delete Leave Request",
+    "confirmDeleteLeaveDesc": "Are you sure you want to delete this leave request?",
+    "deleteError": "Delete failed"
   },
   "error": {
     "apiConnectionError": "API Connection Error"

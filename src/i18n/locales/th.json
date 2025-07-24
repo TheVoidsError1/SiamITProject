@@ -413,7 +413,10 @@
     "deleteSuccess": "ลบสำเร็จ",
     "deleteSuccessDesc": "ลบใบลาสำเร็จ",
     "deleteUserSuccessDesc": "ลบผู้ใช้งานสำเร็จ",
-    "delete": "ลบ"
+    "delete": "ลบ",
+    "confirmDeleteLeave": "ยืนยันการลบใบลา",
+    "confirmDeleteLeaveDesc": "คุณต้องการลบใบลานี้หรือไม่?",
+    "deleteError": "ลบไม่สำเร็จ"
   },
   "error": {
     "apiConnectionError": "ข้อผิดพลาดการเชื่อมต่อ API"

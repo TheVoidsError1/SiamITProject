@@ -35,7 +35,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const AdminDashboard = () => {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
-  const { showSessionExpiredDialog } = useAuth();
+  const { user, showSessionExpiredDialog } = useAuth();
 
   // ลบ state ที่ไม่ได้ใช้จริง
   // const [adminName, setAdminName] = useState<string>("");
@@ -614,6 +614,43 @@ const AdminDashboard = () => {
     }
   };
 
+  // --- State สำหรับลบใบลา ---
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deletingRequest, setDeletingRequest] = useState<any | null>(null);
+
+  // --- ฟังก์ชันลบใบลา ---
+  const handleDelete = (request: any) => {
+    setDeletingRequest(request);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingRequest) return;
+    const token = localStorage.getItem('token');
+    if (!token) {
+      showSessionExpiredDialog();
+      return;
+    }
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/leave-request/${deletingRequest.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.success || data.status === 'success') {
+        toast({ title: t('system.deleteSuccess', 'ลบสำเร็จ'), description: t('system.deleteSuccessDesc', 'ลบใบลาสำเร็จ') });
+        setShowDeleteDialog(false);
+        setDeletingRequest(null);
+        refreshLeaveRequests();
+        fetchHistoryRequests();
+      } else {
+        toast({ title: t('common.error'), description: data.message || t('system.deleteError', 'ลบไม่สำเร็จ'), variant: 'destructive' });
+      }
+    } catch (e) {
+      toast({ title: t('common.error'), description: t('system.deleteError', 'ลบไม่สำเร็จ'), variant: 'destructive' });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="border-b bg-white/80 backdrop-blur-sm">
@@ -865,6 +902,14 @@ const AdminDashboard = () => {
                             >
                               <Eye className="w-4 h-4 inline mr-1" /> {t('admin.viewDetails', 'ดูรายละเอียด')}
                             </button>
+                            {user?.role === 'superadmin' && (
+                              <button
+                                className="mt-3 px-4 py-1 rounded border border-red-500 text-red-600 hover:bg-red-50 text-xs font-medium transition"
+                                onClick={() => handleDelete(request)}
+                              >
+                                🗑 {t('common.delete', 'ลบ')}
+                              </button>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -1166,13 +1211,21 @@ const AdminDashboard = () => {
                                 )}
                               </div>
                               {/* ปุ่มดูรายละเอียด ขวาล่าง */}
-                              <div className="flex justify-end">
+                              <div className="flex justify-end gap-2">
                                 <button
                                   className="px-4 py-1 rounded border border-blue-500 text-blue-600 hover:bg-blue-50 text-xs font-medium transition"
                                   onClick={() => handleViewDetailsWithFetch(request)}
                                 >
                                   <Eye className="w-4 h-4 inline mr-1" /> {t('admin.viewDetails', 'ดูรายละเอียด')}
                                 </button>
+                                {user?.role === 'superadmin' && (
+                                  <button
+                                    className="px-4 py-1 rounded border border-red-500 text-red-600 hover:bg-red-50 text-xs font-medium transition"
+                                    onClick={() => handleDelete(request)}
+                                  >
+                                    🗑 {t('common.delete', 'ลบ')}
+                                  </button>
+                                )}
                               </div>
                             </div>
                           </div>
@@ -1409,6 +1462,22 @@ const AdminDashboard = () => {
           <DialogFooter className="flex gap-2 justify-end mt-4">
             <Button variant="outline" onClick={() => setShowApproveDialog(false)}>{t('common.cancel', 'ยกเลิก')}</Button>
             <Button className="bg-green-600 hover:bg-green-700" onClick={confirmApprove}>{t('common.confirm')}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog สำหรับยืนยันการลบ */}
+      <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('system.confirmDeleteLeave', 'ยืนยันการลบใบลา')}</DialogTitle>
+            <DialogDescription>
+              {t('system.confirmDeleteLeaveDesc', 'คุณต้องการลบใบลานี้หรือไม่?')}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 justify-end mt-4">
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>{t('common.cancel', 'ยกเลิก')}</Button>
+            <Button variant="destructive" onClick={confirmDelete}>{t('common.confirm', 'ยืนยัน')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
