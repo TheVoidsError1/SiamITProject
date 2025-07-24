@@ -779,7 +779,7 @@ const LeaveHistory = () => {
                     ))}
                   </select>
                   <span className="ml-2 text-sm text-gray-500">{t('admin.itemsPerPage', 'Items per page')}</span>
-                  <span className="ml-2 text-sm text-gray-500">{t('admin.pageInfo', `${page} of ${totalPages} pages`)} </span>
+                  <span className="ml-2 text-sm text-gray-500">{t('admin.pageInfo', { page, totalPages })}</span>
                 </div>
               </>
             )}
