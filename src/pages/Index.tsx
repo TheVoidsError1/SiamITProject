@@ -6,7 +6,7 @@ import { ToastAction } from "@/components/ui/toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { fetchWithAuth } from "@/lib/utils";
-import { format } from "date-fns";
+import { format as formatDateFns } from "date-fns";
 import { th } from "date-fns/locale";
 import { Calendar, Clock, TrendingUp, Users, Calendar as CalendarIcon } from "lucide-react";
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
@@ -228,14 +228,14 @@ const Index = () => {
   const formatFullDateLocalized = (date: Date) => {
     if (i18n.language === "th") {
       // วันจันทร์ที่ 14 กรกฎาคม 2568
-      const weekday = format(date, "EEEE", { locale: th });
+      const weekday = formatDateFns(date, "EEEE", { locale: th });
       const day = date.getDate();
-      const month = format(date, "MMMM", { locale: th });
+      const month = formatDateFns(date, "MMMM", { locale: th });
       const year = date.getFullYear() + 543;
       return `วัน${weekday}ที่ ${day} ${month} ${year}`;
     } else {
       // Monday, July 14, 2025
-      return format(date, "EEEE, MMMM d, yyyy");
+      return formatDateFns(date, "EEEE, MMMM d, yyyy");
     }
   };
 
@@ -310,7 +310,7 @@ const Index = () => {
                             setShowMonthPicker(false);
                           }}
                         >
-                          {format(new Date(selectedYear, i, 1), "MMM", { locale: i18n.language === 'th' ? th : undefined })}
+                          {formatDateFns(new Date(selectedYear, i, 1), "MMM", { locale: i18n.language === 'th' ? th : undefined })}
                         </Button>
                       ))}
                     </div>
@@ -477,18 +477,34 @@ const Index = () => {
                     <span>{t('leave.status', 'Status')}</span>
                     <span>{t('leave.startDate', 'Start Date')}</span>
                   </div>
-                  {recentLeaves.map((leave, idx) => (
-                    <div key={idx} className="grid grid-cols-4 gap-2 items-center border-b last:border-b-0 py-2">
-                      <span className="text-base font-medium">{
-                        i18n.language === 'th'
-                          ? (leave.leavetype_th || leave.leavetype || t(`leaveTypes.${leave.leavetype}`, leave.leavetype))
-                          : (leave.leavetype_en || leave.leavetype || t(`leaveTypes.${leave.leavetype}_en`, leave.leavetype))
-                      }</span>
-                      <span className="text-base">{leave.duration}</span>
-                      <span className={`text-base font-semibold ${leave.status === 'approved' ? 'text-green-600' : leave.status === 'pending' ? 'text-yellow-600' : 'text-red-600'}`}>{t(`leave.statuses.${leave.status}`, leave.status)}</span>
-                      <span className="text-base text-muted-foreground">{leave.startdate ? new Date(leave.startdate).toLocaleDateString(i18n.language === 'th' ? 'th-TH' : 'en-US') : '-'}</span>
-                    </div>
-                  ))}
+                  {recentLeaves.map((leave, idx) => {
+                    // Helper to format duration with translation
+                    const formatDuration = (duration: string) => {
+                      // Expecting format like "2 day" or "1 day" or "1 hour"
+                      const match = duration.match(/(\d+)\s*(day|hour)/i);
+                      if (!match) return duration;
+                      const count = Number(match[1]);
+                      const unit = match[2].toLowerCase();
+                      if (unit === "day") {
+                        return `${count} ${t(`leave.day`, count === 1 ? t('leave.day') : t('leave.day'))}`;
+                      } else if (unit === "hour") {
+                        return `${count} ${t(`leave.hour`, count === 1 ? t('leave.hour') : t('leave.hour'))}`;
+                      }
+                      return duration;
+                    };
+                    return (
+                      <div key={idx} className="grid grid-cols-4 gap-2 items-center border-b last:border-b-0 py-2">
+                        <span className="text-base font-medium">{
+                          i18n.language === 'th'
+                            ? (leave.leavetype_th || leave.leavetype || t(`leaveTypes.${leave.leavetype}`, leave.leavetype))
+                            : (leave.leavetype_en || leave.leavetype || t(`leaveTypes.${leave.leavetype}_en`, leave.leavetype))
+                        }</span>
+                        <span className="text-base">{formatDuration(leave.duration)}</span>
+                        <span className={`text-base font-semibold ${leave.status === 'approved' ? 'text-green-600' : leave.status === 'pending' ? 'text-yellow-600' : 'text-red-600'}`}>{t(`leave.${leave.status}`, leave.status)}</span>
+                        <span className="text-base text-muted-foreground">{leave.startdate ? formatDateFns(new Date(leave.startdate), 'dd/MM/yyyy') : '-'}</span>
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>

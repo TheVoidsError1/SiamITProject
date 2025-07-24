@@ -623,17 +623,29 @@ const Profile = () => {
                         .map((lt, idx) => {
                           const item = leaveStats.find(q => q.type === lt.leave_type_en);
                           const color = leaveTypeColors[idx % leaveTypeColors.length];
-                          const label = lt.leave_type_en || lt.leave_type_th;
+                          // Use translation for leave type
+                          const leaveTypeKey = lt.leave_type_en || lt.leave_type_th;
+                          const label = i18n.language.startsWith('th')
+                            ? (lt.leave_type_th || lt.leave_type_en || leaveTypeKey)
+                            : (lt.leave_type_en || lt.leave_type_th || leaveTypeKey);
                           const quota = item?.quotaRaw ?? '-';
                           const used = item?.used ?? { days: '-', hours: '-' };
                           const remaining = item?.remaining ?? { days: '-', hours: '-' };
                           const percent = (typeof item?.usedRaw === 'number' && typeof item?.quotaRaw === 'number' && item?.quotaRaw > 0) ? (item.usedRaw / item.quotaRaw) * 100 : 0;
+                          // Helper to format days/hours with translation
+                          const formatDayHour = (days: any, hours: any) => {
+                            let str = '';
+                            if (days !== '-' && days !== 0) str += `${days} ${t('leave.day')}`;
+                            if (hours !== '-' && hours !== 0) str += (str ? ' ' : '') + `${hours} ${t('leave.hour')}`;
+                            if (!str) str = `0 ${t('leave.day')}`;
+                            return str;
+                          };
                           return (
                             <div key={lt.id || label} className="space-y-3">
                               <div className="flex justify-between items-center">
                                 <span className="text-sm font-medium">{label}</span>
                                 <span className="text-sm text-gray-500">
-                                  {used.days} วัน{used.hours !== 0 ? ` ${used.hours} ชั่วโมง` : ''} / {quota} วัน
+                                  {formatDayHour(used.days, used.hours)} / {formatDayHour(quota, 0)}
                                 </span>
                               </div>
                               <div className="w-full bg-gray-200 rounded-full h-2">
@@ -643,7 +655,7 @@ const Profile = () => {
                                 ></div>
                               </div>
                               <div className="text-xs text-gray-500">
-                                เหลือ {remaining.days} วัน{remaining.hours !== 0 ? ` ${remaining.hours} ชั่วโมง` : ''}
+                                {t('common.remaining')} {formatDayHour(remaining.days, remaining.hours)}
                               </div>
                             </div>
                           );
