@@ -163,31 +163,38 @@ module.exports = (AppDataSource) => {
 
       const departmentRepo = AppDataSource.getRepository('Department');
       const positionRepo = AppDataSource.getRepository('Position');
-
+      let userEntity = null;
       if (role === 'admin') {
-        const adminRepo = AppDataSource.getRepository('admin');
-        const admin = await adminRepo.findOne({ where: { id: repid } });
-        if (!admin) {
-          return res.status(404).json({ success: false, message: 'Admin not found' });
-        }
-        const department = admin.department ? await departmentRepo.findOne({ where: { id: admin.department } }) : null;
-        const position = admin.position ? await positionRepo.findOne({ where: { id: admin.position } }) : null;
-        profile.name = admin.admin_name;
-        profile.position = position ? position.position_name : '';
-        profile.department = department ? department.department_name : '';
+        const adminRepo = AppDataSource.getRepository('Admin');
+        userEntity = await adminRepo.findOne({ where: { id: repid } });
+        if (!userEntity) return res.status(404).json({ success: false, message: 'Admin not found' });
+        profile.name = userEntity.admin_name;
+      } else if (role === 'superadmin') {
+        const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+        userEntity = await superadminRepo.findOne({ where: { id: repid } });
+        if (!userEntity) return res.status(404).json({ success: false, message: 'SuperAdmin not found' });
+        profile.name = userEntity.superadmin_name;
       } else {
         const userRepo = AppDataSource.getRepository('User');
-        const user = await userRepo.findOne({ where: { id: repid } });
-        if (!user) {
-          return res.status(404).json({ success: false, message: 'User not found' });
-        }
-        const department = user.department ? await departmentRepo.findOne({ where: { id: user.department } }) : null;
-        const position = user.position ? await positionRepo.findOne({ where: { id: user.position } }) : null;
-        profile.name = user.User_name;
-        profile.position = position ? position.position_name : '';
-        profile.department = department ? department.department_name : '';
+        userEntity = await userRepo.findOne({ where: { id: repid } });
+        if (!userEntity) return res.status(404).json({ success: false, message: 'User not found' });
+        profile.name = userEntity.User_name;
       }
-
+      // Department
+      let department = null;
+      if (userEntity.department) {
+        department = await departmentRepo.findOne({ where: { id: userEntity.department } });
+      }
+      const lang = (req.headers['accept-language'] || 'en').toLowerCase().startsWith('th') ? 'th' : 'en';
+      profile.department_id = department ? department.id : '';
+      profile.department_name = department ? (lang === 'th' ? department.department_name_th : department.department_name_en) : '';
+      // Position
+      let position = null;
+      if (userEntity.position) {
+        position = await positionRepo.findOne({ where: { id: userEntity.position } });
+      }
+      profile.position_id = position ? position.id : '';
+      profile.position_name = position ? (lang === 'th' ? position.position_name_th : position.position_name_en) : '';
       return res.json({ success: true, data: profile });
     } catch (err) {
       console.error('Profile error:', err);
@@ -244,6 +251,7 @@ module.exports = (AppDataSource) => {
    */
   router.put('/profile', async (req, res) => {
     try {
+      const lang = (req.headers['accept-language'] || 'en').toLowerCase().startsWith('th') ? 'th' : 'en';
       const authHeader = req.headers['authorization'];
       const token = authHeader && authHeader.split(' ')[1];
       if (!token) {
@@ -261,7 +269,7 @@ module.exports = (AppDataSource) => {
         return res.status(404).json({ success: false, message: 'User not found in ProcessCheck' });
       }
       const { Role: role, Repid: repid, Email: email } = processCheck;
-      const { name, email: newEmail, position, department, password } = req.body;
+      const { name, email: newEmail, position_id, department_id, password } = req.body;
       const departmentRepo = AppDataSource.getRepository('Department');
       const positionRepo = AppDataSource.getRepository('Position');
       let updated;
@@ -269,38 +277,37 @@ module.exports = (AppDataSource) => {
       if (password) {
         hashedPassword = await bcrypt.hash(password, 10);
       }
+      let userEntity = null;
       if (role === 'admin') {
-        const adminRepo = AppDataSource.getRepository('admin');
-        const admin = await adminRepo.findOne({ where: { id: repid } });
-        if (!admin) {
-          return res.status(404).json({ success: false, message: 'Admin not found' });
-        }
-        let departmentEntity = null;
-        let positionEntity = null;
-        if (department) departmentEntity = await departmentRepo.findOne({ where: { department_name: department } });
-        if (position) positionEntity = await positionRepo.findOne({ where: { position_name: position } });
-        admin.admin_name = name || admin.admin_name;
-        admin.email = newEmail || admin.email;
-        admin.department = departmentEntity ? departmentEntity.id : admin.department;
-        admin.position = positionEntity ? positionEntity.id : admin.position;
-        if (hashedPassword) admin.password = hashedPassword;
-        updated = await adminRepo.save(admin);
+        const adminRepo = AppDataSource.getRepository('Admin');
+        userEntity = await adminRepo.findOne({ where: { id: repid } });
+        if (!userEntity) return res.status(404).json({ success: false, message: 'Admin not found' });
+        userEntity.admin_name = name || userEntity.admin_name;
+        userEntity.email = newEmail || userEntity.email;
+        userEntity.department = department_id || userEntity.department;
+        userEntity.position = position_id || userEntity.position;
+        if (hashedPassword) userEntity.password = hashedPassword;
+        updated = await adminRepo.save(userEntity);
+      } else if (role === 'superadmin') {
+        const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+        userEntity = await superadminRepo.findOne({ where: { id: repid } });
+        if (!userEntity) return res.status(404).json({ success: false, message: 'SuperAdmin not found' });
+        userEntity.superadmin_name = name || userEntity.superadmin_name;
+        userEntity.email = newEmail || userEntity.email;
+        userEntity.department = department_id || userEntity.department;
+        userEntity.position = position_id || userEntity.position;
+        if (hashedPassword) userEntity.password = hashedPassword;
+        updated = await superadminRepo.save(userEntity);
       } else {
         const userRepo = AppDataSource.getRepository('User');
-        const user = await userRepo.findOne({ where: { id: repid } });
-        if (!user) {
-          return res.status(404).json({ success: false, message: 'User not found' });
-        }
-        let departmentEntity = null;
-        let positionEntity = null;
-        if (department) departmentEntity = await departmentRepo.findOne({ where: { department_name: department } });
-        if (position) positionEntity = await positionRepo.findOne({ where: { position_name: position } });
-        user.User_name = name || user.User_name;
-        user.email = newEmail || user.email;
-        user.department = departmentEntity ? departmentEntity.id : user.department;
-        user.position = positionEntity ? positionEntity.id : user.position;
-        if (hashedPassword) user.password = hashedPassword;
-        updated = await userRepo.save(user);
+        userEntity = await userRepo.findOne({ where: { id: repid } });
+        if (!userEntity) return res.status(404).json({ success: false, message: 'User not found' });
+        userEntity.User_name = name || userEntity.User_name;
+        userEntity.email = newEmail || userEntity.email;
+        userEntity.department = department_id || userEntity.department;
+        userEntity.position = position_id || userEntity.position;
+        if (hashedPassword) userEntity.password = hashedPassword;
+        updated = await userRepo.save(userEntity);
       }
       // Update password in ProcessCheck if changed
       if (hashedPassword) {
@@ -309,15 +316,24 @@ module.exports = (AppDataSource) => {
       }
       // Return updated profile in the same format as GET
       let profile = { email: updated.email || email };
-      if (role === 'admin') {
-        profile.name = updated.admin_name;
-        profile.position = updated.position ? (await positionRepo.findOne({ where: { id: updated.position } }))?.position_name : '';
-        profile.department = updated.department ? (await departmentRepo.findOne({ where: { id: updated.department } }))?.department_name : '';
-      } else {
-        profile.name = updated.User_name;
-        profile.position = updated.position ? (await positionRepo.findOne({ where: { id: updated.position } }))?.position_name : '';
-        profile.department = updated.department ? (await departmentRepo.findOne({ where: { id: updated.department } }))?.department_name : '';
+      // Department
+      let department = null;
+      if (updated.department) {
+        department = await departmentRepo.findOne({ where: { id: updated.department } });
       }
+      profile.department_id = department ? department.id : '';
+      profile.department_name = department ? (lang === 'th' ? department.department_name_th : department.department_name_en) : '';
+      // Position
+      let position = null;
+      if (updated.position) {
+        position = await positionRepo.findOne({ where: { id: updated.position } });
+      }
+      profile.position_id = position ? position.id : '';
+      profile.position_name = position ? (lang === 'th' ? position.position_name_th : position.position_name_en) : '';
+      // Name
+      if (role === 'admin') profile.name = updated.admin_name;
+      else if (role === 'superadmin') profile.name = updated.superadmin_name;
+      else profile.name = updated.User_name;
       return res.json({ success: true, data: profile });
     } catch (err) {
       console.error('Profile update error:', err);
@@ -584,6 +600,177 @@ module.exports = (AppDataSource) => {
       });
     } catch (err) {
       console.error('Avatar delete error:', err);
+      return res.status(500).json({ success: false, message: 'Internal server error' });
+    }
+  });
+
+  /**
+   * @swagger
+   * /api/leave-quota/me:
+   *   get:
+   *     summary: Get leave quota for the logged-in user
+   *     description: Returns leave quota and usage for the current user.
+   *     tags: [Profile]
+   *     security:
+   *       - bearerAuth: []
+   *     responses:
+   *       200:
+   *         description: Leave quota data
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 success:
+   *                   type: boolean
+   *                 data:
+   *                   type: array
+   *                   items:
+   *                     type: object
+   *                     properties:
+   *                       type:
+   *                         type: string
+   *                       used:
+   *                         type: number
+   *                       total:
+   *                         type: number
+   *       401:
+   *         description: No or invalid token provided
+   *       403:
+   *         description: Invalid token
+   *       404:
+   *         description: User not found
+   *       500:
+   *         description: Internal server error
+   */
+  router.get('/leave-quota/me', async (req, res) => {
+    try {
+      // 1. Get token from Authorization header
+      const authHeader = req.headers['authorization'];
+      const token = authHeader && authHeader.split(' ')[1];
+      if (!token) {
+        return res.status(401).json({ success: false, message: 'Access token required' });
+      }
+
+      // 2. Decode token to get payload
+      let payload;
+      try {
+        payload = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+      } catch (err) {
+        return res.status(403).json({ success: false, message: 'Invalid token' });
+      }
+
+      // 3. Find user in ProcessCheck table by token
+      const processRepo = AppDataSource.getRepository('ProcessCheck');
+      const processCheck = await processRepo.findOne({ where: { Token: token } });
+      if (!processCheck) {
+        return res.status(404).json({ success: false, message: 'User not found in ProcessCheck' });
+      }
+
+      const { Repid: repid, Role: role } = processCheck;
+
+      // 4. Get positionId from user/admin
+      let positionId = null;
+      if (role === 'admin') {
+        const adminRepo = AppDataSource.getRepository('Admin');
+        const admin = await adminRepo.findOne({ where: { id: repid } });
+        if (!admin) return res.status(404).json({ success: false, message: 'Admin not found' });
+        positionId = admin.position;
+      } else if (role === 'superadmin') {
+        const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+        const superadmin = await superadminRepo.findOne({ where: { id: repid } });
+        if (!superadmin) return res.status(404).json({ success: false, message: 'SuperAdmin not found' });
+        positionId = superadmin.position;
+      } else {
+        const userRepo = AppDataSource.getRepository('User');
+        const user = await userRepo.findOne({ where: { id: repid } });
+        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
+        positionId = user.position;
+      }
+      if (!positionId) return res.status(404).json({ success: false, message: 'Position not found' });
+
+      // 5. Query all leaveQuota rows for this position
+      const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
+      const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+      const leaveRequestRepo = AppDataSource.getRepository('LeaveRequest');
+      const quotas = await leaveQuotaRepo.find({ where: { positionId } });
+      const leaveTypes = await leaveTypeRepo.find();
+      const leaveRequests = await leaveRequestRepo.find({ where: { Repid: repid, status: 'approved' } });
+
+      // Helper: แปลงค่าทศนิยมวันเป็นวัน/ชั่วโมง (1 วัน = 9 ชม.)
+      function toDayHour(val) {
+        const day = Math.floor(val);
+        const hour = Math.round((val - day) * 9);
+        return { day, hour };
+      }
+
+      // 6. For each leave type, calculate quota and used (sick, personal, vacation, maternity)
+      const result = [];
+      for (const leaveType of leaveTypes) {
+        // Find quota for this leave type
+        const quotaRow = quotas.find(q => q.leaveTypeId === leaveType.id);
+        const quota = quotaRow ? quotaRow.quota : 0;
+        // Calculate used leave for this type
+        let used = 0;
+        for (const lr of leaveRequests) {
+          let leaveTypeName = lr.leaveType;
+          if (leaveTypeName && leaveTypeName.length > 20) {
+            const leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
+            if (leaveTypeEntity && leaveTypeEntity.leave_type_en) {
+              leaveTypeName = leaveTypeEntity.leave_type_en;
+            }
+          }
+          if (
+            leaveTypeName === leaveType.leave_type_en ||
+            leaveTypeName === leaveType.leave_type_th ||
+            leaveTypeName === leaveType.id
+          ) {
+            // Personal leave: may be by hour or day
+            if (leaveType.leave_type_en?.toLowerCase() === 'personal' || leaveType.leave_type_th === 'ลากิจ') {
+              if (lr.startTime && lr.endTime) {
+                const [sh, sm] = lr.startTime.split(":").map(Number);
+                const [eh, em] = lr.endTime.split(":").map(Number);
+                let start = sh + (sm || 0) / 60;
+                let end = eh + (em || 0) / 60;
+                let diff = end - start;
+                if (diff < 0) diff += 24;
+                used += diff / 9; // 1 day = 9 hours
+              } else if (lr.startDate && lr.endDate) {
+                const start = new Date(lr.startDate);
+                const end = new Date(lr.endDate);
+                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                if (days < 0 || isNaN(days)) days = 0;
+                used += days;
+              }
+            } else {
+              // Other types: by day
+              if (lr.startDate && lr.endDate) {
+                const start = new Date(lr.startDate);
+                const end = new Date(lr.endDate);
+                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                if (days < 0 || isNaN(days)) days = 0;
+                used += days;
+              }
+            }
+          }
+        }
+        const remaining = Math.max(0, quota - used);
+        const usedObj = toDayHour(used);
+        const remainingObj = toDayHour(remaining);
+        result.push({
+          id: leaveType.id,
+          leave_type_en: leaveType.leave_type_en,
+          leave_type_th: leaveType.leave_type_th,
+          quota: quota,
+          used_day: usedObj.day,
+          used_hour: usedObj.hour,
+          remaining_day: remainingObj.day,
+          remaining_hour: remainingObj.hour
+        });
+      }
+      return res.json({ success: true, data: result });
+    } catch (err) {
+      console.error('Leave quota error:', err);
       return res.status(500).json({ success: false, message: 'Internal server error' });
     }
   });

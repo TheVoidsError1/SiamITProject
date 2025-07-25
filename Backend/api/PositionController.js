@@ -121,37 +121,56 @@ module.exports = (AppDataSource) => {
     }
   });
 
-/**
-@swagger
-/api/positions:
-get:
-summary: Get all positions
-tags:
-Positions
-responses:
-200:
-description: A list of positions
-content:
-application/json:
-schema:
-type: object
-properties:
-status:
-type: string
-data:
-type: array
-items:
-type: object
-message:
-type: string*/
-
-  router.get('/positions', async (req, res) => {
+  /**
+   * @swagger
+   * /api/positions/{id}:
+   *   put:
+   *     summary: Update a position by ID
+   *     tags:
+   *       - Positions
+   *     parameters:
+   *       - in: path
+   *         name: id
+   *         required: true
+   *         schema:
+   *           type: string
+   *         description: The position ID
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               position_name:
+   *                 type: string
+   *     responses:
+   *       200:
+   *         description: Position updated
+   *         content:
+   *           application/json:
+   *             schema:
+   *               type: object
+   *               properties:
+   *                 status:
+   *                   type: string
+   *                 data:
+   *                   type: object
+   *                 message:
+   *                   type: string
+   */
+  router.put('/positions/:id', async (req, res) => {
     try {
       const positionRepo = AppDataSource.getRepository('Position');
-      const positions = await positionRepo.find();
-      res.json({ status: 'success', data: positions, message: 'Positions fetched successfully' });
+      const position = await positionRepo.findOneBy({ id: req.params.id });
+      if (!position) {
+        return res.status(404).json({ status: 'error', data: null, message: 'Position not found' });
+      }
+      position.position_name = req.body.position_name;
+      const updated = await positionRepo.save(position);
+      res.json({ status: 'success', data: updated, message: 'Position updated successfully' });
     } catch (err) {
-      res.status(500).json({ status: 'error', data: [], message: err.message });
+      res.status(500).json({ status: 'error', data: null, message: err.message });
     }
   });
 

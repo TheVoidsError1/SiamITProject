@@ -1,15 +1,14 @@
-import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Mail, Lock } from 'lucide-react';
-import DemoCredentials from '@/components/DemoCredentials';
+import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 
 const Login = () => {
   const { t } = useTranslation();
@@ -38,6 +37,8 @@ const Login = () => {
       });
       if (userInfo.role === 'admin') {
         navigate('/admin', { replace: true });
+      } else if (userInfo.role === 'superadmin') {
+        navigate('/', { replace: true });
       } else {
         navigate('/', { replace: true });
       }

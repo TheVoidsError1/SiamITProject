@@ -1,12 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
-import axios from 'axios';
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -18,8 +17,8 @@ import ChangePasswordDialog from "@/components/dialogs/ChangePasswordDialog";
 import { cn } from "@/lib/utils";
 
 const Profile = () => {
-  const { t } = useTranslation();
-  const { user, updateUser } = useAuth();
+  const { t, i18n } = useTranslation();
+  const { user, updateUser, showSessionExpiredDialog } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -32,8 +31,8 @@ const Profile = () => {
     position: '',
   });
   const [saving, setSaving] = useState(false);
-  const [departments, setDepartments] = useState<string[]>([]);
-  const [positions, setPositions] = useState<string[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
+  const [positions, setPositions] = useState<any[]>([]);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [positionsLoaded, setPositionsLoaded] = useState(false);
   const [departmentsLoaded, setDepartmentsLoaded] = useState(false);
@@ -71,6 +70,8 @@ const Profile = () => {
     return value;
   };
 
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
   // Fetch profile from backend on mount
   useEffect(() => {
     if (!positionsLoaded || !departmentsLoaded) return;
@@ -81,28 +82,30 @@ const Profile = () => {
       try {
         const token = localStorage.getItem('token');
         if (!token) {
-          setError('No token found. Please log in.');
-          setLoading(false);
+          showSessionExpiredDialog();
           return;
         }
-        const res = await axios.get('http://localhost:3001/api/profile', {
+        const res = await axios.get(`${API_BASE_URL}/api/profile`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = res.data.data;
         
-        console.log('Backend position:', data.position);
-        console.log('Backend department:', data.department);
+        console.log('Backend profile data:', data);
+        console.log('Backend position_id:', data.position_id);
+        console.log('Backend position_name:', data.position_name);
+        console.log('Backend department_id:', data.department_id);
+        console.log('Backend department_name:', data.department_name);
         console.log('Positions array:', positions);
         console.log('Departments array:', departments);
 
         // Only set form data if profile hasn't been loaded yet
         if (!profileLoaded) {
-          setFormData({
-            full_name: data.name || '',
-            email: data.email || '',
-            department: data.department || '',
-            position: data.position || '',
-          });
+        setFormData({
+          full_name: data.name || '',
+          email: data.email || '',
+          department: data.department_id || '',
+          position: data.position_id || '',
+        });
           setProfileLoaded(true);
         }
         
@@ -110,10 +113,14 @@ const Profile = () => {
         updateUser({
           full_name: data.name,
           email: data.email,
-          department: data.department,
-          position: data.position,
+          department: data.department_name, // for display
+          position: data.position_name,     // for display
         });
       } catch (err: any) {
+        if (err.response?.status === 401) {
+          showSessionExpiredDialog();
+          return;
+        }
         setError('Failed to load profile');
       } finally {
         setLoading(false);
@@ -126,14 +133,17 @@ const Profile = () => {
     const fetchAvatar = async () => {
       try {
         const token = localStorage.getItem('token');
-        if (!token) return;
+        if (!token) {
+          showSessionExpiredDialog();
+          return;
+        }
         
-        const res = await axios.get('http://localhost:3001/api/avatar', {
+        const res = await axios.get(`${API_BASE_URL}/api/avatar`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         
         if (res.data.success && res.data.avatar_url) {
-          setAvatarUrl(`http://localhost:3001${res.data.avatar_url}`);
+          setAvatarUrl(`${API_BASE_URL}${res.data.avatar_url}`);
           // Only update user context if avatar_url is not already set
           if (!user?.avatar_url) {
             updateUser({ avatar_url: res.data.avatar_url });
@@ -150,32 +160,105 @@ const Profile = () => {
   }, []); // Remove updateUser from dependencies
 
   useEffect(() => {
-    fetch('http://localhost:3001/api/positions')
+    fetch(`${API_BASE_URL}/api/positions`)
       .then(res => res.json())
       .then(data => {
-        let pos = data.data.map((p: any) => p.position_name);
-        const isNoPos = (p: string) => !p || p.trim() === '' || p.toLowerCase() === 'none' || p.toLowerCase() === 'no position' || p.toLowerCase() === 'noposition';
-        const noPos = pos.filter(isNoPos);
-        // Sort by translated label
-        const normalPos = pos.filter(p => !isNoPos(p)).sort((a, b) => t(`positions.${a}`).localeCompare(t(`positions.${b}`)));
-        setPositions([...normalPos, ...noPos]);
+        const pos = data.data.map((p: any) => ({
+          id: p.id,
+          position_name_en: p.position_name_en,
+          position_name_th: p.position_name_th
+        }));
+        setPositions(pos);
         setPositionsLoaded(true);
       })
       .catch(() => setPositionsLoaded(true));
 
-    fetch('http://localhost:3001/api/departments')
+    fetch(`${API_BASE_URL}/api/departments`)
       .then(res => res.json())
       .then(data => {
-        let depts = data.data.map((d: any) => d.department_name);
-        const isNoDept = (d: string) => !d || d.trim() === '' || d.toLowerCase() === 'none' || d.toLowerCase() === 'no department' || d.toLowerCase() === 'nodepartment';
-        const noDept = depts.filter(isNoDept);
-        // Sort by translated label
-        const normalDepts = depts.filter(d => !isNoDept(d)).sort((a, b) => t(`departments.${a}`).localeCompare(t(`departments.${b}`)));
-        setDepartments([...normalDepts, ...noDept]);
+        const depts = data.data.map((d: any) => ({
+          id: d.id,
+          department_name_en: d.department_name_en,
+          department_name_th: d.department_name_th
+        }));
+        setDepartments(depts);
         setDepartmentsLoaded(true);
       })
       .catch(() => setDepartmentsLoaded(true));
   }, []);
+
+  useEffect(() => {
+    const fetchLeaveQuota = async () => {
+      setLeaveLoading(true);
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          showSessionExpiredDialog();
+          return;
+        }
+        const res = await axios.get(`${API_BASE_URL}/api/leave-quota/me`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        // Log backend debug info to browser console
+        if (res.data.debug) {
+          console.log('LEAVE QUOTA DEBUG:', res.data.debug);
+        }
+        if (res.data.success) {
+          setLeaveQuota(res.data.data);
+        } else {
+          setLeaveQuota([]);
+        }
+      } catch (err: any) {
+        setLeaveQuota([]);
+      } finally {
+        setLeaveLoading(false);
+      }
+    };
+    fetchLeaveQuota();
+  }, []);
+
+  useEffect(() => {
+    // Fetch all leave types for display (not just those with quota)
+    const fetchAllLeaveTypes = async () => {
+      try {
+        const res = await axios.get(`${API_BASE_URL}/api/leave-types`);
+        const data = res.data.data;
+        if (res.data.success) {
+          setAllLeaveTypes(data);
+        } else {
+          setAllLeaveTypes([]);
+        }
+      } catch {
+        setAllLeaveTypes([]);
+      }
+    };
+    fetchAllLeaveTypes();
+  }, []);
+
+  useEffect(() => {
+    // This effect is no longer needed as pushNotificationEnabled is managed by usePushNotification
+  }, [pushNotificationEnabled]);
+
+  // New leaveStats for new API response
+  const leaveStats = leaveQuota.map(item => {
+    return {
+      label: i18n.language.startsWith('th') ? (item.leave_type_th || item.leave_type_en) : (item.leave_type_en || item.leave_type_th),
+      used: { days: item.used_day ?? '-', hours: item.used_hour ?? '-' },
+      quota: item.quota,
+      color:
+        item.leave_type_en?.toLowerCase() === 'personal' || item.leave_type_th === 'ลากิจ' ? 'bg-orange-500' :
+        item.leave_type_en?.toLowerCase() === 'vacation' ? 'bg-blue-500' :
+        item.leave_type_en?.toLowerCase() === 'sick' ? 'bg-green-500' :
+        item.leave_type_en?.toLowerCase() === 'maternity' ? 'bg-purple-500' :
+        'bg-gray-400',
+      type: item.leave_type_en,
+      remaining: { days: item.remaining_day ?? '-', hours: item.remaining_hour ?? '-' },
+      quotaRaw: item.quota,
+      usedRaw: item.used_day + (item.used_hour / 9),
+      remainingRaw: item.remaining_day + (item.remaining_hour / 9),
+      unit: 'day',
+    };
+  });
 
   const handleCameraClick = () => {
     fileInputRef.current?.click();
@@ -190,11 +273,12 @@ const Profile = () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
+        showSessionExpiredDialog();
         toast({ title: t('error.title'), description: 'No token found', variant: 'destructive' });
         return;
       }
 
-      const response = await axios.post('http://localhost:3001/api/avatar', formData, {
+      const response = await axios.post(`${API_BASE_URL}/api/avatar`, formData, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'multipart/form-data' 
@@ -202,14 +286,18 @@ const Profile = () => {
       });
 
       if (response.data.success) {
-        setAvatarUrl(`http://localhost:3001${response.data.avatar_url}`);
+        setAvatarUrl(`${API_BASE_URL}${response.data.avatar_url}`);
         // Update user context with new avatar URL
         updateUser({ avatar_url: response.data.avatar_url });
-        toast({ title: t('profile.uploadSuccess') });
+      toast({ title: t('profile.uploadSuccess') });
       } else {
         throw new Error(response.data.message || t('profile.uploadError'));
       }
     } catch (err: any) {
+      if (err.response?.status === 401) {
+        showSessionExpiredDialog();
+        return;
+      }
       toast({ 
         title: t('profile.uploadError'), 
         description: err.response?.data?.message || err.message,
@@ -223,6 +311,7 @@ const Profile = () => {
     try {
       const token = localStorage.getItem('token');
       if (!token) {
+        showSessionExpiredDialog();
         toast({
           title: t('error.title'),
           description: 'No token found. Please log in.',
@@ -234,11 +323,11 @@ const Profile = () => {
       const requestData = {
         name: formData.full_name,
         email: formData.email,
-        position: formData.position,
-        department: formData.department,
+        position_id: formData.position,      // <-- use _id for backend compatibility
+        department_id: formData.department,  // <-- use _id for backend compatibility
       };
 
-      const response = await axios.put('http://localhost:3001/api/profile', requestData, {
+      const response = await axios.put(`${API_BASE_URL}/api/profile`, requestData, {
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -258,21 +347,25 @@ const Profile = () => {
         setFormData({
           full_name: updatedData.name || formData.full_name,
           email: updatedData.email || formData.email,
-          department: updatedData.department || formData.department,
-          position: updatedData.position || formData.position,
+          department: updatedData.department_name_th || updatedData.department || formData.department,
+          position: updatedData.position_name_th || updatedData.position || formData.position,
         });
         
         // Update user context with new data
         updateUser({
           full_name: updatedData.name || formData.full_name,
-          position: updatedData.position || formData.position,
-          department: updatedData.department || formData.department,
+          position: updatedData.position_name || formData.position,
+          department: updatedData.department_name || formData.department,
           email: updatedData.email || formData.email,
         });
       } else {
         throw new Error(response.data.message || t('profile.saveError'));
       }
     } catch (error: any) {
+      if (error.response?.status === 401) {
+        showSessionExpiredDialog();
+        return;
+      }
       toast({
         title: t('error.title'),
         description: error.response?.data?.message || t('profile.saveError'),
@@ -283,11 +376,31 @@ const Profile = () => {
     }
   };
 
-  const leaveStats = [
-    { label: t('profile.vacationLeave'), used: 8, total: 15, color: 'bg-blue-500' },
-    { label: t('profile.sickLeave'), used: 3, total: 10, color: 'bg-green-500' },
-    { label: t('profile.personalLeave'), used: 2, total: 5, color: 'bg-orange-500' },
-    { label: t('profile.maternityLeave'), used: 0, total: 90, color: 'bg-purple-500' },
+  // Debug output for leaveQuota and allLeaveTypes
+  useEffect(() => {
+    if (!leaveLoading) {
+      console.log('leaveQuota:', leaveQuota);
+      console.log('allLeaveTypes:', allLeaveTypes);
+    }
+  }, [leaveQuota, allLeaveTypes, leaveLoading]);
+
+  // Define a color palette for leave types
+  const leaveTypeColors = [
+    '#4F8A8B', // teal
+    '#F9A826', // orange
+    '#A259F7', // purple
+    '#FF6B6B', // red
+    '#43BCCD', // blue
+    '#F67280', // pink
+    '#6C5B7B', // dark purple
+    '#355C7D', // navy
+    '#99B898', // green
+    '#E84A5F', // coral
+    '#2A363B', // dark gray
+    '#FECEAB', // light orange
+    '#FF847C', // salmon
+    '#B5EAD7', // mint
+    '#C7CEEA', // lavender
   ];
 
   return (

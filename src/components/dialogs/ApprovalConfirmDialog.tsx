@@ -3,6 +3,7 @@ import { useState } from "react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { useTranslation } from "react-i18next";
 
 interface ApprovalConfirmDialogProps {
   open: boolean;
@@ -14,6 +15,7 @@ interface ApprovalConfirmDialogProps {
 
 export const ApprovalConfirmDialog = ({ open, onOpenChange, onConfirm, action, employeeName }: ApprovalConfirmDialogProps) => {
   const [rejectionReason, setRejectionReason] = useState("");
+  const { t } = useTranslation();
 
   const handleConfirm = () => {
     onConfirm(action === 'reject' ? rejectionReason : undefined);
@@ -31,19 +33,23 @@ export const ApprovalConfirmDialog = ({ open, onOpenChange, onConfirm, action, e
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>
-            ยืนยันการ{action === 'approve' ? 'อนุมัติ' : 'ไม่อนุมัติ'}
+            {action === 'approve'
+              ? t('admin.approveConfirmTitle', 'Confirm Approval')
+              : t('admin.rejectConfirmTitle', 'Confirm Rejection')}
           </AlertDialogTitle>
           <AlertDialogDescription>
-            คุณต้องการ{action === 'approve' ? 'อนุมัติ' : 'ไม่อนุมัติ'}คำขอลาของ {employeeName} หรือไม่?
+            {action === 'approve'
+              ? t('admin.approveConfirmDesc', { name: employeeName })
+              : t('admin.rejectConfirmDesc', { name: employeeName })}
           </AlertDialogDescription>
         </AlertDialogHeader>
 
         {action === 'reject' && (
           <div className="space-y-2">
-            <Label htmlFor="rejection-reason">เหตุผลที่ไม่อนุมัติ *</Label>
+            <Label htmlFor="rejection-reason">{t('admin.rejectReasonTitle')}</Label>
             <Textarea
               id="rejection-reason"
-              placeholder="กรุณาระบุเหตุผลที่ไม่อนุมัติคำขอนี้"
+              placeholder={t('admin.rejectReasonPlaceholder')}
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
               required
@@ -52,13 +58,15 @@ export const ApprovalConfirmDialog = ({ open, onOpenChange, onConfirm, action, e
         )}
 
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={handleCancel}>ยกเลิก</AlertDialogCancel>
+          <AlertDialogCancel onClick={handleCancel}>{t('common.cancel')}</AlertDialogCancel>
           <AlertDialogAction 
             onClick={handleConfirm}
             disabled={action === 'reject' && !rejectionReason.trim()}
             className={action === 'approve' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}
           >
-            ยืนยัน{action === 'approve' ? 'อนุมัติ' : 'ไม่อนุมัติ'}
+            {action === 'approve'
+              ? t('admin.approve', 'Approve')
+              : t('admin.reject', 'Reject')}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

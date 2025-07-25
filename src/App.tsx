@@ -19,6 +19,9 @@ import EmployeeManagement from "./pages/EmployeeManagement";
 import EmployeeDetail from "./pages/EmployeeDetail";
 import NotFound from "./pages/NotFound";
 import '@/i18n';
+import { PushNotificationProvider } from "@/contexts/PushNotificationContext";
+import ManageAll from './pages/SuperAdmin/ManageAll';
+import SuperAdminList from './pages/SuperAdmin/SuperAdminList';
 
 const queryClient = new QueryClient();
 
@@ -84,6 +87,16 @@ const AppContent = () => {
                 <EmployeeDetail />
               </ProtectedRoute>
             } />
+            <Route path="/superadmin/manage-all" element={
+              <ProtectedRoute superadminOnly>
+                <ManageAll />
+              </ProtectedRoute>
+            } />
+            <Route path="/superadmin/superadmins" element={
+              <ProtectedRoute superadminOnly>
+                <SuperAdminList />
+              </ProtectedRoute>
+            } />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
@@ -100,7 +113,9 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <AppContent />
+            <PushNotificationProvider>
+              <AppContent />
+            </PushNotificationProvider>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>

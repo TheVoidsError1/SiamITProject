@@ -1,5 +1,5 @@
 
-import { Calendar, Home, Clock, Settings, User, LogOut, Users } from "lucide-react";
+import { Calendar, Home, Clock, Settings, User, LogOut, Users, Building } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import {
@@ -57,13 +57,50 @@ const adminItems = [
   },
 ];
 
+const superadminItems = [
+  {
+    title: "navigation.manageAll",
+    url: "/superadmin/manage-all",
+    icon: Settings,
+  },
+  {
+    title: "navigation.createUser",
+    url: "/superadmin/superadmins",
+    icon: User,
+  },
+];
+
+const superadminExtraItems = [
+  {
+    title: "navigation.manageAll",
+    url: "/superadmin/manage-all",
+    icon: Settings,
+  },
+  {
+    title: "navigation.createUser",
+    url: "/superadmin/superadmins",
+    icon: User,
+  },
+];
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 export function AppSidebar() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const location = useLocation();
   const { user, logout } = useAuth();
   const { toast } = useToast();
   // Use avatar URL from user context if available, otherwise fetch it
-  const avatarUrl = user?.avatar_url ? `http://localhost:3001${user.avatar_url}` : null;
+  const avatarUrl = user?.avatar_url ? `${API_BASE_URL}${user.avatar_url}` : null;
+
+  const [positions, setPositions] = useState<any[]>([]);
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/positions`)
+      .then(res => res.json())
+      .then(data => {
+        setPositions(data.data || []);
+      });
+  }, []);
 
   const handleLogout = async () => {
     try {
@@ -81,7 +118,11 @@ export function AppSidebar() {
     }
   };
 
-  const allItems = user?.role === 'admin' ? [...items, ...adminItems] : items;
+  const allItems = user?.role === 'superadmin'
+    ? [...items, ...adminItems, ...superadminExtraItems]
+    : user?.role === 'admin'
+      ? [...items, ...adminItems]
+      : items;
 
   return (
     <Sidebar className="border-r border-border/50 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl shadow-2xl animate-slide-in-left transition-all duration-300">
@@ -157,7 +198,24 @@ export function AppSidebar() {
                   {user?.full_name || t('common.user')}
                 </p>
                 <p className="text-xs text-sidebar-foreground/70 truncate">
-                  {user?.position ? t(`positions.${user.position}`) : t('main.employee')}
+                  {(() => {
+                    // Try to match by ID
+                    let pos = positions.find(p => String(p.id) === String(user?.position));
+                    // If not found, try to match by English or Thai name
+                    if (!pos && user?.position) {
+                      pos = positions.find(
+                        p =>
+                          p.position_name_en === user.position ||
+                          p.position_name_th === user.position
+                      );
+                    }
+                    if (pos) {
+                      return i18n.language.startsWith('th')
+                        ? pos.position_name_th || pos.position_name_en
+                        : pos.position_name_en || pos.position_name_th;
+                    }
+                    return user?.position || t('main.employee');
+                  })()}
                 </p>
               </div>
             </div>

@@ -1,4 +1,5 @@
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Calendar, Clock, Users, TrendingUp, Bell } from "lucide-react";
@@ -13,58 +14,98 @@ import { holidays } from "@/constants/holidays";
 import { getUpcomingThaiHolidays, getThaiHolidaysByMonth } from "@/constants/getThaiHolidays";
 
 const Index = () => {
-  const { t } = useTranslation();
-  const stats = [
-    {
-      title: t('main.daysRemaining'),
-      value: "12",
-      unit: t('common.days'),
-      icon: Calendar,
-      color: "text-blue-600",
-      bgColor: "bg-blue-50",
-    },
-    {
-      title: t('main.daysUsed'),
-      value: "8",
-      unit: t('common.days'),
-      icon: Clock,
-      color: "text-green-600",
-      bgColor: "bg-green-50",
-    },
-    {
-      title: t('main.pendingRequests'),
-      value: "2",
-      unit: t('main.requests'),
-      icon: Users,
-      color: "text-orange-600",
-      bgColor: "bg-orange-50",
-    },
-    {
-      title: t('main.approvalRate'),
-      value: "95",
-      unit: "%",
-      icon: TrendingUp,
-      color: "text-purple-600",
-      bgColor: "bg-purple-50",
-    },
-  ];
-
+  const { user, logout } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
+  
+  // Function to format date based on current language
+  const formatCurrentDate = () => {
+    const currentLanguage = i18n.language;
+    const locale = currentLanguage === 'th' ? 'th-TH' : 'en-US';
+    
+    return new Date().toLocaleDateString(locale, {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      weekday: 'long'
+    });
+  };
+  
+  const { t, i18n } = useTranslation();
+  const [stats, setStats] = useState([
+    { title: t('main.daysRemaining'), value: "-", unit: t('common.days'), icon: Calendar, color: "text-blue-600", bgColor: "bg-blue-50" },
+    { title: t('main.daysUsed'), value: "-", unit: t('common.days'), icon: Clock, color: "text-green-600", bgColor: "bg-green-50" },
+    { title: t('main.pendingRequests'), value: "-", unit: t('main.requests'), icon: Users, color: "text-orange-600", bgColor: "bg-orange-50" },
+    { title: t('main.approvalRate'), value: "-", unit: "%", icon: TrendingUp, color: "text-purple-600", bgColor: "bg-purple-50" },
+  ]);
   const [leaveStats, setLeaveStats] = useState({ sick: 0, vacation: 0, business: 0 });
   const [loadingStats, setLoadingStats] = useState(true);
   const [errorStats, setErrorStats] = useState("");
+  const [recentLeaveStats, setRecentLeaveStats] = useState<Record<string, { days: number; hours: number; quota?: number }>>({});
+  const [loadingRecentStats, setLoadingRecentStats] = useState(true);
+  const [errorRecentStats, setErrorRecentStats] = useState("");
+  // Days remaining state (now for backdated requests)
+  const [backdatedCount, setBackdatedCount] = useState<number | null>(null);
+  const [loadingBackdated, setLoadingBackdated] = useState(true);
+  const [errorBackdated, setErrorBackdated] = useState("");
+  // Days used state
+  const [daysUsed, setDaysUsed] = useState<{ days: number, hours: number } | null>(null);
+  const [loadingDaysUsed, setLoadingDaysUsed] = useState(true);
+  const [errorDaysUsed, setErrorDaysUsed] = useState("");
+  // Recent leave requests state
+  const [recentLeaves, setRecentLeaves] = useState<Array<{
+    leavetype: string,
+    leavetype_th?: string,
+    leavetype_en?: string,
+    duration: string,
+    startdate: string,
+    status: string
+  }>>([]);
+  const [loadingRecentLeaves, setLoadingRecentLeaves] = useState(true);
+  const [errorRecentLeaves, setErrorRecentLeaves] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  const [showMonthPicker, setShowMonthPicker] = useState(false);
+  // เพิ่ม state สำหรับ days used จาก filter
+  const [filteredDaysUsed, setFilteredDaysUsed] = useState<number>(0);
+  // เพิ่ม state สำหรับ hours used จาก filter
+  const [filteredHoursUsed, setFilteredHoursUsed] = useState<number>(0);
+  // เพิ่ม state สำหรับ totalDays/totalHours จาก recent leave stats
+  const [recentTotalDays, setRecentTotalDays] = useState<number>(0);
+  const [recentTotalHours, setRecentTotalHours] = useState<number>(0);
 
-  useEffect(() => {
+  const { showSessionExpiredDialog } = useAuth();
+
+  // เพิ่มฟังก์ชันสำหรับเรียก API พร้อม month/year
+  const fetchDashboardStats = (month?: number, year?: number) => {
     setLoadingStats(true);
     const token = localStorage.getItem("token");
-    fetch("/api/leave-request/statistics-by-type", {
+    let url = "/api/dashboard-stats";
+    if (month && year) url += `?month=${month}&year=${year}`;
+    else if (year) url += `?year=${year}`;
+    fetchWithAuth(url, {
       headers: {
         Authorization: token ? `Bearer ${token}` : undefined,
       },
-    })
-      .then((res) => res.json())
+    }, undefined, showSessionExpiredDialog)
+      ?.then((res) => res && res.json())
       .then((data) => {
-        if (data.success) {
-          setLeaveStats(data.data);
+        if (data && data.status === "success" && data.data) {
+          setStats([
+            { title: t('main.daysRemaining'), value: data.data.remainingDays, unit: t('common.days'), icon: Calendar, color: "text-blue-600", bgColor: "bg-blue-50" },
+            { title: t('main.daysUsed'), value: data.data.daysUsed, unit: t('common.days'), icon: Clock, color: "text-green-600", bgColor: "bg-green-50" },
+            { title: t('main.pendingRequests'), value: data.data.pendingRequests, unit: t('main.requests'), icon: Users, color: "text-orange-600", bgColor: "bg-orange-50" },
+            { title: t('main.approvalRate'), value: data.data.approvalRate, unit: "%", icon: TrendingUp, color: "text-purple-600", bgColor: "bg-purple-50" },
+          ]);
+          // อัปเดต filteredDaysUsed และ filteredHoursUsed สำหรับ Days Used card
+          setFilteredDaysUsed(data.data.daysUsed || 0);
+          setFilteredHoursUsed(data.data.hoursUsed || 0);
+          const stats = data.data.leaveTypeStats || {};
+          setLeaveStats({
+            sick: stats["ลาป่วย"] || stats["sick"] || 0,
+            vacation: stats["ลาพักผ่อน"] || stats["vacation"] || 0,
+            business: stats["ลากิจ"] || stats["business"] || 0,
+          });
         } else {
           setErrorStats(t('error.cannotLoadStats'));
         }

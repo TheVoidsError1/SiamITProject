@@ -1,7 +1,5 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
-import { th } from "date-fns/locale";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -9,7 +7,7 @@ interface LeaveRequest {
   id: string;
   type?: string;
   leaveTypeName?: string;
-  user?: { User_name?: string; department?: string; position?: string };
+  user?: { User_name?: string; department?: string; position?: string; department_name_th?: string; position_name_th?: string };
   startDate: string;
   endDate: string;
   days?: number;
@@ -24,6 +22,14 @@ interface LeaveRequest {
   imgLeave?: string;
   contact?: string;
   rejectedReason?: string;
+  // Added for new API
+  employeeName?: string;
+  leaveType?: string;
+  submittedDate?: string;
+  name?: string;
+  leaveDate?: string;
+  leaveTypeEn?: string;
+  backdated?: boolean;
 }
 
 interface LeaveDetailDialogProps {
@@ -33,43 +39,33 @@ interface LeaveDetailDialogProps {
 }
 
 export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDetailDialogProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [leaveDetail, setLeaveDetail] = useState<LeaveRequest | null>(leaveRequest);
   const [loading, setLoading] = useState(false);
+
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   useEffect(() => {
     if (open && leaveRequest?.id) {
       setLoading(true);
-      fetch(`http://localhost:3001/api/leave-request/${leaveRequest.id}`)
+      fetch(`${API_BASE_URL}/api/leave-request/detail/${leaveRequest.id}`)
         .then(res => res.json())
         .then(data => {
           if (data.success) {
             setLeaveDetail(data.data);
           } else {
-            setLeaveDetail(leaveRequest); // fallback
+            setLeaveDetail(null); // do not fallback to leaveRequest
           }
           setLoading(false);
         })
         .catch(() => {
-          setLeaveDetail(leaveRequest);
+          setLeaveDetail(null);
           setLoading(false);
         });
     } else {
-      setLeaveDetail(leaveRequest);
+      setLeaveDetail(null);
     }
   }, [open, leaveRequest]);
-
-  if (!leaveDetail) return null;
-  if (loading) return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{t('leave.details')}</DialogTitle>
-        </DialogHeader>
-        <div>{t('common.loading')}</div>
-      </DialogContent>
-    </Dialog>
-  );
 
   const getStatusBadge = (status: string) => {
     if (status === 'approved') return <Badge className="bg-green-100 text-green-800">{t('leave.approved')}</Badge>;
@@ -77,103 +73,94 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
     return <Badge className="bg-yellow-100 text-yellow-800">{t('leave.pending')}</Badge>;
   };
 
-  const hasAttachments = ['ลาป่วย', 'ลาคลอด', 'ลาฉุกเฉิน'].includes(leaveDetail.type);
+  if (loading) return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{t('leave.details')}</DialogTitle>
+          <DialogDescription>
+            {t('leave.detailDescription', 'Detailed information about this leave request.')}
+          </DialogDescription>
+        </DialogHeader>
+        <div>{t('common.loading')}</div>
+      </DialogContent>
+    </Dialog>
+  );
 
+  // Always show the dialog, even if leaveDetail is null
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t('leave.details')}</DialogTitle>
+          <DialogDescription>
+            {t('leave.detailDescription', 'Detailed information about this leave request.')}
+          </DialogDescription>
         </DialogHeader>
-        
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-gray-700">{t('employee.name')}</label>
-              <p className="text-sm">{leaveDetail.user?.User_name || '-'}</p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">{t('leave.type')}</label>
-              <p className="text-sm">{leaveDetail.leaveTypeName || leaveDetail.type || leaveDetail.personalLeaveType}</p>
-            </div>
+         {/* แสดงข้อความเฉพาะใบลาย้อนหลัง */}
+        {leaveDetail && Boolean(leaveDetail.backdated) && (
+          <div className="mb-4 p-3 bg-orange-50 border border-orange-300 text-orange-800 rounded text-center font-semibold">
+            {t('leave.backdatedNotice')}
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-gray-700">{t('leave.status')}</label>
-              <div className="mt-1">{getStatusBadge(leaveDetail.status)}</div>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">{t('leave.submittedDate')}</label>
-              <p className="text-sm">{leaveDetail.createdAt ? format(new Date(leaveDetail.createdAt), "dd MMMM yyyy", { locale: th }) : ''}</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <label className="text-sm font-medium text-gray-700">{t('leave.date')}</label>
-              <p className="text-sm">{leaveDetail.startDate ? format(new Date(leaveDetail.startDate), "dd MMMM yyyy", { locale: th }) : ''} - {leaveDetail.endDate ? format(new Date(leaveDetail.endDate), "dd MMMM yyyy", { locale: th }) : ''}</p>
-              {leaveDetail.startTime && <p className="text-xs text-gray-500">{t('leave.time')}: {leaveDetail.startTime}</p>}
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">{t('leave.endDate')}</label>
-              <p className="text-sm">{leaveDetail.endDate ? format(new Date(leaveDetail.endDate), "dd MMMM yyyy", { locale: th }) : ''}</p>
-              {leaveDetail.endTime && <p className="text-xs text-gray-500">{t('leave.time')}: {leaveDetail.endTime}</p>}
-            </div>
-          </div>
-          <div>
-            <label className="text-sm font-medium text-gray-700">{t('leave.reason')}</label>
-            <p className="text-sm bg-gray-50 p-3 rounded-lg">{leaveDetail.reason}</p>
-          </div>
-          {leaveDetail.status === 'rejected' && leaveDetail.rejectedReason && (
-            <div>
-              <label className="text-sm font-medium text-red-700">{t('leave.rejectionReason')}</label>
-              <p className="text-sm bg-red-50 p-3 rounded-lg text-red-800">{leaveDetail.rejectedReason}</p>
-            </div>
-          )}
-          {leaveDetail.statusBy && (
-            <div>
-              <label className="text-sm font-medium text-gray-700">{t('leave.approvedBy')}</label>
-              <p className="text-sm">{leaveDetail.statusBy}</p>
-            </div>
-          )}
-          {leaveDetail.approvedTime && (
-            <div>
-              <label className="text-sm font-medium text-gray-700">{t('leave.approvedTime')}</label>
-              <p className="text-sm">{format(new Date(leaveDetail.approvedTime), "dd MMMM yyyy HH:mm", { locale: th })}</p>
-            </div>
-          )}
-          {leaveDetail.contact && (
-            <div>
-              <label className="text-sm font-medium text-gray-700">{t('employee.phone')}</label>
-              <p className="text-sm">{leaveDetail.contact}</p>
-            </div>
-          )}
-          {leaveDetail.imgLeave && (
-            <div>
-              <label className="text-sm font-medium text-gray-700">{t('leave.attachments')}</label>
-              <a href={`/leave-uploads/${leaveDetail.imgLeave}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">{t('leave.viewAttachment')}</a>
-            </div>
-          )}
+        )}
+        {leaveDetail ? (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700">{t('employee.name')}</label>
+                <p className="text-sm">{leaveDetail.name || '-'}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">{t('leave.type')}</label>
+                <p className="text-sm">
+                  {(() => {
+                    // ใช้ i18n leaveTypes
+                    const key = leaveDetail.leaveTypeName || leaveDetail.leaveTypeEn || leaveDetail.leaveType;
+                    if (key && t(`leaveTypes.${key}`) !== `leaveTypes.${key}`) {
+                      return t(`leaveTypes.${key}`);
+                    }
+                    return i18n.language === 'th'
+                      ? leaveDetail.leaveTypeName || leaveDetail.leaveTypeEn || leaveDetail.leaveType || '-'
+                      : leaveDetail.leaveTypeEn || leaveDetail.leaveTypeName || leaveDetail.leaveType || '-';
+                  })()}
 
-          {hasAttachments && leaveDetail.attachments && leaveDetail.attachments.length > 0 && (
-            <div>
-              <label className="text-sm font-medium text-gray-700">{t('leave.documents')}</label>
-              <div className="mt-2 grid grid-cols-2 gap-4">
-                {leaveDetail.attachments.map((file, index) => (
-                  <div key={index} className="border rounded-lg p-2">
-                    <p className="text-xs text-gray-600 mb-2">{file.name}</p>
-                    {file.type.startsWith('image/') && (
-                      <img
-                        src={URL.createObjectURL(file)}
-                        alt={file.name}
-                        className="w-full h-32 object-cover rounded"
-                      />
-                    )}
-                  </div>
-                ))}
+                </p>
               </div>
             </div>
-          )}
-        </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700">{t('leave.status')}</label>
+                <div className="mt-1">{getStatusBadge(leaveDetail.status)}</div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">{t('leave.submittedDate')}</label>
+                <p className="text-sm">{leaveDetail.submittedDate || '-'}</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700">{t('leave.date')}</label>
+                <p className="text-sm">{leaveDetail.leaveDate || '-'}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700">{t('leave.endDate')}</label>
+                <p className="text-sm">{leaveDetail.endDate || '-'}</p>
+              </div>
+            </div>
+            {leaveDetail.contact && (
+              <div>
+                <label className="text-sm font-medium text-gray-700">{t('leave.contactInfo')}</label>
+                <p className="text-sm">{leaveDetail.contact}</p>
+              </div>
+            )}
+            <div>
+              <label className="text-sm font-medium text-gray-700">{t('leave.reason')}</label>
+              <p className="text-sm bg-gray-50 p-3 rounded-lg">{leaveDetail.reason || '-'}</p>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center text-gray-500 py-8">{t('leave.noDetailFound', 'No data found for this leave request.')}</div>
+        )}
       </DialogContent>
     </Dialog>
   );

@@ -10,6 +10,7 @@ module.exports = new EntitySchema({
             length: 36,
             generated: 'uuid',
         },
-        department_name: { type: 'varchar' },
+        department_name_en: { type: 'varchar' },
+        department_name_th: { type: 'varchar' },
     },
 });

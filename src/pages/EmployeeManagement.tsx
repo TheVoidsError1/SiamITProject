@@ -1,5 +1,15 @@
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { Badge } from "@/components/ui/badge";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -22,28 +32,51 @@ interface Employee {
   totalLeaveDays: number;
 }
 
+// เพิ่มฟังก์ชันแปลงวันลาเป็นวัน+ชั่วโมง (รองรับ i18n)
+function formatLeaveDays(days: number, t: (key: string) => string): string {
+  const fullDays = Math.floor(days);
+  const hours = Math.round((days - fullDays) * 9);
+  if (hours > 0) {
+    return `${fullDays} ${t('common.days')} ${hours} ${t('common.hour')}`;
+  }
+  return `${fullDays} ${t('common.days')}`;
+}
+
 const EmployeeManagement = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [employees, setEmployees] = useState<Employee[]>([]);
+  const [positions, setPositions] = useState<any[]>([]);
+  const [departments, setDepartments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 4;
+  const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [pendingPositionFilter, setPendingPositionFilter] = useState<string>("");
+  const [pendingDepartmentFilter, setPendingDepartmentFilter] = useState<string>("");
+  const [pendingRoleFilter, setPendingRoleFilter] = useState<string>("");
+  const [positionFilter, setPositionFilter] = useState<string>("");
+  const [departmentFilter, setDepartmentFilter] = useState<string>("");
+  const [roleFilter, setRoleFilter] = useState<string>("");
+
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   useEffect(() => {
-    fetch("http://localhost:3001/api/employees")
+    fetch(`${API_BASE_URL}/api/employees`)
       .then((res) => res.json())
       .then((data) => {
         if (data.success && Array.isArray(data.data)) {
-          // map field ให้ตรงกับ type Employee
           const employees = data.data.map((item) => ({
             id: item.id,
             full_name: item.name || '',
             email: item.email || '',
-            position: item.position || '',
-            department: item.department || '',
+            position: item.position || '', // เก็บ id
+            department: item.department || '', // เก็บ id
             role: item.role || '',
-            usedLeaveDays: 0,
-            totalLeaveDays: 20
+            usedLeaveDays: item.usedLeaveDays ?? 0,
+            totalLeaveDays: item.totalLeaveDays ?? 0
           }));
           setEmployees(employees);
         } else {
@@ -54,9 +87,46 @@ const EmployeeManagement = () => {
       .catch(() => setLoading(false));
   }, []);
 
-  const totalPages = Math.ceil(employees.length / itemsPerPage);
-  const paginatedEmployees = employees.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  // ดึงตำแหน่ง
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/positions`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.status === 'success' && Array.isArray(data.data)) {
+          setPositions(data.data);
+        }
+      });
+    fetch(`${API_BASE_URL}/api/departments`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.status === 'success' && Array.isArray(data.data)) {
+          setDepartments(data.data);
+        }
+      });
+  }, []);
 
+  // ฟังก์ชันแปลง id เป็นชื่อ
+  const getPositionName = (id: string) => {
+    const found = positions.find((p) => p.id === id);
+    if (!found) return id;
+    return i18n.language === 'th' ? found.position_name_th : found.position_name_en;
+  };
+  const getDepartmentName = (id: string) => {
+    const found = departments.find((d) => d.id === id);
+    if (!found) return id;
+    return i18n.language === 'th' ? found.department_name_th : found.department_name_en;
+  };
+
+  // ฟังก์ชันกรองข้อมูล
+  const filteredEmployees = employees.filter(emp =>
+    (positionFilter === "" || emp.position === positionFilter) &&
+    (departmentFilter === "" || emp.department === departmentFilter) &&
+    (roleFilter === "" || emp.role === roleFilter)
+  );
+  const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
+  const paginatedEmployees = filteredEmployees.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
+  const REGULAR_EMPLOYEE_POSITION_ID = '354653a2-123a-48f4-86fd-22412c25c50e';
   const stats = [
     {
       title: t('system.totalEmployees'),
@@ -67,23 +137,57 @@ const EmployeeManagement = () => {
     },
     {
       title: t('system.regularEmployees'),
-      value: employees.filter(
-        emp =>
-          (emp.role === 'admin') ||
-          ((emp.role === 'employee' || emp.role === 'user') && emp.position?.toLowerCase() === 'employee')
-      ).length.toString(),
+      value: employees.filter(emp => {
+        const positionName = getPositionName(emp.position);
+        return positionName === 'พนักงาน' || positionName === 'Employee';
+      }).length.toString(),
       icon: User,
       color: "text-green-600",
       bgColor: "bg-green-50",
     },
     {
       title: t('system.interns'),
-      value: employees.filter(emp => emp.position?.toLowerCase() === 'intern').length.toString(),
+      value: employees.filter(emp => {
+        const positionName = getPositionName(emp.position);
+        return positionName === 'นักศึกษาฝึกงาน' || positionName === 'Intern';
+      }).length.toString(),
       icon: User,
       color: "text-orange-600",
       bgColor: "bg-orange-50",
     },
   ];
+
+  const handleDelete = async () => {
+    if (!deleteTarget || !user) return;
+    setDeleting(true);
+    let url = "";
+    if (deleteTarget.role === "superadmin") {
+      url = `${API_BASE_URL}/api/superadmin/${deleteTarget.id}`;
+    } else if (deleteTarget.role === "admin") {
+      url = `${API_BASE_URL}/api/admins/${deleteTarget.id}`;
+    } else {
+      url = `${API_BASE_URL}/api/users/${deleteTarget.id}`;
+    }
+    try {
+      const res = await fetch(url, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        setEmployees((prev) => prev.filter((e) => e.id !== deleteTarget.id));
+        setDeleteTarget(null);
+        toast({
+          title: t('system.deleteSuccess', 'ลบสำเร็จ'),
+          description: t('system.deleteUserSuccessDesc', 'ลบผู้ใช้งานสำเร็จ'),
+          className: 'border-green-500 bg-green-50 text-green-900',
+        });
+      } else {
+        alert(data.message || t("system.deleteFailed", "Delete failed"));
+      }
+    } catch (e) {
+      alert(t("system.deleteFailed", "Delete failed"));
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-100 to-purple-100 relative overflow-x-hidden">

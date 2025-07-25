@@ -1,13 +1,19 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import SessionExpiredDialog from '@/components/dialogs/SessionExpiredDialog';
 
 interface User {
   id: string;
   email: string;
   full_name?: string;
   avatar_url?: string;
-  role?: 'employee' | 'admin';
+  role?: 'employee' | 'admin' | 'superadmin';
   department?: string;
+  department_name_th?: string;
+  department_name_en?: string;
   position?: string;
+  position_name_th?: string;
+  position_name_en?: string;
 }
 
 interface AuthContextType {
@@ -17,6 +23,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
   updateUser: (userData: Partial<User>) => void;
   loading: boolean;
+  showSessionExpiredDialog: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -29,9 +36,28 @@ export const useAuth = () => {
   return context;
 };
 
+function parseJwt(token: string) {
+  try {
+    const base64Url = token.split('.')[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+        .join('')
+    );
+    return JSON.parse(jsonPayload);
+  } catch (e) {
+    return null;
+  }
+}
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showSessionExpiredDialog, setShowSessionExpiredDialog] = useState(false);
+  const logoutTimer = useRef<NodeJS.Timeout | null>(null);
+  const { t } = useTranslation();
 
   useEffect(() => {
     // Check if user is logged in from localStorage
@@ -46,8 +72,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkUser();
   }, []);
 
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const payload = parseJwt(token);
+    if (!payload || !payload.exp) return;
+
+    const exp = payload.exp * 1000; // JWT exp เป็นวินาที, JS ต้อง ms
+    const now = Date.now();
+
+    if (exp <= now) {
+      setShowSessionExpiredDialog(true);
+      return;
+    }
+
+    // ตั้ง timer auto logout
+    const timeout = exp - now;
+    logoutTimer.current = setTimeout(() => {
+      setShowSessionExpiredDialog(true);
+    }, timeout);
+
+    // cleanup timer
+    return () => {
+      if (logoutTimer.current) clearTimeout(logoutTimer.current);
+    };
+  }, [user, t]);
+
   const login = async (email: string, password: string) => {
-    const response = await fetch('http://localhost:3001/api/login', {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password }),
@@ -55,7 +108,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const data = await response.json();
 
     if (!response.ok || !data.success) {
-      throw new Error(data.message || 'อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+      throw new Error(data.message || t('auth.loginError'));
     }
 
     // Initial user info from login
@@ -70,7 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Fetch profile info after login
     try {
-      const profileRes = await fetch('http://localhost:3001/api/profile', {
+      const profileRes = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/profile`, {
         headers: { 'Authorization': `Bearer ${data.data?.token || ''}` }
       });
       if (profileRes.ok) {
@@ -95,7 +148,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Fetch avatar URL after login
     try {
-      const avatarResponse = await fetch('http://localhost:3001/api/avatar', {
+      const avatarResponse = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/avatar`, {
         headers: { 'Authorization': `Bearer ${data.data?.token || ''}` }
       });
       if (avatarResponse.ok) {
@@ -117,7 +170,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signup = async (email: string, password: string, userData: Partial<User>) => {
     // เรียก API backend
-    const response = await fetch('http://localhost:3001/api/register', {
+    const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/register`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -132,7 +185,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const data = await response.json();
 
     if (!response.ok) {
-      throw new Error(data.error || 'สมัครสมาชิกไม่สำเร็จ');
+      throw new Error(data.message || data.error || 'สมัครสมาชิกไม่สำเร็จ');
     }
     // สมัครสมาชิกสำเร็จ ไม่ต้อง login อัตโนมัติ ให้ user ไป login เอง
   };
@@ -141,6 +194,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUser(null);
     localStorage.removeItem('currentUser');
     localStorage.removeItem('token');
+    if (logoutTimer.current) {
+      clearTimeout(logoutTimer.current);
+      logoutTimer.current = null;
+    }
   };
 
   const updateUser = (userData: Partial<User>) => {
@@ -158,7 +215,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     logout,
     updateUser,
     loading,
+    showSessionExpiredDialog: () => setShowSessionExpiredDialog(true),
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+      <SessionExpiredDialog 
+        open={showSessionExpiredDialog} 
+        onOpenChange={setShowSessionExpiredDialog} 
+      />
+    </AuthContext.Provider>
+  );
 };

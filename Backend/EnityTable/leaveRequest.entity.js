@@ -12,7 +12,6 @@ module.exports = new EntitySchema({
     },
     Repid: { type: 'varchar', nullable: true}, // Repid  ของ ProcessCheck เชื่อมกับ id ของ ProcessCheck
     employeeType: { type: 'varchar' },
-    supervisor: { type: 'varchar', nullable: true } , // supervisor เชื่อมกับ id ของ admin
     leaveType: { type: 'varchar' },
     startDate: { type: 'date' },
     endDate: { type: 'date' },
@@ -27,6 +26,8 @@ module.exports = new EntitySchema({
     statusBy: { type: 'varchar', nullable: true}, // status เชื่อมกับ id ของ admin
     approvedTime: { type: 'timestamp', nullable: true }, // เวลาที่อนุมัติ
     rejectedTime: {type: 'timestamp', nullable: true},
-    imgLeave: { type: 'varchar', nullable: true },
+    attachments: { type: 'longtext', nullable: true }, // json string ของ array ชื่อไฟล์แนบ รองรับไฟล์หลายไฟล์
+    isRead: { type: 'boolean', default: false, nullable: false },
+    backdated: { type: 'boolean', default: false, nullable: false }, // Indicates if the leave request is backdated
   },
 });

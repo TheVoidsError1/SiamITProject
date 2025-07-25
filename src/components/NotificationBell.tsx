@@ -5,46 +5,64 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { format } from 'date-fns';
+import { th, enUS } from 'date-fns/locale';
+import { useTranslation } from 'react-i18next';
+import { usePushNotification } from "@/contexts/PushNotificationContext";
 
 interface Notification {
   id: string;
-  title: string;
-  message: string;
-  time: string;
-  type: 'info' | 'success' | 'warning' | 'error';
-  read: boolean;
+  startDate: string;
+  endDate: string;
+  status: string;
 }
 
 const NotificationBell = () => {
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: '1',
-      title: 'คำขอลาได้รับการอนุมัติ',
-      message: 'คำขอลาพักผ่อนวันที่ 15-17 มีนาคม ได้รับการอนุมัติแล้ว',
-      time: '2 ชั่วโมงที่แล้ว',
-      type: 'success',
-      read: false
-    },
-    {
-      id: '2',
-      title: 'เตือนวันลาคงเหลือ',
-      message: 'คุณมีวันลาพักผ่อนเหลือ 7 วัน สำหรับปีนี้',
-      time: '1 วันที่แล้ว',
-      type: 'info',
-      read: false
-    }
-  ]);
+  const { t, i18n } = useTranslation();
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [popoverOpen, setPopoverOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const { enabled: pushNotificationEnabled } = usePushNotification();
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  // Fetch notifications on mount
+  useEffect(() => {
+    const fetchNotifications = async () => {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/notifications', {
+        headers: { Authorization: token ? `Bearer ${token}` : undefined },
+      });
+      const data = await res.json();
+      if (data.status === 'success' && Array.isArray(data.data)) {
+        setNotifications(data.data);
+      }
+      setLoading(false);
+    };
+    fetchNotifications();
+  }, []);
 
-  const markAsRead = (id: string) => {
-    setNotifications(prev => 
-      prev.map(n => n.id === id ? { ...n, read: true } : n)
-    );
+  useEffect(() => {
+    const handler = () => {
+      const stored = localStorage.getItem("pushNotificationEnabled");
+      // This useEffect is no longer needed as pushNotificationEnabled is managed by context
+    };
+    window.addEventListener("storage", handler);
+    return () => window.removeEventListener("storage", handler);
+  }, []);
+
+  // Remove mark all as read logic
+  const handlePopoverOpenChange = (open: boolean) => {
+    setPopoverOpen(open);
   };
 
-  const markAllAsRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+  // Mark a single notification as read
+  const handleMarkAsRead = async (id: string) => {
+    const token = localStorage.getItem('token');
+    await fetch(`/api/notifications/${id}/read`, {
+      method: 'POST',
+      headers: { Authorization: token ? `Bearer ${token}` : undefined },
+    });
+    setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
   const getTypeColor = (type: string) => {
@@ -66,7 +84,7 @@ const NotificationBell = () => {
   };
 
   return (
-    <Popover>
+    <Popover open={popoverOpen} onOpenChange={handlePopoverOpenChange}>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="sm" className="relative glass bg-white/60 backdrop-blur-md shadow-lg hover:scale-110 transition-all duration-200">
           <span className="relative">
@@ -91,7 +109,7 @@ const NotificationBell = () => {
                   onClick={markAllAsRead}
                   className="text-xs font-bold bg-white/30 text-white hover:bg-white/50 rounded-full px-3 py-1 shadow"
                 >
-                  อ่านทั้งหมด
+                  {t('notification.markAllAsRead')}
                 </Button>
               )}
             </div>

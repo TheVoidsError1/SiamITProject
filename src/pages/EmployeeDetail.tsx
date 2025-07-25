@@ -1,18 +1,28 @@
-import { useState, useEffect } from "react";
-import { useParams, Link, useLocation } from "react-router-dom";
-import { SidebarTrigger } from "@/components/ui/sidebar";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { LeaveDetailDialog } from "@/components/dialogs/LeaveDetailDialog";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { ArrowLeft, User, Mail, Calendar, Edit, Save, X, Eye } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
-import { th } from "date-fns/locale";
-import { LeaveDetailDialog } from "@/components/dialogs/LeaveDetailDialog";
+import { ArrowLeft, Calendar, Edit, Eye, Mail, Save, User, X } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { Avatar } from "@/components/ui/avatar";
@@ -20,8 +30,9 @@ import { Avatar } from "@/components/ui/avatar";
 const EmployeeDetail = () => {
   const { id } = useParams();
   const location = useLocation();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { toast } = useToast();
+  const { user, showSessionExpiredDialog } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [selectedLeave, setSelectedLeave] = useState(null);
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
@@ -39,90 +50,205 @@ const EmployeeDetail = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [leaveHistory, setLeaveHistory] = useState([]);
+  const [leaveSummary, setLeaveSummary] = useState<{ totalLeaveDays: number, totalLeaveHours: number } | null>(null); // <--- เพิ่ม state
   // เพิ่ม state สำหรับ processCheckId
   const [processCheckId, setProcessCheckId] = useState(null);
-  const [departments, setDepartments] = useState<string[]>([]);
-  const [positions, setPositions] = useState<string[]>([]);
+  const [departments, setDepartments] = useState<{ id: string; department_name: string; department_name_en?: string; department_name_th?: string }[]>([]);
+  const [positions, setPositions] = useState<{ id: string; position_name: string; position_name_en?: string; position_name_th?: string }[]>([]);
+  // --- เพิ่ม state สำหรับ paging ---
+  const [leavePage, setLeavePage] = useState(1);
+  const [leaveTotalPages, setLeaveTotalPages] = useState(1);
 
-  useEffect(() => {
-    fetch('http://localhost:3001/api/departments')
+  // --- State สำหรับ Filter ---
+  // state สำหรับค่าที่เลือกในฟิลเตอร์ (pending)
+  const [pendingFilterType, setPendingFilterType] = useState("all");
+  const [pendingFilterMonth, setPendingFilterMonth] = useState("all");
+  const [pendingFilterYear, setPendingFilterYear] = useState("all");
+  const [pendingFilterStatus, setPendingFilterStatus] = useState("all");
+  const [pendingFilterBackdated, setPendingFilterBackdated] = useState("all"); // เพิ่ม state สำหรับ backdated
+  // state สำหรับค่าฟิลเตอร์ที่ใช้งานจริง (active)
+  const [filterType, setFilterType] = useState("all");
+  const [filterMonth, setFilterMonth] = useState("all");
+  const [filterYear, setFilterYear] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [filterBackdated, setFilterBackdated] = useState("all"); // เพิ่ม state สำหรับ backdated
+  // state สำหรับ error ของ filter
+  const [filterError, setFilterError] = useState("");
+  // state สำหรับแสดง * สีแดงแต่ละ filter
+  const [showTypeError, setShowTypeError] = useState(false);
+  const [showMonthError, setShowMonthError] = useState(false);
+  const [showYearError, setShowYearError] = useState(false);
+  const [showStatusError, setShowStatusError] = useState(false);
+
+  // เพิ่ม state สำหรับ force render เมื่อเปลี่ยนภาษา
+  const [langVersion, setLangVersion] = useState(0);
+
+  // --- สร้างรายการปี (ย้อนหลัง 3 ปี) ---
+  const currentYear = new Date().getFullYear();
+  const yearOptions = [currentYear, currentYear-1, currentYear-2];
+
+  // --- กรอง leaveHistory ตาม filter ---
+  // ลบ useMemo เดิมออก ไม่ต้อง filter ฝั่ง frontend แล้ว
+
+  // --- Move fetch leave history logic to a function ---
+  const fetchLeaveHistory = () => {
+    if (!id) return;
+    let params = [];
+    if (filterType && filterType !== "all") params.push(`leaveType=${encodeURIComponent(filterType)}`);
+    if (filterMonth && filterMonth !== "all" && filterYear && filterYear !== "all") {
+      params.push(`month=${filterMonth}`);
+      params.push(`year=${filterYear}`);
+    } else if (filterYear && filterYear !== "all") {
+      params.push(`year=${filterYear}`);
+    }
+    if (filterStatus && filterStatus !== "all") params.push(`status=${filterStatus}`);
+    if (filterBackdated && filterBackdated !== "all") params.push(`backdated=${filterBackdated}`); // เพิ่ม backdated เข้า params
+    params.push(`page=${leavePage}`);
+    params.push(`limit=6`);
+    const query = params.length > 0 ? `?${params.join("&")}` : "";
+    fetch(`${API_BASE_URL}/api/employee/${id}/leave-history${query}`)
       .then(res => res.json())
       .then(data => {
-        let depts = data.data.map((d: any) => d.department_name);
-        const isNoDept = (d: string) => !d || d.trim() === '' || d.toLowerCase() === 'none' || d.toLowerCase() === 'no department' || d.toLowerCase() === 'nodepartment';
-        const noDept = depts.filter(isNoDept);
-        // Sort by translated label
-        const normalDepts = depts.filter(d => !isNoDept(d)).sort((a, b) => t(`departments.${a}`).localeCompare(t(`departments.${b}`)));
-        setDepartments([...normalDepts, ...noDept]);
+        if (data.success) {
+          setLeaveHistory(data.data);
+          setLeaveTotalPages(data.totalPages || 1);
+          setLeaveSummary(data.summary || null); // <--- เก็บ summary
+        } else {
+          setLeaveHistory([]);
+          setLeaveTotalPages(1);
+          setLeaveSummary(null); // <--- reset summary
+        }
+      })
+      .catch(() => {
+        setLeaveHistory([]);
+        setLeaveTotalPages(1);
+        setLeaveSummary(null); // <--- reset summary
+      });
+  };
+
+  // useEffect สำหรับ fetch leaveHistory เฉพาะเมื่อ filter จริง (active) เปลี่ยน
+  useEffect(() => {
+    fetchLeaveHistory();
+    // eslint-disable-next-line
+  }, [id, t, filterType, filterMonth, filterYear, filterStatus, filterBackdated, leavePage]);
+
+  // ลบ filteredLeaveHistory ออก
+
+  const resetFilters = () => {
+    setPendingFilterType("all");
+    setPendingFilterMonth("all");
+    setPendingFilterYear("all");
+    setPendingFilterStatus("all");
+    setPendingFilterBackdated("all"); // reset backdated
+    setShowTypeError(false);
+    setShowMonthError(false);
+    setShowYearError(false);
+    setShowStatusError(false);
+    setFilterError("");
+    setFilterType("all");
+    setFilterMonth("all");
+    setFilterYear("all");
+    setFilterStatus("all");
+    setFilterBackdated("all"); // reset backdated
+  };
+
+  useEffect(() => {
+    fetch(`${API_BASE_URL}/api/departments`)
+      .then(res => {
+        if (res.status === 401) {
+          showSessionExpiredDialog();
+          return Promise.reject(new Error('Session expired'));
+        }
+        return res.json();
+      })
+      .then(data => {
+        setDepartments(Array.isArray(data.data) ? data.data : []);
       })
       .catch(() => setDepartments([]));
 
-    fetch('http://localhost:3001/api/positions')
-      .then(res => res.json())
+    fetch(`${API_BASE_URL}/api/positions`)
+      .then(res => {
+        if (res.status === 401) {
+          showSessionExpiredDialog();
+          return Promise.reject(new Error('Session expired'));
+        }
+        return res.json();
+      })
       .then(data => {
-        let pos = data.data.map((p: any) => p.position_name);
-        const isNoPos = (p: string) => !p || p.trim() === '' || p.toLowerCase() === 'none' || p.toLowerCase() === 'no position' || p.toLowerCase() === 'noposition';
-        const noPos = pos.filter(isNoPos);
-        // Sort by translated label
-        const normalPos = pos.filter(p => !isNoPos(p)).sort((a, b) => t(`positions.${a}`).localeCompare(t(`positions.${b}`)));
-        setPositions([...normalPos, ...noPos]);
+        setPositions(Array.isArray(data.data) ? data.data : []);
       })
       .catch(() => setPositions([]));
   }, []);
+
+  // --- เพิ่ม state สำหรับ leave types dropdown ---
+  const [leaveTypes, setLeaveTypes] = useState<{ id: string; leave_type: string; leave_type_th: string; leave_type_en: string }[]>([]);
+  const [leaveTypesLoading, setLeaveTypesLoading] = useState(false);
+  const [leaveTypesError, setLeaveTypesError] = useState<string | null>(null);
+
+  // Fetch leave types from backend
+  useEffect(() => {
+    const fetchLeaveTypes = async () => {
+      setLeaveTypesLoading(true);
+      setLeaveTypesError(null);
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/leave-types`);
+        const data = await res.json();
+        if (data.success) {
+          setLeaveTypes(data.data);
+        } else {
+          setLeaveTypes([]);
+          setLeaveTypesError(data.message || 'Failed to fetch leave types');
+        }
+      } catch (err: any) {
+        setLeaveTypes([]);
+        setLeaveTypesError(err.message || 'Failed to fetch leave types');
+      } finally {
+        setLeaveTypesLoading(false);
+      }
+    };
+    fetchLeaveTypes();
+  }, []);
+
+  // useEffect สำหรับเปลี่ยนภาษาแล้ว force render dropdown label
+  useEffect(() => {
+    setLangVersion(v => v + 1);
+  }, [i18n.language]);
 
   // อ่าน role จาก query string
   const queryParams = new URLSearchParams(location.search);
   const role = queryParams.get("role");
 
-  useEffect(() => {
-    if (!id) return;
-    setLoading(true);
-    setError(null);
-    fetch(`http://localhost:3001/api/employee/${id}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.success) {
-          setEmployee(data.data);
-        } else {
-          setEmployee(null);
-          setError(t('employee.notFound'));
-        }
-        setLoading(false);
-      })
-      .catch(() => {
-        setEmployee(null);
-        setError(t('employee.loadError'));
-        setLoading(false);
-      });
-  }, [id, t]);
-
   const handleEdit = () => {
+    // Prevent admin from editing superadmin
+    if (user?.role === 'admin' && (employee?.role === 'superadmin' || role === 'superadmin')) {
+      toast({
+        title: t('error.title'),
+        description: t('employee.adminCannotEditSuperadmin', 'Admins cannot edit superadmin information.'),
+        variant: 'destructive',
+      });
+      return;
+    }
     setEditData({
       full_name: employee?.name || '',
       email: employee?.email || '',
       password: '', // Always blank when editing
-      department: employee?.department || '',
-      position: employee?.position || '',
+      department: (employee?.department_id || employee?.department?.id || '') + '',
+      position: (employee?.position_id || employee?.position?.id || '') + '',
       role: employee?.role || ''
     });
     setIsEditing(true);
   };
 
   const handleSave = async () => {
-    if (!processCheckId) {
-      toast({ title: t('error.title'), description: t('employee.noProcessCheckId') });
-      return;
-    }
     try {
       const payload: any = {
-        User_name: editData.full_name,
-        position: editData.position,
-        department: editData.department,
+        name: editData.full_name,
+        position_id: editData.position, // id
+        department_id: editData.department, // id
         email: editData.email,
       };
       if (editData.password && editData.password.trim() !== '') payload.password = editData.password;
-      // role ไม่ได้อัปเดตใน backend (process_check.Role) ใน API นี้
-      const response = await fetch(`http://localhost:3001/api/profile/${processCheckId}` , {
+      const response = await fetch(`${API_BASE_URL}/api/employee/${id}` , {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -134,14 +260,8 @@ const EmployeeDetail = () => {
           description: t('employee.updateSuccess'),
         });
         setIsEditing(false);
-        // รีเฟรชข้อมูลใหม่
-        let url = "";
-        if (role === "admin") {
-          url = `http://localhost:3001/api/admin/${id}`;
-        } else {
-          url = `http://localhost:3001/api/users/${id}`;
-        }
-        const res = await fetch(url);
+        // Refresh profile data
+        const res = await fetch(`${API_BASE_URL}/api/employee/${id}`);
         const empData = await res.json();
         if (empData.success) setEmployee(empData.data);
       } else {
@@ -165,9 +285,68 @@ const EmployeeDetail = () => {
   };
 
   const handleViewLeaveDetails = (leave) => {
+    console.log('View Details clicked. leave:', leave, 'leave.id:', leave.id);
     setSelectedLeave(leave);
     setLeaveDialogOpen(true);
   };
+
+  // เพิ่มฟังก์ชันนี้ด้านบน component
+  const getLeaveTypeLabel = (typeId: string) => {
+    const found = leaveTypes.find(lt => lt.id === typeId || lt.leave_type === typeId);
+    if (!found) return typeId;
+    return i18n.language.startsWith('th') ? found.leave_type_th : found.leave_type_en;
+  };
+
+  const [deleteLeaveId, setDeleteLeaveId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  // --- Add delete handler ---
+  const handleDeleteLeave = async () => {
+    if (!deleteLeaveId) return;
+    setDeleting(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/leave-request/${deleteLeaveId}`, { method: "DELETE" });
+      const data = await res.json();
+      if (data.success) {
+        setDeleteLeaveId(null);
+        toast({
+          title: t('system.deleteSuccess', 'ลบสำเร็จ'),
+          description: t('system.deleteSuccessDesc', 'ลบใบลาสำเร็จ'),
+          className: 'border-green-500 bg-green-50 text-green-900',
+        });
+        fetchLeaveHistory(); // fetch leave history again
+      } else {
+        alert(data.message || t("system.deleteFailed", "Delete failed"));
+      }
+    } catch (e) {
+      alert(t("system.deleteFailed", "Delete failed"));
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // เพิ่ม useEffect สำหรับ fetch employee
+  useEffect(() => {
+    if (!id) return;
+    setLoading(true);
+    setError(null);
+    fetch(`${API_BASE_URL}/api/employee/${id}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.success) {
+          setEmployee(data.data);
+        } else {
+          setEmployee(null);
+          setError(t('employee.notFound'));
+        }
+        setLoading(false);
+      })
+      .catch(() => {
+        setEmployee(null);
+        setError(t('employee.loadError'));
+        setLoading(false);
+      });
+  }, [id, t]);
 
   if (loading) return <div>{t('common.loading')}</div>;
   if (error) return <div>{error}</div>;
@@ -227,6 +406,7 @@ const EmployeeDetail = () => {
                         value={editData.full_name}
                         onChange={e => setEditData({ ...editData, full_name: e.target.value })}
                         className="mt-1"
+                        placeholder={t('employee.fullName')}
                       />
                     ) : (
                       <p className="text-lg font-bold text-blue-900 mt-1">{employee.name}</p>
@@ -314,6 +494,7 @@ const EmployeeDetail = () => {
                         value={editData.email}
                         onChange={e => setEditData({ ...editData, email: e.target.value })}
                         className="mt-1"
+                        placeholder={t('employee.email')}
                       />
                     ) : (
                       <div className="flex items-center gap-2 mt-1">
@@ -409,6 +590,20 @@ const EmployeeDetail = () => {
                 </Table>
               </div>
             </CardContent>
+            {leaveTotalPages > 1 && leaveHistory.length > 0 && (
+              <div className="flex justify-center mt-4 gap-1">
+                {Array.from({ length: leaveTotalPages }, (_, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setLeavePage(i + 1)}
+                    className={`px-2 py-1 rounded border text-sm ${leavePage === i + 1 ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-300'} transition`}
+                    disabled={leavePage === i + 1}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+              </div>
+            )}
           </Card>
         </div>
       </div>
@@ -419,6 +614,6 @@ const EmployeeDetail = () => {
       />
     </div>
   );
-};
+}
 
 export default EmployeeDetail;

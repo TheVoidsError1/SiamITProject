@@ -12,7 +12,8 @@ import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 const Register = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const lang = i18n.language.startsWith('th') ? 'th' : 'en';
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -24,52 +25,73 @@ const Register = () => {
   });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [departments, setDepartments] = useState<string[]>([]);
-  const [positions, setPositions] = useState<string[]>([]);
+  const [departments, setDepartments] = useState<{ id: string; department_name_en: string; department_name_th: string }[]>([]);
+  const [positions, setPositions] = useState<{ id: string; position_name_en: string; position_name_th: string }[]>([]);
   const [newDepartment, setNewDepartment] = useState('');
   const [newPosition, setNewPosition] = useState('');
+  const [error, setError] = useState<{ email?: string; full_name?: string; general?: string }>({});
   
   const { signup } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
   // ดึงข้อมูลจาก API
   useEffect(() => {
-    fetch('http://localhost:3001/api/departments')
+    fetch(`${API_BASE_URL}/api/departments`)
       .then(res => res.json())
       .then(data => {
-        let depts = data.data.map((d: any) => d.department_name);
-        const isNoDept = (d: string) => !d || d.trim() === '' || d.toLowerCase() === 'none' || d.toLowerCase() === 'no department' || d.toLowerCase() === 'nodepartment';
-        const noDept = depts.filter(isNoDept);
-        // Sort by translated label
-        const normalDepts = depts.filter(d => !isNoDept(d)).sort((a, b) => t(`departments.${a}`).localeCompare(t(`departments.${b}`)));
-        setDepartments([...normalDepts, ...noDept]);
+        if (data && data.data && Array.isArray(data.data)) {
+          const depts = data.data.map((d: any) => ({ id: d.id, department_name_th: d.department_name_th, department_name_en: d.department_name_en }));
+          const noDepartmentItem = depts.find(d => d.department_name_en === 'No Department');
+          const otherDepts = depts.filter(d => d.department_name_en !== 'No Department');
+          otherDepts.sort((a, b) => {
+            const nameA = lang === 'th' ? a.department_name_th : a.department_name_en;
+            const nameB = lang === 'th' ? b.department_name_th : b.department_name_en;
+            return (nameA || '').localeCompare(nameB || '');
+          });
+          const sortedDepts = [...otherDepts];
+          if (noDepartmentItem) {
+            sortedDepts.push(noDepartmentItem);
+          }
+          setDepartments(sortedDepts);
+        }
       })
       .catch(() => setDepartments([]));
 
-    fetch('http://localhost:3001/api/positions')
+    fetch(`${API_BASE_URL}/api/positions`)
       .then(res => res.json())
       .then(data => {
-        let pos = data.data.map((p: any) => p.position_name);
-        const isNoPos = (p: string) => !p || p.trim() === '' || p.toLowerCase() === 'none' || p.toLowerCase() === 'no position' || p.toLowerCase() === 'noposition';
-        const noPos = pos.filter(isNoPos);
-        // Sort by translated label
-        const normalPos = pos.filter(p => !isNoPos(p)).sort((a, b) => t(`positions.${a}`).localeCompare(t(`positions.${b}`)));
-        setPositions([...normalPos, ...noPos]);
+        if (data && data.data && Array.isArray(data.data)) {
+          const pos = data.data.map((p: any) => ({ id: p.id, position_name_th: p.position_name_th, position_name_en: p.position_name_en }));
+          const noPositionItem = pos.find(p => p.position_name_en === 'No Position');
+          const otherPos = pos.filter(p => p.position_name_en !== 'No Position');
+          otherPos.sort((a, b) => {
+            const nameA = lang === 'th' ? a.position_name_th : a.position_name_en;
+            const nameB = lang === 'th' ? b.position_name_th : b.position_name_en;
+            return (nameA || '').localeCompare(nameB || '');
+          });
+          const sortedPositions = [...otherPos];
+          if (noPositionItem) {
+            sortedPositions.push(noPositionItem);
+          }
+          setPositions(sortedPositions);
+        }
       })
       .catch(() => setPositions([]));
-  }, []);
+  }, [lang]);
 
   // เพิ่ม department ใหม่
   const handleAddDepartment = async () => {
     if (!newDepartment) return;
-    const res = await fetch('http://localhost:3001/api/departments', {
+    const res = await fetch(`${API_BASE_URL}/api/departments`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ department_name: newDepartment }),
     });
     if (res.ok) {
-      setDepartments(prev => [...prev, newDepartment]);
+      setDepartments(prev => [...prev, { id: 'new', department_name_en: newDepartment, department_name_th: newDepartment }]);
       setNewDepartment('');
     }
   };
@@ -77,19 +99,20 @@ const Register = () => {
   // เพิ่ม position ใหม่
   const handleAddPosition = async () => {
     if (!newPosition) return;
-    const res = await fetch('http://localhost:3001/api/positions', {
+    const res = await fetch(`${API_BASE_URL}/api/positions`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ position_name: newPosition }),
     });
     if (res.ok) {
-      setPositions(prev => [...prev, newPosition]);
+      setPositions(prev => [...prev, { id: 'new', position_name_en: newPosition, position_name_th: newPosition }]);
       setNewPosition('');
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError({});
     
     if (formData.password !== formData.confirmPassword) {
       toast({
@@ -119,9 +142,22 @@ const Register = () => {
       });
       navigate('/login');
     } catch (error: any) {
+      let errMsg = error.message || t('common.error');
+      console.log('Registration error object:', error);
+      console.log('Registration error message:', errMsg);
+      let newError: { email?: string; full_name?: string; general?: string } = {};
+      const lowerMsg = errMsg.toLowerCase();
+      if (lowerMsg.includes('user') || lowerMsg.includes('ชื่อผู้ใช')) {
+        newError.full_name = errMsg;
+      } else if (lowerMsg.includes('email')) {
+        newError.email = errMsg;
+      } else {
+        newError.general = errMsg;
+      }
+      setError(newError);
       toast({
         title: t('auth.registerError'),
-        description: error.message || t('common.error'),
+        description: errMsg,
         variant: "destructive",
       });
     } finally {
@@ -150,16 +186,11 @@ const Register = () => {
         </div>
 
         <Card className="shadow-lg border-0">
-          <CardHeader className="space-y-1">
-            <CardTitle className="text-xl text-center">{t('auth.register')}</CardTitle>
-            <CardDescription className="text-center">
-              {t('auth.registerDesc')}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
+          {/* Removed duplicate Register title and description in the card header */}
+          <CardContent className="pt-6">
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="full_name">{t('auth.fullName')}</Label>
+              <div className="space-y-2 mb-4 mt-4">
+                <Label htmlFor="full_name" className="mb-2 block">{t('auth.fullName')}</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
@@ -171,10 +202,11 @@ const Register = () => {
                     required
                   />
                 </div>
+                {error.full_name && <div className="text-red-500 text-xs mt-1">{error.full_name}</div>}
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="position">{t('auth.position')}</Label>
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="position" className="mb-2 block">{t('auth.position')}</Label>
                 <Select onValueChange={(value) => setFormData(prev => ({ ...prev, position: value }))}>
                   <SelectTrigger>
                     <SelectValue placeholder={t('positions.selectPosition')} />
@@ -194,8 +226,8 @@ const Register = () => {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="department">{t('auth.department')}</Label>
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="department" className="mb-2 block">{t('auth.department')}</Label>
                 <Select onValueChange={(value) => setFormData(prev => ({ ...prev, department: value }))}>
                   <SelectTrigger>
                     <SelectValue placeholder={t('departments.selectDepartment')} />
@@ -215,8 +247,8 @@ const Register = () => {
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="email">{t('auth.email')}</Label>
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="email" className="mb-2 block">{t('auth.email')}</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
@@ -229,10 +261,11 @@ const Register = () => {
                     required
                   />
                 </div>
+                {error.email && <div className="text-red-500 text-xs mt-1">{error.email}</div>}
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="password">{t('auth.password')}</Label>
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="password" className="mb-2 block">{t('auth.password')}</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
@@ -254,8 +287,8 @@ const Register = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">{t('auth.confirmPassword')}</Label>
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="confirmPassword" className="mb-2 block">{t('auth.confirmPassword')}</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
@@ -285,7 +318,7 @@ const Register = () => {
                 )}
               </Button>
             </form>
-
+            {error.general && <div className="text-red-500 text-xs mt-2 text-center">{error.general}</div>}
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
                 {t('auth.alreadyHaveAccount')}{' '}

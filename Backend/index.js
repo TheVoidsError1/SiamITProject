@@ -8,6 +8,7 @@ const swaggerUi = require('swagger-ui-express');
 const swaggerJsdoc = require('swagger-jsdoc');
 const cors = require('cors');
 const path = require('path');
+const leaveQuota = require('./EnityTable/leaveQuota.js');
 
 
 const app = express();
@@ -27,10 +28,12 @@ const AppDataSource = new DataSource({
     require('./EnityTable/user.js'),
     require('./EnityTable/ProcessCheck.entity.js'),
     require('./EnityTable/admin.js'),
+    require('./EnityTable/superadmin.js'),
     require('./EnityTable/leaveRequest.entity.js'),
     require('./EnityTable/position.js'),
     require('./EnityTable/leaveType.js'),
-    require('./EnityTable/department.js')
+    require('./EnityTable/department.js'),
+    require('./EnityTable/leaveQuota.js')
   ],
 });
 
@@ -45,8 +48,11 @@ AppDataSource.initialize()
 app.use(bodyParser.json());
 
 const allowedOrigins = [
-  'http://localhost:8082',
-  'http://192.168.50.64:8082',
+  'http://localhost:8081',
+  'http://192.168.50.64:8081',//test
+  'http://192.168.50.125:8081',//test
+  'http://192.168.50.90:8081',//yorch
+  'http://192.168.50.54:8081',//kot
   'http://localhost:3000',
   'http://localhost:3001',
   'http://localhost:8080',
@@ -121,6 +127,40 @@ const swaggerOptions = {
       title: 'SiamITLeave API',
       version: '1.0.0',
     },
+    tags: [ 
+      {
+        name: 'Departments',
+        description: 'จัดการข้อมูล Departments'
+      },
+      {
+        name: 'LeaveQuota',
+        description: 'จัดการโควต้าการลาตามตำแหน่ง'
+      },
+      {
+        name: 'Users',
+        description: 'จัดการข้อมูล User'
+      },
+      {
+        name: 'Admins',
+        description: 'จัดการข้อมูล Admin'
+      },
+      {
+        name: 'Employees',
+        description: 'จัดการข้อมูล Employees'
+      },
+      {
+        name: 'Positions',
+        description: 'จัดการข้อมูล Positions'
+      },
+      {
+        name: 'Profile',
+        description: 'จัดการข้อมูล Profile'
+      },
+      {
+        name: 'LeaveTypes',
+        description: 'จัดการข้อมูลประเภทการลา'
+      }
+    ]
   },
   apis: ['./api/*.js'],
 };
@@ -156,6 +196,22 @@ app.use('/api', employeeController);
 const leaveRequestController = require('./api/LeaveRequestController')(AppDataSource);
 app.use('/api/leave-request', leaveRequestController);
 
-app.listen(port, () => {
+const leaveHistoryController = require('./api/LeaveHistoryController')(AppDataSource);
+app.use('/api/leave-history', leaveHistoryController);
+
+const dashboardIndexController = require('./api/DashboardIndexController')(AppDataSource);
+app.use('/api', dashboardIndexController);
+
+const notificationBellController = require('./api/NotificationBellController')(AppDataSource);
+app.use('/api', notificationBellController);
+
+const leaveQuotaController = require('./api/LeaveQuotaController')(AppDataSource);
+app.use('/api/leave-quota', leaveQuotaController);
+console.log('LeaveQuotaController registered');
+
+const superAdminController = require('./api/SuperAdminController')(AppDataSource);
+app.use('/api', superAdminController);
+
+app.listen(port, '0.0.0.0', () => {
   console.log(`Server is running on http://localhost:${port}`);
 }); 
