@@ -12,6 +12,7 @@ import { AlertCircle, CheckCircle, Clock, Eye, FileText, Users, XCircle } from "
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Avatar } from "@/components/ui/avatar";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 type LeaveRequest = {
   id: number;
@@ -596,11 +597,17 @@ const AdminDashboard = () => {
     setFilterYear('');
   };
 
-  const getLeaveTypeLabel = (typeId: string) => {
-    const found = pendingLeaveTypes.find(lt => lt.id === typeId || lt.leave_type === typeId);
-    if (!found) return typeId;
-    return i18n.language.startsWith('th') ? found.leave_type_th : found.leave_type_en;
-  };
+  // --- ฟังก์ชันกลางสำหรับแสดงชื่อประเภทการลา ---
+  function getLeaveTypeDisplay(typeIdOrName: string) {
+    if (!typeIdOrName) return '';
+    const found = pendingLeaveTypes.find(
+      lt => lt.id === typeIdOrName || lt.leave_type === typeIdOrName || lt.leave_type_th === typeIdOrName || lt.leave_type_en === typeIdOrName
+    );
+    if (found) {
+      return i18n.language.startsWith('th') ? found.leave_type_th : found.leave_type_en;
+    }
+    return String(t('leaveTypes.' + typeIdOrName, typeIdOrName));
+  }
 
   // Add a function to fetch leave request details by ID for recent history
   const handleViewDetailsWithFetch = async (request: any) => {
@@ -679,7 +686,10 @@ const AdminDashboard = () => {
             <h1 className="text-3xl font-extrabold text-blue-900 tracking-tight drop-shadow-lg animate-slide-in-left">{t('navigation.adminDashboard')}</h1>
             <p className="text-sm text-blue-500 animate-slide-in-left delay-100">{t('admin.dashboardDesc')}</p>
           </div>
-          {/* <LanguageSwitcher /> */}
+          {/* Language Switcher at top right */}
+          <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 10 }}>
+            <LanguageSwitcher />
+          </div>
         </div>
       </div>
       <div className="p-6 animate-fade-in">
@@ -715,6 +725,90 @@ const AdminDashboard = () => {
             </TabsList>
             {/* Pending Requests */}
             <TabsContent value="pending" className="space-y-4">
+              {/* --- Filter UI --- */}
+              <div className="flex flex-wrap gap-4 items-end mb-4 bg-white/70 dark:bg-slate-800/70 p-4 rounded-xl shadow animate-fade-in-up">
+                {/* Leave Type Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">{t('leave.leaveType')}</label>
+                  <select
+                    className="border rounded px-2 py-1 min-w-[140px] dark:bg-slate-900 dark:text-white"
+                    value={pendingPendingFilterLeaveType}
+                    onChange={e => setPendingPendingFilterLeaveType(e.target.value)}
+                  >
+                    <option value="">{t('leave.allTypes')}</option>
+                    {pendingLeaveTypes.map(lt => (
+                      <option key={lt.id} value={lt.id}>{i18n.language.startsWith('th') ? lt.leave_type_th : lt.leave_type_en}</option>
+                    ))}
+                  </select>
+                </div>
+                {/* Date Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">{t('common.date')}</label>
+                  <input
+                    type="date"
+                    className="border rounded px-2 py-1 dark:bg-slate-900 dark:text-white"
+                    value={pendingPendingSingleDate ? format(pendingPendingSingleDate, 'yyyy-MM-dd') : ''}
+                    onChange={e => setPendingPendingSingleDate(e.target.value ? new Date(e.target.value) : undefined)}
+                  />
+                </div>
+                {/* Month Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">{t('common.month')}</label>
+                  <select
+                    className="border rounded px-2 py-1 w-28 dark:bg-slate-900 dark:text-white"
+                    value={pendingPendingMonth}
+                    onChange={e => setPendingPendingMonth(e.target.value ? Number(e.target.value) : '')}
+                  >
+                    <option value="">{t('months.all')}</option>
+                    {monthNames.map((name, idx) => (
+                      <option key={idx + 1} value={idx + 1}>{name}</option>
+                    ))}
+                  </select>
+                </div>
+                {/* Year Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">{t('common.year')}</label>
+                  <input
+                    type="number"
+                    min={2000}
+                    max={2100}
+                    className="border rounded px-2 py-1 w-24 dark:bg-slate-900 dark:text-white"
+                    value={pendingPendingYear}
+                    onChange={e => setPendingPendingYear(e.target.value ? Number(e.target.value) : '')}
+                    placeholder="YYYY"
+                  />
+                </div>
+                {/* Backdated Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">{t('leave.backdatedFilter')}</label>
+                  <select
+                    className="border rounded px-2 py-1 min-w-[120px] dark:bg-slate-900 dark:text-white"
+                    value={pendingPendingBackdatedFilter}
+                    onChange={e => setPendingPendingBackdatedFilter(e.target.value)}
+                  >
+                    <option value="all">{t('leave.allBackdated')}</option>
+                    <option value="backdated">{t('leave.backdatedOnly')}</option>
+                    <option value="normal">{t('leave.notBackdatedOnly')}</option>
+                  </select>
+                </div>
+                {/* Buttons */}
+                <div className="flex gap-2 mt-2">
+                  <button
+                    className="bg-gray-200 dark:bg-slate-700 text-blue-900 dark:text-white px-3 py-1 rounded shadow hover:bg-gray-300 dark:hover:bg-slate-600 transition"
+                    onClick={clearPendingFilters}
+                    type="button"
+                  >
+                    {t('common.reset')}
+                  </button>
+                  <button
+                    className="bg-blue-600 text-white px-3 py-1 rounded shadow hover:bg-blue-700 transition"
+                    onClick={applyPendingFilters}
+                    type="button"
+                  >
+                    {t('common.confirm')}
+                  </button>
+                </div>
+              </div>
               <Card className="glass shadow-2xl border-0 animate-fade-in-up">
                 <CardHeader className="bg-gradient-to-r from-blue-500 via-indigo-400 to-purple-400 text-white rounded-t-2xl p-5 shadow-lg">
                   <CardTitle className="flex items-center gap-3 text-2xl font-bold animate-slide-in-left">
@@ -743,7 +837,15 @@ const AdminDashboard = () => {
                         >
                           <div className="flex-1 min-w-0">
                             <div className="font-bold text-lg text-blue-900 mb-1 truncate">{typeof request.user === "string" ? JSON.parse(request.user).User_name : request.user?.User_name || "-"}</div>
-                            <div className="text-base text-blue-700 mb-1">{request.leaveTypeName}</div>
+                            {/* ประเภทการลา (leaveType) */}
+                            <span className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold mb-1">
+                              {getLeaveTypeDisplay(request.leaveType || request.leaveTypeName)}
+                            </span>
+                            {(request.backdated === 1 || request.backdated === "1" || request.backdated === true) && (
+                              <Badge className="ml-2 bg-purple-100 text-purple-800 border-purple-200 rounded-full px-3 py-1 text-xs font-bold shadow">
+                                {t('leave.backdated', 'ลาย้อนหลัง')}
+                              </Badge>
+                            )}
                             <div className="text-sm text-gray-700 mb-1">{t('leave.date')}: {request.startDate} - {request.endDate}</div>
                           </div>
                           <Badge variant="outline" className="text-xs font-bold rounded-full px-4 py-1 bg-yellow-100 text-yellow-700 border-yellow-200 shadow">{t('admin.pending')}</Badge>
@@ -824,6 +926,93 @@ const AdminDashboard = () => {
             </TabsContent>
             {/* History Requests */}
             <TabsContent value="recent" className="space-y-4">
+              {/* --- Filter UI สำหรับประวัติการอนุมัติล่าสุด --- */}
+              <div className="flex flex-wrap gap-4 items-end mb-4 bg-white/70 dark:bg-slate-800/70 p-4 rounded-xl shadow animate-fade-in-up">
+                {/* Leave Type Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">{t('leave.leaveType')}</label>
+                  <select
+                    className="border rounded px-2 py-1 min-w-[140px] dark:bg-slate-900 dark:text-white"
+                    value={pendingHistoryFilterLeaveType}
+                    onChange={e => setPendingHistoryFilterLeaveType(e.target.value)}
+                  >
+                    <option value="">{t('leave.allTypes')}</option>
+                    {pendingLeaveTypes.map(lt => (
+                      <option key={lt.id} value={lt.id}>{i18n.language.startsWith('th') ? lt.leave_type_th : lt.leave_type_en}</option>
+                    ))}
+                  </select>
+                </div>
+                {/* Month Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">{t('common.month')}</label>
+                  <select
+                    className="border rounded px-2 py-1 w-28 dark:bg-slate-900 dark:text-white"
+                    value={pendingFilterMonth}
+                    onChange={e => setPendingFilterMonth(e.target.value ? Number(e.target.value) : '')}
+                  >
+                    <option value="">{t('months.all')}</option>
+                    {monthNames.map((name, idx) => (
+                      <option key={idx + 1} value={idx + 1}>{name}</option>
+                    ))}
+                  </select>
+                </div>
+                {/* Year Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">{t('common.year')}</label>
+                  <input
+                    type="number"
+                    min={2000}
+                    max={2100}
+                    className="border rounded px-2 py-1 w-24 dark:bg-slate-900 dark:text-white"
+                    value={pendingFilterYear}
+                    onChange={e => setPendingFilterYear(e.target.value ? Number(e.target.value) : '')}
+                    placeholder="YYYY"
+                  />
+                </div>
+                {/* Backdated Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">{t('leave.backdatedFilter')}</label>
+                  <select
+                    className="border rounded px-2 py-1 min-w-[120px] dark:bg-slate-900 dark:text-white"
+                    value={pendingHistoryBackdatedFilter}
+                    onChange={e => setPendingHistoryBackdatedFilter(e.target.value)}
+                  >
+                    <option value="all">{t('leave.allBackdated')}</option>
+                    <option value="backdated">{t('leave.backdatedOnly')}</option>
+                    <option value="normal">{t('leave.notBackdatedOnly')}</option>
+                  </select>
+                </div>
+                {/* Status Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">{t('common.status')}</label>
+                  <select
+                    className="border rounded px-2 py-1 min-w-[120px] dark:bg-slate-900 dark:text-white"
+                    value={pendingHistoryStatusFilter}
+                    onChange={e => setPendingHistoryStatusFilter(e.target.value)}
+                  >
+                    <option value="all">{t('leave.statusAll')}</option>
+                    <option value="approved">{t('leave.approved')}</option>
+                    <option value="rejected">{t('leave.rejected')}</option>
+                  </select>
+                </div>
+                {/* Buttons */}
+                <div className="flex gap-2 mt-2">
+                  <button
+                    className="bg-gray-200 dark:bg-slate-700 text-blue-900 dark:text-white px-3 py-1 rounded shadow hover:bg-gray-300 dark:hover:bg-slate-600 transition"
+                    onClick={clearHistoryFilters}
+                    type="button"
+                  >
+                    {t('common.reset')}
+                  </button>
+                  <button
+                    className="bg-blue-600 text-white px-3 py-1 rounded shadow hover:bg-blue-700 transition"
+                    onClick={applyHistoryFilters}
+                    type="button"
+                  >
+                    {t('common.confirm')}
+                  </button>
+                </div>
+              </div>
               <Card className="glass shadow-2xl border-0 animate-fade-in-up">
                 <CardHeader className="bg-gradient-to-r from-blue-500 via-indigo-400 to-purple-400 text-white rounded-t-2xl p-5 shadow-lg">
                   <CardTitle className="flex items-center gap-3 text-2xl font-bold animate-slide-in-left">
@@ -842,7 +1031,11 @@ const AdminDashboard = () => {
                       {historyRequests.length === 0 && (
                         <div className="text-center text-gray-500 text-base py-8 animate-fade-in-up">{t('admin.noApprovalHistory')}</div>
                       )}
-                      {historyRequests.map((request, idx) => {
+                      {historyRequests.sort((a, b) => {
+                        const dateA = new Date(a.createdAt || a.startDate || 0).getTime();
+                        const dateB = new Date(b.createdAt || b.startDate || 0).getTime();
+                        return dateB - dateA;
+                      }).map((request, idx) => {
                         // Format date
                         const startStr = request.startDate;
                         const endStr = request.endDate;
@@ -873,9 +1066,28 @@ const AdminDashboard = () => {
                             </Badge>
                             <div className="flex-1 min-w-0">
                               <div className="font-bold text-lg text-blue-900 mb-1 truncate">{request.user?.User_name || "-"}</div>
-                              <div className="text-base text-blue-700 mb-1">{request.leaveTypeName}</div>
+                              {/* ประเภทการลา (leaveType) */}
+                              <span className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold mb-1">
+                                {getLeaveTypeDisplay(request.leaveType || request.leaveTypeName)}
+                              </span>
+                              {(request.backdated === 1 || request.backdated === "1" || request.backdated === true) && (
+                                <Badge className="ml-2 bg-purple-100 text-purple-800 border-purple-200 rounded-full px-3 py-1 text-xs font-bold shadow">
+                                  {t('leave.backdated', 'ลาย้อนหลัง')}
+                                </Badge>
+                              )}
                               <div className="text-sm text-gray-700 mb-1">{t('leave.date')}: {startStr} - {endStr} ({leaveDays} {t('leave.days')})</div>
                               <div className="text-xs text-gray-500">{t('leave.reason')}: {request.reason}</div>
+                            </div>
+                            {/* ปุ่มดูรายละเอียดและลบ */}
+                            <div className="flex gap-2 flex-shrink-0 mt-2 md:mt-0">
+                              <Button size="sm" variant="outline" className="rounded-full px-4 py-2 font-bold border-blue-200 text-blue-700 hover:bg-blue-50 shadow" onClick={() => handleViewDetailsWithFetch(request)}>
+                                <Eye className="w-4 h-4 mr-1" />{t('admin.viewDetails')}
+                              </Button>
+                              {user?.role === 'superadmin' && (
+                                <Button size="sm" variant="destructive" className="rounded-full px-4 py-2 font-bold shadow hover:scale-105 transition" onClick={() => handleDelete(request)}>
+                                  <XCircle className="w-4 h-4 mr-1" />{t('common.delete')}
+                                </Button>
+                              )}
                             </div>
                           </div>
                         );
@@ -937,143 +1149,144 @@ const AdminDashboard = () => {
 
       <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
         <DialogContent
-          className="w-[95vw] max-w-2xl border border-blue-200 bg-white rounded-2xl shadow-xl p-8"
+          className="w-[95vw] max-w-2xl border-0 glass bg-gradient-to-br from-white/80 via-blue-50/90 to-indigo-100/90 shadow-2xl rounded-3xl p-8 animate-fade-in-up"
           style={{ maxWidth: 700 }}
         >
-          <DialogHeader>
-            <DialogTitle className="text-2xl font-bold mb-2 text-center text-blue-900">{t('leave.detailTitle', 'รายละเอียดการลา')}</DialogTitle>
-            <DialogDescription>
-              {selectedRequest ? '' : ''}
+          <DialogHeader className="mb-2 border-b border-blue-100 pb-2">
+            <DialogTitle className="text-3xl font-extrabold text-blue-900 text-center drop-shadow mb-1 animate-slide-in-left">{t('leave.detailTitle', 'รายละเอียดการลา')}</DialogTitle>
+            <DialogDescription className="text-blue-500 text-center animate-slide-in-left delay-100 mb-2">
+              {selectedRequest ? t('leave.detailDescription', 'ข้อมูลรายละเอียดเกี่ยวกับคำขอลานี้') : ''}
             </DialogDescription>
-            {selectedRequest && (
-              <div className="space-y-3 text-gray-700">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">
-                  <div>
-                    <span className="font-semibold text-blue-800">{t('leave.employeeName', 'ชื่อพนักงาน')}:</span> {typeof selectedRequest.user === "string"
-                      ? JSON.parse(selectedRequest.user).User_name
-                      : selectedRequest.user?.User_name || "-"}
-                  </div>
-                  <div>
-                    <span className="font-semibold text-blue-800">{t('leave.position', 'ตำแหน่ง')}:</span> {(() => {
-                      const posId = selectedRequest.user?.position || selectedRequest.employeeType;
-                      const pos = positions.find(p => p.id === posId);
-                      const posName = pos ? (i18n.language.startsWith('th') ? pos.position_name_th : pos.position_name_en) : posId || "-";
-                      return String(t(`positions.${posName}`, posName)) || String(posName) || '';
-                    })()}
-                  </div>
-                  <div>
-                    <span className="font-semibold text-blue-800">{t('leave.department', 'แผนก')}:</span> {(() => {
-                      const deptId = selectedRequest.user?.department;
-                      const dept = departments.find(d => d.id === deptId);
-                      const deptName = dept ? (i18n.language.startsWith('th') ? dept.department_name_th : dept.department_name_en) : deptId || "-";
-                      return String(t(`departments.${deptName}`, deptName)) || String(deptName) || '';
-                    })()}
-                  </div>
-                  <div>
-                    <span className="font-semibold text-blue-800">{t('leave.type', 'ประเภทการลา')}:</span> {
-  i18n.language.startsWith('th')
-    ? (selectedRequest.leaveTypeName_th || getLeaveTypeLabel(selectedRequest.leaveType) || selectedRequest.leaveTypeName_en || selectedRequest.leaveType)
-    : (selectedRequest.leaveTypeName_en || getLeaveTypeLabel(selectedRequest.leaveType) || selectedRequest.leaveTypeName_th || selectedRequest.leaveType)
-}
-                  </div>
-                  <div>
-                    <span className="font-semibold text-blue-800">{t('leave.reason', 'เหตุผล')}:</span> {selectedRequest.reason}
-                  </div>
-                  <div>
-                    <span className="font-semibold text-blue-800">{t('leave.date', 'วันที่ลา')}:</span> {formatDateOnly(selectedRequest.startDate)} - {formatDateOnly(selectedRequest.endDate)}{selectedRequest.startTime && selectedRequest.endTime
-                    ? ` (${calcHours(selectedRequest.startTime, selectedRequest.endTime)} ${hourUnit}, ${selectedRequest.startTime} - ${selectedRequest.endTime})`
-                    : ''}
-                  </div>
-                  <div>
-                    <span className="font-semibold text-blue-800">{t('leave.submittedDate', 'วันที่ส่งคำขอ')}:</span> {selectedRequest.createdAt ? selectedRequest.createdAt.split('T')[0] : "-"}
-                  </div>
-                  <div>
-                    <span className="font-semibold text-blue-800">{t('leave.contactMethod', 'ช่องทางการติดต่อ')}:</span> {selectedRequest.contact || selectedRequest.contactInfo || selectedRequest.user?.contact || selectedRequest.data?.contact || "-"}
-                  </div>
-                  <div>
-                    <span className="font-semibold text-blue-800">{t('leave.leaveTime', 'เวลาที่ลา:')}</span> {selectedRequest?.startTime && selectedRequest?.endTime
-                    ? `${selectedRequest.startTime} - ${selectedRequest.endTime}`
-                    : t('leave.noHourlyLeave', 'ไม่มีการลาเป็น ชม.')}
-                  </div>
-              
-                </div>
-                {/* Section: Attachments/Images */}
-                {(() => {
-                  // รองรับทั้ง array และ string หลาย field
-                  const files =
-                    (Array.isArray(selectedRequest.attachments) && selectedRequest.attachments.length > 0)
-                      ? selectedRequest.attachments
-                      : (typeof selectedRequest.attachments === 'string' && selectedRequest.attachments)
-                        ? [selectedRequest.attachments]
-                        : (Array.isArray(selectedRequest.attachment) && selectedRequest.attachment.length > 0)
-                          ? selectedRequest.attachment
-                          : (typeof selectedRequest.attachment === 'string' && selectedRequest.attachment)
-                            ? [selectedRequest.attachment]
-                            : (Array.isArray(selectedRequest.file) && selectedRequest.file.length > 0)
-                              ? selectedRequest.file
-                              : (typeof selectedRequest.file === 'string' && selectedRequest.file)
-                                ? [selectedRequest.file]
-                                : [];
-                  // imgLeave (string)
-                  const imgLeave = selectedRequest.imgLeave;
-                  if (files.length > 0) {
-                    return (
-                      <div className="flex flex-col items-center mt-4">
-                        <span className="font-semibold mb-2 text-blue-800">{t('leave.attachment', 'ไฟล์แนบ')}:</span>
-                        <div className="flex flex-wrap gap-4 justify-center">
-                          {files.map((file: string, idx: number) => {
-                            const ext = file.split('.').pop()?.toLowerCase();
-                            const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext || '');
-                            const fileUrl = `/leave-uploads/${file}`;
-                            return (
-                              <div key={file} className="flex flex-col items-center">
-                                {isImage ? (
-                                  <a href={fileUrl} target="_blank" rel="noopener noreferrer">
-                                    <img
-                                      src={fileUrl}
-                                      alt={`แนบไฟล์ ${idx + 1}`}
-                                      className="rounded-xl border-2 border-blue-200 shadow max-w-xs bg-white"
-                                      style={{ marginTop: 8 }}
-                                    />
-                                  </a>
-                                ) : (
-                                  <a
-                                    href={fileUrl}
-                                    download
-                                    className="flex items-center gap-2 px-3 py-2 border rounded bg-gray-50 hover:bg-gray-100 text-blue-700"
-                                    style={{ marginTop: 8 }}
-                                  >
-                                    <span role="img" aria-label="file">📄</span> {file}
-                                  </a>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  } else if (imgLeave) {
-                    // กรณี imgLeave เป็น string
-                    return (
-                      <div className="flex flex-col items-center mt-4">
-                        <span className="font-semibold mb-2 text-blue-800">{t('leave.attachment', 'ไฟล์แนบ')}:</span>
-                        <img
-                          src={`/leave-uploads/${imgLeave}`}
-                          alt="แนบไฟล์"
-                          className="rounded-xl border-2 border-blue-200 shadow max-w-xs bg-white"
-                          style={{ marginTop: 8 }}
-                        />
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
-              </div>
-            )}
           </DialogHeader>
-          <DialogFooter className="flex justify-center mt-6">
-            <Button className="px-8 py-2 text-lg rounded-lg bg-blue-600 hover:bg-blue-700 text-white shadow" onClick={() => setShowDetailDialog(false)}>
-              ปิด
+          {selectedRequest && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4 bg-white/60 rounded-2xl p-6 shadow-inner animate-fade-in">
+                <div>
+                  <span className="font-semibold text-blue-800">{t('leave.employeeName', 'ชื่อพนักงาน')}:</span>
+                  <span className="ml-2 text-blue-900 font-bold">{typeof selectedRequest.user === "string"
+                    ? JSON.parse(selectedRequest.user).User_name
+                    : selectedRequest.user?.User_name || "-"}</span>
+                </div>
+                <div>
+                  <span className="font-semibold text-blue-800">{t('leave.position', 'ตำแหน่ง')}:</span>
+                  <span className="ml-2 text-blue-900 font-bold">{(() => {
+                    const posId = selectedRequest.user?.position || selectedRequest.employeeType;
+                    const pos = positions.find(p => p.id === posId);
+                    const posName = pos ? (i18n.language.startsWith('th') ? pos.position_name_th : pos.position_name_en) : posId || "-";
+                    return String(t(`positions.${posName}`, posName)) || String(posName) || '';
+                  })()}</span>
+                </div>
+                <div>
+                  <span className="font-semibold text-blue-800">{t('leave.department', 'แผนก')}:</span>
+                  <span className="ml-2 text-blue-900 font-bold">{(() => {
+                    const deptId = selectedRequest.user?.department;
+                    const dept = departments.find(d => d.id === deptId);
+                    const deptName = dept ? (i18n.language.startsWith('th') ? dept.department_name_th : dept.department_name_en) : deptId || "-";
+                    return String(t(`departments.${deptName}`, deptName)) || String(deptName) || '';
+                  })()}</span>
+                </div>
+                <div>
+                  <span className="font-semibold text-blue-800">{t('leave.type', 'ประเภทการลา')}:</span>
+                  <span className="ml-2 text-blue-900 font-bold">{getLeaveTypeDisplay(selectedRequest.leaveType || selectedRequest.leaveTypeName || selectedRequest.leaveTypeName_th || selectedRequest.leaveTypeName_en)}</span>
+                </div>
+                <div>
+                  <span className="font-semibold text-blue-800">{t('leave.reason', 'เหตุผล')}:</span>
+                  <span className="ml-2 text-blue-900">{selectedRequest.reason}</span>
+                </div>
+                <div>
+                  <span className="font-semibold text-blue-800">{t('leave.date', 'วันที่ลา')}:</span>
+                  <span className="ml-2 text-blue-900">{formatDateOnly(selectedRequest.startDate)} - {formatDateOnly(selectedRequest.endDate)}{selectedRequest.startTime && selectedRequest.endTime
+                    ? ` (${calcHours(selectedRequest.startTime, selectedRequest.endTime)} ${hourUnit}, ${selectedRequest.startTime} - ${selectedRequest.endTime})`
+                    : ''}</span>
+                </div>
+                <div>
+                  <span className="font-semibold text-blue-800">{t('leave.submittedDate', 'วันที่ส่งคำขอ')}:</span>
+                  <span className="ml-2 text-blue-900">{selectedRequest.createdAt ? selectedRequest.createdAt.split('T')[0] : "-"}</span>
+                </div>
+                <div>
+                  <span className="font-semibold text-blue-800">{t('leave.contactMethod', 'ช่องทางการติดต่อ')}:</span>
+                  <span className="ml-2 text-blue-900">{selectedRequest.contact || selectedRequest.contactInfo || selectedRequest.user?.contact || selectedRequest.data?.contact || "-"}</span>
+                </div>
+                <div>
+                  <span className="font-semibold text-blue-800">{t('leave.leaveTime', 'เวลาที่ลา:')}</span>
+                  <span className="ml-2 text-blue-900">{selectedRequest?.startTime && selectedRequest?.endTime
+                    ? `${selectedRequest.startTime} - ${selectedRequest.endTime}`
+                    : t('leave.noHourlyLeave', 'ไม่มีการลาเป็น ชม.')}</span>
+                </div>
+              </div>
+              {/* Section: Attachments/Images */}
+              {(() => {
+                const files =
+                  (Array.isArray(selectedRequest.attachments) && selectedRequest.attachments.length > 0)
+                    ? selectedRequest.attachments
+                    : (typeof selectedRequest.attachments === 'string' && selectedRequest.attachments)
+                      ? [selectedRequest.attachments]
+                      : (Array.isArray(selectedRequest.attachment) && selectedRequest.attachment.length > 0)
+                        ? selectedRequest.attachment
+                        : (typeof selectedRequest.attachment === 'string' && selectedRequest.attachment)
+                          ? [selectedRequest.attachment]
+                          : (Array.isArray(selectedRequest.file) && selectedRequest.file.length > 0)
+                            ? selectedRequest.file
+                            : (typeof selectedRequest.file === 'string' && selectedRequest.file)
+                              ? [selectedRequest.file]
+                              : [];
+                const imgLeave = selectedRequest.imgLeave;
+                if (files.length > 0) {
+                  return (
+                    <div className="flex flex-col items-center mt-2">
+                      <span className="font-semibold text-blue-800 mb-2">{t('leave.attachment', 'ไฟล์แนบ')}:</span>
+                      <div className="flex flex-wrap gap-4 justify-center">
+                        {files.map((file: string, idx: number) => {
+                          const ext = file.split('.').pop()?.toLowerCase();
+                          const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext || '');
+                          const fileUrl = `/leave-uploads/${file}`;
+                          return (
+                            <div key={file} className="flex flex-col items-center">
+                              {isImage ? (
+                                <a href={fileUrl} target="_blank" rel="noopener noreferrer" className="transition-transform hover:scale-105">
+                                  <img
+                                    src={fileUrl}
+                                    alt={`แนบไฟล์ ${idx + 1}`}
+                                    className="rounded-xl border-2 border-blue-200 shadow-lg max-w-[180px] max-h-[180px] bg-white hover:border-blue-400 hover:shadow-xl transition-all"
+                                    style={{ marginTop: 8 }}
+                                  />
+                                </a>
+                              ) : (
+                                <a
+                                  href={fileUrl}
+                                  download
+                                  className="flex items-center gap-2 px-3 py-2 border rounded bg-gray-50 hover:bg-blue-50 text-blue-700 border-blue-200 shadow"
+                                  style={{ marginTop: 8 }}
+                                >
+                                  <span role="img" aria-label="file">📄</span> {file}
+                                </a>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                } else if (imgLeave) {
+                  return (
+                    <div className="flex flex-col items-center mt-2">
+                      <span className="font-semibold text-blue-800 mb-2">{t('leave.attachment', 'ไฟล์แนบ')}:</span>
+                      <img
+                        src={`/leave-uploads/${imgLeave}`}
+                        alt="แนบไฟล์"
+                        className="rounded-xl border-2 border-blue-200 shadow-lg max-w-[180px] max-h-[180px] bg-white hover:border-blue-400 hover:shadow-xl transition-all"
+                        style={{ marginTop: 8 }}
+                      />
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+            </div>
+          )}
+          <DialogFooter className="flex justify-center mt-8">
+            <Button className="px-10 py-3 text-lg rounded-xl bg-gradient-to-r from-blue-600 to-indigo-500 hover:from-blue-700 hover:to-indigo-600 text-white shadow-xl font-bold tracking-wide animate-fade-in-up" onClick={() => setShowDetailDialog(false)}>
+              {t('common.close', 'ปิด')}
             </Button>
           </DialogFooter>
         </DialogContent>

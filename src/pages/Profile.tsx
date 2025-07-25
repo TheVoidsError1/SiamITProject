@@ -109,8 +109,8 @@ const Profile = () => {
         setFormData({
           full_name: data.name || '',
           email: data.email || '',
-          department: data.department_id || '',
-          position: data.position_id || '',
+          department: data.department_id ? String(data.department_id) : '',
+          position: data.position_id ? String(data.position_id) : '',
         });
           setProfileLoaded(true);
         }
@@ -522,7 +522,7 @@ const Profile = () => {
                         {positions
                           .filter(pos => (pos.position_name_th || pos.position_name_en) && (pos.position_name_th?.trim() !== '' || pos.position_name_en?.trim() !== ''))
                           .map((pos) => (
-                            <SelectItem key={pos.id} value={pos.id} className="text-blue-900">
+                            <SelectItem key={pos.id} value={String(pos.id)} className="text-blue-900">
                               {i18n.language.startsWith('th') ? pos.position_name_th : pos.position_name_en}
                             </SelectItem>
                           ))}
@@ -545,7 +545,7 @@ const Profile = () => {
                         {departments
                           .filter(dept => (dept.department_name_th || dept.department_name_en) && (dept.department_name_th?.trim() !== '' || dept.department_name_en?.trim() !== ''))
                           .map((dept) => (
-                            <SelectItem key={dept.id} value={dept.id} className="text-blue-900">
+                            <SelectItem key={dept.id} value={String(dept.id)} className="text-blue-900">
                               {i18n.language.startsWith('th') ? dept.department_name_th : dept.department_name_en}
                             </SelectItem>
                           ))}

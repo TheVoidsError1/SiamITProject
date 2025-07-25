@@ -9,10 +9,11 @@ import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import NotificationBell from '@/components/NotificationBell';
-import { Avatar } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { holidays } from "@/constants/holidays";
 import { getUpcomingThaiHolidays, getThaiHolidaysByMonth } from "@/constants/getThaiHolidays";
+import Profile from './Profile';
 
 const Index = () => {
   const { t, i18n } = useTranslation();
@@ -72,6 +73,7 @@ const Index = () => {
   const [recentTotalHours, setRecentTotalHours] = useState<number>(0);
 
   const { showSessionExpiredDialog } = useAuth();
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   // เพิ่มฟังก์ชันสำหรับเรียก API พร้อม month/year
   const fetchDashboardStats = (month?: number, year?: number) => {
@@ -230,12 +232,14 @@ const Index = () => {
           {/* User Summary */}
           <Card className="glass shadow-xl border-0 flex flex-col items-center justify-center p-5 animate-fade-in-up">
             <Avatar className="w-16 h-16 mb-2">
-              {/* If user.avatar, show image, else fallback */}
-              <span className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-200 via-indigo-200 to-purple-200 text-blue-900 font-bold text-2xl rounded-full">
-                {((user as any)?.name || '').split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase() || '--'}
-              </span>
+              {user?.avatar_url ? (
+                <AvatarImage src={`${API_BASE_URL}${user.avatar_url}`} alt={user.full_name || '-'} />
+              ) : null}
+              <AvatarFallback>
+                {((user as any)?.full_name || '').split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase() || '--'}
+              </AvatarFallback>
             </Avatar>
-            <div className="text-lg font-bold text-blue-900 mt-1">{(user as any)?.name || '-'}</div>
+            <div className="text-lg font-bold text-blue-900 mt-1">{(user as any)?.full_name || '-'}</div>
             <div className="text-sm text-blue-500">{(user as any)?.position || '-'}</div>
             <div className="text-xs text-blue-400 mb-1">{(user as any)?.department || '-'}</div>
             <div className="text-xs text-gray-500">{(user as any)?.email || '-'}</div>

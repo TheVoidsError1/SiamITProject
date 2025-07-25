@@ -73,7 +73,6 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [reason, setReason] = useState("");
-  const [supervisor, setSupervisor] = useState("");
   const [employeeType, setEmployeeType] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
   const [contact, setContact] = useState("");
@@ -96,7 +95,6 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
     startTime: '',
     endTime: '',
     reason: '',
-    supervisor: '',
     contact: '',
   });
   const [submitted, setSubmitted] = useState(false);
@@ -136,7 +134,6 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
       setStartTime(initialData.startTime || "");
       setEndTime(initialData.endTime || "");
       setReason(initialData.reason || "");
-      setSupervisor(initialData.supervisor || "");
       setEmployeeType(initialData.employeeType || "");
       setContact(initialData.contact || "");
       // แนบไฟล์เดิม (string/array)
@@ -243,33 +240,42 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
     setTimeError("");
     let newErrors = {
       leaveType: '',
-      personalLeaveType: '',
+      personalLeaveType: '', // dummy เพื่อให้ type ตรง
       startDate: '',
       endDate: '',
-      startTime: '',
-      endTime: '',
+      startTime: '', // dummy เพื่อให้ type ตรง
+      endTime: '',   // dummy เพื่อให้ type ตรง
       reason: '',
-      supervisor: '',
       contact: '',
     };
+    // ถ้าเป็นลากิจแบบ hourly ให้เพิ่ม startTime, endTime
+    if (leaveType === 'personal' && personalLeaveType === 'hour') {
+      newErrors.startTime = '';
+      newErrors.endTime = '';
+    }
     let hasError = false;
     if (!leaveType) {
       newErrors.leaveType = t('leave.required');
-      hasError = true;
-    }
-    if (!durationType) {
-      newErrors.personalLeaveType = t('leave.required');
       hasError = true;
     }
     if (!startDate) {
       newErrors.startDate = t('leave.required');
       hasError = true;
     }
-    if ((durationType === "day" || durationType === "hour") && !endDate) {
+    if (!endDate) {
       newErrors.endDate = t('leave.required');
       hasError = true;
     }
-    if (durationType === "hour") {
+    if (!reason) {
+      newErrors.reason = t('leave.required');
+      hasError = true;
+    }
+    if (!contact) {
+      newErrors.contact = t('leave.required');
+      hasError = true;
+    }
+    // ถ้าเป็นลากิจแบบ hourly ให้เช็คเวลา
+    if (leaveType === 'personal' && personalLeaveType === 'hour') {
       if (!startTime) {
         newErrors.startTime = t('leave.required');
         hasError = true;
@@ -283,20 +289,11 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
         newErrors.endTime = t('leave.timeNotSame');
         hasError = true;
       }
-      // ตรวจสอบช่วงเวลา 09:00-18:00
       if ((startTime && !isTimeInRange(startTime)) || (endTime && !isTimeInRange(endTime))) {
         newErrors.startTime = t('leave.timeRangeError');
         newErrors.endTime = t('leave.timeRangeError');
         hasError = true;
       }
-    }
-    if (!reason) {
-      newErrors.reason = t('leave.required');
-      hasError = true;
-    }
-    if (!contact) {
-      newErrors.contact = t('leave.required');
-      hasError = true;
     }
     setErrors(newErrors);
     if (hasError) {
@@ -401,7 +398,6 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
       if (startTime) formData.append("startTime", startTime);
       if (endTime) formData.append("endTime", endTime);
       formData.append("reason", reason);
-      formData.append("supervisor", supervisor);
       formData.append("contact", contact);
       // แนบไฟล์ทุกประเภทใน attachments array
       attachments.forEach(file => {
@@ -410,6 +406,10 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
       // เพิ่ม repid (id ของ user ปัจจุบัน)
       if (user?.id) {
         formData.append("repid", user.id);
+      }
+      // เพิ่ม position (id ของ position ของ user ปัจจุบัน)
+      if (user?.position) {
+        formData.append("position", user.position);
       }
       // ส่ง API
       const token = localStorage.getItem('token');
@@ -466,7 +466,6 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
         setStartTime("");
         setEndTime("");
         setReason("");
-        setSupervisor("");
         setEmployeeType("");
         setAttachments([]);
         setContact("");
@@ -486,7 +485,6 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
       setStartTime("");
       setEndTime("");
       setReason("");
-      setSupervisor("");
       setEmployeeType("");
       setAttachments([]);
       setContact("");
@@ -544,27 +542,6 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
           <h2 className="text-2xl md:text-3xl font-bold gradient-text drop-shadow">{t('leave.leaveRequestForm')}</h2>
         </div>
         <form ref={formRef} onSubmit={handleSubmit} className="space-y-7">
-          {/* Section: ข้อมูลพนักงาน */}
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <User className="w-5 h-5 text-indigo-500" />
-              <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.employeeType')}</span>
-            </div>
-            <Select value={employeeType} onValueChange={setEmployeeType}>
-              <SelectTrigger className="h-12 rounded-xl border-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all">
-                <SelectValue placeholder={t('leave.selectEmployeeType')} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="not_specified">{t('positions.notSpecified')}</SelectItem>
-                {positions
-                  .filter(pos => (pos.position_name_th || pos.position_name_en) && (pos.position_name_th?.trim() !== '' || pos.position_name_en?.trim() !== ''))
-                  .map((pos) => (
-                    <SelectItem key={pos.id} value={pos.id}>{i18n.language.startsWith('th') ? pos.position_name_th : pos.position_name_en}</SelectItem>
-                  ))}
-              </SelectContent>
-            </Select>
-          </div>
-
           {/* Section: ประเภทการลา */}
           <div>
             <div className="flex items-center gap-2 mb-2">
@@ -576,7 +553,6 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
                 <SelectValue placeholder={t('leave.selectLeaveType')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="not_specified">{t('leaveTypes.notSpecified')}</SelectItem>
                 {leaveTypes
                   .filter(type => (type.leave_type_th || type.leave_type_en) && (type.leave_type_th?.trim() !== '' || type.leave_type_en?.trim() !== ''))
                   .map((type) => (
@@ -586,188 +562,78 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
             </Select>
           </div>
 
-          {/* Section: ประเภทลากิจ */}
-          {isPersonalLeave && (
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <ClipboardList className="w-5 h-5 text-yellow-500" />
-                <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.personalLeaveType')}</span>
-              </div>
-              <Select value={personalLeaveType} onValueChange={handlePersonalLeaveTypeChange}>
-                <SelectTrigger className="h-12 rounded-xl border-2 focus:border-yellow-500 focus:ring-2 focus:ring-yellow-500/20 transition-all">
-                  <SelectValue placeholder={t('leave.selectPersonalLeaveType')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="day">{t('leave.dayLeave')}</SelectItem>
-                  <SelectItem value="hour">{t('leave.hourLeave')}</SelectItem>
-                </SelectContent>
-              </Select>
-              {/* Hourly leave date picker */}
-              {isHourlyLeave && (
-                <div className="mt-4">
-                  <Label className="text-sm font-medium mb-1 block">{t('leave.leaveDate')}</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start text-left font-normal h-12 rounded-xl">
-                        <CalendarIcon className="mr-2 h-5 w-5 text-blue-500" />
-                        {startDate ? (
-                          startDate.toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' })
-                        ) : (
-                          <span>{t('leave.selectDate')}</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <Calendar
-                        mode="single"
-                        selected={startDate}
-                        onSelect={setStartDate}
-                        initialFocus
-                        disabled={date => date < new Date(new Date().setHours(0,0,0,0))}
-                      />
-                    </PopoverContent>
-                  </Popover>
+          {/* เงื่อนไข: แสดงฟิลด์อื่นๆ เฉพาะเมื่อเลือกประเภทการลาแล้ว */}
+          {leaveType && (
+            <>
+              {/* Section: ช่วงวันที่ลา */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <CalendarDays className="w-5 h-5 text-green-500" />
+                  <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.dateRange')}</span>
                 </div>
-              )}
-            </div>
-          )}
-
-          {/* Section: เวลา (ถ้าเลือก hourly) */}
-          {isPersonalLeave && isHourlyLeave && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <Label className="text-sm font-medium mb-1 block">{t('leave.startTime')} *</Label>
-                <Input
-                  type="text"
-                  value={startTime}
-                  onChange={e => setStartTime(autoFormatTimeInput(e.target.value))}
-                  placeholder={t('leave.timePlaceholder')}
-                  required
-                  inputMode="numeric"
-                  pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$"
-                  maxLength={5}
-                  className="h-12 rounded-xl border-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                <DateRangePicker
+                  startDate={startDate}
+                  endDate={endDate}
+                  onStartDateChange={setStartDate}
+                  onEndDateChange={setEndDate}
+                  disabled={isHourlyLeave}
+                  minDate={isPersonalLeave && personalLeaveType === "day" ? new Date() : undefined}
                 />
               </div>
+
+              {/* Section: เหตุผล */}
               <div>
-                <Label className="text-sm font-medium mb-1 block">{t('leave.endTime')} *</Label>
-                <Input
-                  type="text"
-                  value={endTime}
-                  onChange={e => setEndTime(autoFormatTimeInput(e.target.value))}
-                  placeholder={t('leave.timePlaceholder')}
-                  required
-                  inputMode="numeric"
-                  pattern="^([01][0-9]|2[0-3]):[0-5][0-9]$"
-                  maxLength={5}
-                  className="h-12 rounded-xl border-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                <div className="flex items-center gap-2 mb-2">
+                  <FileText className="w-5 h-5 text-orange-500" />
+                  <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.reason')}</span>
+                </div>
+                <Textarea
+                  id="reason"
+                  placeholder={t('leave.reasonPlaceholder')}
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  className="min-h-[100px] resize-none rounded-xl border-2 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
                 />
               </div>
-            </div>
-          )}
 
-          {/* Section: Date Range */}
-          {(!isPersonalLeave || personalLeaveType === "day") && (
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <CalendarDays className="w-5 h-5 text-green-500" />
-                <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.dateRange')}</span>
+              {/* Section: ข้อมูลติดต่อ */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <Phone className="w-5 h-5 text-blue-500" />
+                  <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.contactInfo')}</span>
+                </div>
+                <Input
+                  id="contact"
+                  placeholder={t('leave.contactPlaceholder')}
+                  className="w-full h-12 rounded-xl border-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
+                  value={contact}
+                  onChange={e => setContact(e.target.value)}
+                />
               </div>
-              <DateRangePicker
-                startDate={startDate}
-                endDate={endDate}
-                onStartDateChange={setStartDate}
-                onEndDateChange={setEndDate}
-                disabled={isHourlyLeave}
-                minDate={isPersonalLeave && personalLeaveType === "day" ? new Date() : undefined}
-              />
-            </div>
-          )}
 
-          {/* Section: ผู้อนุมัติ */}
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Users className="w-5 h-5 text-purple-500" />
-              <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.supervisor')}</span>
-            </div>
-            <Select value={supervisor} onValueChange={setSupervisor}>
-              <SelectTrigger className="h-12 rounded-xl border-2 focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20 transition-all">
-                <SelectValue placeholder={t('leave.selectSupervisor')} />
-              </SelectTrigger>
-              <SelectContent>
-                {admins.map((admin) => (
-                  <SelectItem key={admin.id} value={admin.id}>{admin.admin_name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Section: เหตุผล */}
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <FileText className="w-5 h-5 text-orange-500" />
-              <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.reason')}</span>
-            </div>
-            <Textarea
-              id="reason"
-              placeholder={t('leave.reasonPlaceholder')}
-              value={reason}
-              onChange={(e) => setReason(e.target.value)}
-              className="min-h-[100px] resize-none rounded-xl border-2 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
-            />
-          </div>
-
-          {/* Section: แนบไฟล์ */}
-          {requiresAttachmentField && (
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <FileText className="w-5 h-5 text-pink-500" />
-                <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.attachment')}</span>
+              {/* Section: ปุ่ม */}
+              <div className="flex gap-3 pt-6">
+                <Button 
+                  type="submit" 
+                  className="flex-1 gradient-bg text-white font-semibold text-lg h-12 rounded-xl shadow-lg hover:scale-105 transition-transform duration-200"
+                  size="lg"
+                >
+                  <Send className="w-5 h-5 mr-2" />
+                  {t('leave.submitLeave')}
+                </Button>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => { navigate("/"); }}
+                  size="lg"
+                  className="flex-1 h-12 rounded-xl border-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-lg"
+                >
+                  <ArrowLeftCircle className="w-5 h-5 mr-2" />
+                  {t('common.cancel')}
+                </Button>
               </div>
-              <FileUpload
-                attachments={attachments}
-                onFileUpload={handleFileUpload}
-                onRemoveAttachment={removeAttachment}
-              />
-            </div>
+            </>
           )}
-
-          {/* Section: ข้อมูลติดต่อ */}
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <Phone className="w-5 h-5 text-blue-500" />
-              <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.contactInfo')}</span>
-            </div>
-            <Input
-              id="contact"
-              placeholder={t('leave.contactPlaceholder')}
-              className="w-full h-12 rounded-xl border-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-              value={contact}
-              onChange={e => setContact(e.target.value)}
-            />
-          </div>
-
-          {/* Section: ปุ่ม */}
-          <div className="flex gap-3 pt-6">
-            <Button 
-              type="submit" 
-              className="flex-1 gradient-bg text-white font-semibold text-lg h-12 rounded-xl shadow-lg hover:scale-105 transition-transform duration-200"
-              size="lg"
-            >
-              <Send className="w-5 h-5 mr-2" />
-              {t('leave.submitLeave')}
-            </Button>
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => { navigate("/"); }}
-              size="lg"
-              className="flex-1 h-12 rounded-xl border-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-lg"
-            >
-              <ArrowLeftCircle className="w-5 h-5 mr-2" />
-              {t('common.cancel')}
-            </Button>
-          </div>
         </form>
       </div>
     </div>
