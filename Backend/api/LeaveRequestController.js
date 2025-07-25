@@ -344,19 +344,13 @@
          }
          // --- เพิ่ม filter backdated ---
          const backdatedParam = req.query.backdated;
-         let backdatedFiltered = false;
          if (backdatedParam === '1' || backdatedParam === '0') {
-           // ดึงข้อมูลทั้งหมดก่อน filter
+           where = { ...where, backdated: Number(backdatedParam) };
            let all = await leaveRepo.find({ where, order: { createdAt: 'DESC' } });
-           if (backdatedParam === '1') {
-             all = all.filter(l => l.startDate && l.createdAt && new Date(l.startDate) < new Date(l.createdAt));
-           } else if (backdatedParam === '0') {
-             all = all.filter(l => l.startDate && l.createdAt && new Date(l.startDate) >= new Date(l.createdAt));
-           }
            // paginate ด้วยตัวเอง
            const total = all.length;
            const page = parseInt(req.query.page) || 1;
-           const limit = parseInt(req.query.limit) || 4;
+           const limit = parseInt(req.query.limit) || 5;
            const skip = (page - 1) * limit;
            const paged = all.slice(skip, skip + limit);
            // join user/leaveType เหมือนเดิม

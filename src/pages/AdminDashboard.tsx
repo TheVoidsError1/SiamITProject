@@ -417,7 +417,14 @@ const AdminDashboard = () => {
         }
         const data = await res.json();
         if (data.status === "success") {
-          setPendingRequests(data.data);
+          let filtered = data.data;
+          // กรองย้อนหลังฝั่ง frontend ถ้า API ไม่กรองให้
+          if (pendingBackdatedFilter === 'backdated') {
+            filtered = filtered.filter(r => r.backdated === 1 || r.backdated === "1" || r.backdated === true);
+          } else if (pendingBackdatedFilter === 'normal') {
+            filtered = filtered.filter(r => r.backdated !== 1 && r.backdated !== "1" && r.backdated !== true);
+          }
+          setPendingRequests(filtered);
           setPendingTotalPages(data.totalPages || 1);
         } else {
           setPendingRequests([]);
@@ -770,7 +777,7 @@ const AdminDashboard = () => {
                       />
                     </div>
                     <div className="flex flex-col min-w-[120px]">
-                      <label className="text-xs font-medium mb-1">{t('leave.backdatedOnly', 'Backdated')}</label>
+                      <label className="text-xs font-medium mb-1">{t('leave.backdatedFilter', 'Backdated')}</label>
                       <select
                         className="border rounded px-2 py-1"
                         value={pendingPendingBackdatedFilter}
@@ -1027,7 +1034,7 @@ const AdminDashboard = () => {
                       </select>
                     </div>
                     <div className="flex flex-col min-w-[120px]">
-                      <label className="text-xs font-medium mb-1">{t('leave.backdatedOnly', 'Backdated')}</label>
+                      <label className="text-xs font-medium mb-1">{t('leave.backdatedFilter', 'Backdated')}</label>
                       <select
                         className="border rounded px-2 py-1"
                         value={pendingHistoryBackdatedFilter}

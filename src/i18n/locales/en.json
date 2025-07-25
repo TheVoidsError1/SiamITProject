@@ -185,7 +185,7 @@
     "backdated": "Backdated",
     "backdatedNotice": "This leave request is backdated.",
     "contactMethod": "Contact Method",
-    "backdatedFilter": "Backdated only",
+    "backdatedFilter": "Backdated/Non-backdated",
     "allBackdated": "All",
     "notBackdated": "Non-backdated",
     "backdatedLabel": "Backdated",
