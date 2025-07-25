@@ -49,20 +49,13 @@ const allowedOrigins = [
   'http://192.168.50.64:8082',
   'http://localhost:3000',
   'http://localhost:3001',
-  'http://localhost:8080'
+  'http://localhost:8080',
+  'http://localhost:8001',
 ];
 
 app.use(cors({
-  origin: function(origin, callback){
-    // allow requests with no origin (like mobile apps, curl, etc.)
-    if(!origin) return callback(null, true);
-    if(allowedOrigins.indexOf(origin) === -1){
-      var msg = 'The CORS policy for this site does not allow access from the specified Origin.';
-      return callback(new Error(msg), false);
-    }
-    return callback(null, true);
-  },
-  credentials: true
+  origin: 'http://localhost:8081', // or use '*' for all origins (not recommended for production)
+  credentials: true // if you need to send cookies/auth headers
 }));
 
 // Serve static files for uploaded images
