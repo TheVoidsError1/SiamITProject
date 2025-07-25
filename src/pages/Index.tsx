@@ -1,19 +1,21 @@
-import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Users, TrendingUp, Bell } from "lucide-react";
-import { Link } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from "recharts";
-import NotificationBell from "@/components/NotificationBell";
-import { Avatar } from "@/components/ui/avatar";
+import React, { useState, useEffect } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Calendar, Clock, Users, TrendingUp, Bell } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { useTranslation } from 'react-i18next';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+import NotificationBell from '@/components/NotificationBell';
+import { Avatar } from '@/components/ui/avatar';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import { holidays } from "@/constants/holidays";
 import { getUpcomingThaiHolidays, getThaiHolidaysByMonth } from "@/constants/getThaiHolidays";
 
 const Index = () => {
+  const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -22,17 +24,15 @@ const Index = () => {
   const formatCurrentDate = () => {
     const currentLanguage = i18n.language;
     const locale = currentLanguage === 'th' ? 'th-TH' : 'en-US';
-    
     return new Date().toLocaleDateString(locale, {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
-      weekday: 'long'
+      weekday: 'long',
     });
   };
   
-  const { t, i18n } = useTranslation();
-  const [stats, setStats] = useState([
+  const [stats, setStats] = useState(() => [
     { title: t('main.daysRemaining'), value: "-", unit: t('common.days'), icon: Calendar, color: "text-blue-600", bgColor: "bg-blue-50" },
     { title: t('main.daysUsed'), value: "-", unit: t('common.days'), icon: Clock, color: "text-green-600", bgColor: "bg-green-50" },
     { title: t('main.pendingRequests'), value: "-", unit: t('main.requests'), icon: Users, color: "text-orange-600", bgColor: "bg-orange-50" },
@@ -63,9 +63,6 @@ const Index = () => {
   }>>([]);
   const [loadingRecentLeaves, setLoadingRecentLeaves] = useState(true);
   const [errorRecentLeaves, setErrorRecentLeaves] = useState("");
-  const [selectedMonth, setSelectedMonth] = useState<number | null>(new Date().getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
-  const [showMonthPicker, setShowMonthPicker] = useState(false);
   // เพิ่ม state สำหรับ days used จาก filter
   const [filteredDaysUsed, setFilteredDaysUsed] = useState<number>(0);
   // เพิ่ม state สำหรับ hours used จาก filter
@@ -83,12 +80,12 @@ const Index = () => {
     let url = "/api/dashboard-stats";
     if (month && year) url += `?month=${month}&year=${year}`;
     else if (year) url += `?year=${year}`;
-    fetchWithAuth(url, {
+    fetch(url, {
       headers: {
         Authorization: token ? `Bearer ${token}` : undefined,
       },
-    }, undefined, showSessionExpiredDialog)
-      ?.then((res) => res && res.json())
+    })
+      .then((res) => res.json())
       .then((data) => {
         if (data && data.status === "success" && data.data) {
           setStats([
@@ -112,7 +109,7 @@ const Index = () => {
       })
       .catch(() => setErrorStats(t('error.apiConnectionError')))
       .finally(() => setLoadingStats(false));
-  }, [t]);
+  };
 
   // Chart data for demo
   const chartData = [
@@ -126,12 +123,6 @@ const Index = () => {
     { id: 1, title: 'คำขอลาได้รับการอนุมัติ', message: 'ลาพักผ่อน 15-17 มี.ค. ได้รับการอนุมัติ', time: '2 ชม.ที่แล้ว', type: 'success' },
     { id: 2, title: 'เตือนวันลาคงเหลือ', message: 'คุณมีวันลาพักผ่อนเหลือ 7 วัน', time: '1 วันที่แล้ว', type: 'info' },
     { id: 3, title: 'คำขอลาถูกปฏิเสธ', message: 'ลาธุรกิจ 10 มี.ค. ถูกปฏิเสธ', time: '3 วันที่แล้ว', type: 'error' },
-  ];
-  // MOCK: Recent leave requests
-  const recentLeaves = [
-    { id: 1, type: t('leaveTypes.sick'), date: '12 มี.ค. 67', status: 'approved' },
-    { id: 2, type: t('leaveTypes.vacation'), date: '5-7 มี.ค. 67', status: 'pending' },
-    { id: 3, type: t('leaveTypes.personal'), date: '1 มี.ค. 67', status: 'rejected' },
   ];
   // Upcoming holidays (Thai calendar, 3 next)
   const upcomingHolidays = getUpcomingThaiHolidays(3);
@@ -149,8 +140,6 @@ const Index = () => {
     { id: 1, title: 'ปรับปรุงระบบ', message: 'ระบบจะปิดปรับปรุง 20 มี.ค. 22:00-23:00 น.' },
     { id: 2, title: 'กิจกรรมบริษัท', message: 'เชิญร่วมกิจกรรม Outing 30 เม.ย. ลงทะเบียนได้ที่ HR' },
   ];
-  // MOCK: User summary
-  const user = { name: 'สมชาย ใจดี', position: t('positions.employee'), department: t('departments.hr'), avatar: '', email: 'somchai@company.com' };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-100 to-purple-100 dark:from-gray-900 dark:via-gray-950 dark:to-indigo-900 transition-colors relative overflow-x-hidden">
@@ -244,13 +233,13 @@ const Index = () => {
             <Avatar className="w-16 h-16 mb-2">
               {/* If user.avatar, show image, else fallback */}
               <span className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-200 via-indigo-200 to-purple-200 text-blue-900 font-bold text-2xl rounded-full">
-                {user.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}
+                {((user as any)?.name || '').split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase() || '--'}
               </span>
             </Avatar>
-            <div className="text-lg font-bold text-blue-900 mt-1">{user.name}</div>
-            <div className="text-sm text-blue-500">{user.position}</div>
-            <div className="text-xs text-blue-400 mb-1">{user.department}</div>
-            <div className="text-xs text-gray-500">{user.email}</div>
+            <div className="text-lg font-bold text-blue-900 mt-1">{(user as any)?.name || '-'}</div>
+            <div className="text-sm text-blue-500">{(user as any)?.position || '-'}</div>
+            <div className="text-xs text-blue-400 mb-1">{(user as any)?.department || '-'}</div>
+            <div className="text-xs text-gray-500">{(user as any)?.email || '-'}</div>
           </Card>
           {/* Recent Notifications */}
           <Card className="glass shadow-xl border-0 p-0 animate-fade-in-up">
@@ -434,18 +423,26 @@ const Index = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-2 pt-0">
-            {recentLeaves.map((l, idx) => (
-              <div key={l.id} className={`flex items-center gap-3 p-3 rounded-xl glass bg-gradient-to-br from-white/80 via-blue-50/80 to-indigo-100/80 shadow border-0 animate-pop-in`} style={{ animationDelay: `${idx * 60}ms` }}>
-                <span className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 font-bold text-base">
-                  {l.type[0]}
-                </span>
-                <div className="flex-1">
-                  <div className="font-semibold text-sm text-blue-900">{l.type}</div>
-                  <div className="text-xs text-gray-500">{l.date}</div>
+            {loadingRecentLeaves ? (
+              <div className="text-center py-6 text-gray-500 animate-pulse text-base">{t('common.loading')}</div>
+            ) : errorRecentLeaves ? (
+              <div className="text-center py-6 text-red-500 animate-shake text-base">{errorRecentLeaves}</div>
+            ) : recentLeaves.length === 0 ? (
+              <div className="text-center py-6 text-blue-400 text-base">{t('main.noRecentLeaveRequests', 'ไม่มีคำขอลาล่าสุด')}</div>
+            ) : (
+              recentLeaves.map((l, idx) => (
+                <div key={idx} className={`flex items-center gap-3 p-3 rounded-xl glass bg-gradient-to-br from-white/80 via-blue-50/80 to-indigo-100/80 shadow border-0 animate-pop-in`} style={{ animationDelay: `${idx * 60}ms` }}>
+                  <span className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 font-bold text-base">
+                    {l.leavetype ? l.leavetype[0] : '?'}
+                  </span>
+                  <div className="flex-1">
+                    <div className="font-semibold text-sm text-blue-900">{l.leavetype || '-'}</div>
+                    <div className="text-xs text-gray-500">{l.startdate || '-'}</div>
+                  </div>
+                  <span className={`text-xs font-bold rounded-full px-3 py-1 ${l.status === 'approved' ? 'bg-green-100 text-green-600' : l.status === 'pending' ? 'bg-yellow-100 text-yellow-600' : 'bg-red-100 text-red-600'}`}>{l.status === 'approved' ? t('leave.approved') : l.status === 'pending' ? t('leave.pending') : t('leave.rejected')}</span>
                 </div>
-                <span className={`text-xs font-bold rounded-full px-3 py-1 ${l.status === 'approved' ? 'bg-green-100 text-green-600' : l.status === 'pending' ? 'bg-yellow-100 text-yellow-600' : 'bg-red-100 text-red-600'}`}>{l.status === 'approved' ? t('leave.approved') : l.status === 'pending' ? t('leave.pending') : t('leave.rejected')}</span>
-              </div>
-            ))}
+              ))
+            )}
           </CardContent>
         </Card>
         <style>{`

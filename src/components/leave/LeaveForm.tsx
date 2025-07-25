@@ -557,9 +557,9 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
               <SelectContent>
                 <SelectItem value="not_specified">{t('positions.notSpecified')}</SelectItem>
                 {positions
-                  .filter(pos => pos.position_name && pos.position_name.trim() !== '' && pos.position_name.toLowerCase() !== 'none' && pos.position_name.toLowerCase() !== 'no position')
+                  .filter(pos => (pos.position_name_th || pos.position_name_en) && (pos.position_name_th?.trim() !== '' || pos.position_name_en?.trim() !== ''))
                   .map((pos) => (
-                    <SelectItem key={pos.id} value={pos.position_name}>{pos.position_name}</SelectItem>
+                    <SelectItem key={pos.id} value={pos.id}>{i18n.language.startsWith('th') ? pos.position_name_th : pos.position_name_en}</SelectItem>
                   ))}
               </SelectContent>
             </Select>
@@ -578,9 +578,9 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
               <SelectContent>
                 <SelectItem value="not_specified">{t('leaveTypes.notSpecified')}</SelectItem>
                 {leaveTypes
-                  .filter(type => type.leave_type && type.leave_type.trim() !== '')
+                  .filter(type => (type.leave_type_th || type.leave_type_en) && (type.leave_type_th?.trim() !== '' || type.leave_type_en?.trim() !== ''))
                   .map((type) => (
-                    <SelectItem key={type.id} value={type.id}>{type.leave_type}</SelectItem>
+                    <SelectItem key={type.id} value={type.id}>{i18n.language.startsWith('th') ? type.leave_type_th : type.leave_type_en}</SelectItem>
                   ))}
               </SelectContent>
             </Select>

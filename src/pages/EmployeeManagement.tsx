@@ -19,6 +19,9 @@ import { Eye, User, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
 
 // เพิ่ม type สำหรับข้อมูลพนักงาน
 interface Employee {
@@ -275,8 +278,8 @@ const EmployeeManagement = () => {
                             <span className="font-semibold text-blue-900 text-base">{employee.full_name}</span>
                           </td>
                           <td className="px-6 py-4 text-blue-700 text-base">{employee.email}</td>
-                          <td className="px-6 py-4 text-blue-700 text-base">{employee.position}</td>
-                          <td className="px-6 py-4 text-blue-700 text-base">{employee.department}</td>
+                          <td className="px-6 py-4 text-blue-700 text-base">{getPositionName(employee.position)}</td>
+                          <td className="px-6 py-4 text-blue-700 text-base">{getDepartmentName(employee.department)}</td>
                           <td className="px-6 py-4">
                             <Badge 
                               variant={employee.role === 'admin' ? 'default' : 'secondary'}

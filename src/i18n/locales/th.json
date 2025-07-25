@@ -284,7 +284,7 @@
     "recentNotifications": "แจ้งเตือนล่าสุด",
     "upcomingHolidays": "วันหยุด/กิจกรรม",
     "announcements": "ข่าวสารบริษัท",
-    "noUpcomingHolidays": "ไม่มีวันหยุดในเดือนนี้"
+    "noUpcomingHolidays": "ไม่มีวันหยุดในเดือนนี้",
     "recentLeaveStatsDesc": "การใช้สิทธิการลาล่าสุด",
     "fillCompleteInfo": "กรุณากรอกข้อมูลให้ครบถ้วน",
     "manageAllDesc": "จัดการตำแหน่ง แผนก และประเภทการลาทั้งหมด",
@@ -428,7 +428,7 @@
   },
   "error": {
     "apiConnectionError": "ข้อผิดพลาดการเชื่อมต่อ API",
-    "cannotLoadStats": "ไม่สามารถโหลดสถิติได้"
+    "cannotLoadStats": "ไม่สามารถโหลดสถิติได้",
     "apiConnectionError": "ข้อผิดพลาดการเชื่อมต่อ API",
     "title": "ข้อผิดพลาด",
     "message": "ข้อผิดพลาดในการเชื่อมต่อ API"

@@ -1,4 +1,4 @@
-import LanguageSwitcher from '@/components/LanguageSwitcher';
+import React, { useState, useRef, useEffect } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -11,10 +11,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { User, Mail, Building, Briefcase, Shield, Calendar, Camera, Save, Bell, Lock } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../components/ui/select";
 import ChangePasswordDialog from "@/components/dialogs/ChangePasswordDialog";
 import { cn } from "@/lib/utils";
+import axios from 'axios';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 const Profile = () => {
   const { t, i18n } = useTranslation();
@@ -37,6 +38,11 @@ const Profile = () => {
   const [positionsLoaded, setPositionsLoaded] = useState(false);
   const [departmentsLoaded, setDepartmentsLoaded] = useState(false);
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [leaveQuota, setLeaveQuota] = useState<any[]>([]);
+  const [leaveLoading, setLeaveLoading] = useState(false);
+  const [allLeaveTypes, setAllLeaveTypes] = useState<any[]>([]);
+  // ถ้ามี context push notification จริง ให้ import/use จริง แต่ถ้าไม่มี ให้ mock ไว้ก่อน
+  const pushNotificationEnabled = false;
 
   const getKeyByLabel = (label: string, options: string[], tPrefix: string) => {
     for (const key of options) {
@@ -502,10 +508,10 @@ const Profile = () => {
                           {t('positions.notSpecified')}
                         </SelectItem>
                         {positions
-                          .filter(key => key && key.trim() !== '' && key.toLowerCase() !== 'none' && key.toLowerCase() !== 'no position')
-                          .map((key) => (
-                            <SelectItem key={key} value={key} className="text-blue-900">
-                              {t(`positions.${key}`)}
+                          .filter(pos => (pos.position_name_th || pos.position_name_en) && (pos.position_name_th?.trim() !== '' || pos.position_name_en?.trim() !== ''))
+                          .map((pos) => (
+                            <SelectItem key={pos.id} value={pos.id} className="text-blue-900">
+                              {i18n.language.startsWith('th') ? pos.position_name_th : pos.position_name_en}
                             </SelectItem>
                           ))}
                       </SelectContent>
@@ -525,10 +531,10 @@ const Profile = () => {
                           {t('departments.notSpecified', t('departments.selectDepartment'))}
                         </SelectItem>
                         {departments
-                          .filter(key => key && key.trim() !== '' && key.toLowerCase() !== 'none' && key.toLowerCase() !== 'no department')
-                          .map((key) => (
-                            <SelectItem key={key} value={key} className="text-blue-900">
-                              {t(`departments.${key}`)}
+                          .filter(dept => (dept.department_name_th || dept.department_name_en) && (dept.department_name_th?.trim() !== '' || dept.department_name_en?.trim() !== ''))
+                          .map((dept) => (
+                            <SelectItem key={dept.id} value={dept.id} className="text-blue-900">
+                              {i18n.language.startsWith('th') ? dept.department_name_th : dept.department_name_en}
                             </SelectItem>
                           ))}
                       </SelectContent>
@@ -560,17 +566,17 @@ const Profile = () => {
                     <div className="flex justify-between items-center">
                       <span className="text-base font-medium text-blue-900">{stat.label}</span>
                       <span className="text-base text-gray-500">
-                        {stat.used}/{stat.total} {t('common.days')}
+                        {stat.used.days}/{stat.quota} {t('common.days')}
                       </span>
                     </div>
                     <div className="w-full bg-blue-100 rounded-full h-2">
                       <div
                         className={`${stat.color} h-2 rounded-full transition-all duration-500`}
-                        style={{ width: `${(stat.used / stat.total) * 100}%` }}
+                        style={{ width: `${(Number(stat.used.days) / Number(stat.quota)) * 100}%` }}
                       ></div>
                     </div>
                     <div className="text-xs text-blue-500">
-                      {t('common.remaining')} {stat.total - stat.used} {t('common.days')}
+                      {t('common.remaining')} {Number(stat.quota) - Number(stat.used.days)} {t('common.days')}
                     </div>
                   </div>
                 ))}
@@ -606,7 +612,7 @@ const Profile = () => {
           </Tabs>
         </div>
       </div>
-      <style jsx>{`
+      <style>{`
         .input-blue {
           background: rgba(255,255,255,0.7);
           border: 1.5px solid #bfdbfe;

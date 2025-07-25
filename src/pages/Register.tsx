@@ -216,10 +216,10 @@ const Register = () => {
                       {t('positions.notSpecified')}
                     </SelectItem>
                     {positions
-                      .filter(key => key && key.trim() !== '' && key.toLowerCase() !== 'none' && key.toLowerCase() !== 'no position')
-                      .map((key) => (
-                        <SelectItem key={key} value={key}>
-                          {t(`positions.${key}`)}
+                      .filter(pos => (pos.position_name_th || pos.position_name_en) && (pos.position_name_th?.trim() !== '' || pos.position_name_en?.trim() !== ''))
+                      .map((pos) => (
+                        <SelectItem key={pos.id} value={pos.id}>
+                          {lang === 'th' ? pos.position_name_th : pos.position_name_en}
                         </SelectItem>
                       ))}
                   </SelectContent>
@@ -237,10 +237,10 @@ const Register = () => {
                       {t('departments.notSpecified')}
                     </SelectItem>
                     {departments
-                      .filter(key => key && key.trim() !== '' && key.toLowerCase() !== 'none' && key.toLowerCase() !== 'no department')
-                      .map((key) => (
-                        <SelectItem key={key} value={key}>
-                          {t(`departments.${key}`)}
+                      .filter(dept => (dept.department_name_th || dept.department_name_en) && (dept.department_name_th?.trim() !== '' || dept.department_name_en?.trim() !== ''))
+                      .map((dept) => (
+                        <SelectItem key={dept.id} value={dept.id}>
+                          {lang === 'th' ? dept.department_name_th : dept.department_name_en}
                         </SelectItem>
                       ))}
                   </SelectContent>

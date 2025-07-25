@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Bell, Check, X, Info, AlertTriangle, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -65,6 +65,9 @@ const NotificationBell = () => {
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
+  // คำนวณจำนวนที่ยังไม่ได้อ่าน (เช่น status === 'unread')
+  const unreadCount = useMemo(() => notifications.filter(n => n.status === 'unread').length, [notifications]);
+
   const getTypeColor = (type: string) => {
     switch (type) {
       case 'success': return 'text-green-600';
@@ -101,42 +104,31 @@ const NotificationBell = () => {
         <Card className="border-0 shadow-none bg-transparent">
           <CardHeader className="pb-3 bg-gradient-to-r from-blue-500 via-indigo-400 to-purple-400 rounded-t-2xl text-white">
             <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-bold tracking-tight">การแจ้งเตือน</CardTitle>
-              {unreadCount > 0 && (
-                <Button 
-                  variant="secondary" 
-                  size="sm" 
-                  onClick={markAllAsRead}
-                  className="text-xs font-bold bg-white/30 text-white hover:bg-white/50 rounded-full px-3 py-1 shadow"
-                >
-                  {t('notification.markAllAsRead')}
-                </Button>
-              )}
+              <CardTitle className="text-lg font-bold tracking-tight">{t('notification.notifications')}</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="space-y-3 max-h-80 overflow-y-auto p-4 bg-transparent">
             {notifications.length === 0 ? (
-              <p className="text-center text-gray-500 py-4">ไม่มีการแจ้งเตือน</p>
+              <p className="text-center text-gray-500 py-4">{t('notification.noNotifications')}</p>
             ) : (
               notifications.map((notification, idx) => (
                 <div
                   key={notification.id}
-                  className={`flex items-start gap-3 p-4 rounded-xl glass bg-gradient-to-br from-white/80 via-blue-50/80 to-indigo-100/80 shadow-md border-0 transition-all duration-200 animate-fade-in-up ${notification.read ? 'opacity-60' : 'opacity-100 hover:scale-[1.03]'} animate-pop-in`}
+                  className={`flex items-start gap-3 p-4 rounded-xl glass bg-gradient-to-br from-white/80 via-blue-50/80 to-indigo-100/80 shadow-md border-0 transition-all duration-200 animate-fade-in-up animate-pop-in`}
                   style={{ animationDelay: `${idx * 80}ms` }}
                 >
                   <div className="flex-shrink-0 mt-1">
-                    {getTypeIcon(notification.type)}
+                    <Bell className="h-5 w-5 text-blue-500 bg-blue-100 rounded-full p-1 shadow" />
                   </div>
                   <div className="flex-1">
-                    <h4 className={`font-semibold text-base mb-0.5 ${getTypeColor(notification.type)}`}>{notification.title}</h4>
-                    <p className="text-xs text-gray-600 mb-1">{notification.message}</p>
-                    <p className="text-xs text-gray-400">{notification.time}</p>
+                    <h4 className={`font-semibold text-base mb-0.5 text-blue-700`}>{notification.status === 'unread' ? t('notification.unread') : t('notification.read')}</h4>
+                    <p className="text-xs text-gray-600 mb-1">{notification.startDate} - {notification.endDate}</p>
                   </div>
-                  {!notification.read && (
+                  {notification.status === 'unread' && (
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => markAsRead(notification.id)}
+                      onClick={() => handleMarkAsRead(notification.id)}
                       className="ml-2 p-1 h-7 w-7 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-full shadow"
                       aria-label="Mark as read"
                     >

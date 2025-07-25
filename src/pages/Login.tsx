@@ -170,7 +170,7 @@ const Login = () => {
               <CardTitle className="text-center text-blue-700">{t('auth.demoCredentials')}</CardTitle>
             </CardHeader>
             <CardContent>
-              <DemoCredentials />
+              {/* Demo Credentials */}
             </CardContent>
           </Card>
         </div>

@@ -377,7 +377,6 @@ const LeaveHistory = () => {
           <LanguageSwitcher />
         </div>
       </div>
-
       <div className="p-6 animate-fade-in">
         <div className="max-w-4xl mx-auto space-y-10">
           {/* Summary Stats */}
@@ -388,7 +387,7 @@ const LeaveHistory = () => {
                   <Calendar className="w-7 h-7 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-3xl font-extrabold text-blue-800">11</p>
+                  <p className="text-3xl font-extrabold text-blue-800">{totalLeaveDays}</p>
                   <p className="text-base text-blue-400">{t('history.totalLeaveDays')}</p>
                 </div>
               </CardContent>
@@ -399,7 +398,7 @@ const LeaveHistory = () => {
                   <CheckCircle className="w-7 h-7 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-3xl font-extrabold text-green-700">3</p>
+                  <p className="text-3xl font-extrabold text-green-700">{approvedCount}</p>
                   <p className="text-base text-green-400">{t('history.approvedRequests')}</p>
                 </div>
               </CardContent>
@@ -410,7 +409,7 @@ const LeaveHistory = () => {
                   <Clock className="w-7 h-7 text-yellow-600" />
                 </div>
                 <div>
-                  <p className="text-3xl font-extrabold text-yellow-700">1</p>
+                  <p className="text-3xl font-extrabold text-yellow-700">{pendingCount}</p>
                   <p className="text-base text-yellow-400">{t('history.pendingRequests')}</p>
                 </div>
               </CardContent>
@@ -563,164 +562,172 @@ const LeaveHistory = () => {
 
           {/* Leave History List */}
           <div className="space-y-6">
-            {leaveHistory.map((leave) => (
-              <Card key={leave.id} className="border-0 shadow-xl bg-white/80 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all">
-                <CardHeader className="pb-2 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
-                  <div className="flex items-center gap-4">
-                    <div className={`text-xl font-bold ${getTypeColor(leave.type)}`}>{leave.type}</div>
-                    {getStatusBadge(leave.status)}
-                  </div>
-                  <div className="text-sm text-blue-400 font-medium md:text-right">
-                    {format(leave.submittedDate, 'dd MMM yyyy', { locale: th })}
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0 pb-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2 text-base text-blue-900">
-                        <Calendar className="w-5 h-5 text-blue-400" />
-                        <span className="font-medium">{t('leave.startDate')}:</span>
-                        <span>{format(leave.startDate, 'dd MMM yyyy', { locale: th })}</span>
+            {loading ? (
+              <div className="flex justify-center items-center py-10 text-blue-500 text-lg">{t('common.loading', 'Loading...')}</div>
+            ) : error ? (
+              <div className="flex justify-center items-center py-10 text-red-500 text-lg">{error}</div>
+            ) : leaveHistory.length === 0 ? (
+              <div className="flex justify-center items-center py-10 text-gray-400 text-lg">{t('history.noLeaveHistory', 'ไม่พบประวัติการลา')}</div>
+            ) : (
+              leaveHistory.map((leave) => (
+                <Card key={leave.id} className="border-0 shadow-xl bg-white/80 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all">
+                  <CardHeader className="pb-2 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                    <div className="flex items-center gap-4">
+                      <div className={`text-xl font-bold ${getTypeColor(leave.type)}`}>{translateLeaveType(leave.type)}</div>
+                      {getStatusBadge(leave.status)}
+                    </div>
+                    <div className="text-sm text-blue-400 font-medium md:text-right">
+                      {formatDateLocalized(leave.submittedDate)}
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-0 pb-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2 text-base text-blue-900">
+                          <Calendar className="w-5 h-5 text-blue-400" />
+                          <span className="font-medium">{t('leave.startDate')}:</span>
+                          <span>{formatDateLocalized(leave.startDate)}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-base text-blue-900">
+                          <Calendar className="w-5 h-5 text-blue-400" />
+                          <span className="font-medium">{t('leave.endDate')}:</span>
+                          <span>{formatDateLocalized(leave.endDate)}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-base text-blue-900">
+                          <Clock className="w-5 h-5 text-blue-400" />
+                          <span className="font-medium">{t('leave.duration')}:</span>
+                          <span>{leave.days} {t('leave.days')}</span>
+                        </div>
                       </div>
-                      <div className="flex items-center gap-2 text-base text-blue-900">
-                        <Calendar className="w-5 h-5 text-blue-400" />
-                        <span className="font-medium">{t('leave.endDate')}:</span>
-                        <span>{format(leave.endDate, 'dd MMM yyyy', { locale: th })}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-base text-blue-900">
-                        <Clock className="w-5 h-5 text-blue-400" />
-                        <span className="font-medium">{t('leave.duration')}:</span>
-                        <span>{leave.days} {t('leave.days')}</span>
+                      <div className="space-y-3">
+                        <div className="flex items-start gap-2 text-base text-blue-900">
+                          <FileText className="w-5 h-5 text-blue-400 mt-0.5" />
+                          <div>
+                            <span className="font-medium">{t('leave.reason')}:</span>
+                            <p className="text-blue-500">{leave.reason}</p>
+                          </div>
+                        </div>
+                        {/* Approved by: และ Rejected by: แยกออกมาอยู่ล่างสุดของ Card */}
+                        {leave.status === "approved" && leave.approvedBy && (
+                          <div className="flex items-center gap-2 text-base text-green-700">
+                            <CheckCircle className="w-5 h-5 text-green-500" />
+                            <span className="font-medium">{t('leave.approvedBy')}:</span>
+                            <span>{leave.approvedBy}</span>
+                          </div>
+                        )}
+                        {leave.status === "rejected" && (
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-base text-red-700">
+                              <XCircle className="w-5 h-5 text-red-500" />
+                              <span className="font-medium">{t('leave.rejectedBy')}:</span>
+                              <span>{leave.rejectedBy}</span>
+                            </div>
+                            {leave.rejectionReason && (
+                              <div className="flex items-start gap-2 text-base text-red-700">
+                                <FileText className="w-5 h-5 text-red-400 mt-0.5" />
+                                <div>
+                                  <span className="font-medium">{t('leave.rejectionReason')}:</span>
+                                  <p className="text-red-500">{leave.rejectionReason}</p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        <div className="flex justify-end mt-6 gap-3">
+                          <Button size="sm" variant="outline" onClick={() => handleViewDetails(leave.id)}>
+                            {t('common.viewDetails')}
+                          </Button>
+                          {leave.status === "pending" && (() => {
+                            // เช็คว่าวันนี้ < startDate แบบ UTC
+                            const today = new Date();
+                            today.setHours(0, 0, 0, 0); // ตัดเวลาออก
+                            const startDate = leave.startDate ? new Date(leave.startDate) : null;
+                            if (startDate) startDate.setHours(0, 0, 0, 0); // ตัดเวลาออก
+                            if (startDate && today < startDate) {
+                              return (
+                                <span>
+                                  <Button size="sm" variant="outline" onClick={() => handleEditLeave(leave.id)}>
+                                    {t('common.edit')}
+                                  </Button>
+                                  <AlertDialog open={deleteLeaveId === leave.id} onOpenChange={open => { if (!open) setDeleteLeaveId(null); }}>
+                                    <AlertDialogTrigger asChild>
+                                      <Button size="sm" variant="destructive" onClick={() => setDeleteLeaveId(leave.id)}>
+                                        {t('system.delete', 'Delete')}
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>{t('system.confirmDelete', 'Confirm Delete')}</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          {t('system.confirmDeleteLeave', 'Are you sure you want to delete this leave request?')}
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel disabled={deleting}>{t('common.cancel', 'Cancel')}</AlertDialogCancel>
+                                        <AlertDialogAction disabled={deleting} onClick={async () => { await handleDeleteLeave(); setDeleteLeaveId(null); }}>
+                                          {deleting ? t('common.loading', 'Loading...') : t('system.confirm', 'Confirm')}
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </span>
+                              );
+                            }
+                            return null;
+                          })()}
+                        </div>
                       </div>
                     </div>
-                    <div className="space-y-3">
-                      <div className="flex items-start gap-2 text-base text-blue-900">
-                        <FileText className="w-5 h-5 text-blue-400 mt-0.5" />
-                        <div>
-                          <span className="font-medium">{t('leave.reason')}:</span>
-                          <p className="text-blue-500">{leave.reason}</p>
-                        </div>
-                      </div>
-                      {/* Approved by: และ Rejected by: แยกออกมาอยู่ล่างสุดของ Card */}
-                      {leave.status === "approved" && leave.approvedBy && (
-                        <div className="flex items-center gap-2 text-base text-green-700">
-                          <CheckCircle className="w-5 h-5 text-green-500" />
-                          <span className="font-medium">{t('leave.approvedBy')}:</span>
-                          <span>{leave.approvedBy}</span>
-                        </div>
-                      )}
-                      {leave.status === "rejected" && (
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2 text-base text-red-700">
-                            <XCircle className="w-5 h-5 text-red-500" />
-                            <span className="font-medium">{t('leave.rejectedBy')}:</span>
-                            <span>{leave.rejectedBy}</span>
-                          </div>
-                          {leave.rejectionReason && (
-                            <div className="flex items-start gap-2 text-base text-red-700">
-                              <FileText className="w-5 h-5 text-red-400 mt-0.5" />
-                              <div>
-                                <span className="font-medium">{t('leave.rejectionReason')}:</span>
-                                <p className="text-red-500">{leave.rejectionReason}</p>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      )}
-                      <div className="flex justify-end mt-6 gap-3">
-                        <Button size="sm" variant="outline" onClick={() => handleViewDetails(leave.id)}>
-                          {t('common.viewDetails')}
-                        </Button>
-                        {leave.status === "pending" && (() => {
-                          // เช็คว่าวันนี้ < startDate แบบ UTC
-                          const today = new Date();
-                          today.setHours(0, 0, 0, 0); // ตัดเวลาออก
-                          const startDate = leave.startDate ? new Date(leave.startDate) : null;
-                          if (startDate) startDate.setHours(0, 0, 0, 0); // ตัดเวลาออก
-                          if (startDate && today < startDate) {
-                            return (
-                              <>
-                                <Button size="sm" variant="outline" onClick={() => handleEditLeave(leave.id)}>
-                                  {t('common.edit')}
-                                </Button>
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button size="sm" variant="destructive" onClick={() => setDeleteLeaveId(leave.id)}>
-                                      {t('system.delete', 'Delete')}
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>{t('system.confirmDelete', 'Confirm Delete')}</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        {t('system.confirmDeleteLeave', 'Are you sure you want to delete this leave request?')}
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel disabled={deleting}>{t('common.cancel', 'Cancel')}</AlertDialogCancel>
-                                      <AlertDialogAction disabled={deleting} onClick={handleDeleteLeave}>
-                                        {deleting ? t('common.loading', 'Loading...') : t('system.confirm', 'Confirm')}
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              </>
-                            );
-                          }
-                          return null;
-                        })()}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-                {/* --- Pagination bar: always show, even if only 1 page --- */}
-                <div className="flex flex-wrap justify-center mt-6 gap-2 items-center">
-                  {/* --- Pagination with ellipsis --- */}
-                  {(() => {
-                    const pages = [];
-                    const maxPageButtons = 5;
-                    let start = Math.max(1, page - 2);
-                    let end = Math.min(totalPages, start + maxPageButtons - 1);
-                    if (end - start < maxPageButtons - 1) {
-                      start = Math.max(1, end - maxPageButtons + 1);
-                    }
-                    if (start > 1) {
-                      pages.push(
-                        <button key={1} onClick={() => setPage(1)} className={`px-3 py-1 rounded border ${page === 1 ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`}>1</button>
-                      );
-                      if (start > 2) pages.push(<span key="start-ellipsis">...</span>);
-                    }
-                    for (let i = start; i <= end; i++) {
-                      pages.push(
-                        <button key={i} onClick={() => setPage(i)} className={`px-3 py-1 rounded border ${page === i ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`} disabled={page === i}>{i}</button>
-                      );
-                    }
-                    if (end < totalPages) {
-                      if (end < totalPages - 1) pages.push(<span key="end-ellipsis">...</span>);
-                      pages.push(
-                        <button key={totalPages} onClick={() => setPage(totalPages)} className={`px-3 py-1 rounded border ${page === totalPages ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`}>{totalPages}</button>
-                      );
-                    }
-                    return pages;
-                  })()}
-                  {/* --- Items per page select --- */}
-                  <select
-                    className="ml-4 border rounded px-2 py-1 text-sm"
-                    value={limit}
-                    onChange={e => {
-                      setLimit(Number(e.target.value));
-                      setPage(1);
-                    }}
-                  >
-                    {[5, 10, 20, 50].map(n => (
-                      <option key={n} value={n}>{n}</option>
-                    ))}
-                  </select>
-                  <span className="ml-2 text-sm text-gray-500">{t('admin.itemsPerPage', 'Items per page')}</span>
-                  <span className="ml-2 text-sm text-gray-500">{t('admin.pageInfo', { page, totalPages })}</span>
-                </div>
-              </>
+                  </CardContent>
+                </Card>
+              ))
             )}
+            {/* --- Pagination bar: always show, even if only 1 page --- */}
+            <div className="flex flex-wrap justify-center mt-6 gap-2 items-center">
+              {/* --- Pagination with ellipsis --- */}
+              {(() => {
+                const pages = [];
+                const maxPageButtons = 5;
+                let start = Math.max(1, page - 2);
+                let end = Math.min(totalPages, start + maxPageButtons - 1);
+                if (end - start < maxPageButtons - 1) {
+                  start = Math.max(1, end - maxPageButtons + 1);
+                }
+                if (start > 1) {
+                  pages.push(
+                    <button key={1} onClick={() => setPage(1)} className={`px-3 py-1 rounded border ${page === 1 ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`}>1</button>
+                  );
+                  if (start > 2) pages.push(<span key="start-ellipsis">...</span>);
+                }
+                for (let i = start; i <= end; i++) {
+                  pages.push(
+                    <button key={i} onClick={() => setPage(i)} className={`px-3 py-1 rounded border ${page === i ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`} disabled={page === i}>{i}</button>
+                  );
+                }
+                if (end < totalPages) {
+                  if (end < totalPages - 1) pages.push(<span key="end-ellipsis">...</span>);
+                  pages.push(
+                    <button key={totalPages} onClick={() => setPage(totalPages)} className={`px-3 py-1 rounded border ${page === totalPages ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`}>{totalPages}</button>
+                  );
+                }
+                return pages;
+              })()}
+              {/* --- Items per page select --- */}
+              <select
+                className="ml-4 border rounded px-2 py-1 text-sm"
+                value={limit}
+                onChange={e => {
+                  setLimit(Number(e.target.value));
+                  setPage(1);
+                }}
+              >
+                {[5, 10, 20, 50].map(n => (
+                  <option key={n} value={n}>{n}</option>
+                ))}
+              </select>
+              <span className="ml-2 text-sm text-gray-500">{t('admin.itemsPerPage', 'Items per page')}</span>
+              <span className="ml-2 text-sm text-gray-500">{t('admin.pageInfo', { page, totalPages })}</span>
+            </div>
           </div>
         </div>
       </div>

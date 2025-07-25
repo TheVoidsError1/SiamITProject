@@ -1,5 +1,8 @@
 import { LeaveDetailDialog } from "@/components/dialogs/LeaveDetailDialog";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import { useParams, useLocation, Link } from 'react-router-dom';
+import { format } from 'date-fns';
+import { th } from 'date-fns/locale';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,8 +27,9 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Calendar, Edit, Eye, Mail, Save, User, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { Avatar } from "@/components/ui/avatar";
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const EmployeeDetail = () => {
   const { id } = useParams();
@@ -425,10 +429,10 @@ const EmployeeDetail = () => {
                             {t('positions.noPosition')}
                           </SelectItem>
                           {positions
-                            .filter(key => key && key.trim() !== '' && key.toLowerCase() !== 'none' && key.toLowerCase() !== 'no position' && key.toLowerCase() !== 'noposition')
-                            .map((key) => (
-                              <SelectItem key={key} value={key}>
-                                {t(`positions.${key}`)}
+                            .filter(pos => (pos.position_name_th || pos.position_name_en) && (pos.position_name_th?.trim() !== '' || pos.position_name_en?.trim() !== ''))
+                            .map((pos) => (
+                              <SelectItem key={pos.id} value={pos.id}>
+                                {i18n.language.startsWith('th') ? pos.position_name_th : pos.position_name_en}
                               </SelectItem>
                             ))}
                         </SelectContent>
@@ -450,10 +454,10 @@ const EmployeeDetail = () => {
                             {t('departments.noDepartment')}
                           </SelectItem>
                           {departments
-                            .filter(key => key && key.trim() !== '' && key.toLowerCase() !== 'none' && key.toLowerCase() !== 'no department' && key.toLowerCase() !== 'nodepartment')
-                            .map((key) => (
-                              <SelectItem key={key} value={key}>
-                                {t(`departments.${key}`)}
+                            .filter(dept => (dept.department_name_th || dept.department_name_en) && (dept.department_name_th?.trim() !== '' || dept.department_name_en?.trim() !== ''))
+                            .map((dept) => (
+                              <SelectItem key={dept.id} value={dept.id}>
+                                {i18n.language.startsWith('th') ? dept.department_name_th : dept.department_name_en}
                               </SelectItem>
                             ))}
                         </SelectContent>
