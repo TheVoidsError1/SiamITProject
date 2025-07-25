@@ -27,6 +27,7 @@ import CalendarPage from './pages/CalendarPage';
 import CalendarAnnualPage from './pages/CalendarAnnualPage';
 import CalendarMonthDetailPage from './pages/CalendarMonthDetailPage';
 import CalendarCompanyPage from './pages/CalendarCompanyPage';
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const queryClient = new QueryClient();
 
@@ -53,7 +54,11 @@ const AppContent = () => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen flex w-full">
+      <div className="min-h-screen flex w-full relative">
+        {/* ปุ่มเปลี่ยนภาษามุมขวาบน */}
+        <div className="absolute top-0 right-0 p-4 z-50">
+          <LanguageSwitcher />
+        </div>
         <AppSidebar />
         <main className="flex-1">
           <Routes>
