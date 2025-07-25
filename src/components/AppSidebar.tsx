@@ -28,13 +28,12 @@ const items = [
     icon: Home,
   },
   {
-    // Use hardcoded Thai label for company news
-    title: "ข่าวสารทางบริษัท",
+    title: "navigation.companyNews",
     url: "/company-news",
     icon: Newspaper,
   },
   {
-    title: "ปฎิทิน",
+    title: "navigation.calendar",
     url: "/calendar",
     icon: Calendar,
   },
@@ -183,8 +182,7 @@ export function AppSidebar() {
                         `font-medium transition-colors duration-200
                         ${location.pathname === item.url ? 'text-blue-700 dark:text-blue-300' : 'text-sidebar-foreground group-hover:text-blue-600'}`
                       }>
-                        {/* If the item is the company news, use the hardcoded label, else use t() */}
-                        {item.title === "ข่าวสารทางบริษัท" ? item.title : t(item.title)}
+                        {t(item.title)}
                       </span>
                     </Link>
                   </SidebarMenuButton>

@@ -48,7 +48,9 @@
     "mainMenu": "เมนูหลัก",
     "allEmployees": "บุคลากรทั้งหมด",
     "createUser": "สร้างผู้ใช้",
-    "manageAll": "จัดการทั้งหมด"
+    "manageAll": "จัดการทั้งหมด",
+    "companyNews": "ข่าวสารทางบริษัท",
+    "calendar": "ปฏิทิน"
   },
   "common": {
     "submit": "ส่ง",
@@ -508,5 +510,27 @@
     "pending": "รอการอนุมัติ",
     "rejected": "ไม่อนุมัติ",
     "status": "สถานะ"
+  },
+  "companyNews": {
+    "title": "ข่าวสารทางบริษัท",
+    "companyNewsDesc": "ประกาศสำคัญ ข่าวสาร กิจกรรม และข้อมูลที่ควรทราบสำหรับพนักงานทุกท่าน",
+    "addNews": "เพิ่มข่าวสาร",
+    "viewDetail": "ดูรายละเอียด",
+    "detail": "รายละเอียด",
+    "createdBy": "ผู้ประกาศ",
+    "saving": "กำลังบันทึก...",
+    "save": "บันทึก",
+    "cancel": "ยกเลิก",
+    "subject": "หัวข้อ",
+    "addMore": "เพิ่มเติม",
+    "noNews": "ไม่มีข่าวสาร",
+    "delete": "ลบ",
+    "loading": "กำลังโหลด...",
+    "deleteConfirm": "คุณต้องการลบข่าวสารนี้หรือไม่?",
+    "deleteSuccess": "ลบข่าวสารสำเร็จ",
+    "deleteSuccessDesc": "ลบข่าวสารสำเร็จ",
+    "deleteError": "ลบข่าวสารไม่สำเร็จ",
+    "deleteErrorDesc": "ลบข่าวสารไม่สำเร็จ",
+    "deleteConfirmDesc": "คุณต้องการลบข่าวสารนี้หรือไม่?"
   }
 }

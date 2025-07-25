@@ -6,10 +6,12 @@ import { Newspaper, Plus, Trash2 } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
+import { useTranslation } from 'react-i18next';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function CompanyNews() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
   const [newsList, setNewsList] = useState<any[]>([]);
@@ -133,10 +135,10 @@ export default function CompanyNews() {
           <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-24 h-24 rounded-full bg-white/80 shadow-2xl border-4 border-white mb-4" />
           <h1 className="text-4xl md:text-5xl font-extrabold text-indigo-900 drop-shadow mb-2 flex items-center gap-3">
             <Newspaper className="w-8 h-8 text-blue-600" />
-            ข่าวสารทางบริษัท
+            {t('companyNews.title')}
           </h1>
           <p className="text-lg md:text-xl text-blue-900/70 mb-2 font-medium text-center max-w-2xl">
-            ประกาศสำคัญ ข่าวสาร กิจกรรม และข้อมูลที่ควรทราบสำหรับพนักงานทุกท่าน
+            {t('companyNews.companyNewsDesc')}
           </p>
         </div>
       </div>
@@ -145,7 +147,7 @@ export default function CompanyNews() {
           <div className="flex justify-between items-center mb-6">
             <div className="text-xl font-bold text-blue-900 flex items-center gap-2">
               <Newspaper className="w-6 h-6 text-blue-600" />
-              ประกาศสำคัญของบริษัท
+              {t('companyNews.title')}
             </div>
             {isAdmin && (
               <Dialog open={addOpen} onOpenChange={setAddOpen}>
@@ -153,19 +155,19 @@ export default function CompanyNews() {
                   <button
                     className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg transition-all duration-200"
                   >
-                    <Plus className="w-5 h-5" /> เพิ่มข่าวสาร
+                    <Plus className="w-5 h-5" /> {t('companyNews.addNews')}
                   </button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle className="text-2xl font-bold text-blue-900 mb-2 flex items-center gap-2">
                       <Newspaper className="w-6 h-6 text-blue-600" />
-                      เพิ่มข่าวสารบริษัท
+                      {t('companyNews.addNews')}
                     </DialogTitle>
                   </DialogHeader>
                   <form className="space-y-4 mt-2" onSubmit={handleAddNews}>
                     <div>
-                      <label className="block text-blue-800 font-semibold mb-1">หัวข้อ</label>
+                      <label className="block text-blue-800 font-semibold mb-1">{t('companyNews.subject')}</label>
                       <input
                         type="text"
                         className="w-full rounded-lg border border-blue-200 px-3 py-2 text-base focus:ring-2 focus:ring-blue-400"
@@ -175,7 +177,7 @@ export default function CompanyNews() {
                       />
                     </div>
                     <div>
-                      <label className="block text-blue-800 font-semibold mb-1">รายละเอียด</label>
+                      <label className="block text-blue-800 font-semibold mb-1">{t('companyNews.detail')}</label>
                       <textarea
                         className="w-full rounded-lg border border-blue-200 px-3 py-2 text-base focus:ring-2 focus:ring-blue-400"
                         value={form.detail}
@@ -199,14 +201,14 @@ export default function CompanyNews() {
                         className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold"
                         onClick={() => setAddOpen(false)}
                       >
-                        ยกเลิก
+                        {t('common.cancel')}
                       </button>
                       <button
                         type="submit"
                         className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold"
                         disabled={loading}
                       >
-                        {loading ? 'กำลังบันทึก...' : 'บันทึก'}
+                        {loading ? t('companyNews.saving') : t('companyNews.save')}
                       </button>
                     </div>
                     {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
@@ -219,18 +221,18 @@ export default function CompanyNews() {
             <Table className="min-w-full bg-white rounded-xl">
               <TableHeader>
                 <TableRow className="bg-blue-100 text-blue-900 text-lg">
-                  <TableHead className="p-4 text-center">หัวข้อ</TableHead>
-                  <TableHead className="p-4 text-center">รายละเอียด</TableHead>
-                  <TableHead className="p-4 text-center">ผู้ประกาศ</TableHead>
-                  {isAdmin && <TableHead className="p-4 text-center">ลบ</TableHead>}
-                  <TableHead className="p-4 text-center">เพิ่มเติม</TableHead>
+                  <TableHead className="p-4 text-center">{t('companyNews.subject')}</TableHead>
+                  <TableHead className="p-4 text-center">{t('companyNews.detail')}</TableHead>
+                  <TableHead className="p-4 text-center">{t('companyNews.createdBy')}</TableHead>
+                  {isAdmin && <TableHead className="p-4 text-center">{t('companyNews.delete')}</TableHead>}
+                  <TableHead className="p-4 text-center">{t('companyNews.addMore')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={6} className="text-center">กำลังโหลด...</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="text-center">{t('common.loading')}</TableCell></TableRow>
                 ) : newsList.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="text-center">ไม่มีข่าวสาร</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={6} className="text-center">{t('companyNews.noNews')}</TableCell></TableRow>
                 ) : newsList.map((news, idx) => (
                   <TableRow key={news.id} className="hover:bg-blue-50 text-base">
                     <TableCell className="p-4 text-center font-semibold text-blue-800">{news.subject}</TableCell>
@@ -241,7 +243,7 @@ export default function CompanyNews() {
                         <button
                           className="p-2 rounded-full bg-red-100 hover:bg-red-200 text-red-600 shadow transition"
                           onClick={() => handleDeleteNews(news.id)}
-                          aria-label="ลบข่าว"
+                          aria-label={t('companyNews.delete')}
                           disabled={loading}
                         >
                           <Trash2 className="w-5 h-5" />
@@ -254,7 +256,7 @@ export default function CompanyNews() {
                           <button
                             className="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold rounded-lg shadow transition"
                           >
-                            ดูรายละเอียด
+                            {t('companyNews.viewDetail')}
                           </button>
                         </DialogTrigger>
                         <DialogContent>
@@ -265,8 +267,8 @@ export default function CompanyNews() {
                             </DialogTitle>
                             <DialogDescription>
                               <div className="space-y-2 mt-2">
-                                <div><span className="font-semibold text-blue-800">รายละเอียด:</span> {news.detail}</div>
-                                <div><span className="font-semibold text-blue-800">ผู้ประกาศ:</span> {news.createdBy}</div>
+                                <div><span className="font-semibold text-blue-800">{t('companyNews.detail')}:</span> {news.detail}</div>
+                                <div><span className="font-semibold text-blue-800">{t('companyNews.createdBy')}:</span> {news.createdBy}</div>
                               </div>
                             </DialogDescription>
                           </DialogHeader>
@@ -284,7 +286,7 @@ export default function CompanyNews() {
       {/* Footer */}
       <footer className="w-full mt-16 py-8 bg-gradient-to-r from-blue-100 via-indigo-50 to-white text-center text-gray-400 text-base font-medium shadow-inner flex flex-col items-center gap-2">
         <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-10 h-10 rounded-full mx-auto mb-1" />
-        &copy; {new Date().getFullYear()} Siam IT Leave Management System
+        &copy; {new Date().getFullYear()} {t('common.companyName')}
       </footer>
     </div>
   );

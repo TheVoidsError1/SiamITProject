@@ -51,7 +51,9 @@
     "mainMenu": "Main Menu",
     "allEmployees": "All Employees",
     "createUser": "Create User",
-    "manageAll": "Manage All"
+    "manageAll": "Manage All",
+    "companyNews": "Company News",
+    "calendar": "Calendar"
   },
   "common": {
     "submit": "Submit",
@@ -471,5 +473,27 @@
     "pending": "Pending",
     "rejected": "Rejected",
     "status": "Status"
+  },
+  "companyNews": {
+    "title": "Company News",
+    "companyNewsDesc": "Important announcements, company news, activities, and information that employees should know",
+    "subject": "Subject",
+    "addMore": "Add more",
+    "noNews": "No news",
+    "delete": "Delete",
+    "loading": "Loading...",
+    "deleteSuccess": "Delete successful",
+    "deleteSuccessDesc": "Delete news successfully",
+    "deleteError": "Delete failed",
+    "deleteErrorDesc": "Delete news failed",
+    "deleteConfirm": "Are you sure you want to delete this news?",
+    "deleteConfirmDesc": "Are you sure you want to delete this news?",
+    "detail": "Detail",
+    "createdBy": "Created by",
+    "saving": "Saving...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "viewDetail": "View Detail",
+    "addNews": "Add News"
   }
 }
