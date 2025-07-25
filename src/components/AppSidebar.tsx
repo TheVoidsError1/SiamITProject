@@ -34,6 +34,11 @@ const items = [
     icon: Newspaper,
   },
   {
+    title: "ปฎิทิน",
+    url: "/calendar",
+    icon: Calendar,
+  },
+  {
     title: "navigation.leaveRequest",
     url: "/leave-request",
     icon: Calendar,

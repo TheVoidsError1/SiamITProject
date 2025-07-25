@@ -240,27 +240,42 @@ const Index = () => {
             <div className="text-xs text-blue-400 mb-1">{(user as any)?.department || '-'}</div>
             <div className="text-xs text-gray-500">{(user as any)?.email || '-'}</div>
           </Card>
-          {/* Recent Notifications */}
+          {/* Company Holidays Table (replace notifications) */}
           <Card className="glass shadow-xl border-0 p-0 animate-fade-in-up">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-blue-700 text-base font-bold animate-slide-in-left">
-                <Bell className="w-5 h-5 text-blue-500" />
-                {t('main.recentNotifications') || 'แจ้งเตือนล่าสุด'}
+                <Calendar className="w-5 h-5 text-blue-500" />
+                วันหยุดบริษัท
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2 pt-0">
-              {recentNotifications.map((n, idx) => (
-                <div key={n.id} className={`flex items-start gap-2 p-2 rounded-xl glass bg-gradient-to-br from-white/80 via-blue-50/80 to-indigo-100/80 shadow border-0 transition-all duration-200 animate-pop-in ${n.type === 'success' ? 'border-green-200' : n.type === 'error' ? 'border-red-200' : 'border-blue-200'}`} style={{ animationDelay: `${idx * 60}ms` }}>
-                  <span className={`w-7 h-7 flex items-center justify-center rounded-full ${n.type === 'success' ? 'bg-green-100 text-green-600' : n.type === 'error' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
-                    <Bell className="w-4 h-4" />
-                  </span>
-                  <div className="flex-1">
-                    <div className="font-semibold text-sm text-blue-900">{n.title}</div>
-                    <div className="text-xs text-gray-500">{n.message}</div>
-                    <div className="text-xs text-gray-400 mt-0.5">{n.time}</div>
-                  </div>
-                </div>
-              ))}
+              <table className="w-full text-sm text-blue-900">
+                <thead>
+                  <tr className="bg-blue-50">
+                    <th className="px-3 py-2 text-left">วันที่</th>
+                    <th className="px-3 py-2 text-left">ชื่อวันหยุด/กิจกรรม</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {/* Mock company holidays, replace with real data as needed */}
+                  {[
+                    { date: '2024-07-15', name: 'วันหยุดบริษัทกลางปี' },
+                    { date: '2024-08-12', name: 'กิจกรรม Outing' },
+                    { date: '2024-12-31', name: 'วันหยุดสิ้นปี' },
+                  ].map((h, idx) => {
+                    const d = new Date(h.date);
+                    const day = d.getDate();
+                    const month = d.getMonth() + 1;
+                    const year = d.getFullYear() + 543;
+                    return (
+                      <tr key={h.date} className="hover:bg-blue-50">
+                        <td className="px-3 py-2">{day}/{month}/{year}</td>
+                        <td className="px-3 py-2">{h.name}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
             </CardContent>
           </Card>
           {/* Upcoming Holidays/Events Section */}

@@ -23,6 +23,10 @@ import { PushNotificationProvider } from "@/contexts/PushNotificationContext";
 import ManageAll from './pages/SuperAdmin/ManageAll';
 import SuperAdminList from './pages/SuperAdmin/SuperAdminList';
 import CompanyNews from './pages/CompanyNews';
+import CalendarPage from './pages/CalendarPage';
+import CalendarAnnualPage from './pages/CalendarAnnualPage';
+import CalendarMonthDetailPage from './pages/CalendarMonthDetailPage';
+import CalendarCompanyPage from './pages/CalendarCompanyPage';
 
 const queryClient = new QueryClient();
 
@@ -78,6 +82,10 @@ const AppContent = () => {
                 <CompanyNews />
               </ProtectedRoute>
             } />
+            <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
+            <Route path="/calendar/annual" element={<ProtectedRoute><CalendarAnnualPage /></ProtectedRoute>} />
+            <Route path="/calendar/annual/:year/:month" element={<ProtectedRoute><CalendarMonthDetailPage /></ProtectedRoute>} />
+            <Route path="/calendar/company" element={<ProtectedRoute><CalendarCompanyPage /></ProtectedRoute>} />
             <Route path="/admin" element={
               <ProtectedRoute adminOnly>
                 <AdminDashboard />
