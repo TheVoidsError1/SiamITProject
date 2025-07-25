@@ -573,7 +573,7 @@ const LeaveHistory = () => {
                 <Card key={leave.id} className="border-0 shadow-xl bg-white/80 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all">
                   <CardHeader className="pb-2 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                     <div className="flex items-center gap-4">
-                      <div className={`text-xl font-bold ${getTypeColor(leave.type)}`}>{translateLeaveType(leave.type)}</div>
+                      <div className={`text-xl font-bold ${getTypeColor(leave.type)}`}>{getLeaveTypeLabel(leave.type)}</div>
                       {getStatusBadge(leave.status)}
                     </div>
                     <div className="text-sm text-blue-400 font-medium md:text-right">
@@ -612,7 +612,7 @@ const LeaveHistory = () => {
                           <div className="flex items-center gap-2 text-base text-green-700">
                             <CheckCircle className="w-5 h-5 text-green-500" />
                             <span className="font-medium">{t('leave.approvedBy')}:</span>
-                            <span>{leave.approvedBy}</span>
+                            <span>{leave.approvedBy && !/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/.test(leave.approvedBy) ? leave.approvedBy : '-'}</span>
                           </div>
                         )}
                         {leave.status === "rejected" && (
@@ -620,7 +620,7 @@ const LeaveHistory = () => {
                             <div className="flex items-center gap-2 text-base text-red-700">
                               <XCircle className="w-5 h-5 text-red-500" />
                               <span className="font-medium">{t('leave.rejectedBy')}:</span>
-                              <span>{leave.rejectedBy}</span>
+                              <span>{leave.rejectedBy && !/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/.test(leave.rejectedBy) ? leave.rejectedBy : '-'}</span>
                             </div>
                             {leave.rejectionReason && (
                               <div className="flex items-start gap-2 text-base text-red-700">
