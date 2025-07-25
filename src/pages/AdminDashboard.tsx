@@ -12,6 +12,7 @@ import { AlertCircle, CheckCircle, Clock, Eye, FileText, Users, XCircle } from "
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Avatar } from "@/components/ui/avatar";
+import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 type LeaveRequest = {
   id: number;
@@ -679,7 +680,10 @@ const AdminDashboard = () => {
             <h1 className="text-3xl font-extrabold text-blue-900 tracking-tight drop-shadow-lg animate-slide-in-left">{t('navigation.adminDashboard')}</h1>
             <p className="text-sm text-blue-500 animate-slide-in-left delay-100">{t('admin.dashboardDesc')}</p>
           </div>
-          {/* <LanguageSwitcher /> */}
+          {/* Language Switcher at top right */}
+          <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 10 }}>
+            <LanguageSwitcher />
+          </div>
         </div>
       </div>
       <div className="p-6 animate-fade-in">
@@ -715,6 +719,89 @@ const AdminDashboard = () => {
             </TabsList>
             {/* Pending Requests */}
             <TabsContent value="pending" className="space-y-4">
+              {/* --- Filter UI --- */}
+              <div className="flex flex-wrap gap-4 items-end mb-4 bg-white/70 dark:bg-slate-800/70 p-4 rounded-xl shadow animate-fade-in-up">
+                {/* Leave Type Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">{t('leave.leaveType')}</label>
+                  <select
+                    className="border rounded px-2 py-1 min-w-[140px] dark:bg-slate-900 dark:text-white"
+                    value={pendingPendingFilterLeaveType}
+                    onChange={e => setPendingPendingFilterLeaveType(e.target.value)}
+                  >
+                    <option value="">{t('leave.allTypes')}</option>
+                    {pendingLeaveTypes.map(lt => (
+                      <option key={lt.id} value={lt.id}>{i18n.language.startsWith('th') ? lt.leave_type_th : lt.leave_type_en}</option>
+                    ))}
+                  </select>
+                </div>
+                {/* Date Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">{t('common.date')}</label>
+                  <input
+                    type="date"
+                    className="border rounded px-2 py-1 dark:bg-slate-900 dark:text-white"
+                    value={pendingPendingSingleDate ? format(pendingPendingSingleDate, 'yyyy-MM-dd') : ''}
+                    onChange={e => setPendingPendingSingleDate(e.target.value ? new Date(e.target.value) : undefined)}
+                  />
+                </div>
+                {/* Month Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">{t('common.month')}</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={12}
+                    className="border rounded px-2 py-1 w-20 dark:bg-slate-900 dark:text-white"
+                    value={pendingPendingMonth}
+                    onChange={e => setPendingPendingMonth(e.target.value ? Number(e.target.value) : '')}
+                    placeholder="MM"
+                  />
+                </div>
+                {/* Year Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">{t('common.year')}</label>
+                  <input
+                    type="number"
+                    min={2000}
+                    max={2100}
+                    className="border rounded px-2 py-1 w-24 dark:bg-slate-900 dark:text-white"
+                    value={pendingPendingYear}
+                    onChange={e => setPendingPendingYear(e.target.value ? Number(e.target.value) : '')}
+                    placeholder="YYYY"
+                  />
+                </div>
+                {/* Backdated Filter */}
+                <div>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-1">{t('leave.backdatedFilter')}</label>
+                  <select
+                    className="border rounded px-2 py-1 min-w-[120px] dark:bg-slate-900 dark:text-white"
+                    value={pendingPendingBackdatedFilter}
+                    onChange={e => setPendingPendingBackdatedFilter(e.target.value)}
+                  >
+                    <option value="all">{t('leave.allBackdated')}</option>
+                    <option value="backdated">{t('leave.backdatedOnly')}</option>
+                    <option value="normal">{t('leave.notBackdatedOnly')}</option>
+                  </select>
+                </div>
+                {/* Buttons */}
+                <div className="flex gap-2 mt-2">
+                  <button
+                    className="bg-gray-200 dark:bg-slate-700 text-blue-900 dark:text-white px-3 py-1 rounded shadow hover:bg-gray-300 dark:hover:bg-slate-600 transition"
+                    onClick={clearPendingFilters}
+                    type="button"
+                  >
+                    {t('common.reset')}
+                  </button>
+                  <button
+                    className="bg-blue-600 text-white px-3 py-1 rounded shadow hover:bg-blue-700 transition"
+                    onClick={applyPendingFilters}
+                    type="button"
+                  >
+                    {t('common.confirm')}
+                  </button>
+                </div>
+              </div>
               <Card className="glass shadow-2xl border-0 animate-fade-in-up">
                 <CardHeader className="bg-gradient-to-r from-blue-500 via-indigo-400 to-purple-400 text-white rounded-t-2xl p-5 shadow-lg">
                   <CardTitle className="flex items-center gap-3 text-2xl font-bold animate-slide-in-left">

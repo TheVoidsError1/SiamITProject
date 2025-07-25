@@ -213,6 +213,9 @@ console.log('LeaveQuotaController registered');
 const superAdminController = require('./api/SuperAdminController')(AppDataSource);
 app.use('/api', superAdminController);
 
+const announcementsController = require('./api/AnnouncementsController')(AppDataSource);
+app.use('/api', announcementsController);
+
 app.listen(port, '0.0.0.0', () => {
   console.log(`Server is running on http://localhost:${port}`);
 }); 

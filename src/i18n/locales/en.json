@@ -167,6 +167,8 @@
     "attachment": "Attachment",
     "hour": "hour",
     "day": "day",
+    "days": "days",
+    "hours": "hours",
     "leaveTime": "Leave Time:",
     "noHourlyLeave": "No hourly leave.",
     "required": "Fill in all information.",
@@ -208,7 +210,8 @@
     "ลาคลอด": "Maternity Leave",
     "ลาฉุกเฉิน": "Emergency Leave",
     "ลาพักผ่อน": "Annual Leave",
-    "ลาอื่นๆ": "Other Leave"
+    "ลาอื่นๆ": "Other Leave",
+    "notSpecified": "Not specified"
   },
   "months": {
     "all": "All",
