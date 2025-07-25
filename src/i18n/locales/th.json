@@ -186,7 +186,8 @@
     "backdatedAll": "ทั้งหมด",
     "backdatedOnly": "เฉพาะย้อนหลัง",
     "notBackdatedOnly": "เฉพาะไม่ย้อนหลัง",
-    "statusAll": "ทั้งหมด"
+    "statusAll": "ทั้งหมด",
+    "leaveRequestForm": "แบบฟอร์มขอลา"
   },
   "leaveTypes": {
     "all": "ทั้งหมด",

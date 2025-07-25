@@ -192,7 +192,8 @@
     "backdatedAll": "All",
     "backdatedOnly": "Backdated only",
     "notBackdatedOnly": "Non-backdated only",
-    "statusAll": "All status"
+    "statusAll": "All status",
+    "leaveRequestForm": "Leave Request Form"
   },
   "leaveTypes": {
     "all": "All",
