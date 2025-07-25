@@ -590,6 +590,13 @@
              ? where.map(w => ({ ...w, backdated: Number(backdatedParamH) }))
              : { ...where, backdated: Number(backdatedParamH) };
          }
+         // --- เพิ่ม filter leaveType ---
+         const leaveType = req.query.leaveType;
+         if (leaveType) {
+           where = Array.isArray(where)
+             ? where.map(w => ({ ...w, leaveType }))
+             : { ...where, leaveType };
+         }
          // --- เพิ่ม paging ---
          const page = parseInt(req.query.page) || 1;
          const limit = parseInt(req.query.limit) || 5;
@@ -663,7 +670,7 @@
            }
            return {
              id: leave.id,
-             leaveTypeName: leaveTypeObj ? leaveTypeObj.leave_type_th : leave.leaveType,
+             leaveType: leaveTypeObj ? leaveTypeObj.leave_type_th : leave.leaveType,
              leaveDate: leave.startDate,
              startDate: leave.startDate,
              endDate: leave.endDate,

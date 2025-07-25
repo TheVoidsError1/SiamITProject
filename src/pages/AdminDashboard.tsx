@@ -983,7 +983,7 @@ const AdminDashboard = () => {
                       >
                         <option value="">{t('leave.type', 'Leave Type')}</option>
                         {pendingLeaveTypes.map(lt => (
-                          <option key={lt.id} value={lt.id}>
+                          <option key={lt.id} value={lt.leave_type}>
                             {i18n.language.startsWith('th') ? lt.leave_type_th : lt.leave_type_en}
                           </option>
                         ))}
@@ -1134,7 +1134,11 @@ const AdminDashboard = () => {
                             {/* ข้อมูล leave หลัก */}
                             <div className="flex-1">
                               <div className="font-bold text-lg mb-1">{request.user?.User_name || "-"}</div>
-                              <div className="text-base text-gray-700 mb-2">{i18n.language.startsWith('th') ? request.leaveTypeName_th : request.leaveTypeName_en}</div>
+                              <div className="text-base text-gray-700 mb-2">{
+                                i18n.language.startsWith('th')
+                                  ? (request.leaveTypeName_th || request.leaveType || request.leaveTypeName_en)
+                                  : (request.leaveTypeName_en || request.leaveType || request.leaveTypeName_th)
+                              }</div>
                               <div className="text-sm text-gray-700 mb-1">
                                 {t('leave.date')}: {startStr} - {endStr}{request.startTime && request.endTime
                                   ? ` (${calcHours(request.startTime, request.endTime)} ${hourUnit}, ${request.startTime} - ${request.endTime})`
