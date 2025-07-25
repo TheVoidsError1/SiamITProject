@@ -1,5 +1,5 @@
 
-import { Calendar, Home, Clock, Settings, User, LogOut, Users, Building } from "lucide-react";
+import { Calendar, Home, Clock, Settings, User, LogOut, Users, Building, Newspaper } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import {
@@ -26,6 +26,12 @@ const items = [
     title: "navigation.home",
     url: "/",
     icon: Home,
+  },
+  {
+    // Use hardcoded Thai label for company news
+    title: "ข่าวสารทางบริษัท",
+    url: "/company-news",
+    icon: Newspaper,
   },
   {
     title: "navigation.leaveRequest",
@@ -172,7 +178,8 @@ export function AppSidebar() {
                         `font-medium transition-colors duration-200
                         ${location.pathname === item.url ? 'text-blue-700 dark:text-blue-300' : 'text-sidebar-foreground group-hover:text-blue-600'}`
                       }>
-                        {t(item.title)}
+                        {/* If the item is the company news, use the hardcoded label, else use t() */}
+                        {item.title === "ข่าวสารทางบริษัท" ? item.title : t(item.title)}
                       </span>
                     </Link>
                   </SidebarMenuButton>

@@ -427,342 +427,360 @@ const ManageAll: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-      <div className="border-b bg-white/80 backdrop-blur-sm">
-        <div className="flex h-16 items-center px-4 gap-4">
-          <SidebarTrigger />
-          <div className="flex-1">
-            <h1 className="text-2xl font-bold text-gray-900">{t('navigation.manageAll')}</h1>
-            <p className="text-sm text-gray-600">
-              {t('main.manageAllDesc', 'Manage positions, departments, and leave types for your organization.')}
-            </p>
-          </div>
-          <LanguageSwitcher />
+    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-indigo-50 to-white flex flex-col">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <svg viewBox="0 0 1440 320" className="w-full h-32 md:h-48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path fill="url(#waveGradient)" fillOpacity="1" d="M0,160L60,170.7C120,181,240,203,360,197.3C480,192,600,160,720,133.3C840,107,960,85,1080,101.3C1200,117,1320,171,1380,197.3L1440,224L1440,0L1380,0C1320,0,1200,0,1080,0C960,0,840,0,720,0C600,0,480,0,360,0C240,0,120,0,60,0L0,0Z" />
+            <defs>
+              <linearGradient id="waveGradient" x1="0" y1="0" x2="1440" y2="0" gradientUnits="userSpaceOnUse">
+                <stop stopColor="#3b82f6" />
+                <stop offset="1" stopColor="#6366f1" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div className="relative z-10 flex flex-col items-center justify-center py-10 md:py-16">
+          <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-24 h-24 rounded-full bg-white/80 shadow-2xl border-4 border-white mb-4" />
+          <h1 className="text-4xl md:text-5xl font-extrabold text-indigo-900 drop-shadow mb-2 flex items-center gap-3">
+            {t('navigation.manageAll')}
+          </h1>
+          <p className="text-lg md:text-xl text-blue-900/70 mb-2 font-medium text-center max-w-2xl">
+            {t('main.manageAllDesc', 'Manage positions, departments, and leave types for your organization.')}
+          </p>
         </div>
       </div>
-      <div className="flex-1 flex justify-center items-start py-10 px-2">
-        <div className="w-full max-w-6xl">
-          <div className="bg-white rounded-2xl shadow-xl p-8">
-            <div className="mb-8">
-              <Tabs defaultValue="positions" className="w-full">
-                <TabsList className="mb-6">
-                  <TabsTrigger value="positions">{t('positions.positions', 'Positions')}</TabsTrigger>
-                  <TabsTrigger value="departments">{t('departments.departments', 'Departments')}</TabsTrigger>
-                  <TabsTrigger value="leaveTypes">{t('leave.leaveType', 'Leave Types')}</TabsTrigger>
-                </TabsList>
-                <TabsContent value="positions">
-                  <div className="rounded-2xl shadow overflow-hidden mb-8">
-                    <div className="bg-blue-600 px-6 py-3">
-                      <h2 className="text-lg font-bold text-white">{t('positions.positions', 'Positions')}</h2>
+      <div className="w-full max-w-6xl mx-auto px-4 mt-0 animate-fade-in flex-1">
+        <div className="bg-white/70 backdrop-blur-md rounded-3xl shadow-2xl p-8">
+          <Tabs defaultValue="positions" className="w-full">
+            <TabsList className="mb-10 bg-indigo-50 rounded-2xl shadow-inner flex gap-4 justify-center py-3">
+              <TabsTrigger value="positions" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg text-indigo-700 font-bold text-xl py-3 px-6 rounded-2xl transition-all flex items-center gap-2">
+                <span role="img" aria-label="positions">🧑‍💼</span> {t('positions.positions', 'Positions')}
+              </TabsTrigger>
+              <TabsTrigger value="departments" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg text-indigo-700 font-bold text-xl py-3 px-6 rounded-2xl transition-all flex items-center gap-2">
+                <span role="img" aria-label="departments">🏢</span> {t('departments.departments', 'Departments')}
+              </TabsTrigger>
+              <TabsTrigger value="leaveTypes" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg text-indigo-700 font-bold text-xl py-3 px-6 rounded-2xl transition-all flex items-center gap-2">
+                <span role="img" aria-label="leaveTypes">📝</span> {t('leave.leaveType', 'Leave Types')}
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="positions">
+              <div className="rounded-2xl shadow overflow-hidden mb-8">
+                <div className="bg-blue-600 px-6 py-3">
+                  <h2 className="text-lg font-bold text-white">{t('positions.positions', 'Positions')}</h2>
+                </div>
+                <div className="p-6">
+                  <form onSubmit={handlePositionSubmit} className="mb-6 flex flex-col gap-4 bg-blue-50 rounded-xl p-6 shadow-sm">
+                    <div className="flex flex-col md:flex-row gap-4">
+                      <Input name="name_en" value={positionForm.name_en} onChange={handlePositionChange} placeholder="Position (EN)" required className="flex-1" />
+                      <Input name="name_th" value={positionForm.name_th} onChange={handlePositionChange} placeholder="Position (TH)" required className="flex-1" />
                     </div>
-                    <div className="p-6">
-                      <form onSubmit={handlePositionSubmit} className="mb-6 flex flex-col gap-4 bg-blue-50 rounded-xl p-6 shadow-sm">
-                        <div className="flex flex-col md:flex-row gap-4">
-                          <Input name="name_en" value={positionForm.name_en} onChange={handlePositionChange} placeholder="Position (EN)" required className="flex-1" />
-                          <Input name="name_th" value={positionForm.name_th} onChange={handlePositionChange} placeholder="Position (TH)" required className="flex-1" />
+                    <div className="flex flex-col md:flex-row gap-4">
+                      {filteredLeaveTypes.map(lt => (
+                        <div key={lt.id} className="flex flex-col flex-1">
+                          <label className="text-sm font-medium text-gray-700 mb-1">{lang === 'th' ? lt.leave_type_th : lt.leave_type_en}</label>
+                          <Input
+                            type="number"
+                            min={0}
+                            name={`quota_${lt.id}`}
+                            value={positionForm.quotas[lt.id] || ''}
+                            onChange={e => handleQuotaChange(lt.id, e.target.value)}
+                            required
+                          />
                         </div>
-                        <div className="flex flex-col md:flex-row gap-4">
+                      ))}
+                    </div>
+                    <div className="flex justify-end mt-2">
+                      <Button type="submit" className="btn-primary w-24">{editingPositionId ? t('common.update', 'Update') : t('common.add', 'Add')}</Button>
+                    </div>
+                    {positionError && (
+                      <div className="text-red-600 font-semibold mt-2">{positionError}</div>
+                    )}
+                  </form>
+                  <div className="overflow-x-auto rounded-xl shadow">
+                    <table className="w-full table-auto bg-white rounded-xl">
+                      <thead>
+                        <tr className="bg-blue-100 text-blue-900">
+                          <th className="p-3">{t('positions.position', 'ตำแหน่ง')} (EN)</th>
+                          <th className="p-3">{t('positions.position', 'ตำแหน่ง')} (TH)</th>
                           {filteredLeaveTypes.map(lt => (
-                            <div key={lt.id} className="flex flex-col flex-1">
-                              <label className="text-sm font-medium text-gray-700 mb-1">{lang === 'th' ? lt.leave_type_th : lt.leave_type_en}</label>
-                              <Input
-                                type="number"
-                                min={0}
-                                name={`quota_${lt.id}`}
-                                value={positionForm.quotas[lt.id] || ''}
-                                onChange={e => handleQuotaChange(lt.id, e.target.value)}
-                                required
-                              />
-                            </div>
+                            <th key={lt.id} className="p-3">{lang === 'th' ? lt.leave_type_th : lt.leave_type_en}</th>
                           ))}
-                        </div>
-                        <div className="flex justify-end mt-2">
-                          <Button type="submit" className="btn-primary w-24">{editingPositionId ? t('common.update', 'Update') : t('common.add', 'Add')}</Button>
-                        </div>
-                        {positionError && (
-                          <div className="text-red-600 font-semibold mt-2">{positionError}</div>
+                          <th className="p-3 text-center">{t('common.actions', 'Actions')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {positions.map(pos => (
+                          <tr key={pos.id} className="hover:bg-blue-50">
+                            {inlineEdit && inlineEdit.id === pos.id ? (
+                              <>
+                                <td className="p-3 font-medium">
+                                  <Input value={inlineEdit.name_en} onChange={e => handleInlineEditChange('name_en', e.target.value)} className="w-32" />
+                                </td>
+                                <td className="p-3 font-medium">
+                                  <Input value={inlineEdit.name_th} onChange={e => handleInlineEditChange('name_th', e.target.value)} className="w-32" />
+                                </td>
+                                {filteredLeaveTypes.map(lt => (
+                                  <td key={lt.id} className="p-3">
+                                    <Input
+                                      type="number"
+                                      min={0}
+                                      value={inlineEdit.quotas[lt.id] || ''}
+                                      onChange={e => handleInlineQuotaChange(lt.id, e.target.value)}
+                                      className="w-20"
+                                    />
+                                  </td>
+                                ))}
+                                <td className="p-3 flex gap-2 justify-center">
+                                  <Button variant="outline" onClick={saveInlineEdit}>Save</Button>
+                                  <Button variant="destructive" onClick={cancelInlineEdit}>Cancel</Button>
+                                </td>
+                              </>
+                            ) : (
+                              <>
+                                <td className="p-3 font-medium">{pos.position_name_en}</td>
+                                <td className="p-3 font-medium">{pos.position_name_th}</td>
+                                {filteredLeaveTypes.map(lt => (
+                                  <td key={lt.id} className="p-3">
+                                    {pos.quotas.find((q: any) => q.leaveTypeId === lt.id)?.quota ?? ''}
+                                  </td>
+                                ))}
+                                <td className="p-3 flex gap-2 justify-center">
+                                  <Button variant="outline" onClick={() => startInlineEdit(pos)}>{t('common.edit', 'Edit')}</Button>
+                                  <Button variant="destructive" onClick={() => handleDeletePosition(pos.id)}>{t('common.delete', 'Delete')}</Button>
+                                </td>
+                              </>
+                            )}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+            <TabsContent value="departments">
+              <div className="rounded-2xl shadow overflow-hidden mb-8">
+                <div className="bg-blue-600 px-6 py-3">
+                  <h2 className="text-lg font-bold text-white">{t('departments.departments', 'Departments')}</h2>
+                </div>
+                <div className="p-6">
+                  <form onSubmit={handleDepartmentSubmit} className="mb-6 flex gap-2 items-end bg-blue-50 rounded-xl p-6 shadow-sm">
+                    <Input name="name_en" value={departmentForm.name_en} onChange={handleDepartmentChange} placeholder="Department Name (EN)" required className="md:w-64" />
+                    <Input name="name_th" value={departmentForm.name_th} onChange={handleDepartmentChange} placeholder="Department Name (TH)" required className="md:w-64" />
+                    <Button type="submit" className="btn-primary">{editingDepartmentId ? t('common.update', 'Update') : t('common.add', 'Add')}</Button>
+                  </form>
+                  <div className="overflow-x-auto rounded-xl shadow">
+                    <table className="w-full table-auto bg-white rounded-xl">
+                      <thead>
+                        <tr className="bg-blue-100 text-blue-900">
+                          <th className="p-3">{t('departments.departments', 'แผนก')} (EN)</th>
+                          <th className="p-3">{t('departments.departments', 'แผนก')} (TH)</th>
+                          <th className="p-3 text-center">{t('common.actions', 'Actions')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {departments.map(dep => (
+                          <tr key={dep.id} className="hover:bg-blue-50">
+                            {inlineDepartmentEdit && inlineDepartmentEdit.id === dep.id ? (
+                              <>
+                                <td className="p-3 font-medium">
+                                  <Input value={inlineDepartmentEdit.name_en} onChange={e => handleInlineDepartmentEditChange('name_en', e.target.value)} className="w-32" />
+                                </td>
+                                <td className="p-3 font-medium">
+                                  <Input value={inlineDepartmentEdit.name_th} onChange={e => handleInlineDepartmentEditChange('name_th', e.target.value)} className="w-32" />
+                                </td>
+                                <td className="p-3 flex gap-2 justify-center">
+                                  <Button variant="outline" onClick={saveInlineDepartmentEdit}>Save</Button>
+                                  <Button variant="destructive" onClick={cancelInlineDepartmentEdit}>Cancel</Button>
+                                </td>
+                              </>
+                            ) : (
+                              <>
+                                <td className="p-3 font-medium">{dep.department_name_en}</td>
+                                <td className="p-3 font-medium">{dep.department_name_th}</td>
+                                <td className="p-3 flex gap-2 justify-center">
+                                  <Button variant="outline" onClick={() => startInlineDepartmentEdit(dep)}>{t('common.edit', 'Edit')}</Button>
+                                  <Button variant="destructive" onClick={() => handleDeleteDepartment(dep.id)}>{t('common.delete', 'Delete')}</Button>
+                                </td>
+                              </>
+                            )}
+                          </tr>
+                        ))}
+                        {inlineDepartmentEdit && inlineDepartmentError && (
+                          <tr><td colSpan={3} className="text-red-600 font-semibold mt-2">{inlineDepartmentError}</td></tr>
                         )}
-                      </form>
-                      <div className="overflow-x-auto rounded-xl shadow">
-                        <table className="w-full table-auto bg-white rounded-xl">
-                          <thead>
-                            <tr className="bg-blue-100 text-blue-900">
-                              <th className="p-3">{t('positions.position', 'ตำแหน่ง')} (EN)</th>
-                              <th className="p-3">{t('positions.position', 'ตำแหน่ง')} (TH)</th>
-                              {filteredLeaveTypes.map(lt => (
-                                <th key={lt.id} className="p-3">{lang === 'th' ? lt.leave_type_th : lt.leave_type_en}</th>
-                              ))}
-                              <th className="p-3 text-center">{t('common.actions', 'Actions')}</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {positions.map(pos => (
-                              <tr key={pos.id} className="hover:bg-blue-50">
-                                {inlineEdit && inlineEdit.id === pos.id ? (
-                                  <>
-                                    <td className="p-3 font-medium">
-                                      <Input value={inlineEdit.name_en} onChange={e => handleInlineEditChange('name_en', e.target.value)} className="w-32" />
-                                    </td>
-                                    <td className="p-3 font-medium">
-                                      <Input value={inlineEdit.name_th} onChange={e => handleInlineEditChange('name_th', e.target.value)} className="w-32" />
-                                    </td>
-                                    {filteredLeaveTypes.map(lt => (
-                                      <td key={lt.id} className="p-3">
-                                        <Input
-                                          type="number"
-                                          min={0}
-                                          value={inlineEdit.quotas[lt.id] || ''}
-                                          onChange={e => handleInlineQuotaChange(lt.id, e.target.value)}
-                                          className="w-20"
-                                        />
-                                      </td>
-                                    ))}
-                                    <td className="p-3 flex gap-2 justify-center">
-                                      <Button variant="outline" onClick={saveInlineEdit}>Save</Button>
-                                      <Button variant="destructive" onClick={cancelInlineEdit}>Cancel</Button>
-                                    </td>
-                                  </>
-                                ) : (
-                                  <>
-                                    <td className="p-3 font-medium">{pos.position_name_en}</td>
-                                    <td className="p-3 font-medium">{pos.position_name_th}</td>
-                                    {filteredLeaveTypes.map(lt => (
-                                      <td key={lt.id} className="p-3">
-                                        {pos.quotas.find((q: any) => q.leaveTypeId === lt.id)?.quota ?? ''}
-                                      </td>
-                                    ))}
-                                    <td className="p-3 flex gap-2 justify-center">
-                                      <Button variant="outline" onClick={() => startInlineEdit(pos)}>{t('common.edit', 'Edit')}</Button>
-                                      <Button variant="destructive" onClick={() => handleDeletePosition(pos.id)}>{t('common.delete', 'Delete')}</Button>
-                                    </td>
-                                  </>
-                                )}
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+            <TabsContent value="leaveTypes">
+              <div className="rounded-2xl shadow overflow-hidden mb-8">
+                <div className="bg-blue-600 px-6 py-3">
+                  <h2 className="text-lg font-bold text-white">{t('leave.leaveType', 'Leave Types')}</h2>
+                </div>
+                <div className="p-6">
+                  <form onSubmit={handleLeaveTypeSubmit} className="mb-6 flex items-end bg-blue-50 rounded-xl p-6 shadow-sm">
+                    <div className="flex flex-1 gap-2 items-end">
+                      <Input name="name_en" value={leaveTypeForm.name_en} onChange={handleLeaveTypeChange} placeholder="Leave Type Name (EN)" required className="md:w-64" />
+                      <Input name="name_th" value={leaveTypeForm.name_th} onChange={handleLeaveTypeChange} placeholder="Leave Type Name (TH)" required className="md:w-64" />
+                      <div className="flex items-center gap-3 ml-2">
+                        <input
+                          type="checkbox"
+                          name="require_attachment"
+                          checked={leaveTypeForm.require_attachment}
+                          onChange={e => setLeaveTypeForm(prev => ({ ...prev, require_attachment: e.target.checked }))}
+                          className="accent-blue-600 h-5 w-5 rounded border-gray-300 focus:ring-2 focus:ring-blue-400 transition-all"
+                          id="require-attachment-checkbox"
+                        />
+                        <label htmlFor="require-attachment-checkbox" className="text-base font-medium select-none cursor-pointer">
+                          {t('leave.requiresAttachment', 'Require Attachment')}
+                        </label>
                       </div>
                     </div>
-                  </div>
-                </TabsContent>
-                <TabsContent value="departments">
-                  <div className="rounded-2xl shadow overflow-hidden mb-8">
-                    <div className="bg-blue-600 px-6 py-3">
-                      <h2 className="text-lg font-bold text-white">{t('departments.departments', 'Departments')}</h2>
+                    <div className="flex-1 flex justify-end">
+                      <Button type="submit" className="btn-primary">{editingLeaveTypeId ? t('common.update', 'Update') : t('common.add', 'Add')}</Button>
                     </div>
-                    <div className="p-6">
-                      <form onSubmit={handleDepartmentSubmit} className="mb-6 flex gap-2 items-end bg-blue-50 rounded-xl p-6 shadow-sm">
-                        <Input name="name_en" value={departmentForm.name_en} onChange={handleDepartmentChange} placeholder="Department Name (EN)" required className="md:w-64" />
-                        <Input name="name_th" value={departmentForm.name_th} onChange={handleDepartmentChange} placeholder="Department Name (TH)" required className="md:w-64" />
-                        <Button type="submit" className="btn-primary">{editingDepartmentId ? t('common.update', 'Update') : t('common.add', 'Add')}</Button>
-                      </form>
-                      <div className="overflow-x-auto rounded-xl shadow">
-                        <table className="w-full table-auto bg-white rounded-xl">
-                          <thead>
-                            <tr className="bg-blue-100 text-blue-900">
-                              <th className="p-3">{t('departments.departments', 'แผนก')} (EN)</th>
-                              <th className="p-3">{t('departments.departments', 'แผนก')} (TH)</th>
-                              <th className="p-3 text-center">{t('common.actions', 'Actions')}</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {departments.map(dep => (
-                              <tr key={dep.id} className="hover:bg-blue-50">
-                                {inlineDepartmentEdit && inlineDepartmentEdit.id === dep.id ? (
-                                  <>
-                                    <td className="p-3 font-medium">
-                                      <Input value={inlineDepartmentEdit.name_en} onChange={e => handleInlineDepartmentEditChange('name_en', e.target.value)} className="w-32" />
-                                    </td>
-                                    <td className="p-3 font-medium">
-                                      <Input value={inlineDepartmentEdit.name_th} onChange={e => handleInlineDepartmentEditChange('name_th', e.target.value)} className="w-32" />
-                                    </td>
-                                    <td className="p-3 flex gap-2 justify-center">
-                                      <Button variant="outline" onClick={saveInlineDepartmentEdit}>Save</Button>
-                                      <Button variant="destructive" onClick={cancelInlineDepartmentEdit}>Cancel</Button>
-                                    </td>
-                                  </>
-                                ) : (
-                                  <>
-                                    <td className="p-3 font-medium">{dep.department_name_en}</td>
-                                    <td className="p-3 font-medium">{dep.department_name_th}</td>
-                                    <td className="p-3 flex gap-2 justify-center">
-                                      <Button variant="outline" onClick={() => startInlineDepartmentEdit(dep)}>{t('common.edit', 'Edit')}</Button>
-                                      <Button variant="destructive" onClick={() => handleDeleteDepartment(dep.id)}>{t('common.delete', 'Delete')}</Button>
-                                    </td>
-                                  </>
-                                )}
-                              </tr>
-                            ))}
-                            {inlineDepartmentEdit && inlineDepartmentError && (
-                              <tr><td colSpan={3} className="text-red-600 font-semibold mt-2">{inlineDepartmentError}</td></tr>
+                  </form>
+                  <div className="overflow-x-auto rounded-xl shadow">
+                    <table className="w-full table-auto bg-white rounded-xl">
+                      <thead>
+                        <tr className="bg-blue-100 text-blue-900">
+                          <th className="p-3">{t('leave.leaveType', 'ประเภทการลา')} (EN)</th>
+                          <th className="p-3">{t('leave.leaveType', 'ประเภทการลา')} (TH)</th>
+                          <th className="p-3">{t('leave.requiresAttachment', 'Require Attachment')}</th>
+                          <th className="p-3 text-center">{t('common.actions', 'Actions')}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {leaveTypes.map(lt => (
+                          <tr key={lt.id} className="hover:bg-blue-50">
+                            {inlineLeaveTypeEdit && inlineLeaveTypeEdit.id === lt.id ? (
+                              <>
+                                <td className="p-3 font-medium">
+                                  <Input value={inlineLeaveTypeEdit.name_en} onChange={e => handleInlineLeaveTypeEditChange('name_en', e.target.value)} className="w-32" />
+                                </td>
+                                <td className="p-3 font-medium">
+                                  <Input value={inlineLeaveTypeEdit.name_th} onChange={e => handleInlineLeaveTypeEditChange('name_th', e.target.value)} className="w-32" />
+                                </td>
+                                <td className="p-3 font-medium text-center">
+                                  <label style={{ display: 'inline-block', position: 'relative', width: 40, height: 24 }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={inlineLeaveTypeEdit?.id === lt.id ? !!inlineLeaveTypeEdit.require_attachment : !!lt.require_attachment}
+                                      onChange={inlineLeaveTypeEdit?.id === lt.id ? (e => setInlineLeaveTypeEdit(edit => edit ? { ...edit, require_attachment: e.target.checked } : edit)) : undefined}
+                                      style={{ opacity: 0, width: 0, height: 0 }}
+                                      tabIndex={-1}
+                                      readOnly={inlineLeaveTypeEdit?.id !== lt.id}
+                                    />
+                                    <span
+                                      style={{
+                                        position: 'absolute',
+                                        cursor: 'pointer',
+                                        top: 0,
+                                        left: 0,
+                                        right: 0,
+                                        bottom: 0,
+                                        background: (inlineLeaveTypeEdit?.id === lt.id ? !!inlineLeaveTypeEdit.require_attachment : !!lt.require_attachment) ? '#64b5f6' : '#ccc',
+                                        borderRadius: 24,
+                                        transition: 'background 0.2s',
+                                        display: 'block',
+                                      }}
+                                    >
+                                      <span
+                                        style={{
+                                          position: 'absolute',
+                                          left: (inlineLeaveTypeEdit?.id === lt.id ? !!inlineLeaveTypeEdit.require_attachment : !!lt.require_attachment) ? 20 : 2,
+                                          top: 2,
+                                          width: 20,
+                                          height: 20,
+                                          background: '#fff',
+                                          borderRadius: '50%',
+                                          transition: 'left 0.2s',
+                                          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                                        }}
+                                      />
+                                    </span>
+                                  </label>
+                                </td>
+                                <td className="p-3 flex gap-2 justify-center">
+                                  <Button variant="outline" onClick={saveInlineLeaveTypeEdit}>Save</Button>
+                                  <Button variant="destructive" onClick={cancelInlineLeaveTypeEdit}>Cancel</Button>
+                                </td>
+                              </>
+                            ) : (
+                              <>
+                                <td className="p-3 font-medium">{lt.leave_type_en}</td>
+                                <td className="p-3 font-medium">{lt.leave_type_th}</td>
+                                <td className="p-3 font-medium text-center">
+                                  <label style={{ display: 'inline-block', position: 'relative', width: 40, height: 24 }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={!!lt.require_attachment}
+                                      onChange={() => handleToggleRequireAttachment(lt)}
+                                      style={{ opacity: 0, width: 0, height: 0 }}
+                                      tabIndex={-1}
+                                    />
+                                    <span
+                                      style={{
+                                        position: 'absolute',
+                                        cursor: 'pointer',
+                                        top: 0,
+                                        left: 0,
+                                        right: 0,
+                                        bottom: 0,
+                                        background: !!lt.require_attachment ? '#64b5f6' : '#ccc',
+                                        borderRadius: 24,
+                                        transition: 'background 0.2s',
+                                        display: 'block',
+                                      }}
+                                    >
+                                      <span
+                                        style={{
+                                          position: 'absolute',
+                                          left: !!lt.require_attachment ? 20 : 2,
+                                          top: 2,
+                                          width: 20,
+                                          height: 20,
+                                          background: '#fff',
+                                          borderRadius: '50%',
+                                          transition: 'left 0.2s',
+                                          boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
+                                        }}
+                                      />
+                                    </span>
+                                  </label>
+                                </td>
+                                <td className="p-3 text-center">
+                                  <div className="flex gap-2 justify-center">
+                                    <Button variant="outline" onClick={() => startInlineLeaveTypeEdit(lt)}>{t('common.edit', 'Edit')}</Button>
+                                    <Button variant="destructive" onClick={() => handleDeleteLeaveType(lt.id)}>{t('common.delete', 'Delete')}</Button>
+                                  </div>
+                                </td>
+                              </>
                             )}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
+                          </tr>
+                        ))}
+                        {inlineLeaveTypeEdit && inlineLeaveTypeError && (
+                          <tr><td colSpan={4} className="text-red-600 font-semibold mt-2">{inlineLeaveTypeError}</td></tr>
+                        )}
+                      </tbody>
+                    </table>
                   </div>
-                </TabsContent>
-                <TabsContent value="leaveTypes">
-                  <div className="rounded-2xl shadow overflow-hidden mb-8">
-                    <div className="bg-blue-600 px-6 py-3">
-                      <h2 className="text-lg font-bold text-white">{t('leave.leaveType', 'Leave Types')}</h2>
-                    </div>
-                    <div className="p-6">
-                      <form onSubmit={handleLeaveTypeSubmit} className="mb-6 flex items-end bg-blue-50 rounded-xl p-6 shadow-sm">
-                        <div className="flex flex-1 gap-2 items-end">
-                          <Input name="name_en" value={leaveTypeForm.name_en} onChange={handleLeaveTypeChange} placeholder="Leave Type Name (EN)" required className="md:w-64" />
-                          <Input name="name_th" value={leaveTypeForm.name_th} onChange={handleLeaveTypeChange} placeholder="Leave Type Name (TH)" required className="md:w-64" />
-                          <div className="flex items-center gap-3 ml-2">
-                            <input
-                              type="checkbox"
-                              name="require_attachment"
-                              checked={leaveTypeForm.require_attachment}
-                              onChange={e => setLeaveTypeForm(prev => ({ ...prev, require_attachment: e.target.checked }))}
-                              className="accent-blue-600 h-5 w-5 rounded border-gray-300 focus:ring-2 focus:ring-blue-400 transition-all"
-                              id="require-attachment-checkbox"
-                            />
-                            <label htmlFor="require-attachment-checkbox" className="text-base font-medium select-none cursor-pointer">
-                              {t('leave.requiresAttachment', 'Require Attachment')}
-                            </label>
-                          </div>
-                        </div>
-                        <div className="flex-1 flex justify-end">
-                          <Button type="submit" className="btn-primary">{editingLeaveTypeId ? t('common.update', 'Update') : t('common.add', 'Add')}</Button>
-                        </div>
-                      </form>
-                      <div className="overflow-x-auto rounded-xl shadow">
-                        <table className="w-full table-auto bg-white rounded-xl">
-                          <thead>
-                            <tr className="bg-blue-100 text-blue-900">
-                              <th className="p-3">{t('leave.leaveType', 'ประเภทการลา')} (EN)</th>
-                              <th className="p-3">{t('leave.leaveType', 'ประเภทการลา')} (TH)</th>
-                              <th className="p-3">{t('leave.requiresAttachment', 'Require Attachment')}</th>
-                              <th className="p-3 text-center">{t('common.actions', 'Actions')}</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {leaveTypes.map(lt => (
-                              <tr key={lt.id} className="hover:bg-blue-50">
-                                {inlineLeaveTypeEdit && inlineLeaveTypeEdit.id === lt.id ? (
-                                  <>
-                                    <td className="p-3 font-medium">
-                                      <Input value={inlineLeaveTypeEdit.name_en} onChange={e => handleInlineLeaveTypeEditChange('name_en', e.target.value)} className="w-32" />
-                                    </td>
-                                    <td className="p-3 font-medium">
-                                      <Input value={inlineLeaveTypeEdit.name_th} onChange={e => handleInlineLeaveTypeEditChange('name_th', e.target.value)} className="w-32" />
-                                    </td>
-                                    <td className="p-3 font-medium text-center">
-                                      <label style={{ display: 'inline-block', position: 'relative', width: 40, height: 24 }}>
-                                        <input
-                                          type="checkbox"
-                                          checked={inlineLeaveTypeEdit?.id === lt.id ? !!inlineLeaveTypeEdit.require_attachment : !!lt.require_attachment}
-                                          onChange={inlineLeaveTypeEdit?.id === lt.id ? (e => setInlineLeaveTypeEdit(edit => edit ? { ...edit, require_attachment: e.target.checked } : edit)) : undefined}
-                                          style={{ opacity: 0, width: 0, height: 0 }}
-                                          tabIndex={-1}
-                                          readOnly={inlineLeaveTypeEdit?.id !== lt.id}
-                                        />
-                                        <span
-                                          style={{
-                                            position: 'absolute',
-                                            cursor: 'pointer',
-                                            top: 0,
-                                            left: 0,
-                                            right: 0,
-                                            bottom: 0,
-                                            background: (inlineLeaveTypeEdit?.id === lt.id ? !!inlineLeaveTypeEdit.require_attachment : !!lt.require_attachment) ? '#64b5f6' : '#ccc',
-                                            borderRadius: 24,
-                                            transition: 'background 0.2s',
-                                            display: 'block',
-                                          }}
-                                        >
-                                          <span
-                                            style={{
-                                              position: 'absolute',
-                                              left: (inlineLeaveTypeEdit?.id === lt.id ? !!inlineLeaveTypeEdit.require_attachment : !!lt.require_attachment) ? 20 : 2,
-                                              top: 2,
-                                              width: 20,
-                                              height: 20,
-                                              background: '#fff',
-                                              borderRadius: '50%',
-                                              transition: 'left 0.2s',
-                                              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-                                            }}
-                                          />
-                                        </span>
-                                      </label>
-                                    </td>
-                                    <td className="p-3 flex gap-2 justify-center">
-                                      <Button variant="outline" onClick={saveInlineLeaveTypeEdit}>Save</Button>
-                                      <Button variant="destructive" onClick={cancelInlineLeaveTypeEdit}>Cancel</Button>
-                                    </td>
-                                  </>
-                                ) : (
-                                  <>
-                                    <td className="p-3 font-medium">{lt.leave_type_en}</td>
-                                    <td className="p-3 font-medium">{lt.leave_type_th}</td>
-                                    <td className="p-3 font-medium text-center">
-                                      <label style={{ display: 'inline-block', position: 'relative', width: 40, height: 24 }}>
-                                        <input
-                                          type="checkbox"
-                                          checked={!!lt.require_attachment}
-                                          onChange={() => handleToggleRequireAttachment(lt)}
-                                          style={{ opacity: 0, width: 0, height: 0 }}
-                                          tabIndex={-1}
-                                        />
-                                        <span
-                                          style={{
-                                            position: 'absolute',
-                                            cursor: 'pointer',
-                                            top: 0,
-                                            left: 0,
-                                            right: 0,
-                                            bottom: 0,
-                                            background: !!lt.require_attachment ? '#64b5f6' : '#ccc',
-                                            borderRadius: 24,
-                                            transition: 'background 0.2s',
-                                            display: 'block',
-                                          }}
-                                        >
-                                          <span
-                                            style={{
-                                              position: 'absolute',
-                                              left: !!lt.require_attachment ? 20 : 2,
-                                              top: 2,
-                                              width: 20,
-                                              height: 20,
-                                              background: '#fff',
-                                              borderRadius: '50%',
-                                              transition: 'left 0.2s',
-                                              boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-                                            }}
-                                          />
-                                        </span>
-                                      </label>
-                                    </td>
-                                    <td className="p-3 text-center">
-                                      <div className="flex gap-2 justify-center">
-                                        <Button variant="outline" onClick={() => startInlineLeaveTypeEdit(lt)}>{t('common.edit', 'Edit')}</Button>
-                                        <Button variant="destructive" onClick={() => handleDeleteLeaveType(lt.id)}>{t('common.delete', 'Delete')}</Button>
-                                      </div>
-                                    </td>
-                                  </>
-                                )}
-                              </tr>
-                            ))}
-                            {inlineLeaveTypeEdit && inlineLeaveTypeError && (
-                              <tr><td colSpan={4} className="text-red-600 font-semibold mt-2">{inlineLeaveTypeError}</td></tr>
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                    </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </div>
-          </div>
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
+      {/* Footer */}
+      <footer className="w-full mt-16 py-8 bg-gradient-to-r from-blue-100 via-indigo-50 to-white text-center text-gray-400 text-base font-medium shadow-inner flex flex-col items-center gap-2">
+        <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-10 h-10 rounded-full mx-auto mb-1" />
+        &copy; {new Date().getFullYear()} Siam IT Leave Management System
+      </footer>
     </div>
   );
 };

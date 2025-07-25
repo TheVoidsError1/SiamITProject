@@ -144,154 +144,164 @@ const SuperAdminList: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="absolute top-4 right-4">
-        <LanguageSwitcher />
-      </div>
-      <div className="w-full max-w-md space-y-8 animate-fade-in">
-        <div className="text-center">
-          <img
-            src="/lovable-uploads/IMG_4486-removebg-preview.png"
-            alt="Siam IT Logo"
-            className="mx-auto h-16 w-auto mb-6"
-          />
-          <h2 className="text-3xl font-bold text-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-indigo-50 to-white flex flex-col">
+      {/* Hero Section */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <svg viewBox="0 0 1440 320" className="w-full h-32 md:h-48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path fill="url(#waveGradient)" fillOpacity="1" d="M0,160L60,170.7C120,181,240,203,360,197.3C480,192,600,160,720,133.3C840,107,960,85,1080,101.3C1200,117,1320,171,1380,197.3L1440,224L1440,0L1380,0C1320,0,1200,0,1080,0C960,0,840,0,720,0C600,0,480,0,360,0C240,0,120,0,60,0L0,0Z" />
+            <defs>
+              <linearGradient id="waveGradient" x1="0" y1="0" x2="1440" y2="0" gradientUnits="userSpaceOnUse">
+                <stop stopColor="#3b82f6" />
+                <stop offset="1" stopColor="#6366f1" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div className="relative z-10 flex flex-col items-center justify-center py-10 md:py-16">
+          <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-24 h-24 rounded-full bg-white/80 shadow-2xl border-4 border-white mb-4" />
+          <h2 className="text-4xl md:text-5xl font-extrabold text-indigo-900 drop-shadow mb-2 flex items-center gap-3">
             {t('admin.createUser')}
           </h2>
-          <p className="mt-2 text-sm text-gray-600">
-            {t('main.onlineLeaveSystemCompany')}
+          <p className="text-lg md:text-xl text-blue-900/70 mb-2 font-medium text-center max-w-2xl">
+            {t('main.onlineLeaveSystemCompany', 'Siam IT Leave Management System')}
           </p>
         </div>
-        <Card className="shadow-lg border-0">
-          <CardContent className="pt-6">
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2 mb-4 mt-4">
-                <Label htmlFor="role" className="mb-2 block">{t('auth.role')}</Label>
-                <Select value={form.role} onValueChange={handleRoleChange}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('auth.selectRole', 'Select Role')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="user">{t('employee.employee')}</SelectItem>
-                    <SelectItem value="admin">{t('employee.admin')}</SelectItem>
-                    <SelectItem value="superadmin">{t('employee.superadmin')}</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2 mb-4">
-                <Label htmlFor="full_name" className="mb-2 block">{t('auth.fullName')}</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="full_name"
-                    name="full_name"
-                    placeholder={t('auth.fullName')}
-                    value={form.full_name}
-                    onChange={handleChange}
-                    className="pl-10"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="space-y-2 mb-4">
-                <Label htmlFor="position" className="mb-2 block">{t('auth.position')}</Label>
-                <Select value={form.position} onValueChange={value => setForm(f => ({ ...f, position: value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('positions.selectPosition')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {positions.map((pos) => (
-                      <SelectItem key={pos.id} value={pos.id}>
-                        {lang === 'th' ? pos.position_name_th : pos.position_name_en}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2 mb-4">
-                <Label htmlFor="department" className="mb-2 block">{t('auth.department')}</Label>
-                <Select value={form.department} onValueChange={value => setForm(f => ({ ...f, department: value }))}>
-                  <SelectTrigger>
-                    <SelectValue placeholder={t('departments.selectDepartment')} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {departments.map((dep) => (
-                      <SelectItem key={dep.id} value={dep.id}>
-                        {lang === 'th' ? dep.department_name_th : dep.department_name_en}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2 mb-4">
-                <Label htmlFor="email" className="mb-2 block">{t('auth.email')}</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder={t('auth.email')}
-                    value={form.email}
-                    onChange={handleChange}
-                    className="pl-10"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="space-y-2 mb-4">
-                <Label htmlFor="password" className="mb-2 block">{t('auth.password')}</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="password"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="••••••••"
-                    value={form.password}
-                    onChange={handleChange}
-                    className="pl-10 pr-10"
-                    required
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
-                  >
-                    {showPassword ? <EyeOff /> : <Eye />}
-                  </button>
-                </div>
-              </div>
-              <div className="space-y-2 mb-4">
-                <Label htmlFor="confirmPassword" className="mb-2 block">{t('auth.confirmPassword')}</Label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type="password"
-                    placeholder="••••••••"
-                    value={form.confirmPassword}
-                    onChange={handleChange}
-                    className="pl-10"
-                    required
-                  />
-                </div>
-              </div>
-              <Button type="submit" className="w-full" disabled={loading}>
-                {loading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    {t('common.loading')}
-                  </>
-                ) : (
-                  t('auth.register')
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
       </div>
+      <div className="w-full max-w-lg mx-auto px-4 mt-0 animate-fade-in flex-1">
+        <div className="bg-white/80 backdrop-blur-md rounded-3xl shadow-2xl p-8">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="space-y-2 mb-4 mt-2">
+              <Label htmlFor="role" className="mb-2 block text-indigo-700 font-semibold text-lg">{t('auth.role')}</Label>
+              <Select value={form.role} onValueChange={handleRoleChange}>
+                <SelectTrigger className="rounded-lg border-blue-200 shadow-sm text-lg">
+                  <SelectValue placeholder={t('auth.selectRole', 'Select Role')} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="user">{t('employee.employee')}</SelectItem>
+                  <SelectItem value="admin">{t('employee.admin')}</SelectItem>
+                  <SelectItem value="superadmin">{t('employee.superadmin')}</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 mb-4">
+              <Label htmlFor="full_name" className="mb-2 block text-indigo-700 font-semibold text-lg">{t('auth.fullName')}</Label>
+              <div className="relative">
+                <User className="absolute left-3 top-3 h-5 w-5 text-indigo-400" />
+                <Input
+                  id="full_name"
+                  name="full_name"
+                  placeholder={t('auth.fullName')}
+                  value={form.full_name}
+                  onChange={handleChange}
+                  className="pl-12 py-3 text-lg rounded-lg"
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-2 mb-4">
+              <Label htmlFor="position" className="mb-2 block text-indigo-700 font-semibold text-lg">{t('auth.position')}</Label>
+              <Select value={form.position} onValueChange={value => setForm(f => ({ ...f, position: value }))}>
+                <SelectTrigger className="rounded-lg border-blue-200 shadow-sm text-lg">
+                  <SelectValue placeholder={t('positions.selectPosition')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {positions.map((pos) => (
+                    <SelectItem key={pos.id} value={pos.id}>
+                      {lang === 'th' ? pos.position_name_th : pos.position_name_en}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 mb-4">
+              <Label htmlFor="department" className="mb-2 block text-indigo-700 font-semibold text-lg">{t('auth.department')}</Label>
+              <Select value={form.department} onValueChange={value => setForm(f => ({ ...f, department: value }))}>
+                <SelectTrigger className="rounded-lg border-blue-200 shadow-sm text-lg">
+                  <SelectValue placeholder={t('departments.selectDepartment')} />
+                </SelectTrigger>
+                <SelectContent>
+                  {departments.map((dep) => (
+                    <SelectItem key={dep.id} value={dep.id}>
+                      {lang === 'th' ? dep.department_name_th : dep.department_name_en}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2 mb-4">
+              <Label htmlFor="email" className="mb-2 block text-indigo-700 font-semibold text-lg">{t('auth.email')}</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-3 h-5 w-5 text-indigo-400" />
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder={t('auth.email')}
+                  value={form.email}
+                  onChange={handleChange}
+                  className="pl-12 py-3 text-lg rounded-lg"
+                  required
+                />
+              </div>
+            </div>
+            <div className="space-y-2 mb-4">
+              <Label htmlFor="password" className="mb-2 block text-indigo-700 font-semibold text-lg">{t('auth.password')}</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 h-5 w-5 text-indigo-400" />
+                <Input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="••••••••"
+                  value={form.password}
+                  onChange={handleChange}
+                  className="pl-12 pr-12 py-3 text-lg rounded-lg"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-3 h-5 w-5 text-indigo-400 hover:text-indigo-600"
+                >
+                  {showPassword ? <EyeOff /> : <Eye />}
+                </button>
+              </div>
+            </div>
+            <div className="space-y-2 mb-4">
+              <Label htmlFor="confirmPassword" className="mb-2 block text-indigo-700 font-semibold text-lg">{t('auth.confirmPassword')}</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-3 h-5 w-5 text-indigo-400" />
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  placeholder="••••••••"
+                  value={form.confirmPassword}
+                  onChange={handleChange}
+                  className="pl-12 py-3 text-lg rounded-lg"
+                  required
+                />
+              </div>
+            </div>
+            <Button type="submit" className="w-full py-3 text-lg font-bold rounded-xl shadow-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-all duration-200" disabled={loading}>
+              {loading ? (
+                <>
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  {t('common.loading')}
+                </>
+              ) : (
+                t('auth.register')
+              )}
+            </Button>
+          </form>
+        </div>
+      </div>
+      {/* Footer */}
+      <footer className="w-full mt-16 py-8 bg-gradient-to-r from-blue-100 via-indigo-50 to-white text-center text-gray-400 text-base font-medium shadow-inner flex flex-col items-center gap-2">
+        <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-10 h-10 rounded-full mx-auto mb-1" />
+        &copy; {new Date().getFullYear()} Siam IT Leave Management System
+      </footer>
     </div>
   );
 };

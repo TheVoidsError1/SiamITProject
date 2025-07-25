@@ -22,6 +22,7 @@ import '@/i18n';
 import { PushNotificationProvider } from "@/contexts/PushNotificationContext";
 import ManageAll from './pages/SuperAdmin/ManageAll';
 import SuperAdminList from './pages/SuperAdmin/SuperAdminList';
+import CompanyNews from './pages/CompanyNews';
 
 const queryClient = new QueryClient();
 
@@ -70,6 +71,11 @@ const AppContent = () => {
             <Route path="/leave-history" element={
               <ProtectedRoute>
                 <LeaveHistory />
+              </ProtectedRoute>
+            } />
+            <Route path="/company-news" element={
+              <ProtectedRoute>
+                <CompanyNews />
               </ProtectedRoute>
             } />
             <Route path="/admin" element={

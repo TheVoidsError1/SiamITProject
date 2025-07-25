@@ -143,36 +143,35 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-100 to-purple-100 dark:from-gray-900 dark:via-gray-950 dark:to-indigo-900 transition-colors relative overflow-x-hidden">
+      {/* Hero Section (replace top bar and welcome section) */}
+      <div className="relative overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <svg viewBox="0 0 1440 320" className="w-full h-32 md:h-48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path fill="url(#waveGradient)" fillOpacity="1" d="M0,160L60,170.7C120,181,240,203,360,197.3C480,192,600,160,720,133.3C840,107,960,85,1080,101.3C1200,117,1320,171,1380,197.3L1440,224L1440,0L1380,0C1320,0,1200,0,1080,0C960,0,840,0,720,0C600,0,480,0,360,0C240,0,120,0,60,0L0,0Z" />
+            <defs>
+              <linearGradient id="waveGradient" x1="0" y1="0" x2="1440" y2="0" gradientUnits="userSpaceOnUse">
+                <stop stopColor="#3b82f6" />
+                <stop offset="1" stopColor="#6366f1" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div className="relative z-10 flex flex-col items-center justify-center py-10 md:py-16">
+          <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-24 h-24 rounded-full bg-white/80 shadow-2xl border-4 border-white mb-4" />
+          <h1 className="text-4xl md:text-5xl font-extrabold text-indigo-900 drop-shadow mb-2 flex items-center gap-3">
+            {t('main.leaveManagementSystem')}
+          </h1>
+          <p className="text-lg md:text-xl text-blue-900/70 mb-2 font-medium text-center max-w-2xl">
+            {t('main.welcomeMessage')}
+          </p>
+        </div>
+      </div>
       {/* Parallax/Floating Background Shapes */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <div className="absolute -top-32 -left-32 w-[350px] h-[350px] rounded-full bg-gradient-to-br from-blue-200 via-indigo-100 to-purple-100 opacity-30 blur-2xl animate-float-slow" />
         <div className="absolute bottom-0 right-0 w-[250px] h-[250px] rounded-full bg-gradient-to-tr from-purple-200 via-blue-100 to-indigo-100 opacity-20 blur-xl animate-float-slow2" />
         <div className="absolute top-1/2 left-1/2 w-24 h-24 rounded-full bg-blue-100 opacity-10 blur-xl animate-pulse-slow" style={{transform:'translate(-50%,-50%)'}} />
       </div>
-      {/* Top Bar */}
-      <div className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-20 shadow-sm">
-        <div className="flex h-14 items-center px-3 gap-3">
-          <SidebarTrigger />
-          <div className="flex-1">
-            <h1 className="text-2xl md:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-700 via-indigo-500 to-purple-500 tracking-tight drop-shadow-lg animate-fade-in-up">{t('main.leaveManagementSystem')}</h1>
-            <p className="text-sm text-blue-500 dark:text-blue-200 animate-fade-in-up delay-100">{t('main.welcomeMessage')}</p>
-          </div>
-          <NotificationBell />
-          <LanguageSwitcher />
-          {/* Dark mode toggle */}
-          <button
-            className="ml-2 p-2 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-            onClick={() => { document.documentElement.classList.toggle('dark'); }}
-            aria-label="Toggle dark mode"
-          >
-            <svg className="w-5 h-5 text-gray-700 dark:text-yellow-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M12 3v1m0 16v1m8.66-13.66l-.71.71M4.05 19.07l-.71.71M21 12h-1M4 12H3m16.66 5.66l-.71-.71M4.05 4.93l-.71-.71" />
-              <circle cx="12" cy="12" r="5" />
-            </svg>
-          </button>
-        </div>
-      </div>
-
       <div className="p-3 space-y-6 animate-fade-in">
         {/* Welcome Section */}
         <div className="relative rounded-2xl p-5 text-white overflow-hidden glass shadow-xl flex flex-col md:flex-row items-center justify-between gap-4 animate-fade-in-up bg-gradient-to-tr from-blue-100 via-indigo-200 to-purple-100">
