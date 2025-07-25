@@ -187,7 +187,11 @@
     "backdatedOnly": "เฉพาะย้อนหลัง",
     "notBackdatedOnly": "เฉพาะไม่ย้อนหลัง",
     "statusAll": "ทั้งหมด",
-    "leaveRequestForm": "แบบฟอร์มขอลา"
+    "leaveRequestForm": "แบบฟอร์มขอลา",
+    "day": "วัน",
+    "days": "วัน",
+    "hour": "ชั่วโมง",
+    "hours": "ชั่วโมง"
   },
   "leaveTypes": {
     "all": "ทั้งหมด",
@@ -425,7 +429,12 @@
     "delete": "ลบ",
     "confirmDeleteLeave": "ยืนยันการลบใบลา",
     "confirmDeleteLeaveDesc": "คุณต้องการลบใบลานี้หรือไม่?",
-    "deleteError": "ลบไม่สำเร็จ"
+    "deleteError": "ลบไม่สำเร็จ",
+    "allPositions": "ทุกตำแหน่ง",
+    "allDepartments": "ทุกแผนก",
+    "allRoles": "ทุกบทบาท",
+    "admin": "ผู้ดูแลระบบ",
+    "superadmin": "ซูเปอร์แอดมิน"
   },
   "error": {
     "apiConnectionError": "ข้อผิดพลาดการเชื่อมต่อ API",

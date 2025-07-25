@@ -1,33 +1,20 @@
 import { LeaveDetailDialog } from "@/components/dialogs/LeaveDetailDialog";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { useParams, useLocation, Link } from 'react-router-dom';
-import { format } from 'date-fns';
-import { th } from 'date-fns/locale';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Calendar, Edit, Eye, Mail, Save, User, X } from "lucide-react";
+import { format } from 'date-fns';
+import { th } from 'date-fns/locale';
+import { ArrowLeft, Calendar, Edit, Eye, Mail, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Avatar } from "@/components/ui/avatar";
+import { Link, useLocation, useParams } from 'react-router-dom';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -352,6 +339,33 @@ const EmployeeDetail = () => {
       });
   }, [id, t]);
 
+  // ฟังก์ชันช่วยแสดงชื่อแผนก/ตำแหน่งตามภาษา
+  const getPositionLabel = (positionIdOrName: string) => {
+    if (!positionIdOrName || positionIdOrName === "not_specified") {
+      return t("positions.noPosition");
+    }
+    const found = positions.find(
+      (pos) => pos.id === positionIdOrName || pos.position_name === positionIdOrName
+    );
+    if (!found) return t("positions.noPosition");
+    return i18n.language.startsWith("th")
+      ? found.position_name_th || found.position_name
+      : found.position_name_en || found.position_name;
+  };
+
+  const getDepartmentLabel = (departmentIdOrName: string) => {
+    if (!departmentIdOrName || departmentIdOrName === "not_specified") {
+      return t("departments.noDepartment");
+    }
+    const found = departments.find(
+      (dept) => dept.id === departmentIdOrName || dept.department_name === departmentIdOrName
+    );
+    if (!found) return t("departments.noDepartment");
+    return i18n.language.startsWith("th")
+      ? found.department_name_th || found.department_name
+      : found.department_name_en || found.department_name;
+  };
+
   if (loading) return <div>{t('common.loading')}</div>;
   if (error) return <div>{error}</div>;
   if (!employee) return <div>{t('employee.notFound')}</div>;
@@ -402,132 +416,116 @@ const EmployeeDetail = () => {
                   </span>
                 </Avatar>
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Full Name */}
-                  <div>
-                    <Label className="text-sm font-medium text-blue-700">{t('employee.fullName')}</Label>
-                    {isEditing ? (
-                      <Input
-                        value={editData.full_name}
-                        onChange={e => setEditData({ ...editData, full_name: e.target.value })}
-                        className="mt-1"
-                        placeholder={t('employee.fullName')}
-                      />
-                    ) : (
-                      <p className="text-lg font-bold text-blue-900 mt-1">{employee.name}</p>
-                    )}
+                  {/* ซ้าย: Full Name, Position, Department */}
+                  <div className="space-y-6">
+                    {/* Full Name */}
+                    <div>
+                      <Label className="text-sm font-medium text-blue-700">{t('employee.fullName')}</Label>
+                      {isEditing ? (
+                        <input
+                          className="mt-1 px-2 py-1 border rounded w-full"
+                          value={editData.full_name}
+                          onChange={e => setEditData({ ...editData, full_name: e.target.value })}
+                          placeholder={t('employee.fullName')}
+                        />
+                      ) : (
+                        <p className="text-lg font-bold text-blue-900 mt-1">{employee.name}</p>
+                      )}
+                    </div>
+                    {/* Position */}
+                    <div>
+                      <Label className="text-sm font-medium text-blue-700">{t('employee.position')}</Label>
+                      {isEditing ? (
+                        <select
+                          className="mt-1 px-2 py-1 border rounded w-full"
+                          value={editData.position}
+                          onChange={e => setEditData({ ...editData, position: e.target.value })}
+                        >
+                          <option value="not_specified">{t('positions.noPosition')}</option>
+                          {positions.map(pos => (
+                            <option key={pos.id} value={pos.id}>
+                              {i18n.language.startsWith('th') ? pos.position_name_th : pos.position_name_en}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <p className="text-base text-blue-700 mt-1">{getPositionLabel(employee.position)}</p>
+                      )}
+                    </div>
+                    {/* Department */}
+                    <div>
+                      <Label className="text-sm font-medium text-blue-700">{t('employee.department')}</Label>
+                      {isEditing ? (
+                        <select
+                          className="mt-1 px-2 py-1 border rounded w-full"
+                          value={editData.department}
+                          onChange={e => setEditData({ ...editData, department: e.target.value })}
+                        >
+                          <option value="not_specified">{t('departments.noDepartment')}</option>
+                          {departments.map(dept => (
+                            <option key={dept.id} value={dept.id}>
+                              {i18n.language.startsWith('th') ? dept.department_name_th : dept.department_name_en}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <p className="text-base text-blue-700 mt-1">{getDepartmentLabel(employee.department)}</p>
+                      )}
+                    </div>
                   </div>
-                  {/* Position */}
-                  <div>
-                    <Label className="text-sm font-medium text-blue-700">{t('employee.position')}</Label>
-                    {isEditing ? (
-                      <Select value={editData.position} onValueChange={value => setEditData({ ...editData, position: value })}>
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder={t('positions.selectPosition')} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="not_specified">
-                            {t('positions.noPosition')}
-                          </SelectItem>
-                          {positions
-                            .filter(pos => (pos.position_name_th || pos.position_name_en) && (pos.position_name_th?.trim() !== '' || pos.position_name_en?.trim() !== ''))
-                            .map((pos) => (
-                              <SelectItem key={pos.id} value={pos.id}>
-                                {i18n.language.startsWith('th') ? pos.position_name_th : pos.position_name_en}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <p className="text-base text-blue-700 mt-1">{t(`positions.${employee.position}`)}</p>
-                    )}
+                  {/* ขวา: Email, Password, Edit/Save/Cancel */}
+                  <div className="space-y-6">
+                    {/* Email */}
+                    <div>
+                      <Label className="text-sm font-medium text-blue-700">{t('employee.email')}</Label>
+                      {isEditing ? (
+                        <input
+                          className="mt-1 px-2 py-1 border rounded w-full"
+                          type="email"
+                          value={editData.email}
+                          onChange={e => setEditData({ ...editData, email: e.target.value })}
+                          placeholder={t('employee.email')}
+                        />
+                      ) : (
+                        <div className="flex items-center gap-2 mt-1">
+                          <Mail className="w-4 h-4 text-blue-400" />
+                          <p className="text-base text-blue-700">{employee.email}</p>
+                        </div>
+                      )}
+                    </div>
+                    {/* Password */}
+                    <div>
+                      <Label className="text-sm font-medium text-blue-700">{t('employee.password') || 'Password'}</Label>
+                      {isEditing ? (
+                        <input
+                          className="mt-1 px-2 py-1 border rounded w-full"
+                          type="password"
+                          value={editData.password}
+                          onChange={e => setEditData({ ...editData, password: e.target.value })}
+                          placeholder={t('employee.password') || 'Password'}
+                        />
+                      ) : (
+                        <p className="text-base text-blue-700 mt-1">********</p>
+                      )}
+                    </div>
+                    {/* Edit/Save/Cancel Button */}
+                    <div className="flex gap-2">
+                      {isEditing ? (
+                        <>
+                          <Button onClick={handleSave} size="sm" className="bg-green-600 hover:bg-green-700 text-white rounded-full px-4 py-2 font-bold shadow">
+                            {t('common.save')}
+                          </Button>
+                          <Button onClick={handleCancel} size="sm" variant="outline" className="rounded-full px-4 py-2 font-bold border-blue-200 text-blue-700 hover:bg-blue-50 shadow">
+                            {t('common.cancel')}
+                          </Button>
+                        </>
+                      ) : (
+                        <Button onClick={handleEdit} size="sm" variant="outline" className="rounded-full px-4 py-2 font-bold border-blue-200 text-blue-700 hover:bg-blue-50 shadow">
+                          <Edit className="w-4 h-4 mr-1" />{t('common.edit')}
+                        </Button>
+                      )}
+                    </div>
                   </div>
-                  {/* Department */}
-                  <div>
-                    <Label className="text-sm font-medium text-blue-700">{t('employee.department')}</Label>
-                    {isEditing ? (
-                      <Select value={editData.department} onValueChange={value => setEditData({ ...editData, department: value })}>
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder={t('departments.selectDepartment')} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="not_specified">
-                            {t('departments.noDepartment')}
-                          </SelectItem>
-                          {departments
-                            .filter(dept => (dept.department_name_th || dept.department_name_en) && (dept.department_name_th?.trim() !== '' || dept.department_name_en?.trim() !== ''))
-                            .map((dept) => (
-                              <SelectItem key={dept.id} value={dept.id}>
-                                {i18n.language.startsWith('th') ? dept.department_name_th : dept.department_name_en}
-                              </SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <p className="text-base text-blue-700 mt-1">{t(`departments.${employee.department}`)}</p>
-                    )}
-                  </div>
-                  {/* Status/Role */}
-                  <div>
-                    <Label className="text-sm font-medium text-blue-700">{t('employee.status')}</Label>
-                    {isEditing ? (
-                      <Select value={editData.role} onValueChange={value => setEditData({ ...editData, role: value })}>
-                        <SelectTrigger className="mt-1">
-                          <SelectValue placeholder={t('employee.status')} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="admin">{t('employee.admin')}</SelectItem>
-                          <SelectItem value="employee">{t('employee.employee')}</SelectItem>
-                          <SelectItem value="intern">{t('employee.intern')}</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    ) : (
-                      <Badge 
-                        variant={employee.role === 'admin' ? 'default' : employee.role === 'employee' ? 'secondary' : 'outline'}
-                        className="ml-2 text-base px-4 py-1 rounded-full shadow"
-                      >
-                        {employee.role === 'admin' ? t('employee.admin') : employee.role === 'employee' ? t('employee.employee') : t('employee.intern')}
-                      </Badge>
-                    )}
-                  </div>
-                  {/* Email */}
-                  <div className="col-span-2">
-                    <Label className="text-sm font-medium text-blue-700">{t('employee.email')}</Label>
-                    {isEditing ? (
-                      <Input
-                        type="email"
-                        value={editData.email}
-                        onChange={e => setEditData({ ...editData, email: e.target.value })}
-                        className="mt-1"
-                        placeholder={t('employee.email')}
-                      />
-                    ) : (
-                      <div className="flex items-center gap-2 mt-1">
-                        <Mail className="w-4 h-4 text-blue-400" />
-                        <p className="text-base text-blue-700">{employee.email}</p>
-                      </div>
-                    )}
-                  </div>
-                  {/* Used Leave Days */}
-                  <div>
-                    <Label className="text-sm font-medium text-blue-700">{t('employee.usedLeaveDays')}</Label>
-                    <p className={`text-lg font-bold mt-1 ${employee.usedLeaveDays && employee.totalLeaveDays && employee.usedLeaveDays > employee.totalLeaveDays * 0.8 ? 'text-red-600' : 'text-green-600'}`}>{employee.usedLeaveDays ?? '-'} / {employee.totalLeaveDays ?? '-'} {t('leave.days')}</p>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-2 mt-6 md:mt-0 md:ml-6">
-                  {isEditing ? (
-                    <>
-                      <Button onClick={handleSave} size="sm" className="bg-green-600 hover:bg-green-700 text-white rounded-full px-4 py-2 font-bold shadow">
-                        <Save className="w-4 h-4 mr-1" />{t('common.save')}
-                      </Button>
-                      <Button onClick={handleCancel} size="sm" variant="outline" className="rounded-full px-4 py-2 font-bold border-blue-200 text-blue-700 hover:bg-blue-50 shadow">
-                        <X className="w-4 h-4 mr-1" />{t('common.cancel')}
-                      </Button>
-                    </>
-                  ) : (
-                    <Button onClick={handleEdit} size="sm" variant="outline" className="rounded-full px-4 py-2 font-bold border-blue-200 text-blue-700 hover:bg-blue-50 shadow">
-                      <Edit className="w-4 h-4 mr-1" />{t('common.edit')}
-                    </Button>
-                  )}
                 </div>
               </div>
             </CardContent>
@@ -560,11 +558,49 @@ const EmployeeDetail = () => {
                   <TableBody>
                     {leaveHistory.map((leave, idx) => (
                       <TableRow key={leave.id} className="hover:bg-blue-50/60 group animate-fade-in-up" style={{ animationDelay: `${idx * 60}ms` }}>
-                        <TableCell className="font-medium text-blue-900">{leave.leaveType}</TableCell>
+                        <TableCell className="font-medium text-blue-900">{getLeaveTypeLabel(leave.leaveType)}</TableCell>
                         <TableCell className="text-blue-700">
-                          {leave.startDate ? format(new Date(leave.startDate), "dd MMM", { locale: th }) : ''} - {leave.endDate ? format(new Date(leave.endDate), "dd MMM yyyy", { locale: th }) : ''}
+                          {(() => {
+                            if (leave.startDate && leave.endDate) {
+                              const start = new Date(leave.startDate);
+                              const end = new Date(leave.endDate);
+                              const isSameDay = start.toDateString() === end.toDateString();
+                              const locale = i18n.language.startsWith('th') ? th : undefined;
+                              if (isSameDay) {
+                                return format(start, 'dd MMM yyyy', { locale });
+                              } else {
+                                return `${format(start, 'dd MMM', { locale })} - ${format(end, 'dd MMM yyyy', { locale })}`;
+                              }
+                            } else if (leave.startDate) {
+                              const start = new Date(leave.startDate);
+                              const locale = i18n.language.startsWith('th') ? th : undefined;
+                              return format(start, 'dd MMM yyyy', { locale });
+                            } else {
+                              return '-';
+                            }
+                          })()}
                         </TableCell>
-                        <TableCell className="text-blue-700">{leave.days || ''} {t('leave.days')}</TableCell>
+                        <TableCell className="text-blue-700">
+                          {(() => {
+                            if (leave.durationType === 'day') {
+                              const days = Math.floor(Number(leave.duration));
+                              const hours = Math.round((Number(leave.duration) - days) * 24);
+                              if (days > 0 && hours > 0) {
+                                return `${days} ${t(days === 1 ? 'leave.day' : 'leave.days')} ${hours} ${t(hours === 1 ? 'leave.hour' : 'leave.hours')}`;
+                              } else if (days > 0) {
+                                return `${days} ${t(days === 1 ? 'leave.day' : 'leave.days')}`;
+                              } else if (hours > 0) {
+                                return `${hours} ${t(hours === 1 ? 'leave.hour' : 'leave.hours')}`;
+                              } else {
+                                return '-';
+                              }
+                            } else if (leave.durationType === 'hour') {
+                              return `${Number(leave.duration)} ${t(Number(leave.duration) === 1 ? 'leave.hour' : 'leave.hours')}`;
+                            } else {
+                              return '-';
+                            }
+                          })()}
+                        </TableCell>
                         <TableCell className="max-w-xs truncate text-blue-700">{leave.reason}</TableCell>
                         <TableCell>
                           <Badge className={

@@ -1,5 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { format } from 'date-fns';
+import { th } from 'date-fns/locale';
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -140,11 +142,19 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-gray-700">{t('leave.date')}</label>
-                <p className="text-sm">{leaveDetail.leaveDate || '-'}</p>
+                <p className="text-sm">
+                  {leaveDetail.leaveDate
+                    ? format(new Date(leaveDetail.leaveDate), 'dd MMM yyyy', { locale: i18n.language.startsWith('th') ? th : undefined })
+                    : '-'}
+                </p>
               </div>
               <div>
                 <label className="text-sm font-medium text-gray-700">{t('leave.endDate')}</label>
-                <p className="text-sm">{leaveDetail.endDate || '-'}</p>
+                <p className="text-sm">
+                  {leaveDetail.endDate
+                    ? format(new Date(leaveDetail.endDate), 'dd MMM yyyy', { locale: i18n.language.startsWith('th') ? th : undefined })
+                    : '-'}
+                </p>
               </div>
             </div>
             {leaveDetail.contact && (

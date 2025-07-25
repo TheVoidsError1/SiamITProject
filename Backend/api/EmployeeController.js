@@ -195,7 +195,8 @@ module.exports = (AppDataSource) => {
           status: proc.Role,
           role,
           usedLeaveDays,
-          totalLeaveDays
+          totalLeaveDays,
+          avatar: profile.avatar || profile.profileImage || null
         });
       }
       res.json({ success: true, data: results, message: 'ดึงข้อมูลผู้ใช้ทั้งหมดสำเร็จ' });
