@@ -3,48 +3,115 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { Newspaper, Plus, Trash2 } from 'lucide-react';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 
-const mockNews = [
-  {
-    date: '2024-07-01',
-    title: 'ปรับปรุงระบบลาออนไลน์',
-    detail: 'ระบบลาออนไลน์จะปิดปรับปรุงในวันที่ 5 ก.ค. 2567 เวลา 20:00-23:00 น.',
-    author: 'ฝ่าย IT',
-  },
-  {
-    date: '2024-06-20',
-    title: 'ประกาศวันหยุดบริษัท',
-    detail: 'บริษัทจะหยุดทำการในวันที่ 28 ก.ค. 2567 เนื่องในวันเฉลิมพระชนมพรรษา',
-    author: 'ฝ่ายบุคคล',
-  },
-  {
-    date: '2024-06-10',
-    title: 'กิจกรรม Outing ประจำปี',
-    detail: 'ขอเชิญพนักงานทุกท่านเข้าร่วมกิจกรรม Outing วันที่ 15 ส.ค. 2567',
-    author: 'ฝ่าย HR',
-  },
-];
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function CompanyNews() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  const [newsList, setNewsList] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [openIdx, setOpenIdx] = useState<number | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [form, setForm] = useState({
-    date: '',
-    title: '',
+    subject: '',
     detail: '',
-    author: user?.full_name || '',
+    // createdBy, createdAt จะใส่ตอน submit
+    Image: '',
   });
 
-  const handleAddNews = (e: React.FormEvent) => {
+  // โหลดข่าวสารจาก backend
+  const fetchNews = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE_URL}/api/announcements`, {
+        headers: { Authorization: token ? `Bearer ${token}` : undefined },
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        setNewsList(data.data.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+      } else {
+        setNewsList([]);
+        setError(data.message || 'เกิดข้อผิดพลาด');
+      }
+    } catch (err) {
+      setNewsList([]);
+      setError('โหลดข่าวสารไม่สำเร็จ');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNews();
+    // eslint-disable-next-line
+  }, []);
+
+  // เพิ่มข่าวสารใหม่
+  const handleAddNews = async (e: React.FormEvent) => {
     e.preventDefault();
-    alert('TODO: บันทึกข่าวสารใหม่ (mock)\n' + JSON.stringify(form, null, 2));
-    setAddOpen(false);
-    setForm({ date: '', title: '', detail: '', author: user?.full_name || '' });
+    setLoading(true);
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const body = {
+        subject: form.subject,
+        detail: form.detail,
+        Image: form.Image,
+        createdBy: user?.full_name || '',
+        createdAt: new Date().toISOString(),
+      };
+      const res = await fetch(`${API_BASE_URL}/api/announcements`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: token ? `Bearer ${token}` : undefined,
+        },
+        body: JSON.stringify(body),
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        setAddOpen(false);
+        setForm({ subject: '', detail: '', Image: '' });
+        fetchNews();
+      } else {
+        setError(data.message || 'บันทึกข่าวสารไม่สำเร็จ');
+      }
+    } catch (err) {
+      setError('บันทึกข่าวสารไม่สำเร็จ');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ลบข่าวสาร
+  const handleDeleteNews = async (id: string) => {
+    if (!window.confirm('ยืนยันการลบข่าวสารนี้?')) return;
+    setLoading(true);
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${API_BASE_URL}/api/announcements/${id}`, {
+        method: 'DELETE',
+        headers: { Authorization: token ? `Bearer ${token}` : undefined },
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        fetchNews();
+      } else {
+        setError(data.message || 'ลบข่าวสารไม่สำเร็จ');
+      }
+    } catch (err) {
+      setError('ลบข่าวสารไม่สำเร็จ');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -98,22 +165,12 @@ export default function CompanyNews() {
                   </DialogHeader>
                   <form className="space-y-4 mt-2" onSubmit={handleAddNews}>
                     <div>
-                      <label className="block text-blue-800 font-semibold mb-1">วันที่ประกาศ</label>
-                      <input
-                        type="date"
-                        className="w-full rounded-lg border border-blue-200 px-3 py-2 text-base focus:ring-2 focus:ring-blue-400"
-                        value={form.date}
-                        onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
-                        required
-                      />
-                    </div>
-                    <div>
                       <label className="block text-blue-800 font-semibold mb-1">หัวข้อ</label>
                       <input
                         type="text"
                         className="w-full rounded-lg border border-blue-200 px-3 py-2 text-base focus:ring-2 focus:ring-blue-400"
-                        value={form.title}
-                        onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+                        value={form.subject}
+                        onChange={e => setForm(f => ({ ...f, subject: e.target.value }))}
                         required
                       />
                     </div>
@@ -127,16 +184,15 @@ export default function CompanyNews() {
                         required
                       />
                     </div>
-                    <div>
-                      <label className="block text-blue-800 font-semibold mb-1">ผู้ประกาศ</label>
+                    {/* <div>
+                      <label className="block text-blue-800 font-semibold mb-1">รูปภาพ (URL)</label>
                       <input
                         type="text"
                         className="w-full rounded-lg border border-blue-200 px-3 py-2 text-base focus:ring-2 focus:ring-blue-400"
-                        value={form.author}
-                        onChange={e => setForm(f => ({ ...f, author: e.target.value }))}
-                        required
+                        value={form.Image}
+                        onChange={e => setForm(f => ({ ...f, Image: e.target.value }))}
                       />
-                    </div>
+                    </div> */}
                     <div className="flex justify-end gap-2 mt-4">
                       <button
                         type="button"
@@ -148,10 +204,12 @@ export default function CompanyNews() {
                       <button
                         type="submit"
                         className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold"
+                        disabled={loading}
                       >
-                        บันทึก
+                        {loading ? 'กำลังบันทึก...' : 'บันทึก'}
                       </button>
                     </div>
+                    {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
                   </form>
                 </DialogContent>
               </Dialog>
@@ -161,7 +219,6 @@ export default function CompanyNews() {
             <Table className="min-w-full bg-white rounded-xl">
               <TableHeader>
                 <TableRow className="bg-blue-100 text-blue-900 text-lg">
-                  <TableHead className="p-4 text-center">วันที่ประกาศ</TableHead>
                   <TableHead className="p-4 text-center">หัวข้อ</TableHead>
                   <TableHead className="p-4 text-center">รายละเอียด</TableHead>
                   <TableHead className="p-4 text-center">ผู้ประกาศ</TableHead>
@@ -170,18 +227,22 @@ export default function CompanyNews() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockNews.map((news, idx) => (
-                  <TableRow key={idx} className="hover:bg-blue-50 text-base">
-                    <TableCell className="p-4 text-center font-medium">{news.date}</TableCell>
-                    <TableCell className="p-4 text-center font-semibold text-blue-800">{news.title}</TableCell>
+                {loading ? (
+                  <TableRow><TableCell colSpan={6} className="text-center">กำลังโหลด...</TableCell></TableRow>
+                ) : newsList.length === 0 ? (
+                  <TableRow><TableCell colSpan={6} className="text-center">ไม่มีข่าวสาร</TableCell></TableRow>
+                ) : newsList.map((news, idx) => (
+                  <TableRow key={news.id} className="hover:bg-blue-50 text-base">
+                    <TableCell className="p-4 text-center font-semibold text-blue-800">{news.subject}</TableCell>
                     <TableCell className="p-4 text-center">{news.detail}</TableCell>
-                    <TableCell className="p-4 text-center">{news.author}</TableCell>
+                    <TableCell className="p-4 text-center">{news.createdBy}</TableCell>
                     {isAdmin && (
                       <TableCell className="p-4 text-center">
                         <button
                           className="p-2 rounded-full bg-red-100 hover:bg-red-200 text-red-600 shadow transition"
-                          onClick={() => alert('TODO: ลบข่าวสารนี้')}
+                          onClick={() => handleDeleteNews(news.id)}
                           aria-label="ลบข่าว"
+                          disabled={loading}
                         >
                           <Trash2 className="w-5 h-5" />
                         </button>
@@ -200,13 +261,12 @@ export default function CompanyNews() {
                           <DialogHeader>
                             <DialogTitle className="text-2xl font-bold text-blue-900 mb-2 flex items-center gap-2">
                               <Newspaper className="w-6 h-6 text-blue-600" />
-                              {news.title}
+                              {news.subject}
                             </DialogTitle>
                             <DialogDescription>
                               <div className="space-y-2 mt-2">
-                                <div><span className="font-semibold text-blue-800">วันที่ประกาศ:</span> {news.date}</div>
                                 <div><span className="font-semibold text-blue-800">รายละเอียด:</span> {news.detail}</div>
-                                <div><span className="font-semibold text-blue-800">ผู้ประกาศ:</span> {news.author}</div>
+                                <div><span className="font-semibold text-blue-800">ผู้ประกาศ:</span> {news.createdBy}</div>
                               </div>
                             </DialogDescription>
                           </DialogHeader>
@@ -217,6 +277,7 @@ export default function CompanyNews() {
                 ))}
               </TableBody>
             </Table>
+            {error && <div className="text-red-500 text-center mt-2">{error}</div>}
           </div>
         </div>
       </div>

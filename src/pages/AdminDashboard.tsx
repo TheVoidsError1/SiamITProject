@@ -687,9 +687,6 @@ const AdminDashboard = () => {
             <p className="text-sm text-blue-500 animate-slide-in-left delay-100">{t('admin.dashboardDesc')}</p>
           </div>
           {/* Language Switcher at top right */}
-          <div style={{ position: 'absolute', top: 16, right: 16, zIndex: 10 }}>
-            <LanguageSwitcher />
-          </div>
         </div>
       </div>
       <div className="p-6 animate-fade-in">
