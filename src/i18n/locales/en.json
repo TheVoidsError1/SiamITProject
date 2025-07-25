@@ -195,7 +195,11 @@
     "backdatedOnly": "Backdated only",
     "notBackdatedOnly": "Non-backdated only",
     "statusAll": "All status",
-    "leaveRequestForm": "Leave Request Form"
+    "leaveRequestForm": "Leave Request Form",
+    "day": "day",
+    "days": "days",
+    "hour": "hour",
+    "hours": "hours"
   },
   "leaveTypes": {
     "all": "All",
@@ -411,7 +415,13 @@
     "delete": "Delete",
     "confirmDeleteLeave": "Confirm Delete Leave Request",
     "confirmDeleteLeaveDesc": "Are you sure you want to delete this leave request?",
-    "deleteError": "Delete failed"
+    "deleteError": "Delete failed",
+    "allPositions": "All Positions",
+    "allDepartments": "All Departments",
+    "allRoles": "All Roles",
+    "admin": "Admin",
+    "superadmin": "Superadmin",
+    "employee": "Employee"
   },
   "error": {
     "apiConnectionError": "API Connection Error",
