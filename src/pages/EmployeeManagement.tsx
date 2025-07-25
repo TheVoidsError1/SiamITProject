@@ -286,7 +286,6 @@ const EmployeeManagement = () => {
                     <option value="user">{t('employee.employee', 'Employee')}</option>
                     <option value="admin">{t('employee.admin', 'Admin')}</option>
                     <option value="superadmin">{t('employee.superadmin', 'Superadmin')}</option>
-                    <option value="intern">{t('employee.intern', 'Intern')}</option>
                   </select>
                 </div>
                 <div className="flex flex-col">
