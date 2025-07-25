@@ -409,7 +409,7 @@ const ManageAll: React.FC = () => {
   const handleToggleRequireAttachment = async (lt: any) => {
     const newValue = !lt.require_attachment;
     try {
-      const res = await fetch(`${API_BASE_URL}/leave-types/${lt.id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/leave-types/${lt.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

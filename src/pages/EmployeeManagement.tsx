@@ -319,60 +319,60 @@ const EmployeeManagement = () => {
               {loading ? (
                 <div className="text-lg text-center py-10">{t('common.loading')}</div>
               ) : (
-                <div>
-                  <table className="min-w-full">
+                <div className="overflow-x-auto w-full">
+                  <table className="w-full">
                     <thead>
-                      <tr className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50">
-                        <th className="px-6 py-4 text-left text-base font-bold text-blue-900">{t('auth.fullName')}</th>
-                        <th className="px-6 py-4 text-left text-base font-bold text-blue-900">{t('auth.email')}</th>
-                        <th className="px-6 py-4 text-left text-base font-bold text-blue-900">{t('auth.position')}</th>
-                        <th className="px-6 py-4 text-left text-base font-bold text-blue-900">{t('auth.department')}</th>
-                        <th className="px-6 py-4 text-left text-base font-bold text-blue-900">{t('common.status')}</th>
-                        <th className="px-6 py-4 text-center text-base font-bold text-blue-900">{t('system.management')}</th>
+                      <tr className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 text-sm">
+                        <th className="px-3 py-2 text-left font-bold text-blue-900">{t('auth.fullName')}</th>
+                        <th className="px-3 py-2 text-left font-bold text-blue-900">{t('auth.email')}</th>
+                        <th className="px-3 py-2 text-left font-bold text-blue-900">{t('auth.position')}</th>
+                        <th className="px-3 py-2 text-left font-bold text-blue-900">{t('auth.department')}</th>
+                        <th className="px-3 py-2 text-left font-bold text-blue-900">{t('common.status')}</th>
+                        <th className="px-3 py-2 text-center font-bold text-blue-900">{t('system.management')}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {paginatedEmployees.map((employee, idx) => (
                         <tr
                           key={employee.id}
-                          className="transition hover:bg-blue-50/60 group animate-fade-in-up"
+                          className="transition hover:bg-blue-50/60 group animate-fade-in-up text-sm"
                           style={{ animationDelay: `${idx * 60}ms` }}
                         >
-                          <td className="px-6 py-4 whitespace-nowrap flex items-center gap-3">
+                          <td className="px-3 py-2 whitespace-nowrap flex items-center gap-2">
                             {/* Avatar with image or initials */}
                             {employee.avatar ? (
                               <img
                                 src={employee.avatar}
                                 alt={employee.full_name}
-                                className="w-10 h-10 rounded-full object-cover shadow-md border border-blue-200"
+                                className="w-8 h-8 rounded-full object-cover shadow-md border border-blue-200"
                               />
                             ) : (
-                              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-200 via-indigo-200 to-purple-200 flex items-center justify-center text-blue-900 font-bold text-lg shadow-md">
+                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-200 via-indigo-200 to-purple-200 flex items-center justify-center text-blue-900 font-bold text-base shadow-md">
                                 {employee.full_name ? employee.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : '?'}
                               </div>
                             )}
-                            <span className="font-semibold text-blue-900 text-base">{employee.full_name}</span>
+                            <span className="font-semibold text-blue-900 text-sm">{employee.full_name}</span>
                           </td>
-                          <td className="px-6 py-4 text-blue-700 text-base">{employee.email}</td>
-                          <td className="px-6 py-4 text-blue-700 text-base">{getPositionName(employee.position)}</td>
-                          <td className="px-6 py-4 text-blue-700 text-base">{getDepartmentName(employee.department)}</td>
-                          <td className="px-6 py-4">
+                          <td className="px-3 py-2 text-blue-700 text-sm">{employee.email}</td>
+                          <td className="px-3 py-2 text-blue-700 text-sm">{getPositionName(employee.position)}</td>
+                          <td className="px-3 py-2 text-blue-700 text-sm">{getDepartmentName(employee.department)}</td>
+                          <td className="px-3 py-2">
                             {employee.role === 'superadmin' ? (
-                              <span className="text-xs px-3 py-1 rounded-full border border-purple-300 bg-purple-50 text-purple-700 font-bold shadow-sm" style={{letterSpacing:0.5}}>
+                              <span className="text-xs px-2 py-0.5 rounded-full border border-purple-300 bg-purple-50 text-purple-700 font-bold shadow-sm" style={{letterSpacing:0.5}}>
                                 Superadmin
                               </span>
                             ) : employee.role === 'admin' ? (
-                              <span className="text-xs px-3 py-1 rounded-full bg-gradient-to-r from-blue-500 to-indigo-400 text-white font-bold shadow-sm">
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-blue-500 to-indigo-400 text-white font-bold shadow-sm">
                                 ผู้ดูแลระบบ
                               </span>
                             ) : (
-                              <span className="text-xs px-3 py-1 rounded-full bg-blue-100 text-blue-700 font-bold shadow-sm">
+                              <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold shadow-sm">
                                 พนักงาน
                               </span>
                             )}
                           </td>
-                          <td className="px-6 py-4 text-center flex gap-2 justify-center">
-                            <Button asChild size="sm" variant="secondary" className="rounded-full px-4 py-2 font-bold bg-gradient-to-r from-blue-500 to-indigo-400 text-white shadow hover:scale-105 transition">
+                          <td className="px-3 py-2 text-center flex gap-1 justify-center">
+                            <Button asChild size="sm" variant="secondary" className="rounded-full px-2 py-1 font-bold bg-gradient-to-r from-blue-500 to-indigo-400 text-white shadow hover:scale-105 transition text-xs">
                               <Link to={`/admin/employees/${employee.id}?role=${employee.role}`}> 
                                 <Eye className="w-4 h-4 mr-1" />
                                 {t('system.seeDetails')}
@@ -383,7 +383,7 @@ const EmployeeManagement = () => {
                                 <Button
                                   size="sm"
                                   variant="destructive"
-                                  className="rounded-full px-4 py-2 font-bold bg-gradient-to-r from-red-500 to-pink-400 text-white shadow hover:scale-105 transition flex items-center gap-1"
+                                  className="rounded-full px-2 py-1 font-bold bg-gradient-to-r from-red-500 to-pink-400 text-white shadow hover:scale-105 transition flex items-center gap-1 text-xs"
                                   onClick={() => setDeleteTarget(employee)}
                                 >
                                   <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m5 0H6" /></svg>
