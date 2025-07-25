@@ -336,9 +336,12 @@ export const LeaveForm = () => {
                 <SelectValue placeholder={t('leave.selectEmployeeType')} />
               </SelectTrigger>
               <SelectContent>
-                {positions.map((pos) => (
-                  <SelectItem key={pos.id} value={pos.position_name}>{pos.position_name}</SelectItem>
-                ))}
+                <SelectItem value="not_specified">{t('positions.notSpecified')}</SelectItem>
+                {positions
+                  .filter(pos => pos.position_name && pos.position_name.trim() !== '' && pos.position_name.toLowerCase() !== 'none' && pos.position_name.toLowerCase() !== 'no position')
+                  .map((pos) => (
+                    <SelectItem key={pos.id} value={pos.position_name}>{pos.position_name}</SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>
@@ -354,9 +357,12 @@ export const LeaveForm = () => {
                 <SelectValue placeholder={t('leave.selectLeaveType')} />
               </SelectTrigger>
               <SelectContent>
-                {leaveTypes.map((type) => (
-                  <SelectItem key={type.id} value={type.id}>{type.leave_type}</SelectItem>
-                ))}
+                <SelectItem value="not_specified">{t('leaveTypes.notSpecified')}</SelectItem>
+                {leaveTypes
+                  .filter(type => type.leave_type && type.leave_type.trim() !== '')
+                  .map((type) => (
+                    <SelectItem key={type.id} value={type.id}>{type.leave_type}</SelectItem>
+                  ))}
               </SelectContent>
             </Select>
           </div>

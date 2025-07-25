@@ -385,13 +385,16 @@ const Profile = () => {
                         <SelectValue placeholder={t('positions.selectPosition')} />
                       </SelectTrigger>
                       <SelectContent>
-                        {positions.map((key) => (
-                          <SelectItem key={key} value={key} className="text-blue-900">
-                            {key === '' || key.toLowerCase() === 'none' || key.toLowerCase() === 'no position'
-                              ? t('positions.notSpecified')
-                              : t(`positions.${key}`)}
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="not_specified" className="text-blue-900">
+                          {t('positions.notSpecified')}
+                        </SelectItem>
+                        {positions
+                          .filter(key => key && key.trim() !== '' && key.toLowerCase() !== 'none' && key.toLowerCase() !== 'no position')
+                          .map((key) => (
+                            <SelectItem key={key} value={key} className="text-blue-900">
+                              {t(`positions.${key}`)}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -405,13 +408,16 @@ const Profile = () => {
                         <SelectValue placeholder={t('departments.selectDepartment')} />
                       </SelectTrigger>
                       <SelectContent>
-                        {departments.map((key) => (
-                          <SelectItem key={key} value={key} className="text-blue-900">
-                            {key === '' || key.toLowerCase() === 'none' || key.toLowerCase() === 'no department'
-                              ? t('departments.notSpecified', t('departments.selectDepartment'))
-                              : t(`departments.${key}`)}
-                          </SelectItem>
-                        ))}
+                        <SelectItem value="not_specified" className="text-blue-900">
+                          {t('departments.notSpecified', t('departments.selectDepartment'))}
+                        </SelectItem>
+                        {departments
+                          .filter(key => key && key.trim() !== '' && key.toLowerCase() !== 'none' && key.toLowerCase() !== 'no department')
+                          .map((key) => (
+                            <SelectItem key={key} value={key} className="text-blue-900">
+                              {t(`departments.${key}`)}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                   </div>
