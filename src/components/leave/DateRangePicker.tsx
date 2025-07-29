@@ -28,13 +28,14 @@ export const DateRangePicker = ({
   submitted = false,
 }: DateRangePickerProps) => {
   const { t, i18n } = useTranslation();
-  // กำหนด minDate เป็นวันนี้ (เวลา 00:00:00) เสมอ
-  const today = new Date();
-  today.setHours(0,0,0,0);
-  // Use minDate only if provided
-  const minDateToUse = minDate;
+  // ไม่จำกัดวันที่ - สามารถเลือกได้ทั้งย้อนหลังและล่วงหน้า
+  const minDateToUse = minDate; // ใช้ minDate ที่ส่งมาเท่านั้น
   // Dynamic locale
   const currentLocale = i18n.language === 'th' ? th : enUS;
+  
+  // วันที่ปัจจุบันสำหรับแสดงในปฏิทิน
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div className="space-y-2">
@@ -61,6 +62,13 @@ export const DateRangePicker = ({
               onSelect={onStartDateChange}
               initialFocus
               disabled={minDateToUse ? (date => date < minDateToUse) : undefined}
+              className="rounded-md border"
+              modifiers={{
+                today: today
+              }}
+              modifiersStyles={{
+                today: { backgroundColor: '#e5e7eb', color: '#374151' }
+              }}
             />
           </PopoverContent>
         </Popover>
@@ -91,6 +99,13 @@ export const DateRangePicker = ({
               initialFocus
               // ปรับ logic: endDate เลือกได้ไม่น้อยกว่า startDate
               disabled={startDate ? (date => date < startDate) : undefined}
+              className="rounded-md border"
+              modifiers={{
+                today: today
+              }}
+              modifiersStyles={{
+                today: { backgroundColor: '#e5e7eb', color: '#374151' }
+              }}
             />
           </PopoverContent>
         </Popover>

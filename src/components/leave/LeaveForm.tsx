@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Send, User, ClipboardList, CalendarDays, FileText, Phone, Users, ArrowLeftCircle } from "lucide-react";
+import { Send, User, ClipboardList, CalendarDays, FileText, Phone, Users, ArrowLeftCircle, Clock } from "lucide-react";
 import { useState, useRef, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { DateRangePicker } from "./DateRangePicker";
@@ -89,7 +89,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
   // เพิ่ม state สำหรับ error ของแต่ละฟิลด์
   const [errors, setErrors] = useState({
     leaveType: '',
-    personalLeaveType: '',
+    durationType: '',
     startDate: '',
     endDate: '',
     startTime: '',
@@ -98,31 +98,46 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
     contact: '',
   });
   const [submitted, setSubmitted] = useState(false);
-  const [personalLeaveType, setPersonalLeaveType] = useState("");
 
   // Dynamic attachment requirement based on selected leave type
   const selected = leaveTypes.find(type => type.id === leaveType);
   const requiresAttachmentField = !!selected?.require_attachment;
-  const [step, setStep] = useState(1); // เพิ่ม state สำหรับ step form
 
-  // Helper: isPersonalLeave, isHourlyLeave
-  const isPersonalLeave = leaveType === "personal";
-  const isHourlyLeave = personalLeaveType === "hour";
+  // Helper: isHourlyLeave
+  const isHourlyLeave = durationType === "hour";
 
-  const handlePersonalLeaveTypeChange = (value: string) => {
-    setPersonalLeaveType(value);
-    // Reset date/time fields when changing type
-    setStartTime("");
-    setEndTime("");
-    if (value === "hour") {
-      const today = new Date();
-      setStartDate(today);
-      setEndDate(today);
-    } else {
-      setStartDate(undefined);
-      setEndDate(undefined);
+  // Helper function สำหรับตรวจสอบการลา
+  const getLeaveNotice = (startDate: Date | undefined) => {
+    if (!startDate) return null;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const startDateOnly = new Date(startDate);
+    startDateOnly.setHours(0, 0, 0, 0);
+    
+    // ถ้าวันที่เริ่มลาน้อยกว่าวันนี้ (ไม่รวมวันนี้) = ลาย้อนหลัง
+    if (startDateOnly < today) {
+      return {
+        type: 'backdated',
+        message: t('leave.backdatedNotice'),
+        className: 'bg-yellow-50 border-yellow-200 text-yellow-800'
+      };
     }
+    
+    // ถ้าวันที่เริ่มลามากกว่าวันนี้ = ลาล่วงหน้า
+    if (startDateOnly > today) {
+      return {
+        type: 'advance',
+        message: t('leave.advanceNotice'),
+        className: 'bg-blue-50 border-blue-200 text-blue-800'
+      };
+    }
+    
+    // ถ้าเป็นวันนี้ = ไม่แสดงแจ้งเตือน
+    return null;
   };
+
+
 
   // set state จาก initialData ถ้ามี
   useEffect(() => {
@@ -130,7 +145,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
       setStartDate(initialData.startDate ? new Date(initialData.startDate) : undefined);
       setEndDate(initialData.endDate ? new Date(initialData.endDate) : undefined);
       setLeaveType(initialData.leaveType || initialData.type || "");
-      setPersonalLeaveType(initialData.personalLeaveType || "");
+      setDurationType(initialData.durationType || "");
       setStartTime(initialData.startTime || "");
       setEndTime(initialData.endTime || "");
       setReason(initialData.reason || "");
@@ -233,6 +248,14 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
     return minutes >= min && minutes <= max;
   };
 
+  // ฟังก์ชันสำหรับจำกัดเวลาใน input field
+  const getTimeConstraints = () => {
+    return {
+      min: "09:00",
+      max: "18:00"
+    };
+  };
+
   // handleSubmit: ถ้า onSubmit ถูกส่งมา ให้เรียก onSubmit(data) แทน submit ปกติ
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -240,7 +263,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
     setTimeError("");
     let newErrors = {
       leaveType: '',
-      personalLeaveType: '', // dummy เพื่อให้ type ตรง
+      durationType: '', // dummy เพื่อให้ type ตรง
       startDate: '',
       endDate: '',
       startTime: '', // dummy เพื่อให้ type ตรง
@@ -248,14 +271,18 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
       reason: '',
       contact: '',
     };
-    // ถ้าเป็นลากิจแบบ hourly ให้เพิ่ม startTime, endTime
-    if (leaveType === 'personal' && personalLeaveType === 'hour') {
+    // ถ้าเป็นลาแบบ hourly ให้เพิ่ม startTime, endTime
+    if (durationType === 'hour') {
       newErrors.startTime = '';
       newErrors.endTime = '';
     }
     let hasError = false;
     if (!leaveType) {
       newErrors.leaveType = t('leave.required');
+      hasError = true;
+    }
+    if (!durationType) {
+      newErrors.durationType = t('leave.required');
       hasError = true;
     }
     if (!startDate) {
@@ -274,8 +301,8 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
       newErrors.contact = t('leave.required');
       hasError = true;
     }
-    // ถ้าเป็นลากิจแบบ hourly ให้เช็คเวลา
-    if (leaveType === 'personal' && personalLeaveType === 'hour') {
+    // ถ้าเป็นลาแบบ hourly ให้เช็คเวลา
+    if (durationType === 'hour') {
       if (!startTime) {
         newErrors.startTime = t('leave.required');
         hasError = true;
@@ -289,9 +316,16 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
         newErrors.endTime = t('leave.timeNotSame');
         hasError = true;
       }
+      // ตรวจสอบว่าเวลาสิ้นสุดต้องไม่น้อยกว่าเวลาเริ่มต้น
+      if (startTime && endTime && startTime > endTime) {
+        newErrors.startTime = t('leave.endTimeBeforeStart');
+        newErrors.endTime = t('leave.endTimeBeforeStart');
+        hasError = true;
+      }
       if ((startTime && !isTimeInRange(startTime)) || (endTime && !isTimeInRange(endTime))) {
-        newErrors.startTime = t('leave.timeRangeError');
-        newErrors.endTime = t('leave.timeRangeError');
+        const errorMessage = `${t('leave.timeRangeError')} (09:00-18:00)`;
+        newErrors.startTime = errorMessage;
+        newErrors.endTime = errorMessage;
         hasError = true;
       }
     }
@@ -305,66 +339,48 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
       return;
     }
 
-    // Check personal leave type validation
-    if (leaveType === "personal") {
-      if (!durationType) {
+    // Check duration type validation
+    if (durationType === "hour") {
+      if (!startTime || !endTime) {
         toast({
-          title: t('leave.selectDurationType'),
-          description: t('leave.selectDurationTypeDesc'),
+          title: t('leave.specifyTime'),
+          description: t('leave.specifyTimeDesc'),
           variant: "destructive",
         });
         return;
       }
-      
-      if (durationType === "hour") {
-        if (!startTime || !endTime) {
-          toast({
-            title: t('leave.specifyTime'),
-            description: t('leave.specifyTimeDesc'),
-            variant: "destructive",
-          });
-          return;
-        }
-        // validate รูปแบบเวลา HH:mm
-        if (!isValidTimeFormat(startTime) || !isValidTimeFormat(endTime)) {
-          toast({
-            title: 'รูปแบบเวลาไม่ถูกต้อง',
-            description: 'กรุณากรอกเวลาเป็น HH:mm เช่น 09:00, 17:30',
-            variant: "destructive",
-          });
-          return;
-        }
-        // ตรวจสอบห้ามเวลาเริ่ม = เวลาสิ้นสุด
-        if (startTime === endTime) {
-          setTimeError('เวลาเริ่มต้นและเวลาสิ้นสุดต้องไม่เหมือนกัน');
-          toast({
-            title: 'เวลาเริ่มต้นและเวลาสิ้นสุดต้องไม่เหมือนกัน',
-            description: 'กรุณาเลือกเวลาให้แตกต่างกัน',
-            variant: 'destructive',
-          });
-          return;
-        }
-        // ตรวจสอบช่วงเวลา 09:00-18:00
-        if (!isTimeInRange(startTime) || !isTimeInRange(endTime)) {
-          setTimeError('สามารถลาได้เฉพาะช่วงเวลาทำงาน 09:00 ถึง 18:00 เท่านั้น');
-          toast({
-            title: 'เวลานอกช่วงเวลาทำงาน',
-            description: 'กรุณากรอกเวลาในช่วงเวลาทำงาน 09:00 ถึง 18:00 เท่านั้น',
-            variant: 'destructive',
-          });
-          return;
-        }
-      }
-      
-      if (durationType === "day" && !endDate) {
+      // validate รูปแบบเวลา HH:mm
+      if (!isValidTimeFormat(startTime) || !isValidTimeFormat(endTime)) {
         toast({
-          title: t('leave.selectEndDate'),
-          description: t('leave.selectEndDateDesc'),
+          title: 'รูปแบบเวลาไม่ถูกต้อง',
+          description: 'กรุณากรอกเวลาเป็น HH:mm เช่น 09:00, 17:30',
           variant: "destructive",
         });
         return;
       }
-    } else if (!endDate) {
+      // ตรวจสอบห้ามเวลาเริ่ม = เวลาสิ้นสุด
+      if (startTime === endTime) {
+        setTimeError('เวลาเริ่มต้นและเวลาสิ้นสุดต้องไม่เหมือนกัน');
+        toast({
+          title: 'เวลาเริ่มต้นและเวลาสิ้นสุดต้องไม่เหมือนกัน',
+          description: 'กรุณาเลือกเวลาให้แตกต่างกัน',
+          variant: 'destructive',
+        });
+        return;
+      }
+      // ตรวจสอบช่วงเวลา 09:00-18:00
+      if (!isTimeInRange(startTime) || !isTimeInRange(endTime)) {
+        setTimeError(t('leave.timeRangeError'));
+        toast({
+          title: t('leave.timeRangeError'),
+          description: t('leave.timeRangeInfo'),
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+    
+    if (durationType === "day" && !endDate) {
       toast({
         title: t('leave.selectEndDate'),
         description: t('leave.selectEndDateDesc'),
@@ -524,13 +540,11 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
     setDurationType(value);
     setStartTime("");
     setEndTime("");
+    // เมื่อเลือกรายชั่วโมง ให้ตั้งค่าวันที่เป็นวันปัจจุบันเท่านั้น
     if (value === "hour") {
       const today = new Date();
       setStartDate(today);
       setEndDate(today);
-    } else {
-      setStartDate(undefined);
-      setEndDate(undefined);
     }
   };
 
@@ -549,7 +563,11 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
               <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.leaveType')}</span>
             </div>
             <Select value={leaveType} onValueChange={handleLeaveTypeChange}>
-              <SelectTrigger className="h-12 rounded-xl border-2 focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20 transition-all">
+              <SelectTrigger className={`h-12 rounded-xl border-2 transition-all ${
+                errors.leaveType 
+                  ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' 
+                  : 'focus:border-pink-500 focus:ring-2 focus:ring-pink-500/20'
+              }`}>
                 <SelectValue placeholder={t('leave.selectLeaveType')} />
               </SelectTrigger>
               <SelectContent>
@@ -558,80 +576,215 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
                   .map((type) => (
                     <SelectItem key={type.id} value={type.id}>{i18n.language.startsWith('th') ? type.leave_type_th : type.leave_type_en}</SelectItem>
                   ))}
-              </SelectContent>
-            </Select>
-          </div>
+                              </SelectContent>
+              </Select>
+              {errors.leaveType && (
+                <p className="mt-1 text-sm text-red-600">{errors.leaveType}</p>
+              )}
+            </div>
 
           {/* เงื่อนไข: แสดงฟิลด์อื่นๆ เฉพาะเมื่อเลือกประเภทการลาแล้ว */}
           {leaveType && (
             <>
-              {/* Section: ช่วงวันที่ลา */}
+              {/* Section: ประเภทการลา (วัน/ชั่วโมง) */}
               <div>
                 <div className="flex items-center gap-2 mb-2">
-                  <CalendarDays className="w-5 h-5 text-green-500" />
-                  <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.dateRange')}</span>
+                  <Clock className="w-5 h-5 text-purple-500" />
+                  <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.durationType')}</span>
                 </div>
-                <DateRangePicker
-                  startDate={startDate}
-                  endDate={endDate}
-                  onStartDateChange={setStartDate}
-                  onEndDateChange={setEndDate}
-                  disabled={isHourlyLeave}
-                  minDate={isPersonalLeave && personalLeaveType === "day" ? new Date() : undefined}
-                />
+                <Select value={durationType} onValueChange={handleDurationTypeChange}>
+                  <SelectTrigger className={`h-12 rounded-xl border-2 transition-all ${
+                    errors.durationType 
+                      ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' 
+                      : 'focus:border-purple-500 focus:ring-2 focus:ring-purple-500/20'
+                  }`}>
+                    <SelectValue placeholder={t('leave.selectDurationType')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="day">{t('leave.fullDay')}</SelectItem>
+                    <SelectItem value="hour">{t('leave.hourly')}</SelectItem>
+                  </SelectContent>
+                </Select>
+                {errors.durationType && (
+                  <p className="mt-1 text-sm text-red-600">{errors.durationType}</p>
+                )}
               </div>
 
-              {/* Section: เหตุผล */}
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <FileText className="w-5 h-5 text-orange-500" />
-                  <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.reason')}</span>
-                </div>
-                <Textarea
-                  id="reason"
-                  placeholder={t('leave.reasonPlaceholder')}
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  className="min-h-[100px] resize-none rounded-xl border-2 focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20 transition-all"
-                />
-              </div>
+              {/* เงื่อนไข: แสดงฟิลด์อื่นๆ เฉพาะเมื่อเลือกประเภทการลาและประเภทการลาแล้ว */}
+              {durationType && (
+                <>
+                  {/* Section: ช่วงวันที่ลา */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <CalendarDays className="w-5 h-5 text-green-500" />
+                      <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.dateRange')}</span>
+                    </div>
+                    <div className="mb-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                        {t('leave.dateRangeDescription')}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-500">
+                        {t('leave.currentDate')}: {new Date().toLocaleDateString(i18n.language === 'th' ? 'th-TH' : 'en-US')}
+                      </p>
+                    </div>
+                    <DateRangePicker
+                      startDate={startDate}
+                      endDate={endDate}
+                      onStartDateChange={setStartDate}
+                      onEndDateChange={setEndDate}
+                      disabled={isHourlyLeave}
+                    />
+                    {/* แจ้งเตือนเมื่อมีการลาย้อนหลังหรือลาล่วงหน้า */}
+                    {(() => {
+                      const notice = getLeaveNotice(startDate);
+                      if (!notice) return null;
+                      
+                      const iconColor = notice.type === 'backdated' ? 'text-yellow-600' : 'text-blue-600';
+                      const iconPath = notice.type === 'backdated' 
+                        ? "M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                        : "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z";
+                      
+                      return (
+                        <div className={`mt-2 p-3 border rounded-lg ${notice.className}`}>
+                          <div className="flex items-center gap-2">
+                            <svg className={`w-4 h-4 ${iconColor}`} fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d={iconPath} clipRule="evenodd" />
+                            </svg>
+                            <span className="text-sm font-medium">
+                              {notice.message}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })()}
+                  </div>
 
-              {/* Section: ข้อมูลติดต่อ */}
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <Phone className="w-5 h-5 text-blue-500" />
-                  <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.contactInfo')}</span>
-                </div>
-                <Input
-                  id="contact"
-                  placeholder={t('leave.contactPlaceholder')}
-                  className="w-full h-12 rounded-xl border-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20 transition-all"
-                  value={contact}
-                  onChange={e => setContact(e.target.value)}
-                />
-              </div>
+                  {/* เงื่อนไข: แสดงฟิลด์เวลาเฉพาะเมื่อเลือกแบบชั่วโมง */}
+                  {isHourlyLeave && (
+                    <>
+                      {/* Section: เวลาเริ่มต้น */}
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Clock className="w-5 h-5 text-blue-500" />
+                          <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.startTime')}</span>
+                        </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                          {t('leave.timeRangeInfo')}
+                        </p>
+                        <Input
+                          type="time"
+                          id="startTime"
+                          value={startTime}
+                          onChange={(e) => setStartTime(e.target.value)}
+                          min={getTimeConstraints().min}
+                          max={getTimeConstraints().max}
+                          className={`w-full h-12 rounded-xl border-2 transition-all ${
+                            errors.startTime 
+                              ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' 
+                              : 'focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20'
+                          }`}
+                        />
+                        {errors.startTime && (
+                          <p className="mt-1 text-sm text-red-600">{errors.startTime}</p>
+                        )}
+                      </div>
 
-              {/* Section: ปุ่ม */}
-              <div className="flex gap-3 pt-6">
-                <Button 
-                  type="submit" 
-                  className="flex-1 gradient-bg text-white font-semibold text-lg h-12 rounded-xl shadow-lg hover:scale-105 transition-transform duration-200"
-                  size="lg"
-                >
-                  <Send className="w-5 h-5 mr-2" />
-                  {t('leave.submitLeave')}
-                </Button>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => { navigate("/"); }}
-                  size="lg"
-                  className="flex-1 h-12 rounded-xl border-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-lg"
-                >
-                  <ArrowLeftCircle className="w-5 h-5 mr-2" />
-                  {t('common.cancel')}
-                </Button>
-              </div>
+                      {/* Section: เวลาสิ้นสุด */}
+                      <div>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Clock className="w-5 h-5 text-red-500" />
+                          <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.endTime')}</span>
+                        </div>
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                          {t('leave.timeRangeInfo')}
+                        </p>
+                        <Input
+                          type="time"
+                          id="endTime"
+                          value={endTime}
+                          onChange={(e) => setEndTime(e.target.value)}
+                          min={getTimeConstraints().min}
+                          max={getTimeConstraints().max}
+                          className={`w-full h-12 rounded-xl border-2 transition-all ${
+                            errors.endTime 
+                              ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' 
+                              : 'focus:border-red-500 focus:ring-2 focus:ring-red-500/20'
+                          }`}
+                        />
+                        {errors.endTime && (
+                          <p className="mt-1 text-sm text-red-600">{errors.endTime}</p>
+                        )}
+                      </div>
+                    </>
+                  )}
+
+                  {/* Section: เหตุผล */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <FileText className="w-5 h-5 text-orange-500" />
+                      <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.reason')}</span>
+                    </div>
+                    <Textarea
+                      id="reason"
+                      placeholder={t('leave.reasonPlaceholder')}
+                      value={reason}
+                      onChange={(e) => setReason(e.target.value)}
+                      className={`min-h-[100px] resize-none rounded-xl border-2 transition-all ${
+                        errors.reason 
+                          ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' 
+                          : 'focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20'
+                      }`}
+                    />
+                    {errors.reason && (
+                      <p className="mt-1 text-sm text-red-600">{errors.reason}</p>
+                    )}
+                  </div>
+
+                  {/* Section: ข้อมูลติดต่อ */}
+                  <div>
+                    <div className="flex items-center gap-2 mb-2">
+                      <Phone className="w-5 h-5 text-blue-500" />
+                      <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.contactInfo')}</span>
+                    </div>
+                                            <Input
+                          id="contact"
+                          placeholder={t('leave.contactPlaceholder')}
+                          className={`w-full h-12 rounded-xl border-2 transition-all ${
+                            errors.contact 
+                              ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' 
+                              : 'focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20'
+                          }`}
+                          value={contact}
+                          onChange={e => setContact(e.target.value)}
+                        />
+                        {errors.contact && (
+                          <p className="mt-1 text-sm text-red-600">{errors.contact}</p>
+                        )}
+                  </div>
+
+                  {/* Section: ปุ่ม */}
+                  <div className="flex gap-3 pt-6">
+                    <Button 
+                      type="submit" 
+                      className="flex-1 gradient-bg text-white font-semibold text-lg h-12 rounded-xl shadow-lg hover:scale-105 transition-transform duration-200"
+                      size="lg"
+                    >
+                      <Send className="w-5 h-5 mr-2" />
+                      {t('leave.submitLeave')}
+                    </Button>
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={() => { navigate("/"); }}
+                      size="lg"
+                      className="flex-1 h-12 rounded-xl border-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-lg"
+                    >
+                      <ArrowLeftCircle className="w-5 h-5 mr-2" />
+                      {t('common.cancel')}
+                    </Button>
+                  </div>
+                </>
+              )}
             </>
           )}
         </form>
