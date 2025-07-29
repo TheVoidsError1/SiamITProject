@@ -87,7 +87,8 @@
     "close": "Close",
     "add": "Add",
     "update": "Update",
-    "allMonths": "All Months"
+    "allMonths": "All Months",
+    "year": "Year"
   },
   "leave": {
     "all": "All",
@@ -271,7 +272,7 @@
     "approvalRate": "Approval Rate",
     "quickActions": "Quick Actions",
     "quickActionsDesc": "Access frequently used functions",
-    "recentLeaveStats": "Recent Leave Statistics",
+    "recentLeaveStats": "Recent Leave",
     "recentLeaveStatsDesc": "Latest leave requests",
     "fillCompleteInfo": "Please fill out complete information",
     "manageAllDesc": "Manage all positions, departments, and leave types",

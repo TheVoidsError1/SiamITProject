@@ -330,6 +330,109 @@ module.exports = (AppDataSource) => {
       res.status(500).json({ status: 'error', message: err.message });
     }
   });
+
+  // New API: /user-profile - Get current user profile information for card display
+  router.get('/user-profile', authMiddleware, async (req, res) => {
+    try {
+      const userId = req.user.userId;
+      
+      // Get repositories
+      const processRepo = AppDataSource.getRepository('ProcessCheck');
+      const userRepo = AppDataSource.getRepository('User');
+      const adminRepo = AppDataSource.getRepository('Admin');
+      const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+      const departmentRepo = AppDataSource.getRepository('Department');
+      const positionRepo = AppDataSource.getRepository('Position');
+
+      // Find ProcessCheck entry by Repid (userId)
+      const processCheck = await processRepo.findOne({ where: { Repid: userId } });
+      if (!processCheck) {
+        return res.status(404).json({ 
+          status: 'error', 
+          message: 'User not found in ProcessCheck table' 
+        });
+      }
+
+      // Get user details based on role
+      let userProfile = null;
+      let role = processCheck.Role;
+
+      if (role === 'admin') {
+        userProfile = await adminRepo.findOne({ where: { id: userId } });
+      } else if (role === 'superadmin') {
+        userProfile = await superadminRepo.findOne({ where: { id: userId } });
+      } else {
+        // Default to user
+        userProfile = await userRepo.findOne({ where: { id: userId } });
+      }
+
+      if (!userProfile) {
+        return res.status(404).json({ 
+          status: 'error', 
+          message: 'User profile not found' 
+        });
+      }
+
+      // Get user name based on role
+      let userName = '';
+      if (role === 'admin') {
+        userName = userProfile.admin_name || '';
+      } else if (role === 'superadmin') {
+        userName = userProfile.superadmin_name || '';
+      } else {
+        userName = userProfile.User_name || '';
+      }
+
+      // Get department information
+      let departmentInfo = {
+        id: null,
+        name_th: 'No Department',
+        name_en: 'No Department'
+      };
+      if (userProfile.department) {
+        const department = await departmentRepo.findOne({ where: { id: userProfile.department } });
+        if (department) {
+          departmentInfo = {
+            id: department.id,
+            name_th: department.department_name_th || 'No Department',
+            name_en: department.department_name_en || 'No Department'
+          };
+        }
+      }
+
+      // Get position information
+      let positionInfo = {
+        id: null,
+        name_th: 'No Position',
+        name_en: 'No Position'
+      };
+      if (userProfile.position) {
+        const position = await positionRepo.findOne({ where: { id: userProfile.position } });
+        if (position) {
+          positionInfo = {
+            id: position.id,
+            name_th: position.position_name_th || 'No Position',
+            name_en: position.position_name_en || 'No Position'
+          };
+        }
+      }
+
+      res.json({
+        status: 'success',
+        data: {
+          name: userName,
+          email: processCheck.Email,
+          avatar: processCheck.avatar_url,
+          role: role,
+          department: departmentInfo,
+          position: positionInfo
+        },
+        message: 'User profile fetched successfully'
+      });
+    } catch (err) {
+      res.status(500).json({ status: 'error', message: err.message });
+    }
+  });
   
   return router;
 };
