@@ -32,6 +32,7 @@ module.exports = (AppDataSource) => {
       const year = req.query.year ? parseInt(req.query.year) : null;
       const leaveType = req.query.leaveType || null;
       const status = req.query.status || null;
+      const retroactive = req.query.retroactive || null;
       const startDate = req.query.startDate ? new Date(req.query.startDate) : null;
       const endDate = req.query.endDate ? new Date(req.query.endDate) : null;
       const date = req.query.date ? new Date(req.query.date) : null;
@@ -61,6 +62,12 @@ module.exports = (AppDataSource) => {
       if (status) {
         where = { ...where, status };
       }
+      
+      // กรองตาม retroactive parameter (ใช้คอลัมน์ backdated)
+      if (retroactive === 'retroactive') {
+        where = { ...where, backdated: 1 };
+      }
+      
       // กรองช่วงวันที่ (startDate, endDate) จากฟิลด์ startDate
       if (startDate && endDate) {
         where = { ...where, startDate: Between(startDate, endDate) };
@@ -83,28 +90,26 @@ module.exports = (AppDataSource) => {
         leaveRepo.count({ where })
       ]);
 
-      // --- ดึง leave request ทั้งหมดของ user เพื่อคำนวณ summary ---
-      const allLeaves = await leaveRepo.find({ where });
-      // คำนวณ summary
-      const totalLeaveDays = allLeaves.reduce((sum, leave) => {
+      // --- ดึง leave request ทั้งหมดของ user เพื่อคำนวณ summary (ไม่สนใจ filter) ---
+      const allLeavesForSummary = await leaveRepo.find({ where: { Repid: userId } });
+      // คำนวณ summary จากข้อมูลทั้งหมดของ user
+      const totalLeaveDays = allLeavesForSummary.reduce((sum, leave) => {
         if (leave.startDate && leave.endDate) {
           return sum + (Math.floor((new Date(leave.endDate) - new Date(leave.startDate)) / (1000*60*60*24)) + 1);
         }
         return sum + 1;
       }, 0);
-      const approvedCount = allLeaves.filter(l => l.status === 'approved').length;
-      const pendingCount = allLeaves.filter(l => l.status === 'pending').length;
-      const rejectedCount = allLeaves.filter(l => l.status === 'rejected').length;
+      const approvedCount = allLeavesForSummary.filter(l => l.status === 'approved').length;
+      const pendingCount = allLeavesForSummary.filter(l => l.status === 'pending').length;
+      const rejectedCount = allLeavesForSummary.filter(l => l.status === 'rejected').length;
       
-      // คำนวณจำนวนการลาย้อนหลัง (retroactive leave)
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const retroactiveCount = allLeaves.filter(leave => {
-        if (!leave.startDate) return false;
-        const leaveStartDate = new Date(leave.startDate);
-        leaveStartDate.setHours(0, 0, 0, 0);
-        return leaveStartDate < today;
-      }).length;
+      // คำนวณจำนวนการลาย้อนหลัง (retroactive leave) จากคอลัมน์ backdated - นับทั้งหมดของ user
+      const retroactiveCount = allLeavesForSummary.filter(leave => leave.backdated === true).length;
+      
+      // Debug log เพื่อตรวจสอบ
+      console.log('Debug - Total leaves for user:', allLeavesForSummary.length);
+      console.log('Debug - Backdated leaves:', retroactiveCount);
+      console.log('Debug - Sample backdated values:', allLeavesForSummary.slice(0, 5).map(l => ({ id: l.id, backdated: l.backdated, type: typeof l.backdated })));
 
       // join leaveType, admin (approver/rejector)
       const result = await Promise.all(leaves.map(async (leave) => {
@@ -144,8 +149,18 @@ module.exports = (AppDataSource) => {
           rejectedBy,
           rejectionReason: leave.rejectedReason,
           submittedDate: leave.createdAt,
+          backdated: Boolean(leave.backdated), // แปลงเป็น boolean เพื่อให้แน่ใจ
         };
       }));
+      // Debug log สำหรับ pagination
+      console.log('Debug - Pagination:', {
+        total: total,
+        limit: limit,
+        page: page,
+        totalPages: Math.ceil(total / limit),
+        resultLength: result.length
+      });
+
       res.json({
         status: 'success',
         data: result,

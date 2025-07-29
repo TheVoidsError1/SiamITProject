@@ -95,6 +95,7 @@
   },
   "leave": {
     "all": "All",
+    "statusAll": "All Statuses",
     "leaveRequest": "Leave Request",
     "leaveHistory": "Leave History",
     "leaveType": "Leave Type",
@@ -366,12 +367,22 @@
     "retroactiveLeave": "Retroactive Leave",
     "retroactiveLeaveDesc": "Leave submitted after the start date",
     "currentLeave": "Current Leave",
+    "currentLeaveDesc": "Leave submitted before the start date",
     "allTypes": "All Types",
     "dateInformation": "Date Information",
     "statusAndApproval": "Status & Approval",
     "contactInformation": "Contact Information",
     "noReasonProvided": "No reason provided",
-    "files": "files"
+    "files": "files",
+    "filterDesc": "Filter data according to your requirements",
+    "activeFilters": "Active filters",
+    "showingRetroactive": "Showing retroactive leave only",
+    "noLeaveHistory": "No leave history found",
+    "noResultsForFilter": "No results found for selected filters",
+    "tryDifferentFilter": "Try different filters or clear all filters",
+    "loadingData": "Loading leave history data",
+    "noLeaveHistoryDesc": "No leave history available in the system",
+    "pageInfo": "Page {{page}} of {{totalPages}}"
   },
   "admin": {
     "pendingRequests": "Pending Requests",

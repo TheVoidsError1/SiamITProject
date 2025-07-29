@@ -248,23 +248,26 @@
 
          const attachmentsArr = req.files ? req.files.map(f => f.filename) : [];
          // Determine if the leave request is backdated
-         let backdated = false;
+         let backdated = 0; // Default to 0 (not backdated)
          if (startDate) {
            const today = new Date();
            today.setHours(0, 0, 0, 0);
            const leaveStart = parseLocalDate(startDate);
            if (leaveStart && leaveStart < today) {
-             backdated = true;
+             // ถ้าวันลาอยู่ในอดีต (ย้อนหลัง) ให้ backdated = 1
+             backdated = 1;
            } else if (leaveStart && leaveStart.getTime() === today.getTime() && startTime) {
-             // If leave is for today, check if startTime is in the past
+             // ถ้าวันลาเป็นวันนี้ ให้ตรวจสอบเวลาเริ่มลา
              const now = new Date();
              const [startHour, startMinute] = startTime.split(":").map(Number);
              const leaveStartDateTime = new Date(leaveStart);
              leaveStartDateTime.setHours(startHour, startMinute, 0, 0);
              if (leaveStartDateTime < now) {
-               backdated = true;
+               // ถ้าเวลาเริ่มลาอยู่ในอดีต ให้ backdated = 1
+               backdated = 1;
              }
            }
+           // ถ้าวันลาเป็นปัจจุบันหรืออนาคต ให้ backdated = 0 (ค่าเริ่มต้น)
          }
          const leaveData = {
            Repid: userId, // ใส่ user_id จาก JWT
@@ -1005,6 +1008,36 @@
          if (reason !== undefined) leave.reason = reason;
          if (supervisor !== undefined) leave.supervisor = supervisor;
          if (contact !== undefined) leave.contact = contact;
+         
+         // คำนวณค่า backdated ใหม่เมื่อมีการอัปเดตวันที่หรือเวลา
+         if (startDate !== undefined || startTime !== undefined) {
+           let backdated = 0; // Default to 0 (not backdated)
+           const currentStartDate = startDate !== undefined ? startDate : leave.startDate;
+           const currentStartTime = startTime !== undefined ? startTime : leave.startTime;
+           
+           if (currentStartDate) {
+             const today = new Date();
+             today.setHours(0, 0, 0, 0);
+             const leaveStart = parseLocalDate(currentStartDate);
+             if (leaveStart && leaveStart < today) {
+               // ถ้าวันลาอยู่ในอดีต (ย้อนหลัง) ให้ backdated = 1
+               backdated = 1;
+             } else if (leaveStart && leaveStart.getTime() === today.getTime() && currentStartTime) {
+               // ถ้าวันลาเป็นวันนี้ ให้ตรวจสอบเวลาเริ่มลา
+               const now = new Date();
+               const [startHour, startMinute] = currentStartTime.split(":").map(Number);
+               const leaveStartDateTime = new Date(leaveStart);
+               leaveStartDateTime.setHours(startHour, startMinute, 0, 0);
+               if (leaveStartDateTime < now) {
+                 // ถ้าเวลาเริ่มลาอยู่ในอดีต ให้ backdated = 1
+                 backdated = 1;
+               }
+             }
+             // ถ้าวันลาเป็นปัจจุบันหรืออนาคต ให้ backdated = 0 (ค่าเริ่มต้น)
+           }
+           leave.backdated = backdated;
+         }
+         
          // แนบไฟล์ใหม่ (ถ้ามี)
          const attachmentsArr = req.files ? req.files.map(f => f.filename) : [];
          if (attachmentsArr.length > 0) {
@@ -1107,6 +1140,7 @@
              leaveDate,
              endDate,
              reason: leave.reason,
+             rejectionReason: leave.rejectedReason, // เพิ่มเหตุผลที่ไม่อนุมัติ
              submittedDate,
              createdAt: leave.createdAt, // เพิ่มฟิลด์นี้
              attachments: parseAttachments(leave.attachments),

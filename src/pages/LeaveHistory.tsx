@@ -11,13 +11,10 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
-import { AlertCircle, Calendar, CheckCircle, Clock, FileText, Filter, X, XCircle, History, User } from "lucide-react";
+import { AlertCircle, Calendar, CheckCircle, Clock, FileText, Filter, X, XCircle, History, User, ChevronLeft, ChevronRight } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-// เพิ่ม import LeaveForm
-import { LeaveForm } from "@/components/leave/LeaveForm";
-// เพิ่ม useState สำหรับ dialog edit
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 
@@ -26,8 +23,7 @@ const LeaveHistory = () => {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const navigate = useNavigate();
-  const [editLeave, setEditLeave] = useState<any | null>(null);
-  const [showEditDialog, setShowEditDialog] = useState(false);
+
   const [leaveHistory, setLeaveHistory] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -62,8 +58,7 @@ const LeaveHistory = () => {
 
   const { showSessionExpiredDialog } = useAuth();
 
-  const [deleteLeaveId, setDeleteLeaveId] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
+
 
   const fetchLeaveHistory = useCallback(async () => {
     setLoading(true);
@@ -79,7 +74,9 @@ const LeaveHistory = () => {
       if (filterMonth) url += `&month=${filterMonth}`;
       if (filterYear) url += `&year=${filterYear}`;
       if (filterStatus) url += `&status=${filterStatus}`;
-      if (filterRetroactive) url += `&retroactive=${filterRetroactive}`;
+      if (filterRetroactive) {
+        url += `&retroactive=${filterRetroactive}`;
+      }
       if (singleDate) {
         url += `&date=${format(singleDate, 'yyyy-MM-dd')}`;
       }
@@ -95,6 +92,15 @@ const LeaveHistory = () => {
         setLeaveHistory(data.data);
         setTotalPages(data.totalPages || 1);
         setSummary(data.summary || null);
+        
+        // Debug log
+        console.log('Debug - API Response:', {
+          totalPages: data.totalPages,
+          total: data.total,
+          limit: limit,
+          page: page,
+          dataLength: data.data.length
+        });
       } else {
         setError(data.message || "Unknown error");
       }
@@ -109,65 +115,7 @@ const LeaveHistory = () => {
     fetchLeaveHistory();
   }, [fetchLeaveHistory]);
 
-  const handleDeleteLeave = async () => {
-    if (!deleteLeaveId) return;
-    setDeleting(true);
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`/api/leave-request/${deleteLeaveId}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } });
-      const data = await res.json();
-      if (data.success) {
-        setDeleteLeaveId(null);
-        setPage(1); // รีเฟรช leaveHistory
-        fetchLeaveHistory(); // ดึงข้อมูลใหม่ทันทีหลังลบ
-        toast({
-          title: t('system.deleteSuccess', 'ลบใบลาสำเร็จ'),
-          description: t('system.deleteSuccessDesc', 'ใบลาถูกลบเรียบร้อยแล้ว'),
-          variant: 'destructive',
-          className: 'border-red-500 bg-red-50 text-red-900',
-        });
-      } else {
-        alert(data.message || t("system.deleteFailed", "Delete failed"));
-      }
-    } catch (e) {
-      alert(t("system.deleteFailed", "Delete failed"));
-    } finally {
-      setDeleting(false);
-    }
-  };
 
-  // --- เพิ่มฟังก์ชันสำหรับดึงข้อมูลใบลาจาก backend ---
-  const handleEditLeave = async (leaveId: string) => {
-    setEditLeave(null); // reset ก่อน
-    setShowEditDialog(true); // เปิด dialog ทันที (option: ใส่ loading)
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`/api/leave-request/${leaveId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (data.success) {
-        const leave = data.data;
-        const mapped = {
-          id: leave.id,
-          leaveType: leave.type || leave.leaveType || '',
-          personalLeaveType: leave.personalLeaveType || '',
-          startDate: leave.startDate ? new Date(leave.startDate) : undefined,
-          endDate: leave.endDate ? new Date(leave.endDate) : undefined,
-          startTime: leave.startTime || '',
-          endTime: leave.endTime || '',
-          reason: leave.reason || '',
-          supervisor: leave.supervisor || leave.supervisorId || '',
-          contact: leave.contact || '',
-          attachments: leave.attachments || [],
-          employeeType: leave.employeeType || '',
-        };
-        setEditLeave(mapped);
-      }
-    } catch (e) {
-      // handle error
-    }
-  };
 
   // เพิ่มฟังก์ชันใหม่สำหรับดึงรายละเอียดใบลาจาก backend
   const handleViewDetails = async (leaveId: string) => {
@@ -251,14 +199,10 @@ const LeaveHistory = () => {
     return filterLeaveType || filterMonth || filterYear || filterStatus || filterRetroactive || singleDate;
   };
 
-  // ฟังก์ชันตรวจสอบว่าการลาเป็นย้อนหลังหรือไม่
-  const isRetroactiveLeave = (startDate: string) => {
-    if (!startDate) return false;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // ตัดเวลาออก
-    const leaveStartDate = new Date(startDate);
-    leaveStartDate.setHours(0, 0, 0, 0); // ตัดเวลาออก
-    return leaveStartDate < today;
+  // ฟังก์ชันตรวจสอบว่าการลาเป็นย้อนหลังหรือไม่ (ใช้ข้อมูลจาก backend)
+  const isRetroactiveLeave = (leave: any) => {
+    // ใช้ข้อมูล backdated จาก backend
+    return leave.backdated === true;
   };
 
   const getStatusBadge = (status: string) => {
@@ -290,10 +234,10 @@ const LeaveHistory = () => {
   };
 
   // ฟังก์ชันสร้าง badge สำหรับการลาย้อนหลัง
-  const getRetroactiveBadge = (startDate: string) => {
-    if (isRetroactiveLeave(startDate)) {
+  const getRetroactiveBadge = (leave: any) => {
+    if (isRetroactiveLeave(leave)) {
       return (
-        <Badge className="bg-purple-100 text-purple-800 border-purple-200">
+        <Badge className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 border-purple-200 shadow-sm hover:shadow-md transition-all duration-200">
           <History className="w-3 h-3 mr-1" />
           {t('history.retroactiveLeave', 'การลาย้อนหลัง')}
         </Badge>
@@ -301,6 +245,8 @@ const LeaveHistory = () => {
     }
     return null;
   };
+
+
 
   const getTypeColor = (type: string) => {
     const tVacation = t('leaveTypes.vacation');
@@ -410,130 +356,158 @@ const LeaveHistory = () => {
           </svg>
         </div>
         <div className="relative z-10 flex flex-col items-center justify-center py-10 md:py-16">
-          <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-24 h-24 rounded-full bg-white/80 shadow-2xl border-4 border-white mb-4" />
-          <h1 className="text-4xl md:text-5xl font-extrabold text-indigo-900 drop-shadow mb-2 flex items-center gap-3">
+          <div className="w-28 h-28 rounded-full bg-gradient-to-br from-white/90 to-white/70 shadow-2xl border-4 border-white/50 backdrop-blur-sm flex items-center justify-center mb-6">
+            <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-20 h-20 rounded-full" />
+          </div>
+          <h1 className="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-indigo-900 via-blue-800 to-indigo-900 bg-clip-text text-transparent drop-shadow mb-3 flex items-center gap-3">
+            <History className="w-10 h-10 text-blue-600" />
             {t('leave.leaveHistory')}
           </h1>
-          <p className="text-lg md:text-xl text-blue-900/70 mb-2 font-medium text-center max-w-2xl">
+          <p className="text-lg md:text-xl text-blue-900/80 mb-2 font-medium text-center max-w-2xl leading-relaxed">
             {t('history.leaveHistoryTitle')}
           </p>
+          <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full mt-4"></div>
         </div>
       </div>
       <div className="p-6 animate-fade-in">
         <div className="max-w-4xl mx-auto space-y-10">
           {/* Summary Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-10">
-            <Card className="border-0 shadow-xl bg-white/70 backdrop-blur rounded-2xl">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-10">
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-blue-50/50 to-blue-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               <CardContent className="p-6 flex items-center gap-4">
-                <div className="w-14 h-14 bg-blue-100 rounded-xl flex items-center justify-center shadow">
-                  <Calendar className="w-7 h-7 text-blue-600" />
+                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <Calendar className="w-7 h-7 text-white" />
                 </div>
                 <div>
                   <p className="text-3xl font-extrabold text-blue-800">{totalLeaveDays}</p>
-                  <p className="text-base text-blue-400">{t('history.totalLeaveDays')}</p>
+                  <p className="text-base text-blue-600 font-medium">{t('history.totalLeaveDays')}</p>
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-0 shadow-xl bg-white/70 backdrop-blur rounded-2xl">
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-green-50/50 to-green-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               <CardContent className="p-6 flex items-center gap-4">
-                <div className="w-14 h-14 bg-green-100 rounded-xl flex items-center justify-center shadow">
-                  <CheckCircle className="w-7 h-7 text-green-600" />
+                <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <CheckCircle className="w-7 h-7 text-white" />
                 </div>
                 <div>
                   <p className="text-3xl font-extrabold text-green-700">{approvedCount}</p>
-                  <p className="text-base text-green-400">{t('history.approvedRequests')}</p>
+                  <p className="text-base text-green-600 font-medium">{t('history.approvedRequests')}</p>
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-0 shadow-xl bg-white/70 backdrop-blur rounded-2xl">
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-yellow-50/50 to-yellow-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               <CardContent className="p-6 flex items-center gap-4">
-                <div className="w-14 h-14 bg-yellow-100 rounded-xl flex items-center justify-center shadow">
-                  <Clock className="w-7 h-7 text-yellow-600" />
+                <div className="w-14 h-14 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <Clock className="w-7 h-7 text-white" />
                 </div>
                 <div>
                   <p className="text-3xl font-extrabold text-yellow-700">{pendingCount}</p>
-                  <p className="text-base text-yellow-400">{t('history.pendingRequests')}</p>
+                  <p className="text-base text-yellow-600 font-medium">{t('history.pendingRequests')}</p>
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-0 shadow-xl bg-white/70 backdrop-blur rounded-2xl">
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-red-50/50 to-red-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               <CardContent className="p-6 flex items-center gap-4">
-                <div className="w-14 h-14 bg-red-100 rounded-xl flex items-center justify-center shadow">
-                  <XCircle className="w-7 h-7 text-red-600" />
+                <div className="w-14 h-14 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <XCircle className="w-7 h-7 text-white" />
                 </div>
                 <div>
                   <p className="text-3xl font-extrabold text-red-700">{rejectedCount}</p>
-                  <p className="text-base text-red-400">{t('history.rejectedRequests')}</p>
+                  <p className="text-base text-red-600 font-medium">{t('history.rejectedRequests')}</p>
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-0 shadow-xl bg-white/70 backdrop-blur rounded-2xl">
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-purple-50/50 to-purple-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
               <CardContent className="p-6 flex items-center gap-4">
-                <div className="w-14 h-14 bg-purple-100 rounded-xl flex items-center justify-center shadow">
-                  <History className="w-7 h-7 text-purple-600" />
+                <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
+                  <History className="w-7 h-7 text-white" />
                 </div>
                 <div>
                   <p className="text-3xl font-extrabold text-purple-700">{retroactiveCount}</p>
-                  <p className="text-base text-purple-400">{t('history.retroactiveLeave')}</p>
+                  <p className="text-base text-purple-600 font-medium">{t('history.retroactiveLeave')}</p>
                 </div>
               </CardContent>
             </Card>
           </div>
 
           {/* Enhanced Filter Section */}
-          <Card className="border-0 shadow-md">
-            <CardHeader className="pb-3">
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-white/90 via-blue-50/50 to-indigo-100/30 backdrop-blur-sm rounded-2xl">
+            <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Filter className="w-5 h-5 text-blue-600" />
-                  <h3 className="text-lg font-semibold">{t('history.filters', 'ตัวกรอง')}</h3>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                    <Filter className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-gray-800">{t('history.filters', 'ตัวกรอง')}</h3>
+                    <p className="text-sm text-gray-600">{t('history.filterDesc', 'กรองข้อมูลตามเงื่อนไขที่ต้องการ')}</p>
+                  </div>
                 </div>
                 <Button
-                  variant="ghost"
+                  variant="outline"
                   size="sm"
                   onClick={() => setShowFilters(!showFilters)}
+                  className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 rounded-xl px-4 py-2 font-medium"
                 >
-                  {showFilters ? t('history.hideFilters', 'ซ่อนตัวกรอง') : t('history.showFilters', 'แสดงตัวกรอง')}
+                  {showFilters ? (
+                    <>
+                      <X className="w-4 h-4 mr-2" />
+                      {t('history.hideFilters', 'ซ่อนตัวกรอง')}
+                    </>
+                  ) : (
+                    <>
+                      <Filter className="w-4 h-4 mr-2" />
+                      {t('history.showFilters', 'แสดงตัวกรอง')}
+                    </>
+                  )}
                 </Button>
               </div>
             </CardHeader>
             {showFilters && (
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+              <CardContent className="space-y-6">
+                {/* Filter Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                   {/* Single Date Filter */}
-                  <div className="space-y-2">
-                    <Label>{t('history.singleDate', 'วันที่เดียว')}</Label>
+                  <div className="space-y-3">
+                    <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-blue-600" />
+                      {t('history.singleDate', 'เฉพาะวัน')}
+                    </Label>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-48 min-w-[180px] max-w-full justify-start text-left font-normal whitespace-nowrap"
+                          className="w-full justify-start text-left font-normal bg-white/80 backdrop-blur border-blue-200 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 rounded-xl h-12"
                         >
-                          <Calendar className="mr-2 h-4 w-4" />
+                          <Calendar className="mr-2 h-4 w-4 text-blue-600" />
                           {singleDate ? format(singleDate, "dd/MM/yyyy") : t('history.selectSingleDate', 'เลือกวันเดียว')}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
+                      <PopoverContent className="w-auto p-0 border-0 shadow-xl rounded-2xl" align="start">
                         <CalendarComponent
                           mode="single"
                           selected={singleDate}
                           onSelect={date => setSingleDate(date)}
+                          className="rounded-2xl"
                         />
                       </PopoverContent>
                     </Popover>
                   </div>
 
                   {/* Leave Type Filter */}
-                  <div className="space-y-2">
-                    <Label>{t('leave.type', 'ประเภทการลา')}</Label>
+                  <div className="space-y-3">
+                    <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <FileText className="w-4 h-4 text-green-600" />
+                      {t('leave.type', 'ประเภทการลา')}
+                    </Label>
                     <Select value={filterLeaveType || "all"} onValueChange={v => setFilterLeaveType(v === "all" ? "" : v)}>
-                      <SelectTrigger>
+                      <SelectTrigger className="bg-white/80 backdrop-blur border-green-200 hover:bg-green-50 hover:border-green-300 transition-all duration-200 rounded-xl h-12">
                         <SelectValue placeholder={t('leave.allTypes', 'ทั้งหมด')} />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">{t('leave.allTypes', 'ทั้งหมด')}</SelectItem>
+                      <SelectContent className="border-0 shadow-xl rounded-2xl">
+                        <SelectItem value="all" className="rounded-lg">{t('leave.allTypes', 'ทั้งหมด')}</SelectItem>
                         {leaveTypes.map((lt) => (
-                          <SelectItem key={lt.id} value={lt.id}>
+                          <SelectItem key={lt.id} value={lt.id} className="rounded-lg">
                             {i18n.language.startsWith('th') ? lt.leave_type_th : lt.leave_type_en}
                           </SelectItem>
                         ))}
@@ -542,68 +516,81 @@ const LeaveHistory = () => {
                   </div>
 
                   {/* Status Filter */}
-                  <div className="space-y-2">
-                    <Label>{t('leave.status', 'สถานะ')}</Label>
+                  <div className="space-y-3">
+                    <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <AlertCircle className="w-4 h-4 text-yellow-600" />
+                      {t('leave.status', 'สถานะ')}
+                    </Label>
                     <Select value={filterStatus || "all"} onValueChange={v => setFilterStatus(v === "all" ? "" : v)}>
-                      <SelectTrigger>
+                      <SelectTrigger className="bg-white/80 backdrop-blur border-yellow-200 hover:bg-yellow-50 hover:border-yellow-300 transition-all duration-200 rounded-xl h-12">
                         <SelectValue placeholder={t('history.allStatuses', 'ทั้งหมด')} />
                       </SelectTrigger>
-                      <SelectContent>
-                        {/* ใช้ i18n สำหรับ option ทั้งหมดและแต่ละสถานะ */}
-                        <SelectItem value="all">{t('leave.statusAll')}</SelectItem>
+                      <SelectContent className="border-0 shadow-xl rounded-2xl">
+                        <SelectItem value="all" className="rounded-lg">{t('leave.statusAll', 'ทุกสถานะ')}</SelectItem>
                         {statusOptions.map(status => (
-                          <SelectItem key={status} value={status}>{t(`leave.${status}`, status)}</SelectItem>
+                          <SelectItem key={status} value={status} className="rounded-lg">
+                            {t(`leave.${status}`, status)}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
 
-                  {/* Retroactive Leave Filter */}
-                  <div className="space-y-2">
-                    <Label className="flex items-center gap-2">
+                  {/* Retroactive Leave Filter - ปรับปรุงให้ใช้งานได้จริง */}
+                  <div className="space-y-3">
+                    <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                       <History className="w-4 h-4 text-purple-600" />
                       {t('history.retroactiveLeave', 'การลาย้อนหลัง')}
                     </Label>
                     <Select value={filterRetroactive || "all"} onValueChange={v => setFilterRetroactive(v === "all" ? "" : v)}>
-                      <SelectTrigger>
+                      <SelectTrigger className="bg-white/80 backdrop-blur border-purple-200 hover:bg-purple-50 hover:border-purple-300 transition-all duration-200 rounded-xl h-12">
                         <SelectValue placeholder={t('history.allTypes', 'ทั้งหมด')} />
                       </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="all">{t('history.allTypes', 'ทั้งหมด')}</SelectItem>
-                        <SelectItem value="retroactive" className="text-purple-700">
+                      <SelectContent className="border-0 shadow-xl rounded-2xl">
+                        <SelectItem value="all" className="rounded-lg">
                           <div className="flex items-center gap-2">
-                            <History className="w-4 h-4" />
+                            <div className="w-3 h-3 rounded-full bg-gray-400"></div>
+                            {t('history.allTypes', 'ทั้งหมด')}
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="retroactive" className="rounded-lg">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-purple-500 animate-pulse"></div>
+                            <History className="w-4 h-4 text-purple-600" />
                             {t('history.retroactiveLeave', 'การลาย้อนหลัง')}
                           </div>
                         </SelectItem>
-                        <SelectItem value="current">{t('history.currentLeave', 'การลาปัจจุบัน')}</SelectItem>
+
                       </SelectContent>
                     </Select>
                   </div>
 
                   {/* Month/Year Filter */}
-                  <div className="space-y-2">
-                    <Label>{t('history.monthYear', 'เดือน/ปี')}</Label>
+                  <div className="space-y-3">
+                    <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-indigo-600" />
+                      {t('history.monthYear', 'เดือน/ปี')}
+                    </Label>
                     <div className="flex gap-2">
                       <Select value={filterMonth ? filterMonth.toString() : "all"} onValueChange={v => setFilterMonth(v === "all" ? '' : Number(v))} disabled={!!singleDate}>
-                        <SelectTrigger className="w-20">
+                        <SelectTrigger className="w-20 bg-white/80 backdrop-blur border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-200 rounded-xl h-12">
                           <SelectValue placeholder={t('history.month', 'เดือน')} />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">{t('history.allMonths', 'ทุกเดือน')}</SelectItem>
+                        <SelectContent className="border-0 shadow-xl rounded-2xl">
+                          <SelectItem value="all" className="rounded-lg">{t('history.allMonths', 'ทุกเดือน')}</SelectItem>
                           {allMonths.map(m => (
-                            <SelectItem key={m} value={m.toString()}>{monthNames[m-1]}</SelectItem>
+                            <SelectItem key={m} value={m.toString()} className="rounded-lg">{monthNames[m-1]}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                       <Select value={filterYear ? filterYear.toString() : "all"} onValueChange={v => setFilterYear(v === "all" ? '' : Number(v))} disabled={!!singleDate}>
-                        <SelectTrigger className="w-20">
+                        <SelectTrigger className="w-20 bg-white/80 backdrop-blur border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-200 rounded-xl h-12">
                           <SelectValue placeholder={t('history.year', 'ปี')} />
                         </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="all">{t('history.allYears', 'ทุกปี')}</SelectItem>
+                        <SelectContent className="border-0 shadow-xl rounded-2xl">
+                          <SelectItem value="all" className="rounded-lg">{t('history.allYears', 'ทุกปี')}</SelectItem>
                           {allYears.map(y => (
-                            <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+                            <SelectItem key={y} value={y.toString()} className="rounded-lg">{y}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -611,23 +598,41 @@ const LeaveHistory = () => {
                   </div>
                 </div>
 
-                {/* Clear Filters Button */}
-                <div className="flex justify-between items-center pt-2 border-t">
-                  <div className="flex items-center gap-2">
+                {/* Filter Actions */}
+                <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+                  <div className="flex items-center gap-3">
                     {hasActiveFilters() && (
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={clearAllFilters}
-                        className="text-red-600 border-red-200 hover:bg-red-50"
+                        className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 transition-all duration-200 rounded-xl px-4 py-2 font-medium"
                       >
-                        <X className="w-4 h-4 mr-1" />
+                        <X className="w-4 h-4 mr-2" />
                         {t('history.clearAllFilters', 'ล้างตัวกรองทั้งหมด')}
                       </Button>
                     )}
+                    {hasActiveFilters() && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                        {filterRetroactive === 'retroactive' ? (
+                          <span className="flex items-center gap-1">
+                            <History className="w-4 h-4 text-purple-600" />
+                            {t('history.showingRetroactive', 'แสดงเฉพาะการลาย้อนหลัง')}
+                          </span>
+                        ) : (
+                          t('history.activeFilters', 'มีตัวกรองที่ใช้งานอยู่')
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <div className="text-sm text-gray-500">
-                    {leaveHistory.length} {t('history.results', 'ผลลัพธ์')}
+                  <div className="flex items-center gap-3">
+                    <div className="text-sm text-gray-600">
+                      {leaveHistory.length} {t('history.results', 'ผลลัพธ์')}
+                    </div>
+                    <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                      {leaveHistory.length}
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -637,11 +642,52 @@ const LeaveHistory = () => {
           {/* Leave History List */}
           <div className="space-y-6">
             {loading ? (
-              <div className="flex justify-center items-center py-10 text-blue-500 text-lg">{t('common.loading', 'Loading...')}</div>
+              <div className="flex justify-center items-center py-16">
+                <div className="text-center">
+                  <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
+                  <p className="text-lg font-medium text-blue-600">{t('common.loading', 'กำลังโหลด...')}</p>
+                  <p className="text-sm text-gray-500 mt-2">{t('history.loadingData', 'กำลังดึงข้อมูลประวัติการลา')}</p>
+                </div>
+              </div>
             ) : error ? (
-              <div className="flex justify-center items-center py-10 text-red-500 text-lg">{error}</div>
+              <div className="flex justify-center items-center py-16">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <XCircle className="w-8 h-8 text-red-500" />
+                  </div>
+                  <p className="text-lg font-medium text-red-600">{t('common.error', 'เกิดข้อผิดพลาด')}</p>
+                  <p className="text-sm text-gray-500 mt-2">{error}</p>
+                </div>
+              </div>
             ) : leaveHistory.length === 0 ? (
-              <div className="flex justify-center items-center py-10 text-gray-400 text-lg">{t('history.noLeaveHistory', 'ไม่พบประวัติการลา')}</div>
+              <div className="flex justify-center items-center py-16">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <FileText className="w-8 h-8 text-gray-400" />
+                  </div>
+                  <p className="text-lg font-medium text-gray-600">{t('history.noLeaveHistory', 'ไม่พบประวัติการลา')}</p>
+                  <p className="text-sm text-gray-500 mt-2">{t('history.noLeaveHistoryDesc', 'ยังไม่มีประวัติการลาในระบบ')}</p>
+                </div>
+              </div>
+            ) : leaveHistory.length === 0 ? (
+              <div className="flex justify-center items-center py-16">
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                    <Filter className="w-8 h-8 text-gray-500" />
+                  </div>
+                  <p className="text-lg font-medium text-gray-700">{t('history.noResultsForFilter', 'ไม่พบผลลัพธ์สำหรับตัวกรองที่เลือก')}</p>
+                  <p className="text-sm text-gray-500 mt-2 mb-4">{t('history.tryDifferentFilter', 'ลองเปลี่ยนตัวกรองหรือล้างตัวกรองทั้งหมด')}</p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={clearAllFilters}
+                    className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 rounded-xl px-4 py-2 font-medium"
+                  >
+                    <X className="w-4 h-4 mr-2" />
+                    {t('history.clearAllFilters', 'ล้างตัวกรองทั้งหมด')}
+                  </Button>
+                </div>
+              </div>
             ) : (
               leaveHistory.map((leave) => (
                 <Card key={leave.id} className="border-0 shadow-xl bg-white/80 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all">
@@ -650,7 +696,7 @@ const LeaveHistory = () => {
                       <div className={`text-xl font-bold ${getTypeColor(leave.type)}`}>{getLeaveTypeLabel(leave.type)}</div>
                       <div className="flex flex-wrap gap-2">
                         {getStatusBadge(leave.status)}
-                        {getRetroactiveBadge(leave.startDate)}
+                        {getRetroactiveBadge(leave)}
                       </div>
                     </div>
                     <div className="text-sm text-blue-400 font-medium md:text-right">
@@ -675,13 +721,14 @@ const LeaveHistory = () => {
                           <span className="font-medium">{t('leave.duration')}:</span>
                           <span>{leave.days} {t('leave.days')}</span>
                         </div>
-                        {isRetroactiveLeave(leave.startDate) && (
+                        {isRetroactiveLeave(leave) && (
                           <div className="flex items-center gap-2 text-base text-purple-700">
                             <History className="w-5 h-5 text-purple-500" />
                             <span className="font-medium">{t('history.retroactiveLeave')}:</span>
                             <span>{t('history.retroactiveLeaveDesc', 'การลาที่ส่งหลังจากวันที่เริ่มลา')}</span>
                           </div>
                         )}
+
                       </div>
                       <div className="space-y-3">
                         <div className="flex items-start gap-2 text-base text-blue-900">
@@ -717,48 +764,10 @@ const LeaveHistory = () => {
                             )}
                           </div>
                         )}
-                        <div className="flex justify-end mt-6 gap-3">
+                        <div className="flex justify-end mt-6">
                           <Button size="sm" variant="outline" onClick={() => handleViewDetails(leave.id)}>
                             {t('common.viewDetails')}
                           </Button>
-                          {leave.status === "pending" && (() => {
-                            // เช็คว่าวันนี้ < startDate แบบ UTC
-                            const today = new Date();
-                            today.setHours(0, 0, 0, 0); // ตัดเวลาออก
-                            const startDate = leave.startDate ? new Date(leave.startDate) : null;
-                            if (startDate) startDate.setHours(0, 0, 0, 0); // ตัดเวลาออก
-                            if (startDate && today < startDate) {
-                              return (
-                                <span>
-                                  <Button size="sm" variant="outline" onClick={() => handleEditLeave(leave.id)}>
-                                    {t('common.edit')}
-                                  </Button>
-                                  <AlertDialog open={deleteLeaveId === leave.id} onOpenChange={open => { if (!open) setDeleteLeaveId(null); }}>
-                                    <AlertDialogTrigger asChild>
-                                      <Button size="sm" variant="destructive" onClick={() => setDeleteLeaveId(leave.id)}>
-                                        {t('system.delete', 'Delete')}
-                                      </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>{t('system.confirmDelete', 'Confirm Delete')}</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          {t('system.confirmDeleteLeave', 'Are you sure you want to delete this leave request?')}
-                                        </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel disabled={deleting}>{t('common.cancel', 'Cancel')}</AlertDialogCancel>
-                                        <AlertDialogAction disabled={deleting} onClick={async () => { await handleDeleteLeave(); setDeleteLeaveId(null); }}>
-                                          {deleting ? t('common.loading', 'Loading...') : t('system.confirm', 'Confirm')}
-                                        </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
-                                </span>
-                              );
-                            }
-                            return null;
-                          })()}
                         </div>
                       </div>
                     </div>
@@ -766,52 +775,130 @@ const LeaveHistory = () => {
                 </Card>
               ))
             )}
-            {/* --- Pagination bar: always show, even if only 1 page --- */}
-            <div className="flex flex-wrap justify-center mt-6 gap-2 items-center">
-              {/* --- Pagination with ellipsis --- */}
-              {(() => {
-                const pages = [];
-                const maxPageButtons = 5;
-                let start = Math.max(1, page - 2);
-                let end = Math.min(totalPages, start + maxPageButtons - 1);
-                if (end - start < maxPageButtons - 1) {
-                  start = Math.max(1, end - maxPageButtons + 1);
-                }
-                if (start > 1) {
-                  pages.push(
-                    <button key={1} onClick={() => setPage(1)} className={`px-3 py-1 rounded border ${page === 1 ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`}>1</button>
-                  );
-                  if (start > 2) pages.push(<span key="start-ellipsis">...</span>);
-                }
-                for (let i = start; i <= end; i++) {
-                  pages.push(
-                    <button key={i} onClick={() => setPage(i)} className={`px-3 py-1 rounded border ${page === i ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`} disabled={page === i}>{i}</button>
-                  );
-                }
-                if (end < totalPages) {
-                  if (end < totalPages - 1) pages.push(<span key="end-ellipsis">...</span>);
-                  pages.push(
-                    <button key={totalPages} onClick={() => setPage(totalPages)} className={`px-3 py-1 rounded border ${page === totalPages ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`}>{totalPages}</button>
-                  );
-                }
-                return pages;
-              })()}
-              {/* --- Items per page select --- */}
-              <select
-                className="ml-4 border rounded px-2 py-1 text-sm"
-                value={limit}
-                onChange={e => {
-                  setLimit(Number(e.target.value));
-                  setPage(1);
-                }}
-              >
-                {[5, 10, 20, 50].map(n => (
-                  <option key={n} value={n}>{n}</option>
-                ))}
-              </select>
-              <span className="ml-2 text-sm text-gray-500">{t('admin.itemsPerPage', 'Items per page')}</span>
-              <span className="ml-2 text-sm text-gray-500">{t('admin.pageInfo', { page, totalPages })}</span>
-            </div>
+            {/* Enhanced Pagination */}
+            {(totalPages >= 1 || leaveHistory.length > 0) && (
+              <div className="flex flex-col sm:flex-row justify-center items-center mt-8 gap-4 p-6 bg-gradient-to-r from-white/80 via-blue-50/30 to-indigo-50/30 backdrop-blur rounded-2xl border border-blue-100">
+                {/* Pagination Info */}
+                <div className="flex items-center gap-3 text-sm text-gray-600">
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                    <span>{t('history.pageInfo', { page: page || 1, totalPages: totalPages || 1 })}</span>
+                  </div>
+                  <div className="w-px h-4 bg-gray-300"></div>
+                  <div className="flex items-center gap-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <span>{leaveHistory.length} {t('history.results')}</span>
+                  </div>
+                </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-2">
+                    {/* Previous Button */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(Math.max(1, page - 1))}
+                      disabled={page === 1}
+                      className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 rounded-xl px-3 py-2"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </Button>
+
+                    {/* Page Numbers */}
+                    <div className="flex items-center gap-1">
+                      {(() => {
+                        const pages = [];
+                        const maxPageButtons = 5;
+                        let start = Math.max(1, page - 2);
+                        let end = Math.min(totalPages, start + maxPageButtons - 1);
+                        if (end - start < maxPageButtons - 1) {
+                          start = Math.max(1, end - maxPageButtons + 1);
+                        }
+                        if (start > 1) {
+                          pages.push(
+                            <Button
+                              key={1}
+                              variant={page === 1 ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setPage(1)}
+                              className={`rounded-xl px-3 py-2 ${page === 1 ? 'bg-blue-600 text-white' : 'border-blue-200 text-blue-700 hover:bg-blue-50'}`}
+                            >
+                              1
+                            </Button>
+                          );
+                          if (start > 2) pages.push(
+                            <span key="start-ellipsis" className="px-2 text-gray-400">...</span>
+                          );
+                        }
+                        for (let i = start; i <= end; i++) {
+                          pages.push(
+                            <Button
+                              key={i}
+                              variant={page === i ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setPage(i)}
+                              className={`rounded-xl px-3 py-2 ${page === i ? 'bg-blue-600 text-white' : 'border-blue-200 text-blue-700 hover:bg-blue-50'}`}
+                            >
+                              {i}
+                            </Button>
+                          );
+                        }
+                        if (end < totalPages) {
+                          if (end < totalPages - 1) pages.push(
+                            <span key="end-ellipsis" className="px-2 text-gray-400">...</span>
+                          );
+                          pages.push(
+                            <Button
+                              key={totalPages}
+                              variant={page === totalPages ? "default" : "outline"}
+                              size="sm"
+                              onClick={() => setPage(totalPages)}
+                              className={`rounded-xl px-3 py-2 ${page === totalPages ? 'bg-blue-600 text-white' : 'border-blue-200 text-blue-700 hover:bg-blue-50'}`}
+                            >
+                              {totalPages}
+                            </Button>
+                          );
+                        }
+                        return pages;
+                      })()}
+                    </div>
+
+                    {/* Next Button */}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setPage(Math.min(totalPages, page + 1))}
+                      disabled={page === totalPages}
+                      className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 rounded-xl px-3 py-2"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </Button>
+                  </div>
+                )}
+
+                {/* Items per page select */}
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={limit.toString()}
+                    onValueChange={(value) => {
+                      setLimit(Number(value));
+                      setPage(1);
+                    }}
+                  >
+                    <SelectTrigger className="w-20 bg-white/80 backdrop-blur border-blue-200 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 rounded-xl h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="border-0 shadow-xl rounded-2xl">
+                      {[5, 10, 20, 50].map(n => (
+                        <SelectItem key={n} value={n.toString()} className="rounded-lg">{n}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <span className="text-sm text-gray-600">{t('admin.itemsPerPage', 'รายการต่อหน้า')}</span>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -827,7 +914,7 @@ const LeaveHistory = () => {
                 {selectedLeave && (
                   <div className="flex flex-wrap gap-2">
                     {getStatusBadge(selectedLeave.status)}
-                    {getRetroactiveBadge(selectedLeave.startDate)}
+                    {getRetroactiveBadge(selectedLeave)}
                   </div>
                 )}
               </div>
@@ -895,7 +982,7 @@ const LeaveHistory = () => {
                         </span>
                       </div>
                     </div>
-                    {isRetroactiveLeave(selectedLeave.leaveDate || selectedLeave.startDate) && (
+                                            {isRetroactiveLeave(selectedLeave) && (
                       <div className="space-y-2">
                         <Label className="text-sm font-medium text-purple-600">{t('history.retroactiveLeave')}</Label>
                         <div className="flex items-center gap-2 p-3 bg-purple-50 rounded-lg">
@@ -934,12 +1021,23 @@ const LeaveHistory = () => {
                     )}
                     
                     {selectedLeave.status === "rejected" && (
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-600">{t('leave.rejectedBy')}</Label>
-                        <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
-                          <XCircle className="w-4 h-4 text-red-500" />
-                          <span className="font-medium text-red-900">{selectedLeave.name || '-'}</span>
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-600">{t('leave.rejectedBy')}</Label>
+                          <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
+                            <XCircle className="w-4 h-4 text-red-500" />
+                            <span className="font-medium text-red-900">{selectedLeave.name || '-'}</span>
+                          </div>
                         </div>
+                        {selectedLeave.rejectionReason && (
+                          <div className="space-y-2">
+                            <Label className="text-sm font-medium text-gray-600">{t('leave.rejectionReason')}</Label>
+                            <div className="flex items-start gap-2 p-3 bg-red-50 rounded-lg">
+                              <FileText className="w-4 h-4 text-red-500 mt-0.5" />
+                              <span className="text-red-900 leading-relaxed">{selectedLeave.rejectionReason}</span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </CardContent>
@@ -1065,25 +1163,7 @@ const LeaveHistory = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Edit Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>{t('common.edit')} {t('leave.leaveRequest')}</DialogTitle>
-          </DialogHeader>
-          {editLeave && (
-            <LeaveForm
-              initialData={editLeave}
-              mode="edit"
-              onSubmit={async (data) => {
-                // Handle edit submission
-                setShowEditDialog(false);
-                fetchLeaveHistory();
-              }}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+
 
       <style>{`
         .glass-card-history {
