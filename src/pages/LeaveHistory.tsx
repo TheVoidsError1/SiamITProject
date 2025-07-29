@@ -350,11 +350,11 @@ const LeaveHistory = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 page-transition">
       {/* Hero Section (replace old top bar) */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <svg viewBox="0 0 1440 320" className="w-full h-32 md:h-48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg viewBox="0 0 1440 320" className="w-full h-32 md:h-48 wave-animation" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path fill="url(#waveGradient)" fillOpacity="1" d="M0,160L60,170.7C120,181,240,203,360,197.3C480,192,600,160,720,133.3C840,107,960,85,1080,101.3C1200,117,1320,171,1380,197.3L1440,224L1440,0L1380,0C1320,0,1200,0,1080,0C960,0,840,0,720,0C600,0,480,0,360,0C240,0,120,0,60,0L0,0Z" />
             <defs>
               <linearGradient id="waveGradient" x1="0" y1="0" x2="1440" y2="0" gradientUnits="userSpaceOnUse">
@@ -365,24 +365,24 @@ const LeaveHistory = () => {
           </svg>
         </div>
         <div className="relative z-10 flex flex-col items-center justify-center py-10 md:py-16">
-          <div className="w-28 h-28 rounded-full bg-gradient-to-br from-white/90 to-white/70 shadow-2xl border-4 border-white/50 backdrop-blur-sm flex items-center justify-center mb-6">
+          <div className="w-28 h-28 rounded-full bg-gradient-to-br from-white/90 to-white/70 shadow-2xl border-4 border-white/50 backdrop-blur-sm flex items-center justify-center mb-6 animate-bounce-in">
             <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-20 h-20 rounded-full" />
           </div>
-          <h1 className="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-indigo-900 via-blue-800 to-indigo-900 bg-clip-text text-transparent drop-shadow mb-3 flex items-center gap-3">
+          <h1 className="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-indigo-900 via-blue-800 to-indigo-900 bg-clip-text text-transparent drop-shadow mb-3 flex items-center gap-3 animate-fade-in-up">
             <History className="w-10 h-10 text-blue-600" />
             {t('leave.leaveHistory')}
           </h1>
-          <p className="text-lg md:text-xl text-blue-900/80 mb-2 font-medium text-center max-w-2xl leading-relaxed">
+          <p className="text-lg md:text-xl text-blue-900/80 mb-2 font-medium text-center max-w-2xl leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
             {t('history.leaveHistoryTitle')}
           </p>
-          <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full mt-4"></div>
+          <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full mt-4 animate-scale-in" style={{ animationDelay: '0.4s' }}></div>
         </div>
       </div>
       <div className="p-6 animate-fade-in">
         <div className="max-w-4xl mx-auto space-y-10">
           {/* Summary Stats */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-10">
-            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-blue-50/50 to-blue-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105">
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-blue-50/50 to-blue-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105 animate-stagger-1 card-entrance">
               <CardContent className="p-6 flex items-center gap-4">
                 <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110">
                   <Calendar className="w-7 h-7 text-white transition-all duration-300" />
@@ -393,7 +393,7 @@ const LeaveHistory = () => {
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-green-50/50 to-green-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105">
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-green-50/50 to-green-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105 animate-stagger-2 card-entrance">
               <CardContent className="p-6 flex items-center gap-4">
                 <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110">
                   <CheckCircle className="w-7 h-7 text-white transition-all duration-300" />
@@ -404,7 +404,7 @@ const LeaveHistory = () => {
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-yellow-50/50 to-yellow-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105">
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-yellow-50/50 to-yellow-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105 animate-stagger-3 card-entrance">
               <CardContent className="p-6 flex items-center gap-4">
                 <div className="w-14 h-14 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110">
                   <Clock className="w-7 h-7 text-white transition-all duration-300" />
@@ -415,7 +415,7 @@ const LeaveHistory = () => {
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-red-50/50 to-red-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105">
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-red-50/50 to-red-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105 animate-stagger-4 card-entrance">
               <CardContent className="p-6 flex items-center gap-4">
                 <div className="w-14 h-14 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110">
                   <XCircle className="w-7 h-7 text-white transition-all duration-300" />
@@ -426,7 +426,7 @@ const LeaveHistory = () => {
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-purple-50/50 to-purple-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105">
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-purple-50/50 to-purple-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105 animate-stagger-5 card-entrance">
               <CardContent className="p-6 flex items-center gap-4">
                 <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110">
                   <History className="w-7 h-7 text-white transition-all duration-300" />
@@ -440,7 +440,7 @@ const LeaveHistory = () => {
           </div>
 
           {/* Enhanced Filter Section */}
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-white/90 via-blue-50/50 to-indigo-100/30 backdrop-blur-sm rounded-2xl">
+          <Card className="border-0 shadow-lg bg-gradient-to-br from-white/90 via-blue-50/50 to-indigo-100/30 backdrop-blur-sm rounded-2xl animate-fade-in-up filter-toggle">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -460,7 +460,7 @@ const LeaveHistory = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => setShowFilters(!showFilters)}
-                  className={`border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 rounded-xl px-4 py-2 font-medium transform hover:scale-105 ${
+                  className={`border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 rounded-xl px-4 py-2 font-medium transform hover:scale-105 btn-press hover-glow ${
                     showFilters ? 'bg-blue-50 border-blue-300 shadow-md' : ''
                   }`}
                 >
@@ -481,7 +481,7 @@ const LeaveHistory = () => {
             <div className={`overflow-hidden transition-all duration-500 ease-in-out ${
               showFilters ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
             }`}>
-              <CardContent className="space-y-6 animate-slide-down">
+              <CardContent className="space-y-6 animate-slide-down filter-toggle">
                 {/* Filter Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                   {/* Single Date Filter */}
@@ -619,12 +619,12 @@ const LeaveHistory = () => {
                 <div className="flex justify-between items-center pt-4 border-t border-gray-200 animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
                   <div className="flex items-center gap-3">
                     {hasActiveFilters() && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={clearAllFilters}
-                        className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 transition-all duration-300 rounded-xl px-4 py-2 font-medium transform hover:scale-105 hover:shadow-md"
-                      >
+                                        <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={clearAllFilters}
+                    className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 transition-all duration-300 rounded-xl px-4 py-2 font-medium transform hover:scale-105 hover:shadow-md btn-press hover-glow"
+                  >
                         <X className="w-4 h-4 mr-2" />
                         {t('history.clearAllFilters', 'ล้างตัวกรองทั้งหมด')}
                       </Button>
@@ -657,48 +657,49 @@ const LeaveHistory = () => {
           </Card>
 
           {/* Leave History List */}
-          <div className="space-y-6">
+          <div className="space-y-6 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
             {loading ? (
-              <div className="flex justify-center items-center py-16">
+              <div className="flex justify-center items-center py-16 animate-fade-in">
                 <div className="text-center">
-                  <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4"></div>
-                  <p className="text-lg font-medium text-blue-600">{t('common.loading', 'กำลังโหลด...')}</p>
-                  <p className="text-sm text-gray-500 mt-2">{t('history.loadingData', 'กำลังดึงข้อมูลประวัติการลา')}</p>
+                  <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-4 loading-pulse"></div>
+                  <p className="text-lg font-medium text-blue-600 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>{t('common.loading', 'กำลังโหลด...')}</p>
+                  <p className="text-sm text-gray-500 mt-2 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>{t('history.loadingData', 'กำลังดึงข้อมูลประวัติการลา')}</p>
                 </div>
               </div>
             ) : error ? (
-              <div className="flex justify-center items-center py-16">
+              <div className="flex justify-center items-center py-16 animate-fade-in">
                 <div className="text-center">
-                  <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce-in">
                     <XCircle className="w-8 h-8 text-red-500" />
                   </div>
-                  <p className="text-lg font-medium text-red-600">{t('common.error', 'เกิดข้อผิดพลาด')}</p>
-                  <p className="text-sm text-gray-500 mt-2">{error}</p>
+                  <p className="text-lg font-medium text-red-600 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>{t('common.error', 'เกิดข้อผิดพลาด')}</p>
+                  <p className="text-sm text-gray-500 mt-2 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>{error}</p>
                 </div>
               </div>
             ) : leaveHistory.length === 0 ? (
-              <div className="flex justify-center items-center py-16">
+              <div className="flex justify-center items-center py-16 animate-fade-in">
                 <div className="text-center">
-                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce-in">
                     <FileText className="w-8 h-8 text-gray-400" />
                   </div>
-                  <p className="text-lg font-medium text-gray-600">{t('history.noLeaveHistory', 'ไม่พบประวัติการลา')}</p>
-                  <p className="text-sm text-gray-500 mt-2">{t('history.noLeaveHistoryDesc', 'ยังไม่มีประวัติการลาในระบบ')}</p>
+                  <p className="text-lg font-medium text-gray-600 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>{t('history.noLeaveHistory', 'ไม่พบประวัติการลา')}</p>
+                  <p className="text-sm text-gray-500 mt-2 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>{t('history.noLeaveHistoryDesc', 'ยังไม่มีประวัติการลาในระบบ')}</p>
                 </div>
               </div>
             ) : leaveHistory.length === 0 ? (
-              <div className="flex justify-center items-center py-16">
+              <div className="flex justify-center items-center py-16 animate-fade-in">
                 <div className="text-center">
-                  <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+                  <div className="w-16 h-16 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg animate-bounce-in">
                     <Filter className="w-8 h-8 text-gray-500" />
                   </div>
-                  <p className="text-lg font-medium text-gray-700">{t('history.noResultsForFilter', 'ไม่พบผลลัพธ์สำหรับตัวกรองที่เลือก')}</p>
-                  <p className="text-sm text-gray-500 mt-2 mb-4">{t('history.tryDifferentFilter', 'ลองเปลี่ยนตัวกรองหรือล้างตัวกรองทั้งหมด')}</p>
+                  <p className="text-lg font-medium text-gray-700 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>{t('history.noResultsForFilter', 'ไม่พบผลลัพธ์สำหรับตัวกรองที่เลือก')}</p>
+                  <p className="text-sm text-gray-500 mt-2 mb-4 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>{t('history.tryDifferentFilter', 'ลองเปลี่ยนตัวกรองหรือล้างตัวกรองทั้งหมด')}</p>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={clearAllFilters}
-                    className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 rounded-xl px-4 py-2 font-medium"
+                    className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 rounded-xl px-4 py-2 font-medium btn-press hover-glow animate-fade-in-up"
+                    style={{ animationDelay: '0.6s' }}
                   >
                     <X className="w-4 h-4 mr-2" />
                     {t('history.clearAllFilters', 'ล้างตัวกรองทั้งหมด')}
@@ -709,7 +710,7 @@ const LeaveHistory = () => {
               leaveHistory.map((leave, index) => (
                 <Card 
                   key={leave.id} 
-                  className="border-0 shadow-xl bg-white/80 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-[1.02]"
+                  className="border-0 shadow-xl bg-white/80 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-[1.02] hover-lift card-entrance"
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
                   <CardHeader className="pb-2 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
@@ -768,18 +769,20 @@ const LeaveHistory = () => {
                           </div>
                         )}
                         {leave.status === "rejected" && (
-                          <div className="space-y-2">
-                            <div className="flex items-center gap-2 text-base text-red-700">
-                              <XCircle className="w-5 h-5 text-red-500" />
-                              <span className="font-medium">{t('leave.rejectedBy')}:</span>
-                              <span>{leave.rejectedBy && !/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/.test(leave.rejectedBy) ? leave.rejectedBy : '-'}</span>
+                          <div className="space-y-4">
+                            <div className="space-y-2">
+                              <Label className="text-sm font-medium text-gray-600">{t('leave.rejectedBy')}</Label>
+                              <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
+                                <XCircle className="w-4 h-4 text-red-500" />
+                                <span className="font-medium text-red-900">{selectedLeave.rejectedBy || '-'}</span>
+                              </div>
                             </div>
-                            {leave.rejectionReason && (
-                              <div className="flex items-start gap-2 text-base text-red-700">
-                                <FileText className="w-5 h-5 text-red-400 mt-0.5" />
-                                <div>
-                                  <span className="font-medium">{t('leave.rejectionReason')}:</span>
-                                  <p className="text-red-500">{leave.rejectionReason}</p>
+                            {selectedLeave.rejectionReason && (
+                              <div className="space-y-2">
+                                <Label className="text-sm font-medium text-gray-600">{t('leave.rejectionReason')}</Label>
+                                <div className="flex items-start gap-2 p-3 bg-red-50 rounded-lg">
+                                  <FileText className="w-4 h-4 text-red-500 mt-0.5" />
+                                  <span className="text-red-900 leading-relaxed">{selectedLeave.rejectionReason}</span>
                                 </div>
                               </div>
                             )}
@@ -790,7 +793,7 @@ const LeaveHistory = () => {
                             size="sm" 
                             variant="outline" 
                             onClick={() => handleViewDetails(leave.id)}
-                            className="transition-all duration-300 transform hover:scale-105 hover:shadow-md hover:bg-blue-50 hover:border-blue-300"
+                            className="transition-all duration-300 transform hover:scale-105 hover:shadow-md hover:bg-blue-50 hover:border-blue-300 btn-press hover-glow"
                           >
                             {t('common.viewDetails')}
                           </Button>
@@ -803,7 +806,7 @@ const LeaveHistory = () => {
             )}
             {/* Enhanced Pagination */}
             {(totalPages >= 1 || leaveHistory.length > 0) && (
-              <div className="flex flex-col sm:flex-row justify-center items-center mt-8 gap-4 p-6 bg-gradient-to-r from-white/80 via-blue-50/30 to-indigo-50/30 backdrop-blur rounded-2xl border border-blue-100">
+              <div className="flex flex-col sm:flex-row justify-center items-center mt-8 gap-4 p-6 bg-gradient-to-r from-white/80 via-blue-50/30 to-indigo-50/30 backdrop-blur rounded-2xl border border-blue-100 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
                 {/* Pagination Info */}
                 <div className="flex items-center gap-3 text-sm text-gray-600">
                   <div className="flex items-center gap-2">
@@ -826,7 +829,7 @@ const LeaveHistory = () => {
                       size="sm"
                       onClick={() => setPage(Math.max(1, page - 1))}
                       disabled={page === 1}
-                      className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 rounded-xl px-3 py-2 transform hover:scale-105 hover:shadow-md"
+                      className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 rounded-xl px-3 py-2 transform hover:scale-105 hover:shadow-md btn-press"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </Button>
@@ -896,7 +899,7 @@ const LeaveHistory = () => {
                       size="sm"
                       onClick={() => setPage(Math.min(totalPages, page + 1))}
                       disabled={page === totalPages}
-                      className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 rounded-xl px-3 py-2 transform hover:scale-105 hover:shadow-md"
+                      className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 rounded-xl px-3 py-2 transform hover:scale-105 hover:shadow-md btn-press"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </Button>
@@ -930,7 +933,7 @@ const LeaveHistory = () => {
       </div>
       {/* Detail Dialog */}
       <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto animate-scale-in">
           <DialogHeader>
             <DialogTitle className="flex items-center">
               <div className="flex items-center gap-3">
@@ -1052,7 +1055,7 @@ const LeaveHistory = () => {
                           <Label className="text-sm font-medium text-gray-600">{t('leave.rejectedBy')}</Label>
                           <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
                             <XCircle className="w-4 h-4 text-red-500" />
-                            <span className="font-medium text-red-900">{selectedLeave.name || '-'}</span>
+                            <span className="font-medium text-red-900">{selectedLeave.rejectedBy || '-'}</span>
                           </div>
                         </div>
                         {selectedLeave.rejectionReason && (
@@ -1182,7 +1185,7 @@ const LeaveHistory = () => {
           )}
           
           <DialogFooter className="pt-6 border-t">
-            <Button variant="outline" onClick={() => setShowDetailDialog(false)}>
+            <Button variant="outline" onClick={() => setShowDetailDialog(false)} className="btn-press hover-glow">
               {t('common.close')}
             </Button>
           </DialogFooter>
@@ -1223,6 +1226,96 @@ const LeaveHistory = () => {
           }
         }
 
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        @keyframes scale-in {
+          from {
+            opacity: 0;
+            transform: scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        @keyframes slide-in-left {
+          from {
+            opacity: 0;
+            transform: translateX(-30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        @keyframes slide-in-right {
+          from {
+            opacity: 0;
+            transform: translateX(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        @keyframes bounce-in {
+          0% {
+            opacity: 0;
+            transform: scale(0.3);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1.05);
+          }
+          70% {
+            transform: scale(0.9);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        @keyframes float {
+          0%, 100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-10px);
+          }
+        }
+
+        @keyframes shimmer {
+          0% {
+            background-position: -200px 0;
+          }
+          100% {
+            background-position: calc(200px + 100%) 0;
+          }
+        }
+
+        @keyframes gradient-shift {
+          0% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
+        }
+
         .animate-slide-down {
           animation: slide-down 0.5s ease-out forwards;
         }
@@ -1232,12 +1325,144 @@ const LeaveHistory = () => {
           opacity: 0;
         }
 
+        .animate-fade-in {
+          animation: fade-in 0.8s ease-out forwards;
+        }
+
+        .animate-scale-in {
+          animation: scale-in 0.6s ease-out forwards;
+        }
+
+        .animate-slide-in-left {
+          animation: slide-in-left 0.7s ease-out forwards;
+        }
+
+        .animate-slide-in-right {
+          animation: slide-in-right 0.7s ease-out forwards;
+        }
+
+        .animate-bounce-in {
+          animation: bounce-in 0.8s ease-out forwards;
+        }
+
+        .animate-float {
+          animation: float 3s ease-in-out infinite;
+        }
+
+        .animate-shimmer {
+          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+          background-size: 200px 100%;
+          animation: shimmer 2s infinite;
+        }
+
+        .animate-gradient-shift {
+          background-size: 200% 200%;
+          animation: gradient-shift 3s ease infinite;
+        }
+
         .animate-fade-in-up:nth-child(1) { animation-delay: 0.1s; }
         .animate-fade-in-up:nth-child(2) { animation-delay: 0.2s; }
         .animate-fade-in-up:nth-child(3) { animation-delay: 0.3s; }
         .animate-fade-in-up:nth-child(4) { animation-delay: 0.4s; }
         .animate-fade-in-up:nth-child(5) { animation-delay: 0.5s; }
         .animate-fade-in-up:nth-child(6) { animation-delay: 0.6s; }
+
+        /* Stagger animation for cards */
+        .animate-stagger-1 { animation-delay: 0.1s; }
+        .animate-stagger-2 { animation-delay: 0.2s; }
+        .animate-stagger-3 { animation-delay: 0.3s; }
+        .animate-stagger-4 { animation-delay: 0.4s; }
+        .animate-stagger-5 { animation-delay: 0.5s; }
+
+        /* Hover effects */
+        .hover-lift {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .hover-lift:hover {
+          transform: translateY(-8px);
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .hover-glow {
+          transition: all 0.3s ease;
+        }
+
+        .hover-glow:hover {
+          box-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
+        }
+
+        /* Loading animation */
+        .loading-pulse {
+          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse {
+          0%, 100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+        }
+
+        /* Wave animation for hero section */
+        .wave-animation {
+          animation: wave 6s ease-in-out infinite;
+        }
+
+        @keyframes wave {
+          0%, 100% {
+            transform: translateY(0);
+          }
+          50% {
+            transform: translateY(-10px);
+          }
+        }
+
+        /* Card entrance animation */
+        .card-entrance {
+          animation: cardEntrance 0.8s ease-out forwards;
+          opacity: 0;
+          transform: translateY(20px);
+        }
+
+        @keyframes cardEntrance {
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        /* Filter toggle animation */
+        .filter-toggle {
+          transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Button press animation */
+        .btn-press {
+          transition: transform 0.1s ease;
+        }
+
+        .btn-press:active {
+          transform: scale(0.95);
+        }
+
+        /* Smooth page transitions */
+        .page-transition {
+          animation: pageTransition 0.6s ease-out forwards;
+        }
+
+        @keyframes pageTransition {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
       `}</style>
     </div>
   );
