@@ -8,12 +8,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from "@/hooks/use-toast";
 import { differenceInCalendarDays, format } from "date-fns";
 import { th } from "date-fns/locale";
-import { AlertCircle, CheckCircle, Clock, Eye, FileText, Users, XCircle, History, Calendar, User } from "lucide-react";
+import { AlertCircle, CheckCircle, Clock, Eye, FileText, Users, XCircle, History, Calendar, User, ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Avatar } from "@/components/ui/avatar";
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type LeaveRequest = {
   id: number;
@@ -674,25 +675,275 @@ const AdminDashboard = () => {
   // --- Custom animation styles for this file only ---
   const customAnimationStyle = (
     <style>{`
-      @keyframes fadeInUp {
-        0% { opacity: 0; transform: translateY(40px); }
-        100% { opacity: 1; transform: translateY(0); }
+      /* Glass morphism effect */
+      .glass {
+        background: rgba(255, 255, 255, 0.25);
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.10);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        border-radius: 2rem;
+        border: 1px solid rgba(255,255,255,0.18);
       }
-      .fade-in-up { animation: fadeInUp 0.7s both; }
-      @keyframes popIn {
-        0% { opacity: 0; transform: scale(0.8); }
-        100% { opacity: 1; transform: scale(1); }
+
+      @keyframes slide-down {
+        from {
+          opacity: 0;
+          transform: translateY(-20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
-      .pop-in { animation: popIn 0.4s both; }
-      @keyframes slideInLeft {
-        0% { opacity: 0; transform: translateX(-40px); }
-        100% { opacity: 1; transform: translateX(0); }
+
+      @keyframes fade-in-up {
+        from {
+          opacity: 0;
+          transform: translateY(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
       }
-      .slide-in-left { animation: slideInLeft 0.7s both; }
-      .stagger-1 { animation-delay: 0.1s; }
-      .stagger-2 { animation-delay: 0.2s; }
-      .stagger-3 { animation-delay: 0.3s; }
-      .stagger-4 { animation-delay: 0.4s; }
+
+      @keyframes fade-in {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      @keyframes scale-in {
+        from {
+          opacity: 0;
+          transform: scale(0.95);
+        }
+        to {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      @keyframes slide-in-left {
+        from {
+          opacity: 0;
+          transform: translateX(-30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      @keyframes slide-in-right {
+        from {
+          opacity: 0;
+          transform: translateX(30px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      @keyframes bounce-in {
+        0% {
+          opacity: 0;
+          transform: scale(0.3);
+        }
+        50% {
+          opacity: 1;
+          transform: scale(1.05);
+        }
+        70% {
+          transform: scale(0.9);
+        }
+        100% {
+          opacity: 1;
+          transform: scale(1);
+        }
+      }
+
+      @keyframes float {
+        0%, 100% {
+          transform: translateY(0px);
+        }
+        50% {
+          transform: translateY(-10px);
+        }
+      }
+
+      @keyframes shimmer {
+        0% {
+          background-position: -200px 0;
+        }
+        100% {
+          background-position: calc(200px + 100%) 0;
+        }
+      }
+
+      @keyframes gradient-shift {
+        0% {
+          background-position: 0% 50%;
+        }
+        50% {
+          background-position: 100% 50%;
+        }
+        100% {
+          background-position: 0% 50%;
+        }
+      }
+
+      .animate-slide-down {
+        animation: slide-down 0.5s ease-out forwards;
+      }
+
+      .animate-fade-in-up {
+        animation: fade-in-up 0.6s ease-out forwards;
+        opacity: 0;
+      }
+
+      .animate-fade-in {
+        animation: fade-in 0.8s ease-out forwards;
+      }
+
+      .animate-scale-in {
+        animation: scale-in 0.6s ease-out forwards;
+      }
+
+      .animate-slide-in-left {
+        animation: slide-in-left 0.7s ease-out forwards;
+      }
+
+      .animate-slide-in-right {
+        animation: slide-in-right 0.7s ease-out forwards;
+      }
+
+      .animate-bounce-in {
+        animation: bounce-in 0.8s ease-out forwards;
+      }
+
+      .animate-float {
+        animation: float 3s ease-in-out infinite;
+      }
+
+      .animate-shimmer {
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+        background-size: 200px 100%;
+        animation: shimmer 2s infinite;
+      }
+
+      .animate-gradient-shift {
+        background-size: 200% 200%;
+        animation: gradient-shift 3s ease infinite;
+      }
+
+      .animate-fade-in-up:nth-child(1) { animation-delay: 0.1s; }
+      .animate-fade-in-up:nth-child(2) { animation-delay: 0.2s; }
+      .animate-fade-in-up:nth-child(3) { animation-delay: 0.3s; }
+      .animate-fade-in-up:nth-child(4) { animation-delay: 0.4s; }
+      .animate-fade-in-up:nth-child(5) { animation-delay: 0.5s; }
+      .animate-fade-in-up:nth-child(6) { animation-delay: 0.6s; }
+
+      /* Stagger animation for cards */
+      .animate-stagger-1 { animation-delay: 0.1s; }
+      .animate-stagger-2 { animation-delay: 0.2s; }
+      .animate-stagger-3 { animation-delay: 0.3s; }
+      .animate-stagger-4 { animation-delay: 0.4s; }
+      .animate-stagger-5 { animation-delay: 0.5s; }
+
+      /* Hover effects */
+      .hover-lift {
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      .hover-lift:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+      }
+
+      .hover-glow {
+        transition: all 0.3s ease;
+      }
+
+      .hover-glow:hover {
+        box-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
+      }
+
+      /* Loading animation */
+      .loading-pulse {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+
+      @keyframes pulse {
+        0%, 100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+
+      /* Wave animation for hero section */
+      .wave-animation {
+        animation: wave 6s ease-in-out infinite;
+      }
+
+      @keyframes wave {
+        0%, 100% {
+          transform: translateY(0);
+        }
+        50% {
+          transform: translateY(-10px);
+        }
+      }
+
+      /* Card entrance animation */
+      .card-entrance {
+        animation: cardEntrance 0.8s ease-out forwards;
+        opacity: 0;
+        transform: translateY(20px);
+      }
+
+      @keyframes cardEntrance {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      /* Filter toggle animation */
+      .filter-toggle {
+        transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      /* Button press animation */
+      .btn-press {
+        transition: transform 0.1s ease;
+      }
+
+      .btn-press:active {
+        transform: scale(0.95);
+      }
+
+      /* Smooth page transitions */
+      .page-transition {
+        animation: pageTransition 0.6s ease-out forwards;
+      }
+
+      @keyframes pageTransition {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
     `}</style>
   );
 
@@ -701,22 +952,22 @@ const AdminDashboard = () => {
       {customAnimationStyle}
       {/* Floating/Parallax Background Shapes */}
       <div className="absolute inset-0 z-0 pointer-events-none">
-        <div className="absolute -top-32 -left-32 w-[350px] h-[350px] rounded-full bg-gradient-to-br from-blue-200 via-indigo-100 to-purple-100 opacity-30 blur-2xl animate-float-slow" />
-        <div className="absolute bottom-0 right-0 w-[250px] h-[250px] rounded-full bg-gradient-to-tr from-purple-200 via-blue-100 to-indigo-100 opacity-20 blur-xl animate-float-slow2" />
-        <div className="absolute top-1/2 left-1/2 w-24 h-24 rounded-full bg-blue-100 opacity-10 blur-xl animate-pulse-slow" style={{transform:'translate(-50%,-50%)'}} />
+        <div className="absolute -top-32 -left-32 w-[350px] h-[350px] rounded-full bg-gradient-to-br from-blue-200 via-indigo-100 to-purple-100 opacity-30 blur-2xl animate-float" />
+        <div className="absolute bottom-0 right-0 w-[250px] h-[250px] rounded-full bg-gradient-to-tr from-purple-200 via-blue-100 to-indigo-100 opacity-20 blur-xl animate-float" />
+        <div className="absolute top-1/2 left-1/2 w-24 h-24 rounded-full bg-blue-100 opacity-10 blur-xl animate-pulse" style={{transform:'translate(-50%,-50%)'}} />
       </div>
       {/* Topbar */}
-      <div className="border-b bg-white/80 backdrop-blur-sm z-10 relative shadow-lg fade-in-up">
+      <div className="border-b bg-white/80 backdrop-blur-sm z-10 relative shadow-lg animate-fade-in-up">
         <div className="flex h-16 items-center px-4 gap-4">
           <SidebarTrigger />
           <div className="flex-1">
-            <h1 className="text-3xl font-extrabold text-blue-900 tracking-tight drop-shadow-lg slide-in-left fade-in-up">{t('navigation.adminDashboard')}</h1>
-            <p className="text-sm text-blue-500 slide-in-left fade-in-up" style={{ animationDelay: '0.2s' }}>{t('admin.dashboardDesc')}</p>
+            <h1 className="text-3xl font-extrabold text-blue-900 tracking-tight drop-shadow-lg animate-slide-in-left">{t('navigation.adminDashboard')}</h1>
+            <p className="text-sm text-blue-500 animate-slide-in-left" style={{ animationDelay: '0.2s' }}>{t('admin.dashboardDesc')}</p>
           </div>
           {/* Language Switcher at top right */}
         </div>
       </div>
-      <div className="p-6 fade-in-up">
+      <div className="p-6 animate-fade-in-up">
         <div className="max-w-6xl mx-auto space-y-8">
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -725,7 +976,7 @@ const AdminDashboard = () => {
               return (
                 <Card 
                   key={stat.title} 
-                  className={`glass shadow-xl border-0 hover:scale-[1.03] hover:shadow-2xl transition-all duration-300 fade-in-up pop-in stagger-${index+1}`}
+                  className={`glass shadow-xl border-0 hover:scale-[1.03] hover:shadow-2xl transition-all duration-300 animate-fade-in-up hover-lift`}
                   style={{ animationDelay: `${(index+1) * 0.1}s` }}
                 >
                   <CardContent className="p-7 flex items-center gap-4">
@@ -733,8 +984,8 @@ const AdminDashboard = () => {
                       <Icon className={`w-8 h-8 ${stat.color}`} />
                     </div>
                     <div>
-                      <p className="text-3xl font-extrabold text-blue-900 drop-shadow pop-in">{stat.value}</p>
-                      <p className="text-base text-blue-500 font-medium fade-in-up" style={{ animationDelay: '0.2s' }}>{stat.title}</p>
+                      <p className="text-3xl font-extrabold text-blue-900 drop-shadow animate-bounce-in">{stat.value}</p>
+                      <p className="text-base text-blue-500 font-medium animate-fade-in-up" style={{ animationDelay: '0.2s' }}>{stat.title}</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -742,20 +993,20 @@ const AdminDashboard = () => {
             })}
           </div>
           {/* Main Content */}
-          <Tabs defaultValue="pending" className="space-y-6 fade-in-up">
+          <Tabs defaultValue="pending" className="space-y-6 animate-fade-in-up">
             <TabsList className="grid w-full grid-cols-2 max-w-md glass bg-white/60 backdrop-blur-lg rounded-xl shadow-lg mb-4">
-              <TabsTrigger value="pending" className="text-blue-700 font-bold text-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-400 data-[state=active]:text-white data-[state=active]:shadow-lg rounded-xl transition-all">{t('admin.pendingRequests')}</TabsTrigger>
-              <TabsTrigger value="recent" className="text-blue-700 font-bold text-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-400 data-[state=active]:text-white data-[state=active]:shadow-lg rounded-xl transition-all">{t('admin.recentHistory')}</TabsTrigger>
+              <TabsTrigger value="pending" className="text-blue-700 font-bold text-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-400 data-[state=active]:text-white data-[state=active]:shadow-lg rounded-xl transition-all btn-press hover-glow">{t('admin.pendingRequests')}</TabsTrigger>
+              <TabsTrigger value="recent" className="text-blue-700 font-bold text-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-500 data-[state=active]:to-indigo-400 data-[state=active]:text-white data-[state=active]:shadow-lg rounded-xl transition-all btn-press hover-glow">{t('admin.recentHistory')}</TabsTrigger>
             </TabsList>
             {/* Pending Requests */}
             <TabsContent value="pending" className="space-y-4">
               {/* --- Filter UI --- */}
-              <div className="flex flex-wrap gap-4 items-end mb-4 bg-white/70 dark:bg-slate-800/70 p-4 rounded-xl shadow fade-in-up">
+              <div className="flex flex-wrap gap-4 items-end mb-4 bg-gradient-to-r from-white/80 via-blue-50/30 to-indigo-50/30 backdrop-blur rounded-2xl border border-blue-100 p-6 shadow-lg animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                 {/* Leave Type Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-1 slide-in-left fade-in-up">{t('leave.leaveType')}</label>
+                <div className="animate-slide-in-left" style={{ animationDelay: '0.3s' }}>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('leave.leaveType')}</label>
                   <select
-                    className="border rounded px-2 py-1 min-w-[140px] dark:bg-slate-900 dark:text-white pop-in stagger-1"
+                    className="border border-blue-200 rounded-xl px-3 py-2 min-w-[140px] dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
                     value={pendingPendingFilterLeaveType}
                     onChange={e => setPendingPendingFilterLeaveType(e.target.value)}
                   >
@@ -766,20 +1017,20 @@ const AdminDashboard = () => {
                   </select>
                 </div>
                 {/* Date Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-1 slide-in-left fade-in-up">{t('common.date')}</label>
+                <div className="animate-slide-in-left" style={{ animationDelay: '0.4s' }}>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.date')}</label>
                   <input
                     type="date"
-                    className="border rounded px-2 py-1 dark:bg-slate-900 dark:text-white pop-in stagger-2"
+                    className="border border-blue-200 rounded-xl px-3 py-2 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
                     value={pendingPendingSingleDate ? format(pendingPendingSingleDate, 'yyyy-MM-dd') : ''}
                     onChange={e => setPendingPendingSingleDate(e.target.value ? new Date(e.target.value) : undefined)}
                   />
                 </div>
                 {/* Month Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-1 slide-in-left fade-in-up">{t('common.month')}</label>
+                <div className="animate-slide-in-left" style={{ animationDelay: '0.5s' }}>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.month')}</label>
                   <select
-                    className="border rounded px-2 py-1 w-28 dark:bg-slate-900 dark:text-white pop-in stagger-3"
+                    className="border border-blue-200 rounded-xl px-3 py-2 w-28 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
                     value={pendingPendingMonth}
                     onChange={e => setPendingPendingMonth(e.target.value ? Number(e.target.value) : '')}
                   >
@@ -790,23 +1041,23 @@ const AdminDashboard = () => {
                   </select>
                 </div>
                 {/* Year Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-1 slide-in-left fade-in-up">{t('common.year')}</label>
+                <div className="animate-slide-in-left" style={{ animationDelay: '0.6s' }}>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.year')}</label>
                   <input
                     type="number"
                     min={2000}
                     max={2100}
-                    className="border rounded px-2 py-1 w-24 dark:bg-slate-900 dark:text-white pop-in stagger-4"
+                    className="border border-blue-200 rounded-xl px-3 py-2 w-24 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
                     value={pendingPendingYear}
                     onChange={e => setPendingPendingYear(e.target.value ? Number(e.target.value) : '')}
                     placeholder="YYYY"
                   />
                 </div>
                 {/* Backdated Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-1 slide-in-left fade-in-up">{t('leave.backdatedFilter')}</label>
+                <div className="animate-slide-in-left" style={{ animationDelay: '0.7s' }}>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('leave.backdatedFilter')}</label>
                   <select
-                    className="border rounded px-2 py-1 min-w-[120px] dark:bg-slate-900 dark:text-white pop-in stagger-1"
+                    className="border border-blue-200 rounded-xl px-3 py-2 min-w-[120px] dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
                     value={pendingPendingBackdatedFilter}
                     onChange={e => setPendingPendingBackdatedFilter(e.target.value)}
                   >
@@ -816,16 +1067,16 @@ const AdminDashboard = () => {
                   </select>
                 </div>
                 {/* Buttons */}
-                <div className="flex gap-2 mt-2">
+                <div className="flex gap-3 mt-2 animate-slide-in-left" style={{ animationDelay: '0.8s' }}>
                   <button
-                    className="bg-gray-200 dark:bg-slate-700 text-blue-900 dark:text-white px-3 py-1 rounded shadow hover:bg-gray-300 dark:hover:bg-slate-600 transition pop-in stagger-2"
+                    className="bg-gradient-to-r from-gray-200 to-gray-300 dark:from-slate-700 dark:to-slate-600 text-blue-900 dark:text-white px-4 py-2 rounded-xl shadow-lg hover:from-gray-300 hover:to-gray-400 dark:hover:from-slate-600 dark:hover:to-slate-500 transition-all duration-300 transform hover:scale-105 hover:shadow-xl animate-bounce-in btn-press hover-glow"
                     onClick={clearPendingFilters}
                     type="button"
                   >
                     {t('common.reset')}
                   </button>
                   <button
-                    className="bg-blue-600 text-white px-3 py-1 rounded shadow hover:bg-blue-700 transition pop-in stagger-3"
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-xl shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 hover:shadow-xl animate-bounce-in btn-press hover-glow"
                     onClick={applyPendingFilters}
                     type="button"
                   >
@@ -839,15 +1090,15 @@ const AdminDashboard = () => {
                     <AlertCircle className="w-6 h-6" />
                     {t('admin.pendingLeaveRequests')}
                   </CardTitle>
-                  <CardDescription className="text-blue-100 text-sm animate-slide-in-left delay-100">
+                  <CardDescription className="text-blue-100 text-sm animate-slide-in-left" style={{ animationDelay: '0.1s' }}>
                     {t('admin.pendingLeaveRequestsDesc')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                   {loading ? (
-                    <div className="text-lg text-center py-10">{t('common.loading')}</div>
+                    <div className="text-lg text-center py-10 loading-pulse">{t('common.loading')}</div>
                   ) : error ? (
-                    <div className="text-lg text-center py-10 text-red-500">{error}</div>
+                    <div className="text-lg text-center py-10 text-red-500 animate-fade-in-up">{error}</div>
                   ) : (
                     <div className="space-y-4 p-6">
                       {pendingRequests.length === 0 && (
@@ -856,27 +1107,27 @@ const AdminDashboard = () => {
                       {pendingRequests.map((request, idx) => (
                         <div 
                           key={request.id}
-                          className={`glass bg-gradient-to-br from-white/80 via-blue-50/80 to-indigo-100/80 border-0 rounded-2xl p-5 shadow-md hover:shadow-xl transition-all flex flex-col md:flex-row md:items-center md:justify-between gap-4 fade-in-up pop-in stagger-${(idx%4)+1}`}
+                          className={`glass bg-gradient-to-br from-white/80 via-blue-50/80 to-indigo-100/80 border-0 rounded-2xl p-5 shadow-md hover:shadow-xl transition-all flex flex-col md:flex-row md:items-center md:justify-between gap-4 animate-fade-in-up hover-lift`}
                           style={{ animationDelay: `${0.1 + idx * 0.07}s` }}
                         >
                           <div className="flex-1 min-w-0">
-                            <div className="font-bold text-lg text-blue-900 mb-1 truncate slide-in-left fade-in-up">{typeof request.user === "string" ? JSON.parse(request.user).User_name : request.user?.User_name || "-"}</div>
+                            <div className="font-bold text-lg text-blue-900 mb-1 truncate animate-slide-in-left">{typeof request.user === "string" ? JSON.parse(request.user).User_name : request.user?.User_name || "-"}</div>
                             {/* ประเภทการลา (leaveType) */}
-                            <span className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold mb-1 fade-in-up" style={{ animationDelay: '0.2s' }}>
+                            <span className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold mb-1 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                               {getLeaveTypeDisplay(request.leaveType || request.leaveTypeName)}
                             </span>
                             {(request.backdated === 1 || request.backdated === "1" || request.backdated === true) && (
-                              <Badge className="ml-2 bg-purple-100 text-purple-800 border-purple-200 rounded-full px-3 py-1 text-xs font-bold shadow fade-in-up" style={{ animationDelay: '0.3s' }}>
+                              <Badge className="ml-2 bg-purple-100 text-purple-800 border-purple-200 rounded-full px-3 py-1 text-xs font-bold shadow animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
                                 {t('leave.backdated', 'ลาย้อนหลัง')}
                               </Badge>
                             )}
-                            <div className="text-sm text-gray-700 mb-1 fade-in-up" style={{ animationDelay: '0.3s' }}>{t('leave.date')}: {request.startDate} - {request.endDate}</div>
+                            <div className="text-sm text-gray-700 mb-1 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>{t('leave.date')}: {request.startDate} - {request.endDate}</div>
                           </div>
-                          <Badge variant="outline" className="text-xs font-bold rounded-full px-4 py-1 bg-yellow-100 text-yellow-700 border-yellow-200 shadow fade-in-up" style={{ animationDelay: '0.3s' }}>{t('admin.pending')}</Badge>
+                          <Badge variant="outline" className="text-xs font-bold rounded-full px-4 py-1 bg-yellow-100 text-yellow-700 border-yellow-200 shadow animate-fade-in-up" style={{ animationDelay: '0.3s' }}>{t('admin.pending')}</Badge>
                           <div className="flex gap-2 flex-shrink-0">
                             <Button 
                               size="sm" 
-                              className="rounded-full px-4 py-2 font-bold bg-gradient-to-r from-green-500 to-emerald-400 text-white shadow hover:scale-105 transition pop-in"
+                              className="rounded-full px-4 py-2 font-bold bg-gradient-to-r from-green-500 to-emerald-400 text-white shadow hover:scale-105 transition animate-bounce-in btn-press hover-glow"
                               onClick={() => handleApprove(request.id, typeof request.user === "string" ? JSON.parse(request.user).User_name : request.user?.User_name || "")}
                             >
                               <CheckCircle className="w-4 h-4 mr-1" />{t('admin.approve')}
@@ -884,63 +1135,139 @@ const AdminDashboard = () => {
                             <Button 
                               size="sm" 
                               variant="destructive"
-                              className="rounded-full px-4 py-2 font-bold shadow hover:scale-105 transition pop-in"
+                              className="rounded-full px-4 py-2 font-bold shadow hover:scale-105 transition animate-bounce-in btn-press hover-glow"
                               onClick={() => handleReject(request.id, typeof request.user === "string" ? JSON.parse(request.user).User_name : request.user?.User_name || "")}
                             >
                               <XCircle className="w-4 h-4 mr-1" />{t('admin.reject')}
                             </Button>
-                            <Button size="sm" variant="outline" className="rounded-full px-4 py-2 font-bold border-blue-200 text-blue-700 hover:bg-blue-50 shadow pop-in" onClick={() => handleViewDetails(request)}>
+                            <Button size="sm" variant="outline" className="rounded-full px-4 py-2 font-bold border-blue-200 text-blue-700 hover:bg-blue-50 shadow animate-bounce-in btn-press hover-glow" onClick={() => handleViewDetails(request)}>
                               <Eye className="w-4 h-4 mr-1" />{t('admin.viewDetails')}
                             </Button>
                           </div>
                         </div>
                       ))}
                       {/* --- ปุ่มเปลี่ยนหน้า --- */}
-                      {(
-                        <div className="flex flex-wrap justify-center mt-6 gap-2 items-center">
-                          {/* --- Pagination with ellipsis --- */}
-                          {(() => {
-                            const pages = [];
-                            const maxPageButtons = 5;
-                            let start = Math.max(1, pendingPage - 2);
-                            let end = Math.min(pendingTotalPages, start + maxPageButtons - 1);
-                            if (end - start < maxPageButtons - 1) {
-                              start = Math.max(1, end - maxPageButtons + 1);
-                            }
-                            if (start > 1) {
-                              pages.push(
-                                <button key={1} onClick={() => setPendingPage(1)} className={`px-3 py-1 rounded border ${pendingPage === 1 ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`}>1</button>
-                              );
-                              if (start > 2) pages.push(<span key="start-ellipsis">...</span>);
-                            }
-                            for (let i = start; i <= end; i++) {
-                              pages.push(
-                                <button key={i} onClick={() => setPendingPage(i)} className={`px-3 py-1 rounded border ${pendingPage === i ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`} disabled={pendingPage === i}>{i}</button>
-                              );
-                            }
-                            if (end < pendingTotalPages) {
-                              if (end < pendingTotalPages - 1) pages.push(<span key="end-ellipsis">...</span>);
-                              pages.push(
-                                <button key={pendingTotalPages} onClick={() => setPendingPage(pendingTotalPages)} className={`px-3 py-1 rounded border ${pendingPage === pendingTotalPages ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`}>{pendingTotalPages}</button>
-                              );
-                            }
-                            return pages;
-                          })()}
-                          {/* --- Items per page select --- */}
-                          <select
-                            className="ml-4 border rounded px-2 py-1 text-sm"
-                            value={pendingLimit}
-                            onChange={e => {
-                              setPendingLimit(Number(e.target.value));
-                              setPendingPage(1);
-                            }}
-                          >
-                            {[5, 10, 20, 50].map(n => (
-                              <option key={n} value={n}>{n}</option>
-                            ))}
-                          </select>
-                          <span className="ml-2 text-sm text-gray-500">{t('admin.itemsPerPage')}</span>
-                          <span className="ml-2 text-sm text-gray-500">{t('admin.pageInfo', { page: pendingPage, totalPages: pendingTotalPages })}</span>
+                      {(pendingTotalPages >= 1 || pendingRequests.length > 0) && (
+                        <div className="flex flex-col sm:flex-row justify-center items-center mt-8 gap-4 p-6 bg-gradient-to-r from-white/80 via-blue-50/30 to-indigo-50/30 backdrop-blur rounded-2xl border border-blue-100 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
+                          {/* Pagination Info */}
+                          <div className="flex items-center gap-3 text-sm text-gray-600">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                              <span>{t('admin.pageInfo', { page: pendingPage || 1, totalPages: pendingTotalPages || 1 })}</span>
+                            </div>
+                            <div className="w-px h-4 bg-gray-300"></div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                              <span>{pendingRequests.length} {t('admin.results', 'ผลลัพธ์')}</span>
+                            </div>
+                          </div>
+
+                          {/* Pagination Controls */}
+                          {pendingTotalPages > 1 && (
+                            <div className="flex items-center gap-2">
+                              {/* Previous Button */}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setPendingPage(Math.max(1, pendingPage - 1))}
+                                disabled={pendingPage === 1}
+                                className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 rounded-xl px-3 py-2 transform hover:scale-105 hover:shadow-md btn-press"
+                              >
+                                <ChevronLeft className="w-4 h-4" />
+                              </Button>
+
+                              {/* Page Numbers */}
+                              <div className="flex items-center gap-1">
+                                {(() => {
+                                  const pages = [];
+                                  const maxPageButtons = 5;
+                                  let start = Math.max(1, pendingPage - 2);
+                                  let end = Math.min(pendingTotalPages, start + maxPageButtons - 1);
+                                  if (end - start < maxPageButtons - 1) {
+                                    start = Math.max(1, end - maxPageButtons + 1);
+                                  }
+                                  if (start > 1) {
+                                    pages.push(
+                                      <Button
+                                        key={1}
+                                        variant={pendingPage === 1 ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={() => setPendingPage(1)}
+                                        className={`rounded-xl px-3 py-2 transition-all duration-300 transform hover:scale-105 hover:shadow-md ${pendingPage === 1 ? 'bg-blue-600 text-white' : 'border-blue-200 text-blue-700 hover:bg-blue-50'}`}
+                                      >
+                                        1
+                                      </Button>
+                                    );
+                                    if (start > 2) pages.push(
+                                      <span key="start-ellipsis" className="px-2 text-gray-400">...</span>
+                                    );
+                                  }
+                                  for (let i = start; i <= end; i++) {
+                                    pages.push(
+                                      <Button
+                                        key={i}
+                                        variant={pendingPage === i ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={() => setPendingPage(i)}
+                                        className={`rounded-xl px-3 py-2 transition-all duration-300 transform hover:scale-105 hover:shadow-md ${pendingPage === i ? 'bg-blue-600 text-white' : 'border-blue-200 text-blue-700 hover:bg-blue-50'}`}
+                                      >
+                                        {i}
+                                      </Button>
+                                    );
+                                  }
+                                  if (end < pendingTotalPages) {
+                                    if (end < pendingTotalPages - 1) pages.push(
+                                      <span key="end-ellipsis" className="px-2 text-gray-400">...</span>
+                                    );
+                                    pages.push(
+                                      <Button
+                                        key={pendingTotalPages}
+                                        variant={pendingPage === pendingTotalPages ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={() => setPendingPage(pendingTotalPages)}
+                                        className={`rounded-xl px-3 py-2 transition-all duration-300 transform hover:scale-105 hover:shadow-md ${pendingPage === pendingTotalPages ? 'bg-blue-600 text-white' : 'border-blue-200 text-blue-700 hover:bg-blue-50'}`}
+                                      >
+                                        {pendingTotalPages}
+                                      </Button>
+                                    );
+                                  }
+                                  return pages;
+                                })()}
+                              </div>
+
+                              {/* Next Button */}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setPendingPage(Math.min(pendingTotalPages, pendingPage + 1))}
+                                disabled={pendingPage === pendingTotalPages}
+                                className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 rounded-xl px-3 py-2 transform hover:scale-105 hover:shadow-md btn-press"
+                              >
+                                <ChevronRight className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          )}
+
+                          {/* Items per page select */}
+                          <div className="flex items-center gap-2">
+                            <Select
+                              value={pendingLimit.toString()}
+                              onValueChange={(value) => {
+                                setPendingLimit(Number(value));
+                                setPendingPage(1);
+                              }}
+                            >
+                              <SelectTrigger className="w-20 bg-white/80 backdrop-blur border-blue-200 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 rounded-xl h-9 transform hover:scale-105 hover:shadow-md">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="border-0 shadow-xl rounded-2xl">
+                                {[5, 10, 20, 50].map(n => (
+                                  <SelectItem key={n} value={n.toString()} className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{n}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <span className="text-sm text-gray-600">{t('admin.itemsPerPage', 'รายการต่อหน้า')}</span>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -951,12 +1278,12 @@ const AdminDashboard = () => {
             {/* History Requests */}
             <TabsContent value="recent" className="space-y-4">
               {/* --- Filter UI สำหรับประวัติการอนุมัติล่าสุด --- */}
-              <div className="flex flex-wrap gap-4 items-end mb-4 bg-white/70 dark:bg-slate-800/70 p-4 rounded-xl shadow fade-in-up">
+              <div className="flex flex-wrap gap-4 items-end mb-4 bg-gradient-to-r from-white/80 via-blue-50/30 to-indigo-50/30 backdrop-blur rounded-2xl border border-blue-100 p-6 shadow-lg animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                 {/* Leave Type Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-1 slide-in-left fade-in-up">{t('leave.leaveType')}</label>
+                <div className="animate-slide-in-left" style={{ animationDelay: '0.3s' }}>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('leave.leaveType')}</label>
                   <select
-                    className="border rounded px-2 py-1 min-w-[140px] dark:bg-slate-900 dark:text-white pop-in stagger-1"
+                    className="border border-blue-200 rounded-xl px-3 py-2 min-w-[140px] dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
                     value={pendingHistoryFilterLeaveType}
                     onChange={e => setPendingHistoryFilterLeaveType(e.target.value)}
                   >
@@ -967,10 +1294,10 @@ const AdminDashboard = () => {
                   </select>
                 </div>
                 {/* Month Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-1 slide-in-left fade-in-up">{t('common.month')}</label>
+                <div className="animate-slide-in-left" style={{ animationDelay: '0.4s' }}>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.month')}</label>
                   <select
-                    className="border rounded px-2 py-1 w-28 dark:bg-slate-900 dark:text-white pop-in stagger-2"
+                    className="border border-blue-200 rounded-xl px-3 py-2 w-28 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
                     value={pendingFilterMonth}
                     onChange={e => setPendingFilterMonth(e.target.value ? Number(e.target.value) : '')}
                   >
@@ -981,23 +1308,23 @@ const AdminDashboard = () => {
                   </select>
                 </div>
                 {/* Year Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-1 slide-in-left fade-in-up">{t('common.year')}</label>
+                <div className="animate-slide-in-left" style={{ animationDelay: '0.5s' }}>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.year')}</label>
                   <input
                     type="number"
                     min={2000}
                     max={2100}
-                    className="border rounded px-2 py-1 w-24 dark:bg-slate-900 dark:text-white pop-in stagger-3"
+                    className="border border-blue-200 rounded-xl px-3 py-2 w-24 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
                     value={pendingFilterYear}
                     onChange={e => setPendingFilterYear(e.target.value ? Number(e.target.value) : '')}
                     placeholder="YYYY"
                   />
                 </div>
                 {/* Backdated Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-1 slide-in-left fade-in-up">{t('leave.backdatedFilter')}</label>
+                <div className="animate-slide-in-left" style={{ animationDelay: '0.6s' }}>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('leave.backdatedFilter')}</label>
                   <select
-                    className="border rounded px-2 py-1 min-w-[120px] dark:bg-slate-900 dark:text-white pop-in stagger-4"
+                    className="border border-blue-200 rounded-xl px-3 py-2 min-w-[120px] dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
                     value={pendingHistoryBackdatedFilter}
                     onChange={e => setPendingHistoryBackdatedFilter(e.target.value)}
                   >
@@ -1007,10 +1334,10 @@ const AdminDashboard = () => {
                   </select>
                 </div>
                 {/* Status Filter */}
-                <div>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-1 slide-in-left fade-in-up">{t('common.status')}</label>
+                <div className="animate-slide-in-left" style={{ animationDelay: '0.7s' }}>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.status')}</label>
                   <select
-                    className="border rounded px-2 py-1 min-w-[120px] dark:bg-slate-900 dark:text-white pop-in stagger-1"
+                    className="border border-blue-200 rounded-xl px-3 py-2 min-w-[120px] dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
                     value={pendingHistoryStatusFilter}
                     onChange={e => setPendingHistoryStatusFilter(e.target.value)}
                   >
@@ -1020,16 +1347,16 @@ const AdminDashboard = () => {
                   </select>
                 </div>
                 {/* Buttons */}
-                <div className="flex gap-2 mt-2">
+                <div className="flex gap-3 mt-2 animate-slide-in-left" style={{ animationDelay: '0.8s' }}>
                   <button
-                    className="bg-gray-200 dark:bg-slate-700 text-blue-900 dark:text-white px-3 py-1 rounded shadow hover:bg-gray-300 dark:hover:bg-slate-600 transition pop-in stagger-2"
+                    className="bg-gradient-to-r from-gray-200 to-gray-300 dark:from-slate-700 dark:to-slate-600 text-blue-900 dark:text-white px-4 py-2 rounded-xl shadow-lg hover:from-gray-300 hover:to-gray-400 dark:hover:from-slate-600 dark:hover:to-slate-500 transition-all duration-300 transform hover:scale-105 hover:shadow-xl animate-bounce-in btn-press hover-glow"
                     onClick={clearHistoryFilters}
                     type="button"
                   >
                     {t('common.reset')}
                   </button>
                   <button
-                    className="bg-blue-600 text-white px-3 py-1 rounded shadow hover:bg-blue-700 transition pop-in stagger-3"
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-xl shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 hover:shadow-xl animate-bounce-in btn-press hover-glow"
                     onClick={applyHistoryFilters}
                     type="button"
                   >
@@ -1043,13 +1370,13 @@ const AdminDashboard = () => {
                     <Clock className="w-6 h-6" />
                     {t('admin.recentApprovalHistory')}
                   </CardTitle>
-                  <CardDescription className="text-blue-100 text-sm animate-slide-in-left delay-100">
+                  <CardDescription className="text-blue-100 text-sm animate-slide-in-left" style={{ animationDelay: '0.1s' }}>
                     {t('admin.recentApprovalHistoryDesc')}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                   {loading ? (
-                    <div className="text-lg text-center py-10">{t('common.loading')}</div>
+                    <div className="text-lg text-center py-10 loading-pulse">{t('common.loading')}</div>
                   ) : (
                     <div className="space-y-4 p-6">
                       {historyRequests.length === 0 && (
@@ -1067,7 +1394,7 @@ const AdminDashboard = () => {
                         return (
                           <div
                             key={request.id}
-                            className={`relative glass bg-gradient-to-br from-white/80 via-blue-50/80 to-indigo-100/80 border-0 rounded-2xl p-5 shadow-md hover:shadow-xl transition-all flex flex-col md:flex-row md:items-center md:justify-between gap-4 fade-in-up pop-in stagger-${(idx%4)+1}`}
+                            className={`relative glass bg-gradient-to-br from-white/80 via-blue-50/80 to-indigo-100/80 border-0 rounded-2xl p-5 shadow-md hover:shadow-xl transition-all flex flex-col md:flex-row md:items-center md:justify-between gap-4 animate-fade-in-up hover-lift`}
                             style={{ animationDelay: `${0.1 + idx * 0.07}s` }}
                           >
                             <Badge
@@ -1075,7 +1402,7 @@ const AdminDashboard = () => {
                                 (request.status === "approved"
                                   ? "bg-green-100 text-green-800 border-green-200"
                                   : "bg-red-100 text-red-800 border-red-200") +
-                                " flex items-center absolute right-6 top-6 rounded-full px-3 py-1 font-bold shadow fade-in-up"
+                                " flex items-center absolute right-6 top-6 rounded-full px-3 py-1 font-bold shadow animate-fade-in-up"
                               }
                               style={{ animationDelay: '0.2s' }}
                             >
@@ -1090,26 +1417,26 @@ const AdminDashboard = () => {
                               )}
                             </Badge>
                             <div className="flex-1 min-w-0">
-                              <div className="font-bold text-lg text-blue-900 mb-1 truncate slide-in-left fade-in-up">{request.user?.User_name || "-"}</div>
+                              <div className="font-bold text-lg text-blue-900 mb-1 truncate animate-slide-in-left">{request.user?.User_name || "-"}</div>
                               {/* ประเภทการลา (leaveType) */}
-                              <span className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold mb-1 fade-in-up" style={{ animationDelay: '0.2s' }}>
+                              <span className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold mb-1 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                                 {getLeaveTypeDisplay(request.leaveType || request.leaveTypeName)}
                               </span>
                               {(request.backdated === 1 || request.backdated === "1" || request.backdated === true) && (
-                                <Badge className="ml-2 bg-purple-100 text-purple-800 border-purple-200 rounded-full px-3 py-1 text-xs font-bold shadow fade-in-up" style={{ animationDelay: '0.3s' }}>
+                                <Badge className="ml-2 bg-purple-100 text-purple-800 border-purple-200 rounded-full px-3 py-1 text-xs font-bold shadow animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
                                   {t('leave.backdated', 'ลาย้อนหลัง')}
                                 </Badge>
                               )}
-                              <div className="text-sm text-gray-700 mb-1 fade-in-up" style={{ animationDelay: '0.3s' }}>{t('leave.date')}: {startStr} - {endStr} ({leaveDays} {t('leave.days')})</div>
-                              <div className="text-xs text-gray-500 fade-in-up" style={{ animationDelay: '0.4s' }}>{t('leave.reason')}: {request.reason}</div>
+                              <div className="text-sm text-gray-700 mb-1 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>{t('leave.date')}: {startStr} - {endStr} ({leaveDays} {t('leave.days')})</div>
+                              <div className="text-xs text-gray-500 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>{t('leave.reason')}: {request.reason}</div>
                             </div>
                             {/* ปุ่มดูรายละเอียดและลบ */}
                             <div className="flex gap-2 flex-shrink-0 mt-2 md:mt-0">
-                              <Button size="sm" variant="outline" className="rounded-full px-4 py-2 font-bold border-blue-200 text-blue-700 hover:bg-blue-50 shadow pop-in" onClick={() => handleViewDetailsWithFetch(request)}>
+                              <Button size="sm" variant="outline" className="rounded-full px-4 py-2 font-bold border-blue-200 text-blue-700 hover:bg-blue-50 shadow animate-bounce-in btn-press hover-glow" onClick={() => handleViewDetailsWithFetch(request)}>
                                 <Eye className="w-4 h-4 mr-1" />{t('admin.viewDetails')}
                               </Button>
                               {user?.role === 'superadmin' && (
-                                <Button size="sm" variant="destructive" className="rounded-full px-4 py-2 font-bold shadow hover:scale-105 transition pop-in" onClick={() => handleDelete(request)}>
+                                <Button size="sm" variant="destructive" className="rounded-full px-4 py-2 font-bold shadow hover:scale-105 transition animate-bounce-in btn-press hover-glow" onClick={() => handleDelete(request)}>
                                   <XCircle className="w-4 h-4 mr-1" />{t('common.delete')}
                                 </Button>
                               )}
@@ -1118,51 +1445,129 @@ const AdminDashboard = () => {
                         );
                       })}
                       {/* --- ปุ่มเปลี่ยนหน้า --- */}
-                      <div className="flex flex-wrap justify-center mt-6 gap-2 items-center">
-                        {/* --- Pagination with ellipsis --- */}
-                        {(() => {
-                          const pages = [];
-                          const maxPageButtons = 5;
-                          let start = Math.max(1, historyPage - 2);
-                          let end = Math.min(historyTotalPages, start + maxPageButtons - 1);
-                          if (end - start < maxPageButtons - 1) {
-                            start = Math.max(1, end - maxPageButtons + 1);
-                          }
-                          if (start > 1) {
-                            pages.push(
-                              <button key={1} onClick={() => setHistoryPage(1)} className={`px-3 py-1 rounded border ${historyPage === 1 ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`}>1</button>
-                            );
-                            if (start > 2) pages.push(<span key="start-ellipsis">...</span>);
-                          }
-                          for (let i = start; i <= end; i++) {
-                            pages.push(
-                              <button key={i} onClick={() => setHistoryPage(i)} className={`px-3 py-1 rounded border ${historyPage === i ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`} disabled={historyPage === i}>{i}</button>
-                            );
-                          }
-                          if (end < historyTotalPages) {
-                            if (end < historyTotalPages - 1) pages.push(<span key="end-ellipsis">...</span>);
-                            pages.push(
-                              <button key={historyTotalPages} onClick={() => setHistoryPage(historyTotalPages)} className={`px-3 py-1 rounded border ${historyPage === historyTotalPages ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-600'} transition`}>{historyTotalPages}</button>
-                            );
-                          }
-                          return pages;
-                        })()}
-                        {/* --- Items per page select --- */}
-                        <select
-                          className="ml-4 border rounded px-2 py-1 text-sm"
-                          value={historyLimit}
-                          onChange={e => {
-                            setHistoryLimit(Number(e.target.value));
-                            setHistoryPage(1);
-                          }}
-                        >
-                          {[5, 10, 20, 50].map(n => (
-                            <option key={n} value={n}>{n}</option>
-                          ))}
-                        </select>
-                        <span className="ml-2 text-sm text-gray-500">{t('admin.itemsPerPage')}</span>
-                        <span className="ml-2 text-sm text-gray-500">{t('admin.pageInfo', { page: historyPage, totalPages: historyTotalPages })}</span>
-                      </div>
+                      {(historyTotalPages >= 1 || historyRequests.length > 0) && (
+                        <div className="flex flex-col sm:flex-row justify-center items-center mt-8 gap-4 p-6 bg-gradient-to-r from-white/80 via-blue-50/30 to-indigo-50/30 backdrop-blur rounded-2xl border border-blue-100 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
+                          {/* Pagination Info */}
+                          <div className="flex items-center gap-3 text-sm text-gray-600">
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                              <span>{t('admin.pageInfo', { page: historyPage || 1, totalPages: historyTotalPages || 1 })}</span>
+                            </div>
+                            <div className="w-px h-4 bg-gray-300"></div>
+                            <div className="flex items-center gap-2">
+                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                              <span>{historyRequests.length} {t('admin.results', 'ผลลัพธ์')}</span>
+                            </div>
+                          </div>
+
+                          {/* Pagination Controls */}
+                          {historyTotalPages > 1 && (
+                            <div className="flex items-center gap-2">
+                              {/* Previous Button */}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setHistoryPage(Math.max(1, historyPage - 1))}
+                                disabled={historyPage === 1}
+                                className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 rounded-xl px-3 py-2 transform hover:scale-105 hover:shadow-md btn-press"
+                              >
+                                <ChevronLeft className="w-4 h-4" />
+                              </Button>
+
+                              {/* Page Numbers */}
+                              <div className="flex items-center gap-1">
+                                {(() => {
+                                  const pages = [];
+                                  const maxPageButtons = 5;
+                                  let start = Math.max(1, historyPage - 2);
+                                  let end = Math.min(historyTotalPages, start + maxPageButtons - 1);
+                                  if (end - start < maxPageButtons - 1) {
+                                    start = Math.max(1, end - maxPageButtons + 1);
+                                  }
+                                  if (start > 1) {
+                                    pages.push(
+                                      <Button
+                                        key={1}
+                                        variant={historyPage === 1 ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={() => setHistoryPage(1)}
+                                        className={`rounded-xl px-3 py-2 transition-all duration-300 transform hover:scale-105 hover:shadow-md ${historyPage === 1 ? 'bg-blue-600 text-white' : 'border-blue-200 text-blue-700 hover:bg-blue-50'}`}
+                                      >
+                                        1
+                                      </Button>
+                                    );
+                                    if (start > 2) pages.push(
+                                      <span key="start-ellipsis" className="px-2 text-gray-400">...</span>
+                                    );
+                                  }
+                                  for (let i = start; i <= end; i++) {
+                                    pages.push(
+                                      <Button
+                                        key={i}
+                                        variant={historyPage === i ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={() => setHistoryPage(i)}
+                                        className={`rounded-xl px-3 py-2 transition-all duration-300 transform hover:scale-105 hover:shadow-md ${historyPage === i ? 'bg-blue-600 text-white' : 'border-blue-200 text-blue-700 hover:bg-blue-50'}`}
+                                      >
+                                        {i}
+                                      </Button>
+                                    );
+                                  }
+                                  if (end < historyTotalPages) {
+                                    if (end < historyTotalPages - 1) pages.push(
+                                      <span key="end-ellipsis" className="px-2 text-gray-400">...</span>
+                                    );
+                                    pages.push(
+                                      <Button
+                                        key={historyTotalPages}
+                                        variant={historyPage === historyTotalPages ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={() => setHistoryPage(historyTotalPages)}
+                                        className={`rounded-xl px-3 py-2 transition-all duration-300 transform hover:scale-105 hover:shadow-md ${historyPage === historyTotalPages ? 'bg-blue-600 text-white' : 'border-blue-200 text-blue-700 hover:bg-blue-50'}`}
+                                      >
+                                        {historyTotalPages}
+                                      </Button>
+                                    );
+                                  }
+                                  return pages;
+                                })()}
+                              </div>
+
+                              {/* Next Button */}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setHistoryPage(Math.min(historyTotalPages, historyPage + 1))}
+                                disabled={historyPage === historyTotalPages}
+                                className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 rounded-xl px-3 py-2 transform hover:scale-105 hover:shadow-md btn-press"
+                              >
+                                <ChevronRight className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          )}
+
+                          {/* Items per page select */}
+                          <div className="flex items-center gap-2">
+                            <Select
+                              value={historyLimit.toString()}
+                              onValueChange={(value) => {
+                                setHistoryLimit(Number(value));
+                                setHistoryPage(1);
+                              }}
+                            >
+                              <SelectTrigger className="w-20 bg-white/80 backdrop-blur border-blue-200 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 rounded-xl h-9 transform hover:scale-105 hover:shadow-md">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="border-0 shadow-xl rounded-2xl">
+                                {[5, 10, 20, 50].map(n => (
+                                  <SelectItem key={n} value={n.toString()} className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{n}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            <span className="text-sm text-gray-600">{t('admin.itemsPerPage', 'รายการต่อหน้า')}</span>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </CardContent>
