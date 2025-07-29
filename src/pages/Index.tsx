@@ -271,6 +271,37 @@ const Index = () => {
     fetchUserProfile();
   }, [API_BASE_URL, showSessionExpiredDialog]);
 
+  // Fetch announcements
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      setLoadingAnnouncements(true);
+      try {
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+        const response = await fetch(`${API_BASE_URL}/api/announcements`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.status === 'success' && Array.isArray(data.data)) {
+            // Sort by creation date (latest first) and take only the latest 3
+            const sortedAnnouncements = data.data
+              .sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+              .slice(0, 3);
+            setAnnouncements(sortedAnnouncements);
+          }
+        } else {
+          setErrorAnnouncements(t('error.cannotLoadStats'));
+        }
+      } catch (error) {
+        console.error('Error fetching announcements:', error);
+        setErrorAnnouncements(t('error.apiConnectionError'));
+      } finally {
+        setLoadingAnnouncements(false);
+      }
+    };
+
+    fetchAnnouncements();
+  }, [t]);
+
   // Chart data for demo
   const chartData = [
     { name: t('leaveTypes.sick'), value: leaveStats.sick },
@@ -295,11 +326,16 @@ const Index = () => {
     t('months.7'), t('months.8'), t('months.9'), t('months.10'), t('months.11'), t('months.12')
   ];
   const holidaysOfMonth = getThaiHolidaysByMonth(selectedYear, selectedMonth);
-  // MOCK: Announcements
-  const announcements = [
-    { id: 1, title: 'ปรับปรุงระบบ', message: 'ระบบจะปิดปรับปรุง 20 มี.ค. 22:00-23:00 น.' },
-    { id: 2, title: 'กิจกรรมบริษัท', message: 'เชิญร่วมกิจกรรม Outing 30 เม.ย. ลงทะเบียนได้ที่ HR' },
-  ];
+  // Announcements state
+  const [announcements, setAnnouncements] = useState<Array<{
+    id: string;
+    subject: string;
+    detail: string;
+    createdBy?: string;
+    createdAt?: string;
+  }>>([]);
+  const [loadingAnnouncements, setLoadingAnnouncements] = useState(true);
+  const [errorAnnouncements, setErrorAnnouncements] = useState("");
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-100 to-purple-100 dark:from-gray-900 dark:via-gray-950 dark:to-indigo-900 transition-colors relative overflow-x-hidden">
@@ -538,17 +574,25 @@ const Index = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2 pt-0">
-              {announcements.map((a, idx) => (
-                <div key={a.id} className="flex items-start gap-2 p-2 rounded-xl glass bg-gradient-to-br from-white/80 via-blue-50/80 to-indigo-100/80 shadow border-0 animate-pop-in" style={{ animationDelay: `${idx * 60}ms` }}>
-                  <span className="w-7 h-7 flex items-center justify-center rounded-full bg-purple-100 text-purple-600">
-                    <Bell className="w-4 h-4" />
-                  </span>
-                  <div className="flex-1">
-                    <div className="font-semibold text-sm text-blue-900">{a.title}</div>
-                    <div className="text-xs text-gray-500">{a.message}</div>
+              {loadingAnnouncements ? (
+                <div className="text-center py-4 text-gray-500 animate-pulse text-sm">{t('common.loading')}</div>
+              ) : errorAnnouncements ? (
+                <div className="text-center py-4 text-red-500 animate-shake text-sm">{errorAnnouncements}</div>
+              ) : announcements.length === 0 ? (
+                <div className="text-center py-4 text-blue-400 text-sm">{t('companyNews.noNews')}</div>
+              ) : (
+                announcements.map((a, idx) => (
+                  <div key={a.id} className="flex items-start gap-2 p-2 rounded-xl glass bg-gradient-to-br from-white/80 via-blue-50/80 to-indigo-100/80 shadow border-0 animate-pop-in" style={{ animationDelay: `${idx * 60}ms` }}>
+                    <span className="w-7 h-7 flex items-center justify-center rounded-full bg-purple-100 text-purple-600">
+                      <Bell className="w-4 h-4" />
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-sm text-blue-900 truncate">{a.subject}</div>
+                      <div className="text-xs text-gray-500 line-clamp-2 overflow-hidden">{a.detail}</div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </CardContent>
           </Card>
         </div>
@@ -580,6 +624,18 @@ const Index = () => {
                   {t('leave.leaveHistory')}
                 </Button>
               </Link>
+              <Link to="/calendar">
+                <Button className="w-full justify-start btn-blue-outline-lg text-base py-2 px-3 gap-2 animate-pop-in delay-200" variant="outline">
+                  <Calendar className="w-5 h-5" />
+                  {t('navigation.calendar')}
+                </Button>
+              </Link>
+              <Link to="/company-news">
+                <Button className="w-full justify-start btn-blue-outline-lg text-base py-2 px-3 gap-2 animate-pop-in delay-300" variant="outline">
+                  <Bell className="w-5 h-5" />
+                  {t('main.companyNews')}
+                </Button>
+              </Link>
             </CardContent>
           </Card>
 
@@ -596,49 +652,48 @@ const Index = () => {
             </CardHeader>
             <CardContent className="flex flex-col gap-2 pt-0">
               {loadingRecentLeaves ? (
-                <div className="text-center py-6 text-gray-500 animate-pulse text-base">{t('common.loading')}</div>
+                <div className="text-center py-4 text-gray-500 animate-pulse text-sm">{t('common.loading')}</div>
               ) : errorRecentLeaves ? (
-                <div className="text-center py-6 text-red-500 animate-shake text-base">{errorRecentLeaves}</div>
+                <div className="text-center py-4 text-red-500 animate-shake text-sm">{errorRecentLeaves}</div>
               ) : recentLeaves.length === 0 ? (
-                <div className="text-center py-6 text-blue-400 text-base">{t('main.noRecentLeaveRequests', 'ไม่มีคำขอลาล่าสุด')}</div>
+                <div className="text-center py-4 text-blue-400 text-sm">{t('main.noRecentLeaveRequests', 'ไม่มีคำขอลาล่าสุด')}</div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-blue-200">
-                    <thead>
-                      <tr className="bg-blue-50">
-                        <th className="px-4 py-2 text-left text-xs font-bold text-blue-700 uppercase">{t('leave.type')}</th>
-                        <th className="px-4 py-2 text-left text-xs font-bold text-blue-700 uppercase">{t('leave.duration')}</th>
-                        <th className="px-4 py-2 text-left text-xs font-bold text-blue-700 uppercase">{t('leave.startDate')}</th>
-                        <th className="px-4 py-2 text-left text-xs font-bold text-blue-700 uppercase">{t('leave.status')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recentLeaves.map((l, idx) => (
-                        <tr key={idx} className="bg-white even:bg-blue-50">
-                          <td className="px-4 py-2 font-medium text-blue-900">
-                            {i18n.language.startsWith('th') ? (l.leavetype_th || l.leavetype) : (l.leavetype_en || l.leavetype)}
-                          </td>
-                          <td className="px-4 py-2 text-blue-800">
-                            {(() => {
-                              if (!l.duration) return '-';
-                              // Replace 'day' or 'days' with translation
-                              const match = l.duration.match(/(\d+)\s*day/);
-                              if (match) {
-                                return `${match[1]} ${t('common.days')}`;
-                              }
-                              return l.duration;
-                            })()}
-                          </td>
-                          <td className="px-4 py-2 text-blue-800">
-                            {l.startdate ? format(new Date(l.startdate), 'dd/MM/yyyy') : '-'}
-                          </td>
-                          <td className="px-4 py-2">
-                            <span className={`text-xs font-bold rounded-full px-3 py-1 ${l.status === 'approved' ? 'bg-green-100 text-green-600' : l.status === 'pending' ? 'bg-yellow-100 text-yellow-600' : 'bg-red-100 text-red-600'}`}>{l.status === 'approved' ? t('leave.approved') : l.status === 'pending' ? t('leave.pending') : t('leave.rejected')}</span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="space-y-2">
+                  {recentLeaves.map((l, idx) => (
+                    <div key={idx} className="bg-white/80 rounded-lg p-3 shadow-sm border border-blue-100 hover:shadow-md transition-all duration-200 animate-pop-in" style={{ animationDelay: `${idx * 50}ms` }}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <Calendar className="w-4 h-4 text-blue-600" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-semibold text-blue-900 text-sm">
+                                {i18n.language.startsWith('th') ? (l.leavetype_th || l.leavetype) : (l.leavetype_en || l.leavetype)}
+                              </h4>
+                              <span className={`text-xs font-bold rounded-full px-2 py-0.5 ${l.status === 'approved' ? 'bg-green-100 text-green-600' : l.status === 'pending' ? 'bg-yellow-100 text-yellow-600' : 'bg-red-100 text-red-600'}`}>
+                                {l.status === 'approved' ? t('leave.approved') : l.status === 'pending' ? t('leave.pending') : t('leave.rejected')}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-blue-600 mt-1">
+                              <span>
+                                {(() => {
+                                  if (!l.duration) return '-';
+                                  const match = l.duration.match(/(\d+)\s*day/);
+                                  if (match) {
+                                    return `${match[1]} ${t('common.days')}`;
+                                  }
+                                  return l.duration;
+                                })()}
+                              </span>
+                              <span>•</span>
+                              <span>{l.startdate ? format(new Date(l.startdate), 'dd/MM/yyyy') : '-'}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>
@@ -657,6 +712,12 @@ const Index = () => {
           .btn-blue-outline-lg:hover {
             background: #eff6ff;
             color: #1e293b;
+          }
+          .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
           }
           .animate-float { animation: float 3s ease-in-out infinite alternate; }
           .animate-float-slow { animation: float 8s ease-in-out infinite alternate; }
