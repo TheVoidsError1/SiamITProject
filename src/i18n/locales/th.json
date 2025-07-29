@@ -59,6 +59,7 @@
     "edit": "แก้ไข",
     "delete": "ลบ",
     "view": "ดู",
+    "download": "ดาวน์โหลด",
     "approve": "อนุมัติ",
     "reject": "ไม่อนุมัติ",
     "loading": "กำลังโหลด...",
@@ -376,7 +377,16 @@
     "singleDate": "เฉพาะวัน",
     "allPositions": "ทุกตำแหน่ง",
     "allRoles": "ทุกสิทธิ์",
-    "allDepartments": "ทุกแผนก"
+    "allDepartments": "ทุกแผนก",
+    "retroactiveLeave": "การลาย้อนหลัง",
+    "retroactiveLeaveDesc": "การลาที่ส่งหลังจากวันที่เริ่มลา",
+    "currentLeave": "การลาปัจจุบัน",
+    "allTypes": "ทั้งหมด",
+    "dateInformation": "ข้อมูลวันที่",
+    "statusAndApproval": "สถานะและการอนุมัติ",
+    "contactInformation": "ข้อมูลการติดต่อ",
+    "noReasonProvided": "ไม่ระบุเหตุผล",
+    "files": "ไฟล์"
   },
   "admin": {
     "pendingRequests": "คำขอรออนุมัติ",

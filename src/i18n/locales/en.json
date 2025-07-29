@@ -62,6 +62,7 @@
     "edit": "Edit",
     "delete": "Delete",
     "view": "View",
+    "download": "Download",
     "approve": "Approve",
     "reject": "Reject",
     "loading": "Loading...",
@@ -358,7 +359,16 @@
     "dateRange": "Date range",
     "monthYear": "Month/Year",
     "selectSingleDate": "Select single date",
-    "singleDate": "Specific date"
+    "singleDate": "Specific date",
+    "retroactiveLeave": "Retroactive Leave",
+    "retroactiveLeaveDesc": "Leave submitted after the start date",
+    "currentLeave": "Current Leave",
+    "allTypes": "All Types",
+    "dateInformation": "Date Information",
+    "statusAndApproval": "Status & Approval",
+    "contactInformation": "Contact Information",
+    "noReasonProvided": "No reason provided",
+    "files": "files"
   },
   "admin": {
     "pendingRequests": "Pending Requests",

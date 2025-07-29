@@ -545,6 +545,9 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
       const today = new Date();
       setStartDate(today);
       setEndDate(today);
+      // เติมเวลาอัตโนมัติ: เริ่มต้น 09:00 และสิ้นสุด 18:00
+      setStartTime("09:00");
+      setEndTime("18:00");
     }
   };
 
