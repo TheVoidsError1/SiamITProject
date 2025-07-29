@@ -89,6 +89,9 @@
     "allMonths": "ทุกเดือน",
     "year": "ปี"
   },
+  "approved": "อนุมัติแล้ว",
+  "rejected": "ปฏิเสธแล้ว",
+  "markAllAsRead": "อ่านทั้งหมด",
   "leave": {
     "all": "ทั้งหมด",
     "leaveRequest": "ขอลา",
@@ -300,7 +303,13 @@
     "recentLeaveStatsDesc": "การใช้สิทธิการลาล่าสุด",
     "fillCompleteInfo": "กรุณากรอกข้อมูลให้ครบถ้วน",
     "manageAllDesc": "จัดการตำแหน่ง แผนก และประเภทการลาทั้งหมด",
-    "backdatedRequests": "ใบลาย้อนหลัง"
+    "backdatedRequests": "ใบลาย้อนหลัง",
+    "user": "ผู้ใช้",
+    "companyHolidays": "วันหยุดบริษัท",
+    "holidaysActivities": "วันหยุด/กิจกรรม",
+    "companyNews": "ข่าวสารบริษัท",
+    "noUpcomingHolidays": "ไม่มีวันหยุดที่กำลังจะมาถึง",
+    "announcements": "ข่าวสาร"
   },
   "profile": {
     "personalInfo": "ข้อมูลส่วนตัว",
@@ -493,6 +502,9 @@
     "noEmployeesFound": "ไม่พบข้อมูลพนักงานตามเงื่อนไขที่เลือก"
   },
   "notification": {
+    "notifications": "การแจ้งเตือน",
+    "noNotifications": "ไม่มีการแจ้งเตือน",
+    "read": "ทำเครื่องหมายว่าอ่านแล้ว",
     "title": "การแจ้งเตือน",
     "empty": "ไม่มีการแจ้งเตือน",
     "approved": "คำขอได้รับการอนุมัติ",

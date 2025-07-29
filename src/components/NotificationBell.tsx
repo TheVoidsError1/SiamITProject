@@ -15,6 +15,11 @@ interface Notification {
   startDate: string;
   endDate: string;
   status: string;
+  leaveType?: {
+    name_th: string;
+    name_en: string;
+  };
+  reason?: string;
 }
 
 const NotificationBell = () => {
@@ -24,19 +29,41 @@ const NotificationBell = () => {
   const [loading, setLoading] = useState(false);
   const { enabled: pushNotificationEnabled } = usePushNotification();
 
+  // Get leave type name
+  const getLeaveTypeName = (leaveType: { name_th: string; name_en: string } | undefined) => {
+    if (!leaveType) return '';
+    return i18n.language.startsWith('th') ? leaveType.name_th : leaveType.name_en;
+  };
+
   // Fetch notifications on mount
   useEffect(() => {
     const fetchNotifications = async () => {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/notifications', {
-        headers: { Authorization: token ? `Bearer ${token}` : undefined },
-      });
-      const data = await res.json();
-      if (data.status === 'success' && Array.isArray(data.data)) {
-        setNotifications(data.data);
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setLoading(false);
+          return;
+        }
+        
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+        const res = await fetch(`${API_BASE_URL}/api/notifications`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status === 'success' && Array.isArray(data.data)) {
+            setNotifications(data.data);
+          }
+        } else {
+          console.error('Failed to fetch notifications:', res.statusText);
+        }
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     fetchNotifications();
   }, []);
@@ -57,16 +84,52 @@ const NotificationBell = () => {
 
   // Mark a single notification as read
   const handleMarkAsRead = async (id: string) => {
-    const token = localStorage.getItem('token');
-    await fetch(`/api/notifications/${id}/read`, {
-      method: 'POST',
-      headers: { Authorization: token ? `Bearer ${token}` : undefined },
-    });
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+      const res = await fetch(`${API_BASE_URL}/api/notifications/${id}/read`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      if (res.ok) {
+        // Remove the notification from the list after marking as read
+        setNotifications(prev => prev.filter(n => n.id !== id));
+      } else {
+        console.error('Failed to mark notification as read:', res.statusText);
+      }
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+    }
   };
 
-  // คำนวณจำนวนที่ยังไม่ได้อ่าน (เช่น status === 'unread')
-  const unreadCount = useMemo(() => notifications.filter(n => n.status === 'unread').length, [notifications]);
+  // Mark all notifications as read
+  const handleMarkAllAsRead = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) return;
+      
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+      const res = await fetch(`${API_BASE_URL}/api/notifications/read`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      if (res.ok) {
+        // Clear all notifications from the list
+        setNotifications([]);
+      } else {
+        console.error('Failed to mark all notifications as read:', res.statusText);
+      }
+    } catch (error) {
+      console.error('Error marking all notifications as read:', error);
+    }
+  };
+
+  // Calculate unread count - all notifications from API are unread (isRead: false)
+  const unreadCount = useMemo(() => notifications.length, [notifications]);
 
   const getTypeColor = (type: string) => {
     switch (type) {
@@ -91,9 +154,9 @@ const NotificationBell = () => {
       <PopoverTrigger asChild>
         <Button variant="ghost" size="sm" className="relative glass bg-white/60 backdrop-blur-md shadow-lg hover:scale-110 transition-all duration-200">
           <span className="relative">
-            <Bell className="h-6 w-6 text-blue-500 animate-float" />
+            <Bell className="h-6 w-6 text-blue-500" />
             {unreadCount > 0 && (
-              <span className="absolute -top-2 -right-2 flex items-center justify-center h-6 w-6 rounded-full bg-gradient-to-tr from-pink-400 via-blue-400 to-indigo-400 text-white text-xs font-bold shadow-lg animate-pulse border-2 border-white">
+              <span className="absolute -top-5 -right-5 flex items-center justify-center h-5 w-5 rounded-full bg-gradient-to-tr from-red-400 via-pink-400 to-red-500 text-white text-xs font-bold shadow-lg border-2 border-white">
                 {unreadCount}
               </span>
             )}
@@ -105,36 +168,67 @@ const NotificationBell = () => {
           <CardHeader className="pb-3 bg-gradient-to-r from-blue-500 via-indigo-400 to-purple-400 rounded-t-2xl text-white">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg font-bold tracking-tight">{t('notification.notifications')}</CardTitle>
+              {notifications.length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleMarkAllAsRead}
+                  className="text-white hover:bg-white/20 text-xs px-2 py-1"
+                >
+                  {t('markAllAsRead')}
+                </Button>
+              )}
             </div>
           </CardHeader>
           <CardContent className="space-y-3 max-h-80 overflow-y-auto p-4 bg-transparent">
             {notifications.length === 0 ? (
-              <p className="text-center text-gray-500 py-4">{t('notification.noNotifications')}</p>
+              <p className="text-center text-gray-500 py-4">{t('noNotifications')}</p>
             ) : (
               notifications.map((notification, idx) => (
                 <div
                   key={notification.id}
-                  className={`flex items-start gap-3 p-4 rounded-xl glass bg-gradient-to-br from-white/80 via-blue-50/80 to-indigo-100/80 shadow-md border-0 transition-all duration-200 animate-fade-in-up animate-pop-in`}
+                  className={`flex items-start gap-3 p-4 rounded-xl glass shadow-md border-0 transition-all duration-200 animate-fade-in-up animate-pop-in ${
+                    notification.status === 'approved' 
+                      ? 'bg-gradient-to-br from-green-50/80 via-emerald-50/80 to-green-100/80 border-l-4 border-green-400' 
+                      : 'bg-gradient-to-br from-red-50/80 via-rose-50/80 to-red-100/80 border-l-4 border-red-400'
+                  }`}
                   style={{ animationDelay: `${idx * 80}ms` }}
                 >
                   <div className="flex-shrink-0 mt-1">
-                    <Bell className="h-5 w-5 text-blue-500 bg-blue-100 rounded-full p-1 shadow" />
+                    {notification.status === 'approved' ? (
+                      <Check className="h-5 w-5 text-green-600 bg-green-100 rounded-full p-1 shadow" />
+                    ) : (
+                      <X className="h-5 w-5 text-red-600 bg-red-100 rounded-full p-1 shadow" />
+                    )}
                   </div>
                   <div className="flex-1">
-                    <h4 className={`font-semibold text-base mb-0.5 text-blue-700`}>{notification.status === 'unread' ? t('notification.unread') : t('notification.read')}</h4>
-                    <p className="text-xs text-gray-600 mb-1">{notification.startDate} - {notification.endDate}</p>
+                    <h4 className={`font-semibold text-base mb-0.5 ${
+                      notification.status === 'approved' ? 'text-green-700' : 'text-red-700'
+                    }`}>
+                      {notification.status === 'approved' ? t('approved') : t('rejected')}
+                    </h4>
+                    <p className="text-xs text-gray-600 mb-1">
+                      {new Date(notification.startDate).toLocaleDateString('th-TH')} - {new Date(notification.endDate).toLocaleDateString('th-TH')}
+                    </p>
+                    {notification.leaveType && (
+                      <p className="text-xs text-blue-500">
+                        {getLeaveTypeName(notification.leaveType)}
+                      </p>
+                    )}
                   </div>
-                  {notification.status === 'unread' && (
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleMarkAsRead(notification.id)}
-                      className="ml-2 p-1 h-7 w-7 bg-blue-100 hover:bg-blue-200 text-blue-600 rounded-full shadow"
-                      aria-label="Mark as read"
-                    >
-                      <Check className="h-4 w-4" />
-                    </Button>
-                  )}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleMarkAsRead(notification.id)}
+                    className={`ml-2 p-1 h-7 w-7 rounded-full shadow ${
+                      notification.status === 'approved' 
+                        ? 'bg-green-100 hover:bg-green-200 text-green-600' 
+                        : 'bg-red-100 hover:bg-red-200 text-red-600'
+                    }`}
+                    aria-label="Mark as read"
+                  >
+                    <Check className="h-4 w-4" />
+                  </Button>
                 </div>
               ))
             )}

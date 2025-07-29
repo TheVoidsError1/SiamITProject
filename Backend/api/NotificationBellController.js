@@ -9,15 +9,45 @@ module.exports = (AppDataSource) => {
     try {
       const userId = req.user.userId;
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
+      const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+      
+      // First get the notifications
       const notifications = await leaveRepo.find({
         where: {
           Repid: userId,
           isRead: false,
           status: In(['approved', 'rejected'])
         },
-        select: ['id', 'startDate', 'endDate', 'status']
+        select: ['id', 'startDate', 'endDate', 'status', 'leaveType']
       });
-      res.json({ status: 'success', data: notifications });
+
+      // Get all leave types to map them
+      const leaveTypes = await leaveTypeRepo.find({
+        select: ['id', 'leave_type_th', 'leave_type_en']
+      });
+
+      // Create a map of leave type IDs to names
+      const leaveTypeMap = {};
+      leaveTypes.forEach(type => {
+        leaveTypeMap[type.id] = {
+          name_th: type.leave_type_th,
+          name_en: type.leave_type_en
+        };
+      });
+
+      // Transform the data to match the expected format
+      const transformedNotifications = notifications.map(notification => ({
+        id: notification.id,
+        startDate: notification.startDate,
+        endDate: notification.endDate,
+        status: notification.status,
+        leaveType: leaveTypeMap[notification.leaveType] || {
+          name_th: '',
+          name_en: ''
+        }
+      }));
+
+      res.json({ status: 'success', data: transformedNotifications });
     } catch (err) {
       res.status(500).json({ status: 'error', data: null, message: err.message });
     }

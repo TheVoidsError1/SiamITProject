@@ -92,6 +92,9 @@
     "allMonths": "All Months",
     "year": "Year"
   },
+  "approved": "Approved",
+  "rejected": "Rejected",
+  "markAllAsRead": "Mark All as Read",
   "leave": {
     "all": "All",
     "leaveRequest": "Leave Request",
@@ -285,7 +288,13 @@
     "recentLeaveStatsDesc": "Latest leave requests",
     "fillCompleteInfo": "Please fill out complete information",
     "manageAllDesc": "Manage all positions, departments, and leave types",
-    "backdatedRequests": "Backdated Requests"
+    "backdatedRequests": "Backdated Requests",
+    "user": "User",
+    "companyHolidays": "Company Holidays",
+    "holidaysActivities": "Holidays/Activities",
+    "companyNews": "Company News",
+    "noUpcomingHolidays": "No upcoming holidays",
+    "announcements": "Announcements"
   },
   "profile": {
     "personalInfo": "Personal Information",
@@ -457,6 +466,9 @@
     "noEmployeesFound": "No employees found"
   },
   "notification": {
+    "notifications": "Notifications",
+    "noNotifications": "No notifications",
+    "read": "Mark as Read",
     "title": "Notifications",
     "empty": "No notifications",
     "approved": "Request Approved",
