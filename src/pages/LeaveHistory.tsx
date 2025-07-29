@@ -119,8 +119,17 @@ const LeaveHistory = () => {
 
   // เพิ่มฟังก์ชันใหม่สำหรับดึงรายละเอียดใบลาจาก backend
   const handleViewDetails = async (leaveId: string) => {
+    // หาข้อมูลจากรายการหลักที่มีอยู่แล้ว
+    const leaveData = leaveHistory.find(leave => leave.id === leaveId);
+    if (leaveData) {
+      setSelectedLeave(leaveData);
+      setShowDetailDialog(true);
+      return;
+    }
+    
+    // ถ้าไม่พบในรายการหลัก ให้เรียก API
     setSelectedLeave(null);
-    setShowDetailDialog(true); // เปิด dialog ทันที (option: ใส่ loading)
+    setShowDetailDialog(true);
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`/api/leave-request/detail/${leaveId}`, {
@@ -373,57 +382,57 @@ const LeaveHistory = () => {
         <div className="max-w-4xl mx-auto space-y-10">
           {/* Summary Stats */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-10">
-            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-blue-50/50 to-blue-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-blue-50/50 to-blue-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105">
               <CardContent className="p-6 flex items-center gap-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <Calendar className="w-7 h-7 text-white" />
+                <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110">
+                  <Calendar className="w-7 h-7 text-white transition-all duration-300" />
                 </div>
                 <div>
-                  <p className="text-3xl font-extrabold text-blue-800">{totalLeaveDays}</p>
+                  <p className="text-3xl font-extrabold text-blue-800 transition-all duration-300 group-hover:scale-110">{totalLeaveDays}</p>
                   <p className="text-base text-blue-600 font-medium">{t('history.totalLeaveDays')}</p>
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-green-50/50 to-green-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-green-50/50 to-green-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105">
               <CardContent className="p-6 flex items-center gap-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <CheckCircle className="w-7 h-7 text-white" />
+                <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110">
+                  <CheckCircle className="w-7 h-7 text-white transition-all duration-300" />
                 </div>
                 <div>
-                  <p className="text-3xl font-extrabold text-green-700">{approvedCount}</p>
+                  <p className="text-3xl font-extrabold text-green-700 transition-all duration-300 group-hover:scale-110">{approvedCount}</p>
                   <p className="text-base text-green-600 font-medium">{t('history.approvedRequests')}</p>
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-yellow-50/50 to-yellow-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-yellow-50/50 to-yellow-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105">
               <CardContent className="p-6 flex items-center gap-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <Clock className="w-7 h-7 text-white" />
+                <div className="w-14 h-14 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110">
+                  <Clock className="w-7 h-7 text-white transition-all duration-300" />
                 </div>
                 <div>
-                  <p className="text-3xl font-extrabold text-yellow-700">{pendingCount}</p>
+                  <p className="text-3xl font-extrabold text-yellow-700 transition-all duration-300 group-hover:scale-110">{pendingCount}</p>
                   <p className="text-base text-yellow-600 font-medium">{t('history.pendingRequests')}</p>
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-red-50/50 to-red-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-red-50/50 to-red-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105">
               <CardContent className="p-6 flex items-center gap-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <XCircle className="w-7 h-7 text-white" />
+                <div className="w-14 h-14 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110">
+                  <XCircle className="w-7 h-7 text-white transition-all duration-300" />
                 </div>
                 <div>
-                  <p className="text-3xl font-extrabold text-red-700">{rejectedCount}</p>
+                  <p className="text-3xl font-extrabold text-red-700 transition-all duration-300 group-hover:scale-110">{rejectedCount}</p>
                   <p className="text-base text-red-600 font-medium">{t('history.rejectedRequests')}</p>
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-purple-50/50 to-purple-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300">
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-purple-50/50 to-purple-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105">
               <CardContent className="p-6 flex items-center gap-4">
-                <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg">
-                  <History className="w-7 h-7 text-white" />
+                <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110">
+                  <History className="w-7 h-7 text-white transition-all duration-300" />
                 </div>
                 <div>
-                  <p className="text-3xl font-extrabold text-purple-700">{retroactiveCount}</p>
+                  <p className="text-3xl font-extrabold text-purple-700 transition-all duration-300 group-hover:scale-110">{retroactiveCount}</p>
                   <p className="text-base text-purple-600 font-medium">{t('history.retroactiveLeave')}</p>
                 </div>
               </CardContent>
@@ -435,8 +444,12 @@ const LeaveHistory = () => {
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
-                    <Filter className="w-5 h-5 text-white" />
+                  <div className={`w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 ${
+                    showFilters ? 'scale-110' : 'scale-100'
+                  }`}>
+                    <Filter className={`w-5 h-5 text-white transition-all duration-300 ${
+                      showFilters ? 'animate-pulse' : ''
+                    }`} />
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-gray-800">{t('history.filters', 'ตัวกรอง')}</h3>
@@ -447,7 +460,9 @@ const LeaveHistory = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => setShowFilters(!showFilters)}
-                  className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 rounded-xl px-4 py-2 font-medium"
+                  className={`border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 rounded-xl px-4 py-2 font-medium transform hover:scale-105 ${
+                    showFilters ? 'bg-blue-50 border-blue-300 shadow-md' : ''
+                  }`}
                 >
                   {showFilters ? (
                     <>
@@ -463,12 +478,14 @@ const LeaveHistory = () => {
                 </Button>
               </div>
             </CardHeader>
-            {showFilters && (
-              <CardContent className="space-y-6">
+            <div className={`overflow-hidden transition-all duration-500 ease-in-out ${
+              showFilters ? 'max-h-[1000px] opacity-100' : 'max-h-0 opacity-0'
+            }`}>
+              <CardContent className="space-y-6 animate-slide-down">
                 {/* Filter Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
                   {/* Single Date Filter */}
-                  <div className="space-y-3">
+                  <div className="space-y-3 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
                     <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                       <Calendar className="w-4 h-4 text-blue-600" />
                       {t('history.singleDate', 'เฉพาะวัน')}
@@ -495,7 +512,7 @@ const LeaveHistory = () => {
                   </div>
 
                   {/* Leave Type Filter */}
-                  <div className="space-y-3">
+                  <div className="space-y-3 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                     <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                       <FileText className="w-4 h-4 text-green-600" />
                       {t('leave.type', 'ประเภทการลา')}
@@ -505,9 +522,9 @@ const LeaveHistory = () => {
                         <SelectValue placeholder={t('leave.allTypes', 'ทั้งหมด')} />
                       </SelectTrigger>
                       <SelectContent className="border-0 shadow-xl rounded-2xl">
-                        <SelectItem value="all" className="rounded-lg">{t('leave.allTypes', 'ทั้งหมด')}</SelectItem>
+                        <SelectItem value="all" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{t('leave.allTypes', 'ทั้งหมด')}</SelectItem>
                         {leaveTypes.map((lt) => (
-                          <SelectItem key={lt.id} value={lt.id} className="rounded-lg">
+                          <SelectItem key={lt.id} value={lt.id} className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">
                             {i18n.language.startsWith('th') ? lt.leave_type_th : lt.leave_type_en}
                           </SelectItem>
                         ))}
@@ -516,7 +533,7 @@ const LeaveHistory = () => {
                   </div>
 
                   {/* Status Filter */}
-                  <div className="space-y-3">
+                  <div className="space-y-3 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
                     <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                       <AlertCircle className="w-4 h-4 text-yellow-600" />
                       {t('leave.status', 'สถานะ')}
@@ -526,9 +543,9 @@ const LeaveHistory = () => {
                         <SelectValue placeholder={t('history.allStatuses', 'ทั้งหมด')} />
                       </SelectTrigger>
                       <SelectContent className="border-0 shadow-xl rounded-2xl">
-                        <SelectItem value="all" className="rounded-lg">{t('leave.statusAll', 'ทุกสถานะ')}</SelectItem>
+                        <SelectItem value="all" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{t('leave.statusAll', 'ทุกสถานะ')}</SelectItem>
                         {statusOptions.map(status => (
-                          <SelectItem key={status} value={status} className="rounded-lg">
+                          <SelectItem key={status} value={status} className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">
                             {t(`leave.${status}`, status)}
                           </SelectItem>
                         ))}
@@ -537,7 +554,7 @@ const LeaveHistory = () => {
                   </div>
 
                   {/* Retroactive Leave Filter - ปรับปรุงให้ใช้งานได้จริง */}
-                  <div className="space-y-3">
+                  <div className="space-y-3 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
                     <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                       <History className="w-4 h-4 text-purple-600" />
                       {t('history.retroactiveLeave', 'การลาย้อนหลัง')}
@@ -547,13 +564,13 @@ const LeaveHistory = () => {
                         <SelectValue placeholder={t('history.allTypes', 'ทั้งหมด')} />
                       </SelectTrigger>
                       <SelectContent className="border-0 shadow-xl rounded-2xl">
-                        <SelectItem value="all" className="rounded-lg">
+                        <SelectItem value="all" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">
                           <div className="flex items-center gap-2">
                             <div className="w-3 h-3 rounded-full bg-gray-400"></div>
                             {t('history.allTypes', 'ทั้งหมด')}
                           </div>
                         </SelectItem>
-                        <SelectItem value="retroactive" className="rounded-lg">
+                        <SelectItem value="retroactive" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">
                           <div className="flex items-center gap-2">
                             <div className="w-3 h-3 rounded-full bg-purple-500 animate-pulse"></div>
                             <History className="w-4 h-4 text-purple-600" />
@@ -566,7 +583,7 @@ const LeaveHistory = () => {
                   </div>
 
                   {/* Month/Year Filter */}
-                  <div className="space-y-3">
+                  <div className="space-y-3 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
                     <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
                       <Clock className="w-4 h-4 text-indigo-600" />
                       {t('history.monthYear', 'เดือน/ปี')}
@@ -577,9 +594,9 @@ const LeaveHistory = () => {
                           <SelectValue placeholder={t('history.month', 'เดือน')} />
                         </SelectTrigger>
                         <SelectContent className="border-0 shadow-xl rounded-2xl">
-                          <SelectItem value="all" className="rounded-lg">{t('history.allMonths', 'ทุกเดือน')}</SelectItem>
+                          <SelectItem value="all" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{t('history.allMonths', 'ทุกเดือน')}</SelectItem>
                           {allMonths.map(m => (
-                            <SelectItem key={m} value={m.toString()} className="rounded-lg">{monthNames[m-1]}</SelectItem>
+                            <SelectItem key={m} value={m.toString()} className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{monthNames[m-1]}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -588,9 +605,9 @@ const LeaveHistory = () => {
                           <SelectValue placeholder={t('history.year', 'ปี')} />
                         </SelectTrigger>
                         <SelectContent className="border-0 shadow-xl rounded-2xl">
-                          <SelectItem value="all" className="rounded-lg">{t('history.allYears', 'ทุกปี')}</SelectItem>
+                          <SelectItem value="all" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{t('history.allYears', 'ทุกปี')}</SelectItem>
                           {allYears.map(y => (
-                            <SelectItem key={y} value={y.toString()} className="rounded-lg">{y}</SelectItem>
+                            <SelectItem key={y} value={y.toString()} className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{y}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -599,14 +616,14 @@ const LeaveHistory = () => {
                 </div>
 
                 {/* Filter Actions */}
-                <div className="flex justify-between items-center pt-4 border-t border-gray-200">
+                <div className="flex justify-between items-center pt-4 border-t border-gray-200 animate-fade-in-up" style={{ animationDelay: '0.6s' }}>
                   <div className="flex items-center gap-3">
                     {hasActiveFilters() && (
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={clearAllFilters}
-                        className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 transition-all duration-200 rounded-xl px-4 py-2 font-medium"
+                        className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 transition-all duration-300 rounded-xl px-4 py-2 font-medium transform hover:scale-105 hover:shadow-md"
                       >
                         <X className="w-4 h-4 mr-2" />
                         {t('history.clearAllFilters', 'ล้างตัวกรองทั้งหมด')}
@@ -636,7 +653,7 @@ const LeaveHistory = () => {
                   </div>
                 </div>
               </CardContent>
-            )}
+            </div>
           </Card>
 
           {/* Leave History List */}
@@ -689,8 +706,12 @@ const LeaveHistory = () => {
                 </div>
               </div>
             ) : (
-              leaveHistory.map((leave) => (
-                <Card key={leave.id} className="border-0 shadow-xl bg-white/80 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all">
+              leaveHistory.map((leave, index) => (
+                <Card 
+                  key={leave.id} 
+                  className="border-0 shadow-xl bg-white/80 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-[1.02]"
+                  style={{ animationDelay: `${index * 0.1}s` }}
+                >
                   <CardHeader className="pb-2 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                     <div className="flex items-center gap-4">
                       <div className={`text-xl font-bold ${getTypeColor(leave.type)}`}>{getLeaveTypeLabel(leave.type)}</div>
@@ -765,7 +786,12 @@ const LeaveHistory = () => {
                           </div>
                         )}
                         <div className="flex justify-end mt-6">
-                          <Button size="sm" variant="outline" onClick={() => handleViewDetails(leave.id)}>
+                          <Button 
+                            size="sm" 
+                            variant="outline" 
+                            onClick={() => handleViewDetails(leave.id)}
+                            className="transition-all duration-300 transform hover:scale-105 hover:shadow-md hover:bg-blue-50 hover:border-blue-300"
+                          >
                             {t('common.viewDetails')}
                           </Button>
                         </div>
@@ -800,7 +826,7 @@ const LeaveHistory = () => {
                       size="sm"
                       onClick={() => setPage(Math.max(1, page - 1))}
                       disabled={page === 1}
-                      className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 rounded-xl px-3 py-2"
+                      className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 rounded-xl px-3 py-2 transform hover:scale-105 hover:shadow-md"
                     >
                       <ChevronLeft className="w-4 h-4" />
                     </Button>
@@ -822,7 +848,7 @@ const LeaveHistory = () => {
                               variant={page === 1 ? "default" : "outline"}
                               size="sm"
                               onClick={() => setPage(1)}
-                              className={`rounded-xl px-3 py-2 ${page === 1 ? 'bg-blue-600 text-white' : 'border-blue-200 text-blue-700 hover:bg-blue-50'}`}
+                              className={`rounded-xl px-3 py-2 transition-all duration-300 transform hover:scale-105 hover:shadow-md ${page === 1 ? 'bg-blue-600 text-white' : 'border-blue-200 text-blue-700 hover:bg-blue-50'}`}
                             >
                               1
                             </Button>
@@ -838,7 +864,7 @@ const LeaveHistory = () => {
                               variant={page === i ? "default" : "outline"}
                               size="sm"
                               onClick={() => setPage(i)}
-                              className={`rounded-xl px-3 py-2 ${page === i ? 'bg-blue-600 text-white' : 'border-blue-200 text-blue-700 hover:bg-blue-50'}`}
+                              className={`rounded-xl px-3 py-2 transition-all duration-300 transform hover:scale-105 hover:shadow-md ${page === i ? 'bg-blue-600 text-white' : 'border-blue-200 text-blue-700 hover:bg-blue-50'}`}
                             >
                               {i}
                             </Button>
@@ -854,7 +880,7 @@ const LeaveHistory = () => {
                               variant={page === totalPages ? "default" : "outline"}
                               size="sm"
                               onClick={() => setPage(totalPages)}
-                              className={`rounded-xl px-3 py-2 ${page === totalPages ? 'bg-blue-600 text-white' : 'border-blue-200 text-blue-700 hover:bg-blue-50'}`}
+                              className={`rounded-xl px-3 py-2 transition-all duration-300 transform hover:scale-105 hover:shadow-md ${page === totalPages ? 'bg-blue-600 text-white' : 'border-blue-200 text-blue-700 hover:bg-blue-50'}`}
                             >
                               {totalPages}
                             </Button>
@@ -870,7 +896,7 @@ const LeaveHistory = () => {
                       size="sm"
                       onClick={() => setPage(Math.min(totalPages, page + 1))}
                       disabled={page === totalPages}
-                      className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 rounded-xl px-3 py-2"
+                      className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 rounded-xl px-3 py-2 transform hover:scale-105 hover:shadow-md"
                     >
                       <ChevronRight className="w-4 h-4" />
                     </Button>
@@ -886,12 +912,12 @@ const LeaveHistory = () => {
                       setPage(1);
                     }}
                   >
-                    <SelectTrigger className="w-20 bg-white/80 backdrop-blur border-blue-200 hover:bg-blue-50 hover:border-blue-300 transition-all duration-200 rounded-xl h-9">
+                    <SelectTrigger className="w-20 bg-white/80 backdrop-blur border-blue-200 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 rounded-xl h-9 transform hover:scale-105 hover:shadow-md">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent className="border-0 shadow-xl rounded-2xl">
                       {[5, 10, 20, 50].map(n => (
-                        <SelectItem key={n} value={n.toString()} className="rounded-lg">{n}</SelectItem>
+                        <SelectItem key={n} value={n.toString()} className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{n}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -959,7 +985,7 @@ const LeaveHistory = () => {
                         <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
                           <Calendar className="w-4 h-4 text-blue-500" />
                           <span className="font-medium text-blue-900">
-                            {formatDateLocalized(selectedLeave.leaveDate || selectedLeave.startDate)}
+                            {formatDateLocalized(selectedLeave.startDate)}
                           </span>
                         </div>
                       </div>
@@ -978,7 +1004,7 @@ const LeaveHistory = () => {
                       <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
                         <Clock className="w-4 h-4 text-green-500" />
                         <span className="font-medium text-green-900">
-                          {selectedLeave.days || '1'} {t('leave.days')}
+                          {selectedLeave.days || 1} {t('leave.days')}
                         </span>
                       </div>
                     </div>
@@ -1174,6 +1200,44 @@ const LeaveHistory = () => {
           border-radius: 2rem;
           border: 1px solid rgba(255,255,255,0.18);
         }
+
+        @keyframes slide-down {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes fade-in-up {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-slide-down {
+          animation: slide-down 0.5s ease-out forwards;
+        }
+
+        .animate-fade-in-up {
+          animation: fade-in-up 0.6s ease-out forwards;
+          opacity: 0;
+        }
+
+        .animate-fade-in-up:nth-child(1) { animation-delay: 0.1s; }
+        .animate-fade-in-up:nth-child(2) { animation-delay: 0.2s; }
+        .animate-fade-in-up:nth-child(3) { animation-delay: 0.3s; }
+        .animate-fade-in-up:nth-child(4) { animation-delay: 0.4s; }
+        .animate-fade-in-up:nth-child(5) { animation-delay: 0.5s; }
+        .animate-fade-in-up:nth-child(6) { animation-delay: 0.6s; }
       `}</style>
     </div>
   );
