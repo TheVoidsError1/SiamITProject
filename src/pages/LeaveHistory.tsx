@@ -774,15 +774,15 @@ const LeaveHistory = () => {
                               <Label className="text-sm font-medium text-gray-600">{t('leave.rejectedBy')}</Label>
                               <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
                                 <XCircle className="w-4 h-4 text-red-500" />
-                                <span className="font-medium text-red-900">{selectedLeave.rejectedBy || '-'}</span>
+                                <span className="font-medium text-red-900">{leave.rejectedBy || '-'}</span>
                               </div>
                             </div>
-                            {selectedLeave.rejectionReason && (
+                            {leave.rejectionReason && (
                               <div className="space-y-2">
                                 <Label className="text-sm font-medium text-gray-600">{t('leave.rejectionReason')}</Label>
                                 <div className="flex items-start gap-2 p-3 bg-red-50 rounded-lg">
                                   <FileText className="w-4 h-4 text-red-500 mt-0.5" />
-                                  <span className="text-red-900 leading-relaxed">{selectedLeave.rejectionReason}</span>
+                                  <span className="text-red-900 leading-relaxed">{leave.rejectionReason}</span>
                                 </div>
                               </div>
                             )}
