@@ -749,21 +749,45 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
                       <Phone className="w-5 h-5 text-blue-500" />
                       <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.contactInfo')}</span>
                     </div>
-                                            <Input
-                          id="contact"
-                          placeholder={t('leave.contactPlaceholder')}
-                          className={`w-full h-12 rounded-xl border-2 transition-all ${
-                            errors.contact 
-                              ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' 
-                              : 'focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20'
-                          }`}
-                          value={contact}
-                          onChange={e => setContact(e.target.value)}
-                        />
-                        {errors.contact && (
-                          <p className="mt-1 text-sm text-red-600">{errors.contact}</p>
-                        )}
+                    <Input
+                      id="contact"
+                      placeholder={t('leave.contactPlaceholder')}
+                      className={`w-full h-12 rounded-xl border-2 transition-all ${
+                        errors.contact 
+                          ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' 
+                          : 'focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20'
+                      }`}
+                      value={contact}
+                      onChange={e => setContact(e.target.value)}
+                    />
+                    {errors.contact && (
+                      <p className="mt-1 text-sm text-red-600">{errors.contact}</p>
+                    )}
                   </div>
+
+                  {/* Section: แนบไฟล์ - แสดงเฉพาะเมื่อประเภทการลาต้องการแนบเอกสาร */}
+                  {requiresAttachmentField && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <FileText className="w-5 h-5 text-green-500" />
+                        <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.attachments')}</span>
+                        <span className="text-sm text-red-500 font-medium">*</span>
+                      </div>
+                      <div className="mb-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                        <p className="text-sm text-yellow-800 dark:text-yellow-200 mb-1">
+                          <strong>{t('leave.attachmentRequired')}</strong>
+                        </p>
+                        <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                          {t('leave.attachmentRequiredDesc')}
+                        </p>
+                      </div>
+                      <FileUpload
+                        attachments={attachments}
+                        onFileUpload={handleFileUpload}
+                        onRemoveAttachment={removeAttachment}
+                      />
+                    </div>
+                  )}
 
                   {/* Section: ปุ่ม */}
                   <div className="flex gap-3 pt-6">
