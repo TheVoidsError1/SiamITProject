@@ -86,7 +86,8 @@
     "close": "ปิด",
     "add": "เพิ่ม",
     "update": "อัปเดต",
-    "allMonths": "ทุกเดือน"
+    "allMonths": "ทุกเดือน",
+    "year": "ปี"
   },
   "leave": {
     "all": "ทั้งหมด",
@@ -257,6 +258,7 @@
     "intern": "เด็กฝึกงาน"
   },
   "month": {
+    "allMonths": "ทุกเดือน",
     "jan": "มกราคม",
     "feb": "กุมภาพันธ์",
     "mar": "มีนาคม",
@@ -288,7 +290,7 @@
     "approvalRate": "อัตราการอนุมัติ",
     "quickActions": "เมนูด่วน",
     "quickActionsDesc": "เข้าถึงฟังก์ชันที่ใช้บ่อย",
-    "recentLeaveStats": "สถิติการลาล่าสุด",
+    "recentLeaveStats": "การลาล่าสุด",
     "recentLeaveStatsDesc": "ภาพรวมการใช้สิทธิการลา",
     "fillCompleteInfo": "กรุณากรอกข้อมูลให้ครบถ้วน",
     "recentNotifications": "แจ้งเตือนล่าสุด",

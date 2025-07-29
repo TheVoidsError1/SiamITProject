@@ -14,6 +14,7 @@ import { SidebarTrigger } from '@/components/ui/sidebar';
 import { holidays } from "@/constants/holidays";
 import { getUpcomingThaiHolidays, getThaiHolidaysByMonth } from "@/constants/getThaiHolidays";
 import Profile from './Profile';
+import { format } from 'date-fns';
 
 const Index = () => {
   const { t, i18n } = useTranslation();
@@ -42,17 +43,16 @@ const Index = () => {
   const [leaveStats, setLeaveStats] = useState({ sick: 0, vacation: 0, business: 0 });
   const [loadingStats, setLoadingStats] = useState(true);
   const [errorStats, setErrorStats] = useState("");
-  const [recentLeaveStats, setRecentLeaveStats] = useState<Record<string, { days: number; hours: number; quota?: number }>>({});
+  const [recentLeaveStats, setRecentLeaveStats] = useState<Record<string, number>>({});
   const [loadingRecentStats, setLoadingRecentStats] = useState(true);
   const [errorRecentStats, setErrorRecentStats] = useState("");
-  // Days remaining state (now for backdated requests)
-  const [backdatedCount, setBackdatedCount] = useState<number | null>(null);
-  const [loadingBackdated, setLoadingBackdated] = useState(true);
-  const [errorBackdated, setErrorBackdated] = useState("");
-  // Days used state
-  const [daysUsed, setDaysUsed] = useState<{ days: number, hours: number } | null>(null);
-  const [loadingDaysUsed, setLoadingDaysUsed] = useState(true);
-  const [errorDaysUsed, setErrorDaysUsed] = useState("");
+  // Dashboard card states
+  const [backdatedCount, setBackdatedCount] = useState(0);
+  const [daysUsed, setDaysUsed] = useState(0);
+  const [hoursUsed, setHoursUsed] = useState(0);
+  const [pendingRequests, setPendingRequests] = useState(0);
+  const [approvalRate, setApprovalRate] = useState(0);
+  const [loadingDashboard, setLoadingDashboard] = useState(true);
   // Recent leave requests state
   const [recentLeaves, setRecentLeaves] = useState<Array<{
     leavetype: string,
@@ -71,6 +71,48 @@ const Index = () => {
   // เพิ่ม state สำหรับ totalDays/totalHours จาก recent leave stats
   const [recentTotalDays, setRecentTotalDays] = useState<number>(0);
   const [recentTotalHours, setRecentTotalHours] = useState<number>(0);
+
+  // Add state for calendar filter
+  const [filterMonth, setFilterMonth] = useState(new Date().getMonth() + 1);
+  const [filterYear, setFilterYear] = useState(new Date().getFullYear());
+
+  // Add state for user profile
+  const [userProfile, setUserProfile] = useState<{
+    name: string;
+    email: string;
+    avatar: string | null;
+    role: string;
+    department: {
+      id: string | null;
+      name_th: string;
+      name_en: string;
+    };
+    position: {
+      id: string | null;
+      name_th: string;
+      name_en: string;
+    };
+  } | null>(null);
+  const [loadingUserProfile, setLoadingUserProfile] = useState(true);
+
+  // Helper for month options
+  const monthOptions = [
+    { value: 0, label: t('months.all') },
+    { value: 1, label: t('months.1') },
+    { value: 2, label: t('months.2') },
+    { value: 3, label: t('months.3') },
+    { value: 4, label: t('months.4') },
+    { value: 5, label: t('months.5') },
+    { value: 6, label: t('months.6') },
+    { value: 7, label: t('months.7') },
+    { value: 8, label: t('months.8') },
+    { value: 9, label: t('months.9') },
+    { value: 10, label: t('months.10') },
+    { value: 11, label: t('months.11') },
+    { value: 12, label: t('months.12') },
+  ];
+  // Helper for year options (current year +/- 1)
+  const yearOptions = [filterYear - 1, filterYear, filterYear + 1];
 
   const { showSessionExpiredDialog } = useAuth();
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -113,6 +155,121 @@ const Index = () => {
       .finally(() => setLoadingStats(false));
   };
 
+  // Fetch recent leave requests and generate statistics
+  useEffect(() => {
+    setLoadingRecentLeaves(true);
+    setErrorRecentLeaves("");
+    const token = localStorage.getItem("token");
+    fetch("/api/recent-leave-requests", {
+      headers: { Authorization: token ? `Bearer ${token}` : undefined },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.status === "success" && Array.isArray(data.data)) {
+          setRecentLeaves(data.data);
+          // Summarize leave types
+          const stats = { sick: 0, vacation: 0, business: 0 };
+          data.data.forEach((l) => {
+            const type = (l.leavetype_th || l.leavetype || "").toLowerCase();
+            if (type.includes("ป่วย") || type.includes("sick")) stats.sick++;
+            else if (type.includes("พัก") || type.includes("vacation")) stats.vacation++;
+            else if (type.includes("กิจ") || type.includes("personal")) stats.business++;
+          });
+          setRecentLeaveStats(stats);
+        } else {
+          setErrorRecentLeaves(t('error.cannotLoadStats'));
+        }
+      })
+      .catch(() => setErrorRecentLeaves(t('error.apiConnectionError')))
+      .finally(() => setLoadingRecentLeaves(false));
+  }, [t]);
+
+  // Update fetch for recent leaves to use filterMonth/filterYear
+  useEffect(() => {
+    setLoadingRecentLeaves(true);
+    setErrorRecentLeaves("");
+    const token = localStorage.getItem("token");
+    let url = `/api/recent-leave-requests?year=${filterYear}`;
+    if (filterMonth && filterMonth !== 0) {
+      url += `&month=${filterMonth}`;
+    }
+    fetch(url, {
+      headers: { Authorization: token ? `Bearer ${token}` : undefined },
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.status === "success" && Array.isArray(data.data)) {
+          setRecentLeaves(data.data);
+        } else {
+          setErrorRecentLeaves(t('error.cannotLoadStats'));
+        }
+      })
+      .catch(() => setErrorRecentLeaves(t('error.apiConnectionError')))
+      .finally(() => setLoadingRecentLeaves(false));
+  }, [t, filterMonth, filterYear]);
+
+  // Fetch dashboard stats and backdated count
+  useEffect(() => {
+    setLoadingDashboard(true);
+    const token = localStorage.getItem("token");
+    // Fetch dashboard stats
+    const statsUrl = `/api/dashboard-stats?year=${filterYear}` + (filterMonth && filterMonth !== 0 ? `&month=${filterMonth}` : '');
+    const backdatedUrl = `/api/my-backdated?year=${filterYear}` + (filterMonth && filterMonth !== 0 ? `&month=${filterMonth}` : '');
+    Promise.all([
+      fetch(statsUrl, { headers: { Authorization: token ? `Bearer ${token}` : undefined } }).then(res => res.json()),
+      fetch(backdatedUrl, { headers: { Authorization: token ? `Bearer ${token}` : undefined } }).then(res => res.json())
+    ]).then(([statsRes, backdatedRes]) => {
+      if (statsRes && statsRes.status === 'success' && statsRes.data) {
+        setDaysUsed(statsRes.data.daysUsed || 0);
+        setHoursUsed(statsRes.data.hoursUsed || 0);
+        setPendingRequests(statsRes.data.pendingRequests || 0);
+        setApprovalRate(statsRes.data.approvalRate || 0);
+      }
+      if (backdatedRes && backdatedRes.status === 'success' && backdatedRes.data) {
+        setBackdatedCount(backdatedRes.data.count || 0);
+      }
+    }).finally(() => setLoadingDashboard(false));
+  }, [filterMonth, filterYear]);
+
+  // Fetch user profile
+  useEffect(() => {
+    const fetchUserProfile = async () => {
+      setLoadingUserProfile(true);
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          showSessionExpiredDialog();
+          return;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/user-profile`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.status === 'success' && data.data) {
+            setUserProfile(data.data);
+          } else {
+            console.error('Failed to fetch user profile:', data.message);
+          }
+        } else if (response.status === 401) {
+          showSessionExpiredDialog();
+        } else {
+          console.error('Failed to fetch user profile:', response.statusText);
+        }
+      } catch (error) {
+        console.error('Error fetching user profile:', error);
+      } finally {
+        setLoadingUserProfile(false);
+      }
+    };
+
+    fetchUserProfile();
+  }, [API_BASE_URL, showSessionExpiredDialog]);
+
   // Chart data for demo
   const chartData = [
     { name: t('leaveTypes.sick'), value: leaveStats.sick },
@@ -133,8 +290,8 @@ const Index = () => {
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const months = [
-    t('month.jan'), t('month.feb'), t('month.mar'), t('month.apr'), t('month.may'), t('month.jun'),
-    t('month.jul'), t('month.aug'), t('month.sep'), t('month.oct'), t('month.nov'), t('month.dec')
+    t('months.1'), t('months.2'), t('months.3'), t('months.4'), t('months.5'), t('months.6'),
+    t('months.7'), t('months.8'), t('months.9'), t('months.10'), t('months.11'), t('months.12')
   ];
   const holidaysOfMonth = getThaiHolidaysByMonth(selectedYear, selectedMonth);
   // MOCK: Announcements
@@ -174,6 +331,50 @@ const Index = () => {
         <div className="absolute bottom-0 right-0 w-[250px] h-[250px] rounded-full bg-gradient-to-tr from-purple-200 via-blue-100 to-indigo-100 opacity-20 blur-xl animate-float-slow2" />
         <div className="absolute top-1/2 left-1/2 w-24 h-24 rounded-full bg-blue-100 opacity-10 blur-xl animate-pulse-slow" style={{transform:'translate(-50%,-50%)'}} />
       </div>
+      {/* Top Bar */}
+      <div className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-20 shadow-sm">
+        <div className="flex h-14 items-center px-3 gap-3">
+          <SidebarTrigger />
+          <div className="flex-1">
+            <h1 className="text-2xl md:text-3xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-700 via-indigo-500 to-purple-500 tracking-tight drop-shadow-lg animate-fade-in-up">{t('main.leaveManagementSystem')}</h1>
+            <p className="text-sm text-blue-500 dark:text-blue-200 animate-fade-in-up delay-100">{t('main.welcomeMessage')}</p>
+          </div>
+          {/* Calendar Filter (now left of language/world icon) */}
+          <div className="flex gap-2 ml-4">
+            <select
+              className="rounded-lg border px-2 py-1 text-blue-700 bg-white/80 shadow"
+              value={filterMonth}
+              onChange={e => setFilterMonth(Number(e.target.value))}
+            >
+              {monthOptions.map(m => (
+                <option key={m.value} value={m.value}>{m.label}</option>
+              ))}
+            </select>
+            <select
+              className="rounded-lg border px-2 py-1 text-blue-700 bg-white/80 shadow"
+              value={filterYear}
+              onChange={e => setFilterYear(Number(e.target.value))}
+            >
+              {yearOptions.map(y => (
+                <option key={y} value={y}>{y + (i18n.language.startsWith('th') ? 543 : 0)} {t('common.year')}</option>
+              ))}
+            </select>
+          </div>
+          <LanguageSwitcher />
+          {/* Dark mode toggle */}
+          <button
+            className="ml-2 p-2 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
+            onClick={() => { document.documentElement.classList.toggle('dark'); }}
+            aria-label="Toggle dark mode"
+          >
+            <svg className="w-5 h-5 text-gray-700 dark:text-yellow-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path d="M12 3v1m0 16v1m8.66-13.66l-.71.71M4.05 19.07l-.71.71M21 12h-1M4 12H3m16.66 5.66l-.71-.71M4.05 4.93l-.71-.71" />
+              <circle cx="12" cy="12" r="5" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
       <div className="p-3 space-y-6 animate-fade-in">
         {/* Welcome Section */}
         <div className="relative rounded-2xl p-5 text-white overflow-hidden glass shadow-xl flex flex-col md:flex-row items-center justify-between gap-4 animate-fade-in-up bg-gradient-to-tr from-blue-100 via-indigo-200 to-purple-100">
@@ -198,33 +399,51 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Stats Grid */}
+        {/* Dashboard Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {stats.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <Card 
-                key={stat.title} 
-                className="group border-0 shadow-xl bg-white/60 backdrop-blur-lg rounded-xl flex flex-col items-center justify-center py-5 px-2 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 hover:bg-white/80 relative overflow-hidden animate-fade-in-up"
-                style={{ animationDelay: `${index * 100}ms` }}
-              >
+          {/* Backdated Requests Card */}
+          <Card className="group border-0 shadow-xl bg-white/60 backdrop-blur-lg rounded-xl flex flex-col items-center justify-center py-5 px-2 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 hover:bg-white/80 relative overflow-hidden animate-fade-in-up">
+            <div className="flex flex-col items-center justify-center gap-2">
+              <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mb-1 shadow group-hover:scale-110 transition-transform duration-200 animate-pop-in">
+                <Calendar className="w-6 h-6 text-red-400" />
+              </div>
+              <div className="text-3xl font-extrabold text-blue-800 mb-1">{loadingDashboard ? '-' : backdatedCount}</div>
+              <div className="text-base font-bold text-blue-600 mt-1 text-center opacity-90 animate-pop-in delay-200">{t('main.backdatedRequests', 'Backdated Requests')}</div>
+            </div>
+          </Card>
+          {/* Days Used Card */}
+          <Card className="group border-0 shadow-xl bg-white/60 backdrop-blur-lg rounded-xl flex flex-col items-center justify-center py-5 px-2 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 hover:bg-white/80 relative overflow-hidden animate-fade-in-up">
+            <div className="flex flex-col items-center justify-center gap-2">
+              <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center mb-1 shadow group-hover:scale-110 transition-transform duration-200 animate-pop-in">
+                <Clock className="w-6 h-6 text-green-400" />
+              </div>
+              <div className="text-3xl font-extrabold text-blue-800 mb-1">
+                {loadingDashboard ? '-' : `${daysUsed} ${t('common.days')}`}
+                {loadingDashboard ? '' : ` ${hoursUsed} ${t('common.hour')}`}
+              </div>
+              <div className="text-base font-bold text-blue-600 mt-1 text-center opacity-90 animate-pop-in delay-200">{t('main.daysUsed', 'Days Used')}</div>
+            </div>
+          </Card>
+          {/* Pending Requests Card */}
+          <Card className="group border-0 shadow-xl bg-white/60 backdrop-blur-lg rounded-xl flex flex-col items-center justify-center py-5 px-2 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 hover:bg-white/80 relative overflow-hidden animate-fade-in-up">
                 <div className="flex flex-col items-center justify-center gap-2">
-                  <div className={`w-12 h-12 ${stat.bgColor} rounded-full flex items-center justify-center mb-1 shadow group-hover:scale-110 transition-transform duration-200 animate-pop-in`}> <Icon className={`w-6 h-6 ${stat.color}`} /> </div>
-                  <div className="text-2xl font-extrabold text-blue-800 group-hover:text-blue-900 transition-colors animate-pop-in delay-100">
-                    {stat.value}
-                    <span className="text-sm font-normal text-blue-400 ml-1">{stat.unit}</span>
+              <div className="w-12 h-12 bg-orange-50 rounded-full flex items-center justify-center mb-1 shadow group-hover:scale-110 transition-transform duration-200 animate-pop-in">
+                <Users className="w-6 h-6 text-orange-400" />
                   </div>
-                  <div className="text-sm text-blue-600 font-medium mt-1 text-center opacity-90 animate-pop-in delay-200">
-                    {stat.title}
+              <div className="text-3xl font-extrabold text-blue-800 mb-1">{loadingDashboard ? '-' : pendingRequests}</div>
+              <div className="text-base font-bold text-blue-600 mt-1 text-center opacity-90 animate-pop-in delay-200">{t('main.pendingRequests', 'Pending Requests')}</div>
                   </div>
+          </Card>
+          {/* Approval Rate Card */}
+          <Card className="group border-0 shadow-xl bg-white/60 backdrop-blur-lg rounded-xl flex flex-col items-center justify-center py-5 px-2 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 hover:bg-white/80 relative overflow-hidden animate-fade-in-up">
+            <div className="flex flex-col items-center justify-center gap-2">
+              <div className="w-12 h-12 bg-purple-50 rounded-full flex items-center justify-center mb-1 shadow group-hover:scale-110 transition-transform duration-200 animate-pop-in">
+                <TrendingUp className="w-6 h-6 text-purple-400" />
                 </div>
-                {/* Glass shine effect */}
-                <div className="absolute left-0 top-0 w-full h-full pointer-events-none overflow-hidden">
-                  <div className="absolute -left-1/2 -top-1/2 w-2/3 h-2/3 bg-white/40 rounded-full blur-2xl opacity-40 group-hover:opacity-60 transition-all duration-300 animate-shine" />
+              <div className="text-3xl font-extrabold text-blue-800 mb-1">{loadingDashboard ? '-' : approvalRate + '%'}</div>
+              <div className="text-base font-bold text-blue-600 mt-1 text-center opacity-90 animate-pop-in delay-200">{t('main.approvalRate', 'Approval Rate')}</div>
                 </div>
               </Card>
-            );
-          })}
         </div>
 
         {/* --- NEW: User Summary, Notifications, Holidays, Announcements --- */}
@@ -232,17 +451,33 @@ const Index = () => {
           {/* User Summary */}
           <Card className="glass shadow-xl border-0 flex flex-col items-center justify-center p-5 animate-fade-in-up">
             <Avatar className="w-16 h-16 mb-2">
-              {user?.avatar_url ? (
-                <AvatarImage src={`${API_BASE_URL}${user.avatar_url}`} alt={user.full_name || '-'} />
+              {userProfile?.avatar ? (
+                <AvatarImage src={`${API_BASE_URL}${userProfile.avatar}`} alt={userProfile.name || '-'} />
               ) : null}
               <AvatarFallback>
-                {((user as any)?.full_name || '').split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase() || '--'}
+                {loadingUserProfile ? '...' : (userProfile?.name ? userProfile.name.split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase() : '--')}
               </AvatarFallback>
             </Avatar>
-            <div className="text-lg font-bold text-blue-900 mt-1">{(user as any)?.full_name || '-'}</div>
-            <div className="text-sm text-blue-500">{(user as any)?.position || '-'}</div>
-            <div className="text-xs text-blue-400 mb-1">{(user as any)?.department || '-'}</div>
-            <div className="text-xs text-gray-500">{(user as any)?.email || '-'}</div>
+            <div className="text-lg font-bold text-blue-900 mt-1">
+              {loadingUserProfile ? t('common.loading') : userProfile?.name || '-'}
+            </div>
+            <div className="text-sm text-blue-500">
+              {loadingUserProfile ? t('common.loading') : (
+                i18n.language.startsWith('th') 
+                  ? userProfile?.position?.name_th || userProfile?.position?.name_en || t('main.noPosition')
+                  : userProfile?.position?.name_en || userProfile?.position?.name_th || t('main.noPosition')
+              )}
+            </div>
+            <div className="text-xs text-blue-400 mb-1">
+              {loadingUserProfile ? t('common.loading') : (
+                i18n.language.startsWith('th') 
+                  ? userProfile?.department?.name_th || userProfile?.department?.name_en || t('main.noDepartment')
+                  : userProfile?.department?.name_en || userProfile?.department?.name_th || t('main.noDepartment')
+              )}
+            </div>
+            <div className="text-xs text-gray-500">
+              {loadingUserProfile ? t('common.loading') : userProfile?.email || '-'}
+            </div>
           </Card>
           {/* Company Holidays Table (replace notifications) */}
           <Card className="glass shadow-xl border-0 p-0 animate-fade-in-up">
@@ -384,7 +619,7 @@ const Index = () => {
             </CardContent>
           </Card>
 
-          {/* Recent Leave Stats */}
+          {/* Recent Leave Stats (now as a table) */}
           <Card className="border-0 shadow-xl bg-white/60 backdrop-blur-lg rounded-xl p-0 flex flex-col min-h-[180px] animate-fade-in-up">
             <CardHeader className="pb-2 flex flex-col gap-1">
               <CardTitle className="flex items-center gap-2 text-blue-700 text-lg font-bold animate-slide-in-left">
@@ -396,73 +631,55 @@ const Index = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="flex flex-col gap-2 pt-0">
-              {loadingStats ? (
+              {loadingRecentLeaves ? (
                 <div className="text-center py-6 text-gray-500 animate-pulse text-base">{t('common.loading')}</div>
-              ) : errorStats ? (
-                <div className="text-center py-6 text-red-500 animate-shake text-base">{errorStats}</div>
+              ) : errorRecentLeaves ? (
+                <div className="text-center py-6 text-red-500 animate-shake text-base">{errorRecentLeaves}</div>
+              ) : recentLeaves.length === 0 ? (
+                <div className="text-center py-6 text-blue-400 text-base">{t('main.noRecentLeaveRequests', 'ไม่มีคำขอลาล่าสุด')}</div>
               ) : (
-                <div className="space-y-2">
-                  <div className="bg-blue-50 rounded-xl p-3 animate-fade-in-up">
-                    <ResponsiveContainer width="100%" height={110}>
-                      <BarChart data={chartData} margin={{ top: 5, right: 5, left: 0, bottom: 0 }}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e0e7ef" />
-                        <XAxis dataKey="name" stroke="#60a5fa" fontSize={12} tickLine={false} axisLine={false} />
-                        <YAxis allowDecimals={false} stroke="#60a5fa" fontSize={12} tickLine={false} axisLine={false} />
-                        <Tooltip wrapperStyle={{ borderRadius: 10, background: '#fff', color: '#2563eb', fontWeight: 500, fontSize: 13 }} />
-                        <Bar dataKey="value" fill="#6366f1" radius={[8, 8, 0, 0]} isAnimationActive={true} animationDuration={900} />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </div>
-                  <div className="flex flex-col gap-1 mt-1">
-                    <div className="flex justify-between items-center text-blue-700 text-sm font-medium">
-                      <span>{t('leaveTypes.sick')}</span>
-                      <span className="font-bold text-lg">{leaveStats.sick} <span className="text-sm font-normal text-blue-400">{t('common.days')}</span></span>
-                    </div>
-                    <div className="flex justify-between items-center text-blue-700 text-sm font-medium">
-                      <span>{t('leaveTypes.vacation')}</span>
-                      <span className="font-bold text-lg">{leaveStats.vacation} <span className="text-sm font-normal text-blue-400">{t('common.days')}</span></span>
-                    </div>
-                    <div className="flex justify-between items-center text-blue-700 text-sm font-medium">
-                      <span>{t('leaveTypes.personal')}</span>
-                      <span className="font-bold text-lg">{leaveStats.business} <span className="text-sm font-normal text-blue-400">{t('common.days')}</span></span>
-                    </div>
-                  </div>
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-blue-200">
+                    <thead>
+                      <tr className="bg-blue-50">
+                        <th className="px-4 py-2 text-left text-xs font-bold text-blue-700 uppercase">{t('leave.type')}</th>
+                        <th className="px-4 py-2 text-left text-xs font-bold text-blue-700 uppercase">{t('leave.duration')}</th>
+                        <th className="px-4 py-2 text-left text-xs font-bold text-blue-700 uppercase">{t('leave.startDate')}</th>
+                        <th className="px-4 py-2 text-left text-xs font-bold text-blue-700 uppercase">{t('leave.status')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {recentLeaves.map((l, idx) => (
+                        <tr key={idx} className="bg-white even:bg-blue-50">
+                          <td className="px-4 py-2 font-medium text-blue-900">
+                            {i18n.language.startsWith('th') ? (l.leavetype_th || l.leavetype) : (l.leavetype_en || l.leavetype)}
+                          </td>
+                          <td className="px-4 py-2 text-blue-800">
+                            {(() => {
+                              if (!l.duration) return '-';
+                              // Replace 'day' or 'days' with translation
+                              const match = l.duration.match(/(\d+)\s*day/);
+                              if (match) {
+                                return `${match[1]} ${t('common.days')}`;
+                              }
+                              return l.duration;
+                            })()}
+                          </td>
+                          <td className="px-4 py-2 text-blue-800">
+                            {l.startdate ? format(new Date(l.startdate), 'dd/MM/yyyy') : '-'}
+                          </td>
+                          <td className="px-4 py-2">
+                            <span className={`text-xs font-bold rounded-full px-3 py-1 ${l.status === 'approved' ? 'bg-green-100 text-green-600' : l.status === 'pending' ? 'bg-yellow-100 text-yellow-600' : 'bg-red-100 text-red-600'}`}>{l.status === 'approved' ? t('leave.approved') : l.status === 'pending' ? t('leave.pending') : t('leave.rejected')}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
             </CardContent>
           </Card>
         </div>
-        {/* Recent Leave Requests */}
-        <Card className="glass shadow-xl border-0 animate-fade-in-up mt-4">
-          <CardHeader className="pb-2">
-            <CardTitle className="flex items-center gap-2 text-blue-700 text-lg font-bold animate-slide-in-left">
-              <Clock className="w-5 h-5 text-blue-500" />
-              {t('main.recentLeaveRequests') || 'คำขอลาล่าสุด'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-2 pt-0">
-            {loadingRecentLeaves ? (
-              <div className="text-center py-6 text-gray-500 animate-pulse text-base">{t('common.loading')}</div>
-            ) : errorRecentLeaves ? (
-              <div className="text-center py-6 text-red-500 animate-shake text-base">{errorRecentLeaves}</div>
-            ) : recentLeaves.length === 0 ? (
-              <div className="text-center py-6 text-blue-400 text-base">{t('main.noRecentLeaveRequests', 'ไม่มีคำขอลาล่าสุด')}</div>
-            ) : (
-              recentLeaves.map((l, idx) => (
-                <div key={idx} className={`flex items-center gap-3 p-3 rounded-xl glass bg-gradient-to-br from-white/80 via-blue-50/80 to-indigo-100/80 shadow border-0 animate-pop-in`} style={{ animationDelay: `${idx * 60}ms` }}>
-                  <span className="w-8 h-8 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 font-bold text-base">
-                    {l.leavetype ? l.leavetype[0] : '?'}
-                  </span>
-                  <div className="flex-1">
-                    <div className="font-semibold text-sm text-blue-900">{l.leavetype || '-'}</div>
-                    <div className="text-xs text-gray-500">{l.startdate || '-'}</div>
-                  </div>
-                  <span className={`text-xs font-bold rounded-full px-3 py-1 ${l.status === 'approved' ? 'bg-green-100 text-green-600' : l.status === 'pending' ? 'bg-yellow-100 text-yellow-600' : 'bg-red-100 text-red-600'}`}>{l.status === 'approved' ? t('leave.approved') : l.status === 'pending' ? t('leave.pending') : t('leave.rejected')}</span>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
         <style>{`
           .btn-blue-outline-lg {
             border: 1.5px solid #3b82f6;
