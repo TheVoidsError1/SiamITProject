@@ -1,8 +1,6 @@
-import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, User, Users } from "lucide-react";
@@ -42,7 +40,7 @@ const EmployeeManagement = () => {
   const [departments, setDepartments] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 4;
+  const itemsPerPage = 6; // เพิ่มจำนวนแถวต่อหน้า
   const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [pendingPositionFilter, setPendingPositionFilter] = useState<string>("");
@@ -232,8 +230,8 @@ const EmployeeManagement = () => {
             })}
           </div>
           {/* Employee List */}
-          <Card className="glass shadow-2xl border-0 animate-fade-in-up">
-            <CardHeader className="bg-gradient-to-r from-blue-500 via-indigo-400 to-purple-400 text-white rounded-t-2xl p-5 shadow-lg">
+          <Card className="glass shadow-2xl border-0 animate-fade-in-up h-[650px] flex flex-col">
+            <CardHeader className="bg-gradient-to-r from-blue-500 via-indigo-400 to-purple-400 text-white rounded-t-2xl p-5 shadow-lg flex-shrink-0">
               <CardTitle className="flex items-center gap-3 text-2xl font-bold animate-slide-in-left">
                 <Users className="w-6 h-6" />
                 {t('system.employeeList')}
@@ -242,9 +240,9 @@ const EmployeeManagement = () => {
                 {t('system.allEmployeesInterns')}
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-0">
+            <CardContent className="p-0 flex-1 flex flex-col">
               {/* Filter Bar */}
-              <div className="flex flex-nowrap gap-3 px-6 pt-6 pb-2 items-end">
+              <div className="flex flex-nowrap gap-3 px-6 pt-6 pb-2 items-end flex-shrink-0">
                 <div className="flex flex-col">
                   <label className="text-xs text-gray-500 font-semibold mb-1" htmlFor="position-filter">{t('auth.position')}</label>
                   <select
@@ -290,9 +288,9 @@ const EmployeeManagement = () => {
                     <option value="user">{t('system.employee')}</option>
                   </select>
                 </div>
-                <div className="flex gap-2 items-end h-full shrink-0">
+                <div className="flex gap-3 items-end h-full shrink-0">
                   <button
-                    className="min-h-[44px] min-w-[110px] px-6 py-2 rounded-lg font-bold bg-blue-600 text-white shadow hover:bg-blue-700 transition h-full"
+                    className="min-h-[42px] min-w-[100px] px-5 py-2.5 rounded-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-500 text-white shadow-lg hover:from-blue-700 hover:to-indigo-600 hover:shadow-xl transition-all duration-200 transform hover:scale-105 text-sm"
                     onClick={() => {
                       setPositionFilter(pendingPositionFilter);
                       setDepartmentFilter(pendingDepartmentFilter);
@@ -302,7 +300,7 @@ const EmployeeManagement = () => {
                     {t('common.confirm', 'ยืนยัน')}
                   </button>
                   <button
-                    className="min-h-[44px] min-w-[90px] px-5 py-2 rounded-lg font-bold border border-blue-400 text-blue-600 bg-white hover:bg-blue-50 transition h-full"
+                    className="min-h-[42px] min-w-[90px] px-4 py-2.5 rounded-lg font-bold border-2 border-blue-400 text-blue-600 bg-white hover:bg-blue-50 hover:border-blue-500 hover:shadow-md transition-all duration-200 transform hover:scale-105 text-sm"
                     onClick={() => {
                       setPendingPositionFilter("");
                       setPendingDepartmentFilter("");
@@ -317,105 +315,107 @@ const EmployeeManagement = () => {
                 </div>
               </div>
               {loading ? (
-                <div className="text-lg text-center py-10">{t('common.loading')}</div>
+                <div className="text-lg text-center py-10 flex-1 flex items-center justify-center">{t('common.loading')}</div>
               ) : (
-                <div className="overflow-x-auto w-full">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 text-sm">
-                        <th className="px-3 py-2 text-left font-bold text-blue-900">{t('auth.fullName')}</th>
-                        <th className="px-3 py-2 text-left font-bold text-blue-900">{t('auth.email')}</th>
-                        <th className="px-3 py-2 text-left font-bold text-blue-900">{t('auth.position')}</th>
-                        <th className="px-3 py-2 text-left font-bold text-blue-900">{t('auth.department')}</th>
-                        <th className="px-3 py-2 text-left font-bold text-blue-900">{t('common.status')}</th>
-                        <th className="px-3 py-2 text-center font-bold text-blue-900">{t('system.management')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {paginatedEmployees.map((employee, idx) => (
-                        <tr
-                          key={employee.id}
-                          className="transition hover:bg-blue-50/60 group animate-fade-in-up text-sm"
-                          style={{ animationDelay: `${idx * 60}ms` }}
-                        >
-                          <td className="px-3 py-2 whitespace-nowrap flex items-center gap-2">
-                            {/* Avatar with image or initials */}
-                            {employee.avatar ? (
-                              <img
-                                src={employee.avatar}
-                                alt={employee.full_name}
-                                className="w-8 h-8 rounded-full object-cover shadow-md border border-blue-200"
-                              />
-                            ) : (
-                              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-200 via-indigo-200 to-purple-200 flex items-center justify-center text-blue-900 font-bold text-base shadow-md">
-                                {employee.full_name ? employee.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : '?'}
-                              </div>
-                            )}
-                            <span className="font-semibold text-blue-900 text-sm">{employee.full_name}</span>
-                          </td>
-                          <td className="px-3 py-2 text-blue-700 text-sm">{employee.email}</td>
-                          <td className="px-3 py-2 text-blue-700 text-sm">{getPositionName(employee.position)}</td>
-                          <td className="px-3 py-2 text-blue-700 text-sm">{getDepartmentName(employee.department)}</td>
-                          <td className="px-3 py-2">
-                            {employee.role === 'superadmin' ? (
-                              <span className="text-xs px-2 py-0.5 rounded-full border border-purple-300 bg-purple-50 text-purple-700 font-bold shadow-sm" style={{letterSpacing:0.5}}>
-                                Superadmin
-                              </span>
-                            ) : employee.role === 'admin' ? (
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-blue-500 to-indigo-400 text-white font-bold shadow-sm">
-                                ผู้ดูแลระบบ
-                              </span>
-                            ) : (
-                              <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold shadow-sm">
-                                พนักงาน
-                              </span>
-                            )}
-                          </td>
-                          <td className="px-3 py-2 text-center flex gap-1 justify-center">
-                            <Button asChild size="sm" variant="secondary" className="rounded-full px-2 py-1 font-bold bg-gradient-to-r from-blue-500 to-indigo-400 text-white shadow hover:scale-105 transition text-xs">
-                              <Link to={`/admin/employees/${employee.id}?role=${employee.role}`}> 
-                                <Eye className="w-4 h-4 mr-1" />
-                                {t('system.seeDetails')}
-                              </Link>
-                            </Button>
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  className="rounded-full px-2 py-1 font-bold bg-gradient-to-r from-red-500 to-pink-400 text-white shadow hover:scale-105 transition flex items-center gap-1 text-xs"
-                                  onClick={() => setDeleteTarget(employee)}
-                                >
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m5 0H6" /></svg>
-                                  {t('common.delete', 'ลบ')}
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>{t('system.confirmDelete', 'ยืนยันการลบ')}</AlertDialogTitle>
-                                  <AlertDialogDescription>{t('system.confirmDeleteDesc', 'คุณแน่ใจหรือไม่ว่าต้องการลบผู้ใช้งานนี้?')}</AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>{t('common.cancel', 'ยกเลิก')}</AlertDialogCancel>
-                                  <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-gradient-to-r from-red-500 to-pink-400 text-white">
-                                    {deleting ? t('common.loading', 'กำลังลบ...') : t('common.delete', 'ลบ')}
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </td>
+                <div className="flex-1 flex flex-col overflow-hidden">
+                  <div className="flex-1 overflow-auto min-h-0">
+                    <table className="w-full">
+                      <thead className="sticky top-0 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 z-10">
+                        <tr className="text-sm">
+                          <th className="px-3 py-2 text-left font-bold text-blue-900">{t('auth.fullName')}</th>
+                          <th className="px-3 py-2 text-left font-bold text-blue-900">{t('auth.email')}</th>
+                          <th className="px-3 py-2 text-left font-bold text-blue-900">{t('auth.position')}</th>
+                          <th className="px-3 py-2 text-left font-bold text-blue-900">{t('auth.department')}</th>
+                          <th className="px-3 py-2 text-left font-bold text-blue-900">{t('common.status')}</th>
+                          <th className="px-3 py-2 text-center font-bold text-blue-900">{t('system.management')}</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody>
+                        {paginatedEmployees.map((employee, idx) => (
+                          <tr
+                            key={employee.id}
+                            className="transition hover:bg-blue-50/60 group animate-fade-in-up text-sm"
+                            style={{ animationDelay: `${idx * 60}ms` }}
+                          >
+                            <td className="px-3 py-2 whitespace-nowrap flex items-center gap-2">
+                              {/* Avatar with image or initials */}
+                              {employee.avatar ? (
+                                <img
+                                  src={employee.avatar}
+                                  alt={employee.full_name}
+                                  className="w-8 h-8 rounded-full object-cover shadow-md border border-blue-200"
+                                />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-200 via-indigo-200 to-purple-200 flex items-center justify-center text-blue-900 font-bold text-base shadow-md">
+                                  {employee.full_name ? employee.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : '?'}
+                                </div>
+                              )}
+                              <span className="font-semibold text-blue-900 text-sm">{employee.full_name}</span>
+                            </td>
+                            <td className="px-3 py-2 text-blue-700 text-sm">{employee.email}</td>
+                            <td className="px-3 py-2 text-blue-700 text-sm">{getPositionName(employee.position)}</td>
+                            <td className="px-3 py-2 text-blue-700 text-sm">{getDepartmentName(employee.department)}</td>
+                            <td className="px-3 py-2">
+                              {employee.role === 'superadmin' ? (
+                                <span className="text-xs px-2 py-0.5 rounded-full border border-purple-300 bg-purple-50 text-purple-700 font-bold shadow-sm" style={{letterSpacing:0.5}}>
+                                  Superadmin
+                                </span>
+                              ) : employee.role === 'admin' ? (
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-blue-500 to-indigo-400 text-white font-bold shadow-sm">
+                                  ผู้ดูแลระบบ
+                                </span>
+                              ) : (
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold shadow-sm">
+                                  พนักงาน
+                                </span>
+                              )}
+                            </td>
+                            <td className="px-3 py-2 text-center flex gap-1 justify-center">
+                              <Button asChild size="sm" variant="secondary" className="rounded-full px-2 py-1 font-bold bg-gradient-to-r from-blue-500 to-indigo-400 text-white shadow hover:scale-105 transition text-xs">
+                                <Link to={`/admin/employees/${employee.id}?role=${employee.role}`}> 
+                                  <Eye className="w-4 h-4 mr-1" />
+                                  {t('system.seeDetails')}
+                                </Link>
+                              </Button>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button
+                                    size="sm"
+                                    variant="destructive"
+                                    className="rounded-full px-2 py-1 font-bold bg-gradient-to-r from-red-500 to-pink-400 text-white shadow hover:scale-105 transition flex items-center gap-1 text-xs"
+                                    onClick={() => setDeleteTarget(employee)}
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m5 0H6" /></svg>
+                                    {t('common.delete', 'ลบ')}
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>{t('system.confirmDelete', 'ยืนยันการลบ')}</AlertDialogTitle>
+                                    <AlertDialogDescription>{t('system.confirmDeleteDesc', 'คุณแน่ใจหรือไม่ว่าต้องการลบผู้ใช้งานนี้?')}</AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>{t('common.cancel', 'ยกเลิก')}</AlertDialogCancel>
+                                    <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-gradient-to-r from-red-500 to-pink-400 text-white">
+                                      {deleting ? t('common.loading', 'กำลังลบ...') : t('common.delete', 'ลบ')}
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                   {/* Pagination */}
                   {totalPages > 1 && (
-                    <div className="flex justify-center mt-6 gap-2">
+                    <div className="flex justify-center mt-4 gap-2 flex-shrink-0 pb-6">
                       {Array.from({ length: totalPages }, (_, idx) => idx + 1).map((page) => (
                         <button
                           key={page}
                           onClick={() => setCurrentPage(page)}
-                          className={`px-3 py-1.5 rounded-full border text-base font-bold shadow transition-all duration-200 ${currentPage === page ? 'bg-gradient-to-r from-blue-500 to-indigo-400 text-white border-blue-400 scale-110' : 'bg-white text-blue-600 border-blue-200 hover:bg-blue-50'}`}
+                          className={`px-4 py-2 rounded-full border text-sm font-bold shadow-lg transition-all duration-200 hover:scale-105 ${currentPage === page ? 'bg-gradient-to-r from-blue-500 to-indigo-400 text-white border-blue-400 scale-110 shadow-blue-200' : 'bg-white text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300'}`}
                         >
                           {page}
                         </button>
