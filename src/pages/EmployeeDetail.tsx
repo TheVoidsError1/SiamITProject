@@ -288,6 +288,15 @@ const EmployeeDetail = () => {
     return i18n.language.startsWith('th') ? found.leave_type_th : found.leave_type_en;
   };
 
+  // ฟังก์ชันตรวจสอบว่าลาย้อนหลังหรือไม่
+  const isBackdatedLeave = (leave) => {
+    if (!leave.startDate) return false;
+    const startDate = new Date(leave.startDate);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // ตั้งเวลาเป็น 00:00:00
+    return startDate < today;
+  };
+
   const [deleteLeaveId, setDeleteLeaveId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -396,7 +405,7 @@ const EmployeeDetail = () => {
         </div>
       </div>
       <div className="p-6 animate-fade-in">
-        <div className="max-w-4xl mx-auto space-y-8">
+        <div className="max-w-4xl mx-auto space-y-6">
           {/* Personal Info Card */}
           <Card className="glass shadow-2xl border-0 animate-fade-in-up">
             <CardHeader className="bg-gradient-to-r from-blue-500 via-indigo-400 to-purple-400 text-white rounded-t-2xl p-5 shadow-lg">
@@ -542,118 +551,169 @@ const EmployeeDetail = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="overflow-x-auto p-6">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t('leave.type')}</TableHead>
-                      <TableHead>{t('leave.date')}</TableHead>
-                      <TableHead>{t('leave.duration') || 'จำนวนวัน'}</TableHead>
-                      <TableHead>{t('leave.reason')}</TableHead>
-                      <TableHead>{t('leave.status')}</TableHead>
-                      <TableHead>{t('leave.submittedDate')}</TableHead>
-                      <TableHead className="text-center">{t('common.actions') || 'การจัดการ'}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {leaveHistory.map((leave, idx) => (
-                      <TableRow key={leave.id} className="hover:bg-blue-50/60 group animate-fade-in-up" style={{ animationDelay: `${idx * 60}ms` }}>
-                        <TableCell className="font-medium text-blue-900">{getLeaveTypeLabel(leave.leaveType)}</TableCell>
-                        <TableCell className="text-blue-700">
-                          {(() => {
-                            if (leave.startDate && leave.endDate) {
-                              const start = new Date(leave.startDate);
-                              const end = new Date(leave.endDate);
-                              const isSameDay = start.toDateString() === end.toDateString();
-                              const locale = i18n.language.startsWith('th') ? th : undefined;
-                              if (isSameDay) {
-                                return format(start, 'dd MMM yyyy', { locale });
-                              } else {
-                                return `${format(start, 'dd MMM', { locale })} - ${format(end, 'dd MMM yyyy', { locale })}`;
-                              }
-                            } else if (leave.startDate) {
-                              const start = new Date(leave.startDate);
-                              const locale = i18n.language.startsWith('th') ? th : undefined;
-                              return format(start, 'dd MMM yyyy', { locale });
-                            } else {
-                              return '-';
-                            }
-                          })()}
-                        </TableCell>
-                        <TableCell className="text-blue-700">
-                          {(() => {
-                            if (leave.durationType === 'day') {
-                              const days = Math.floor(Number(leave.duration));
-                              const hours = Math.round((Number(leave.duration) - days) * 24);
-                              if (days > 0 && hours > 0) {
-                                return `${days} ${t(days === 1 ? 'leave.day' : 'leave.days')} ${hours} ${t(hours === 1 ? 'leave.hour' : 'leave.hours')}`;
-                              } else if (days > 0) {
-                                return `${days} ${t(days === 1 ? 'leave.day' : 'leave.days')}`;
-                              } else if (hours > 0) {
-                                return `${hours} ${t(hours === 1 ? 'leave.hour' : 'leave.hours')}`;
-                              } else {
-                                return '-';
-                              }
-                            } else if (leave.durationType === 'hour') {
-                              return `${Number(leave.duration)} ${t(Number(leave.duration) === 1 ? 'leave.hour' : 'leave.hours')}`;
-                            } else {
-                              return '-';
-                            }
-                          })()}
-                        </TableCell>
-                        <TableCell className="max-w-xs truncate text-blue-700">{leave.reason}</TableCell>
-                        <TableCell>
-                          <Badge className={
-                            leave.status === 'approved' ? 'bg-green-100 text-green-800 border-green-200' :
-                            leave.status === 'pending' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
-                            'bg-red-100 text-red-700 border-red-200'
-                          }>
-                            {leave.status === 'approved' ? t('leave.approved') : leave.status === 'pending' ? t('leave.pending') : t('leave.rejected')}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-blue-700">
-                          {leave.submittedDate ? format(new Date(leave.submittedDate), "dd MMM yyyy", { locale: th }) : ''}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="rounded-full px-4 py-2 font-bold border-blue-200 text-blue-700 hover:bg-blue-50 shadow"
-                            onClick={() => handleViewLeaveDetails(leave)}
-                          >
-                            <Eye className="w-4 h-4 mr-1" />{t('common.viewDetails')}
-                          </Button>
-                        </TableCell>
+              <div className="p-3">
+                <Table className="w-full">
+                                      <TableHeader className="bg-gray-50">
+                      <TableRow className="border-b border-gray-200">
+                        <TableHead className="w-[13%] font-semibold text-gray-700 whitespace-nowrap">{t('leave.type')}</TableHead>
+                        <TableHead className="w-[16%] font-semibold text-gray-700 whitespace-nowrap">{t('leave.date')}</TableHead>
+                        <TableHead className="w-[7%] font-semibold text-gray-700 whitespace-nowrap">{t('leave.duration') || 'จำนวนวัน'}</TableHead>
+                        <TableHead className="w-[38%] font-semibold text-gray-700 whitespace-nowrap">{t('leave.reason')}</TableHead>
+                        <TableHead className="w-[8%] font-semibold text-gray-700 whitespace-nowrap">{t('leave.status')}</TableHead>
+                        <TableHead className="w-[10%] font-semibold text-gray-700 whitespace-nowrap">{t('leave.submittedDate')}</TableHead>
+                        <TableHead className="w-[8%] text-center font-semibold text-gray-700 whitespace-nowrap">{t('common.actions') || 'การจัดการ'}</TableHead>
                       </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {leaveHistory.map((leave, idx) => (
+                        <TableRow key={leave.id} className="hover:bg-blue-50/60 group animate-fade-in-up border-b border-gray-100" style={{ animationDelay: `${idx * 60}ms` }}>
+                          <TableCell className="font-medium text-blue-900 px-3 py-2">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-sm whitespace-nowrap">{getLeaveTypeLabel(leave.leaveType)}</span>
+                              {isBackdatedLeave(leave) && (
+                                <Badge className="bg-red-100 text-red-700 border-red-200 text-xs px-1.5 py-0.5 w-fit whitespace-nowrap">
+                                  {t('leave.backdated', 'ลาย้อนหลัง')}
+                                </Badge>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-blue-700 px-3 py-2">
+                            {(() => {
+                              if (leave.startDate && leave.endDate) {
+                                const start = new Date(leave.startDate);
+                                const end = new Date(leave.endDate);
+                                const isSameDay = start.toDateString() === end.toDateString();
+                                const locale = i18n.language.startsWith('th') ? th : undefined;
+                                if (isSameDay) {
+                                  return <span className="font-medium text-sm whitespace-nowrap">{format(start, 'dd MMM yyyy', { locale })}</span>;
+                                } else {
+                                  return (
+                                    <div className="flex flex-col">
+                                      <span className="font-medium text-sm">{format(start, 'dd MMM', { locale })} -</span>
+                                      <span className="font-medium text-sm">{format(end, 'dd MMM yyyy', { locale })}</span>
+                                    </div>
+                                  );
+                                }
+                              } else if (leave.startDate) {
+                                const start = new Date(leave.startDate);
+                                const locale = i18n.language.startsWith('th') ? th : undefined;
+                                return <span className="font-medium text-sm whitespace-nowrap">{format(start, 'dd MMM yyyy', { locale })}</span>;
+                              } else {
+                                return <span className="text-gray-400">-</span>;
+                              }
+                            })()}
+                          </TableCell>
+                          <TableCell className="text-blue-700 px-3 py-2">
+                            {(() => {
+                              if (leave.durationType === 'day') {
+                                const days = Math.floor(Number(leave.duration));
+                                const hours = Math.round((Number(leave.duration) - days) * 24);
+                                if (days > 0 && hours > 0) {
+                                  return <span className="font-medium text-sm whitespace-nowrap">{days} {t(days === 1 ? 'leave.day' : 'leave.days')} {hours} {t(hours === 1 ? 'leave.hour' : 'leave.hours')}</span>;
+                                } else if (days > 0) {
+                                  return <span className="font-medium text-sm whitespace-nowrap">{days} {t(days === 1 ? 'leave.day' : 'leave.days')}</span>;
+                                } else if (hours > 0) {
+                                  return <span className="font-medium text-sm whitespace-nowrap">{hours} {t(hours === 1 ? 'leave.hour' : 'leave.hours')}</span>;
+                                } else {
+                                  return <span className="text-gray-400">-</span>;
+                                }
+                              } else if (leave.durationType === 'hour') {
+                                return <span className="font-medium text-sm whitespace-nowrap">{Number(leave.duration)} {t(Number(leave.duration) === 1 ? 'leave.hour' : 'leave.hours')}</span>;
+                              } else {
+                                return <span className="text-gray-400">-</span>;
+                              }
+                            })()}
+                          </TableCell>
+                          <TableCell className="text-blue-700 px-3 py-2">
+                            <div className="pr-1">
+                              <div className="break-words" title={leave.reason}>
+                                {leave.reason || <span className="text-gray-400">-</span>}
+                              </div>
+                              {leave.reason && leave.reason.length > 50 && (
+                                <span className="text-xs text-gray-500 block mt-1">
+                                  {leave.reason.length} {t('common.characters', 'ตัวอักษร')}
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell className="px-3 py-2">
+                            <Badge className={
+                              leave.status === 'approved' ? 'bg-green-100 text-green-800 border-green-200 text-xs px-2 py-0.5 whitespace-nowrap' :
+                              leave.status === 'pending' ? 'bg-yellow-100 text-yellow-700 border-yellow-200 text-xs px-2 py-0.5 whitespace-nowrap' :
+                              'bg-red-100 text-red-700 border-red-200 text-xs px-2 py-0.5 whitespace-nowrap'
+                            }>
+                              {leave.status === 'approved' ? t('leave.approved') : leave.status === 'pending' ? t('leave.pending') : t('leave.rejected')}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-blue-700 px-3 py-2">
+                            {leave.submittedDate ? (
+                              <span className="font-medium text-sm whitespace-nowrap">{format(new Date(leave.submittedDate), "dd MMM yyyy", { locale: th })}</span>
+                            ) : (
+                              <span className="text-gray-400">-</span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-center px-3 py-2">
+                            <div className="flex justify-center">
+                              <Button
+                                size="sm"
+                                variant="secondary"
+                                className="rounded-full px-2 py-1 font-bold bg-gradient-to-r from-blue-500 to-indigo-400 text-white shadow hover:scale-105 transition text-xs"
+                                onClick={() => handleViewLeaveDetails(leave)}
+                              >
+                                <Eye className="w-4 h-4 mr-1" />
+                                {t('common.viewDetails')}
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {leaveHistory.length === 0 && (
+                        <TableRow>
+                          <TableCell colSpan={7} className="text-center py-6 text-gray-500">
+                            <div className="flex flex-col items-center gap-2">
+                              <Calendar className="w-6 h-6 text-gray-300" />
+                              <span className="text-sm">{t('leave.noHistory', 'ไม่มีประวัติการลา')}</span>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+              {leaveTotalPages > 1 && leaveHistory.length > 0 && (
+                <div className="flex justify-center items-center mt-4 gap-2 p-3 bg-gray-50 rounded-lg">
+                  <span className="text-sm text-gray-600 mr-2">
+                    {t('common.page', 'หน้า')} {leavePage} {t('common.of', 'จาก')} {leaveTotalPages}
+                  </span>
+                  <div className="flex gap-1">
+                    {Array.from({ length: leaveTotalPages }, (_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setLeavePage(i + 1)}
+                        className={`px-2.5 py-1 rounded-md border text-sm font-medium transition-all duration-200 ${
+                          leavePage === i + 1 
+                            ? 'bg-blue-600 text-white border-blue-600 shadow-md' 
+                            : 'bg-white text-blue-600 border-blue-300 hover:bg-blue-50 hover:border-blue-400'
+                        }`}
+                        disabled={leavePage === i + 1}
+                      >
+                        {i + 1}
+                      </button>
                     ))}
-                  </TableBody>
-                </Table>
-              </div>
-            </CardContent>
-            {leaveTotalPages > 1 && leaveHistory.length > 0 && (
-              <div className="flex justify-center mt-4 gap-1">
-                {Array.from({ length: leaveTotalPages }, (_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setLeavePage(i + 1)}
-                    className={`px-2 py-1 rounded border text-sm ${leavePage === i + 1 ? 'bg-blue-600 text-white' : 'bg-white text-blue-600 border-blue-300'} transition`}
-                    disabled={leavePage === i + 1}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
-              </div>
-            )}
-          </Card>
+                  </div>
+                </div>
+              )}
+            </Card>
+          </div>
         </div>
+        <LeaveDetailDialog
+          open={leaveDialogOpen}
+          onOpenChange={setLeaveDialogOpen}
+          leaveRequest={selectedLeave}
+        />
       </div>
-      <LeaveDetailDialog
-        open={leaveDialogOpen}
-        onOpenChange={setLeaveDialogOpen}
-        leaveRequest={selectedLeave}
-      />
-    </div>
-  );
-}
-
-export default EmployeeDetail;
+    );
+  }
+  
+  export default EmployeeDetail;

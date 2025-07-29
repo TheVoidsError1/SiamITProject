@@ -87,7 +87,10 @@
     "add": "เพิ่ม",
     "update": "อัปเดต",
     "allMonths": "ทุกเดือน",
-    "year": "ปี"
+    "year": "ปี",
+    "characters": "ตัวอักษร",
+    "page": "หน้า",
+    "of": "จาก"
   },
   "leave": {
     "all": "ทั้งหมด",
@@ -183,6 +186,13 @@
     "selectDurationType": "เลือกประเภทระยะเวลา",
     "backdated": "ลาย้อนหลัง",
     "backdatedNotice": "ใบลานี้เป็นการลาย้อนหลัง",
+    "singleDay": "วันเดียว",
+    "multipleDays": "หลายวัน",
+    "submitted": "ส่งแล้ว",
+    "approvedStatus": "อนุมัติแล้ว",
+    "pendingStatus": "รอการอนุมัติ",
+    "rejectedStatus": "ไม่อนุมัติ",
+    "noHistory": "ไม่มีประวัติการลา",
     "contactMethod": "ช่องทางการติดต่อ",
     "backdatedFilter": "ย้อนหลัง/ไม่ย้อนหลัง",
     "allBackdated": "ทั้งหมด",
