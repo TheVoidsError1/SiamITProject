@@ -107,9 +107,20 @@ const EmployeeDetail = () => {
     params.push(`page=${leavePage}`);
     params.push(`limit=6`);
     const query = params.length > 0 ? `?${params.join("&")}` : "";
+    
+    // เพิ่ม debug log
+    console.log('🔍 Fetching leave history with params:', params);
+    console.log('🔍 filterBackdated value:', filterBackdated);
+    console.log('🔍 Full URL:', `${API_BASE_URL}/api/employee/${id}/leave-history${query}`);
+    
     fetch(`${API_BASE_URL}/api/employee/${id}/leave-history${query}`)
       .then(res => res.json())
       .then(data => {
+        // เพิ่ม debug log
+        console.log('📥 Response from backend:', data);
+        console.log('📥 leaveHistory data length:', data.data?.length);
+        console.log('📥 Each leave backdated value:', data.data?.map(l => ({ id: l.id, backdated: l.backdated, leaveType: l.leaveType })));
+        
         if (data.success) {
           setLeaveHistory(data.data);
           setLeaveTotalPages(data.totalPages || 1);
@@ -120,7 +131,8 @@ const EmployeeDetail = () => {
           setLeaveSummary(null); // <--- reset summary
         }
       })
-      .catch(() => {
+      .catch((error) => {
+        console.error('❌ Error fetching leave history:', error);
         setLeaveHistory([]);
         setLeaveTotalPages(1);
         setLeaveSummary(null); // <--- reset summary
@@ -129,6 +141,12 @@ const EmployeeDetail = () => {
 
   // useEffect สำหรับ fetch leaveHistory เฉพาะเมื่อ filter จริง (active) เปลี่ยน
   useEffect(() => {
+    // เพิ่ม debug log
+    console.log('🔄 useEffect triggered');
+    console.log('🔄 filterBackdated:', filterBackdated);
+    console.log('🔄 filterType:', filterType);
+    console.log('🔄 filterStatus:', filterStatus);
+    
     fetchLeaveHistory();
     // eslint-disable-next-line
   }, [id, t, filterType, filterMonth, filterYear, filterStatus, filterBackdated, leavePage]);
@@ -300,11 +318,8 @@ const EmployeeDetail = () => {
 
   // ฟังก์ชันตรวจสอบว่าลาย้อนหลังหรือไม่
   const isBackdatedLeave = (leave) => {
-    if (!leave.startDate) return false;
-    const startDate = new Date(leave.startDate);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // ตั้งเวลาเป็น 00:00:00
-    return startDate < today;
+    // ใช้ค่า backdated จาก backend แทนการคำนวณจากวันที่
+    return Number(leave.backdated) === 1;
   };
 
   const [deleteLeaveId, setDeleteLeaveId] = useState<string | null>(null);
@@ -683,6 +698,12 @@ const EmployeeDetail = () => {
                     </Button>
                     <Button
                       onClick={() => {
+                        // เพิ่ม debug log
+                        console.log('🔘 Confirm button clicked');
+                        console.log('🔘 pendingFilterBackdated:', pendingFilterBackdated);
+                        console.log('🔘 pendingFilterType:', pendingFilterType);
+                        console.log('🔘 pendingFilterStatus:', pendingFilterStatus);
+                        
                         setFilterType(pendingFilterType);
                         setFilterMonth(pendingFilterMonth);
                         setFilterYear(pendingFilterYear);
@@ -713,7 +734,11 @@ const EmployeeDetail = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {leaveHistory.map((leave, idx) => (
+                    {leaveHistory.map((leave, idx) => {
+                      // เพิ่ม debug log
+                      console.log(`🎨 Rendering leave ${idx}:`, { id: leave.id, backdated: leave.backdated, leaveType: leave.leaveType });
+                      
+                      return (
                         <TableRow key={leave.id} className="hover:bg-blue-50/60 group animate-fade-in-up border-b border-gray-100" style={{ animationDelay: `${idx * 60}ms` }}>
                           <TableCell className="font-medium text-blue-900 px-4 py-3">
                             <div className="flex items-center gap-2">
@@ -818,7 +843,8 @@ const EmployeeDetail = () => {
                             </div>
                         </TableCell>
                       </TableRow>
-                    ))}
+                      );
+                    })}
                       {leaveHistory.length === 0 && (
                         <TableRow>
                           <TableCell colSpan={7} className="text-center py-6 text-gray-500">
