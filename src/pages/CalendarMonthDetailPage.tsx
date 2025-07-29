@@ -19,7 +19,7 @@ const CalendarMonthDetailPage = () => {
   const params = useParams();
   const year = Number(params.year) || new Date().getFullYear();
   const month = Number(params.month) - 1 || new Date().getMonth();
-  const holidays = getThaiHolidaysByMonth(year, month);
+  const holidays = getThaiHolidaysByMonth(year, month, t);
   const holidayMap: Record<string, string> = {};
   holidays.forEach(h => { holidayMap[h.date] = h.name; });
   const days = getDaysInMonth(year, month);
@@ -85,11 +85,30 @@ const CalendarMonthDetailPage = () => {
                   {week.map((d, dIdx) => {
                     if (!d) return <td key={dIdx} className="py-1"> </td>;
                     const dateStr = `${year}-${(month+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}`;
-                    const isHoliday = holidayMap[dateStr];
+                    
+                    // Check for holiday using multiple date formats (including with time)
+                    const isHoliday = holidayMap[dateStr] || 
+                                     holidayMap[`${year}-${month+1}-${d}`] ||
+                                     holidayMap[`${year}-${(month+1).toString().padStart(2,'0')}-${d}`] ||
+                                     holidayMap[`${dateStr} 00:00:00`] ||
+                                     holidayMap[`${year}-${(month+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')} 00:00:00`];
+                    
+                    // Check if this is the current day
+                    const today = new Date();
+                    const isCurrentDay = today.getFullYear() === year && 
+                                       today.getMonth() === month && 
+                                       today.getDate() === d;
+                    
                     return (
                       <td
                         key={dIdx}
-                        className={`py-1 px-1 rounded-lg font-semibold ${isHoliday ? 'bg-gradient-to-br from-pink-200 via-red-200 to-yellow-100 text-red-700 shadow-md border border-red-200 cursor-help' : 'text-blue-900'} transition`}
+                        className={`py-1 px-1 rounded-lg font-semibold transition ${
+                          isHoliday 
+                            ? 'bg-gradient-to-br from-pink-200 via-red-200 to-yellow-100 text-red-700 shadow-md border border-red-200 cursor-help' 
+                            : isCurrentDay
+                            ? 'bg-blue-500 text-white shadow-md border border-blue-300'
+                            : 'text-blue-900'
+                        }`}
                         title={isHoliday || ''}
                       >
                         {d}

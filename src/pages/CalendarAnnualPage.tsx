@@ -67,10 +67,12 @@ const CalendarAnnualPage = () => {
             }
             if (week.length > 0) weeks.push([...week, ...Array(7 - week.length).fill(null)]);
             // Get holidays for this month
-            const holidays = getThaiHolidaysByMonth(year, mIdx);
+            const holidays = getThaiHolidaysByMonth(year, mIdx, t);
             const holidayDates = holidays.map(h => h.date);
             const holidayMap: Record<string, string> = {};
-            holidays.forEach(h => { holidayMap[h.date] = h.name; });
+            holidays.forEach(h => { 
+              holidayMap[h.date] = h.name; 
+            });
             return (
               <div key={month} className="bg-white/80 rounded-2xl shadow-xl p-4 flex flex-col items-center">
                 <div className="flex items-center gap-2 mb-2">
@@ -100,7 +102,20 @@ const CalendarAnnualPage = () => {
                         {week.map((d, dIdx) => {
                           if (!d) return <td key={dIdx} className="py-1"> </td>;
                           const dateStr = `${year}-${(mIdx+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}`;
-                          const isHoliday = holidayMap[dateStr];
+                          
+                          // Check for holiday using multiple date formats (including with time)
+                          const isHoliday = holidayMap[dateStr] || 
+                                           holidayMap[`${year}-${mIdx+1}-${d}`] ||
+                                           holidayMap[`${year}-${(mIdx+1).toString().padStart(2,'0')}-${d}`] ||
+                                           holidayMap[`${dateStr} 00:00:00`] ||
+                                           holidayMap[`${year}-${(mIdx+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')} 00:00:00`];
+                          
+                          // Check if this is the current day
+                          const today = new Date();
+                          const isCurrentDay = today.getFullYear() === year && 
+                                             today.getMonth() === mIdx && 
+                                             today.getDate() === d;
+                          
                           return (
                             <td
                               key={dIdx}
@@ -109,6 +124,10 @@ const CalendarAnnualPage = () => {
                             >
                               {isHoliday ? (
                                 <span className="bg-red-400 text-white rounded-full w-7 h-7 flex items-center justify-center mx-auto font-bold shadow">
+                                  {d}
+                                </span>
+                              ) : isCurrentDay ? (
+                                <span className="bg-blue-500 text-white rounded-full w-7 h-7 flex items-center justify-center mx-auto font-bold shadow">
                                   {d}
                                 </span>
                               ) : (
@@ -123,12 +142,17 @@ const CalendarAnnualPage = () => {
                 </table>
                 {/* แสดงรายการวันหยุดของเดือนนี้ */}
                 <ul className="mt-2 text-xs text-red-500 text-left w-full">
-                  {holidays.map(h => (
-                    <li key={h.date} className="flex items-center gap-2">
-                      <span className="inline-block w-2 h-2 rounded-full bg-red-400"></span>
-                      {h.name} ({h.date.split('-')[2]}/{h.date.split('-')[1]})
-                    </li>
-                  ))}
+                  {holidays.map(h => {
+                    const d = new Date(h.date);
+                    const day = d.getDate();
+                    const monthNum = d.getMonth() + 1;
+                    return (
+                      <li key={h.date} className="flex items-center gap-2">
+                        <span className="inline-block w-2 h-2 rounded-full bg-red-400"></span>
+                        {h.name} ({day}/{monthNum})
+                      </li>
+                    );
+                  })}
                 </ul>
               </div>
             );

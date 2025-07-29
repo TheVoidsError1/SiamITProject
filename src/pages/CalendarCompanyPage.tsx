@@ -126,10 +126,23 @@ const CalendarCompanyPage = () => {
                     if (!d) return <td key={dIdx} className="py-1"> </td>;
                     const dateStr = `${year}-${(month+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}`;
                     const isHoliday = holidayMap[dateStr];
+                    
+                    // Check if this is the current day
+                    const today = new Date();
+                    const isCurrentDay = today.getFullYear() === year && 
+                                       today.getMonth() === month && 
+                                       today.getDate() === d;
+                    
                     return (
                       <td
                         key={dIdx}
-                        className={`py-1 px-1 rounded-lg font-semibold ${isHoliday ? 'bg-gradient-to-br from-yellow-200 via-orange-200 to-pink-100 text-orange-700 shadow-md border border-orange-200 cursor-help' : 'text-blue-900'} transition`}
+                        className={`py-1 px-1 rounded-lg font-semibold transition ${
+                          isHoliday 
+                            ? 'bg-gradient-to-br from-yellow-200 via-orange-200 to-pink-100 text-orange-700 shadow-md border border-orange-200 cursor-help' 
+                            : isCurrentDay
+                            ? 'bg-blue-500 text-white shadow-md border border-blue-300'
+                            : 'text-blue-900'
+                        }`}
                         title={isHoliday || ''}
                       >
                         {d}

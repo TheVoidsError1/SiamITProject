@@ -12,7 +12,6 @@ import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGri
 import NotificationBell from '@/components/NotificationBell';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { holidays } from "@/constants/holidays";
 import { getUpcomingThaiHolidays, getThaiHolidaysByMonth } from "@/constants/getThaiHolidays";
 import Profile from './Profile';
 import { format } from 'date-fns';
@@ -316,7 +315,7 @@ const Index = () => {
     { id: 3, title: 'คำขอลาถูกปฏิเสธ', message: 'ลาธุรกิจ 10 มี.ค. ถูกปฏิเสธ', time: '3 วันที่แล้ว', type: 'error' },
   ];
   // Upcoming holidays (Thai calendar, 3 next)
-  const upcomingHolidays = getUpcomingThaiHolidays(3);
+  const upcomingHolidays = getUpcomingThaiHolidays(3, t);
   // State สำหรับเลือกเดือน/ปี
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
@@ -325,7 +324,7 @@ const Index = () => {
     t('months.1'), t('months.2'), t('months.3'), t('months.4'), t('months.5'), t('months.6'),
     t('months.7'), t('months.8'), t('months.9'), t('months.10'), t('months.11'), t('months.12')
   ];
-  const holidaysOfMonth = getThaiHolidaysByMonth(selectedYear, selectedMonth);
+  const holidaysOfMonth = getThaiHolidaysByMonth(selectedYear, selectedMonth, t);
   // Announcements state
   const [announcements, setAnnouncements] = useState<Array<{
     id: string;
@@ -557,7 +556,12 @@ const Index = () => {
                 ) : (
                   holidaysOfMonth.map(h => (
                     <li key={h.date} className="flex items-center gap-3 bg-white/60 rounded-xl px-4 py-2 shadow hover:bg-blue-50 transition animate-pop-in">
-                      <span className="font-bold text-blue-700 w-24">{new Date(h.date).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                      <span className="font-bold text-blue-700 w-24">
+                        {new Date(h.date).toLocaleDateString(
+                          i18n.language.startsWith('th') ? 'th-TH' : 'en-US', 
+                          { day: '2-digit', month: 'short', year: 'numeric' }
+                        )}
+                      </span>
                       <span className="text-blue-900 font-medium">{h.name}</span>
                     </li>
                   ))

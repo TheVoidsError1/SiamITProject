@@ -27,6 +27,8 @@ import CalendarPage from './pages/CalendarPage';
 import CalendarAnnualPage from './pages/CalendarAnnualPage';
 import CalendarMonthDetailPage from './pages/CalendarMonthDetailPage';
 import CalendarCompanyPage from './pages/CalendarCompanyPage';
+import CompanyCalendarPage from './pages/CompanyCalendarPage';
+import CompanyMonthDetailPage from './pages/CompanyMonthDetailPage';
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const queryClient = new QueryClient();
@@ -87,7 +89,8 @@ const AppContent = () => {
             <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
             <Route path="/calendar/annual" element={<ProtectedRoute><CalendarAnnualPage /></ProtectedRoute>} />
             <Route path="/calendar/annual/:year/:month" element={<ProtectedRoute><CalendarMonthDetailPage /></ProtectedRoute>} />
-            <Route path="/calendar/company" element={<ProtectedRoute><CalendarCompanyPage /></ProtectedRoute>} />
+            <Route path="/calendar/company" element={<ProtectedRoute><CompanyCalendarPage /></ProtectedRoute>} />
+            <Route path="/calendar/company/:year/:month" element={<ProtectedRoute><CompanyMonthDetailPage /></ProtectedRoute>} />
             <Route path="/admin" element={
               <ProtectedRoute adminOnly>
                 <AdminDashboard />
