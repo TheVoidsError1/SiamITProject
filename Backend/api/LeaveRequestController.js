@@ -344,54 +344,10 @@
          }
          // --- เพิ่ม filter backdated ---
          const backdatedParam = req.query.backdated;
-         if (backdatedParam === '1' || backdatedParam === '0') {
-           where = { ...where, backdated: Number(backdatedParam) };
-           let all = await leaveRepo.find({ where, order: { createdAt: 'DESC' } });
-           // paginate ด้วยตัวเอง
-           const total = all.length;
-           const page = parseInt(req.query.page) || 1;
-           const limit = parseInt(req.query.limit) || 5;
-           const skip = (page - 1) * limit;
-           const paged = all.slice(skip, skip + limit);
-           // join user/leaveType เหมือนเดิม
-           const result = await Promise.all(paged.map(async (leave) => {
-             let user = null;
-             let leaveTypeObj = null;
-             if (leave.Repid) {
-               user = await userRepo.findOneBy({ id: leave.Repid });
-               if (!user) {
-                 const adminRepo = AppDataSource.getRepository('Admin');
-                 const admin = await adminRepo.findOneBy({ id: leave.Repid });
-                 if (admin) {
-                   user = { User_name: admin.admin_name, department: admin.department, position: admin.position };
-                 } else {
-                   const superadminRepo = AppDataSource.getRepository('SuperAdmin');
-                   const superadmin = await superadminRepo.findOneBy({ id: leave.Repid });
-                   if (superadmin) {
-                     user = { User_name: superadmin.superadmin_name, department: superadmin.department, position: superadmin.position };
-                   }
-                 }
-               } else {
-                 user = { User_name: user.User_name, department: user.department, position: user.position };
-               }
-             }
-             let leaveTypeName_th = null;
-             let leaveTypeName_en = null;
-             if (leave.leaveType) {
-               leaveTypeObj = await leaveTypeRepo.findOneBy({ id: leave.leaveType });
-               leaveTypeName_th = leaveTypeObj ? leaveTypeObj.leave_type_th : leave.leaveType;
-               leaveTypeName_en = leaveTypeObj ? leaveTypeObj.leave_type_en : leave.leaveType;
-             }
-             return {
-               ...leave,
-               user: user ? { User_name: user.User_name, department: user.department, position: user.position } : null,
-               leaveTypeName_th,
-               leaveTypeName_en,
-               attachments: parseAttachments(leave.attachments),
-               backdated: Number(leave.backdated),
-             };
-           }));
-           return res.json({ status: 'success', data: result, total, page, totalPages: Math.ceil(total / limit), message: lang === 'th' ? 'ดึงข้อมูลสำเร็จ' : 'Fetch success' });
+         if (backdatedParam === '1') {
+           where = { ...where, backdated: 1 };
+         } else if (backdatedParam === '0') {
+           where = { ...where, backdated: 0 }; // ต้องเป็น 0 เท่านั้น
          }
          // ดึง leave requests ที่ pending (paging)
          const [pendingLeaves, total] = await Promise.all([
@@ -585,10 +541,14 @@
          }
          // --- เพิ่ม filter backdated (ใช้ field จริงจาก database) ---
          const backdatedParamH = req.query.backdated;
-         if (backdatedParamH === '1' || backdatedParamH === '0') {
+         if (backdatedParamH === '1') {
            where = Array.isArray(where)
-             ? where.map(w => ({ ...w, backdated: Number(backdatedParamH) }))
-             : { ...where, backdated: Number(backdatedParamH) };
+             ? where.map(w => ({ ...w, backdated: 1 }))
+             : { ...where, backdated: 1 };
+         } else if (backdatedParamH === '0') {
+           where = Array.isArray(where)
+             ? where.map(w => ({ ...w, backdated: 0 }))
+             : { ...where, backdated: 0 };
          }
          // --- เพิ่ม filter leaveType ---
          const leaveType = req.query.leaveType;
