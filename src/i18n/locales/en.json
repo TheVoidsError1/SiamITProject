@@ -211,7 +211,10 @@
     "day": "day",
     "days": "days",
     "hour": "hour",
-    "hours": "hours"
+    "hours": "hours",
+    "dateInformation": "Date Information",
+    "statusAndApproval": "Status & Approval",
+    "contactInformation": "Contact Information"
   },
   "leaveTypes": {
     "all": "All",

@@ -95,6 +95,16 @@ module.exports = (AppDataSource) => {
       const approvedCount = allLeaves.filter(l => l.status === 'approved').length;
       const pendingCount = allLeaves.filter(l => l.status === 'pending').length;
       const rejectedCount = allLeaves.filter(l => l.status === 'rejected').length;
+      
+      // คำนวณจำนวนการลาย้อนหลัง (retroactive leave)
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const retroactiveCount = allLeaves.filter(leave => {
+        if (!leave.startDate) return false;
+        const leaveStartDate = new Date(leave.startDate);
+        leaveStartDate.setHours(0, 0, 0, 0);
+        return leaveStartDate < today;
+      }).length;
 
       // join leaveType, admin (approver/rejector)
       const result = await Promise.all(leaves.map(async (leave) => {
@@ -146,7 +156,8 @@ module.exports = (AppDataSource) => {
           totalLeaveDays,
           approvedCount,
           pendingCount,
-          rejectedCount
+          rejectedCount,
+          retroactiveCount
         },
         message: lang === 'th' ? 'ดึงข้อมูลสำเร็จ' : 'Fetch success'
       });

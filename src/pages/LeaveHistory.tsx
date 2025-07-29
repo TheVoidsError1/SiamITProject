@@ -35,7 +35,7 @@ const LeaveHistory = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   // --- เพิ่ม state สำหรับ summary ---
-  const [summary, setSummary] = useState<{ totalLeaveDays: number; approvedCount: number; pendingCount: number; rejectedCount?: number } | null>(null);
+  const [summary, setSummary] = useState<{ totalLeaveDays: number; approvedCount: number; pendingCount: number; rejectedCount?: number; retroactiveCount?: number } | null>(null);
   // --- เพิ่ม state สำหรับ show more/less ---
   const [expandedReason, setExpandedReason] = useState<string | null>(null);
   const [expandedReject, setExpandedReject] = useState<string | null>(null);
@@ -368,14 +368,14 @@ const LeaveHistory = () => {
     return format(date, 'dd MMM yyyy');
   };
 
-  // Calculate summary statistics from leaveHistory
+  // Calculate summary statistics from summary data (all pages)
   const totalLeaveDays = summary ? summary.totalLeaveDays : 0;
   const approvedCount = summary ? summary.approvedCount : 0;
   const pendingCount = summary ? summary.pendingCount : 0;
   const rejectedCount = summary && typeof summary.rejectedCount === 'number' ? summary.rejectedCount : 0;
   
-  // คำนวณจำนวนการลาย้อนหลัง
-  const retroactiveCount = leaveHistory.filter(leave => isRetroactiveLeave(leave.startDate)).length;
+  // คำนวณจำนวนการลาย้อนหลังจากข้อมูลทั้งหมด (ไม่ใช่แค่หน้าปัจจุบัน)
+  const retroactiveCount = summary?.retroactiveCount || 0;
 
   // รายชื่อเดือนรองรับ i18n
   const monthNames = i18n.language === 'th'
