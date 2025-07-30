@@ -97,13 +97,21 @@ const EmployeeManagement = () => {
 
   // ฟังก์ชันแปลง id เป็นชื่อ
   const getPositionName = (id: string) => {
+    // ถ้า id เป็น null, undefined, หรือค่าว่าง ให้แสดงข้อความที่เหมาะสม
+    if (!id || id === 'null' || id === 'undefined' || id === '') {
+      return t('system.notSpecified', 'ไม่ระบุ');
+    }
     const found = positions.find((p) => p.id === id);
-    if (!found) return id;
+    if (!found) return t('system.notSpecified', 'ไม่ระบุ');
     return i18n.language === 'th' ? found.position_name_th : found.position_name_en;
   };
   const getDepartmentName = (id: string) => {
+    // ถ้า id เป็น null, undefined, หรือค่าว่าง ให้แสดงข้อความที่เหมาะสม
+    if (!id || id === 'null' || id === 'undefined' || id === '') {
+      return t('departments.noDepartment', 'ไม่มีแผนก');
+    }
     const found = departments.find((d) => d.id === id);
-    if (!found) return id;
+    if (!found) return t('departments.noDepartment', 'ไม่มีแผนก');
     return i18n.language === 'th' ? found.department_name_th : found.department_name_en;
   };
 
@@ -325,10 +333,10 @@ const EmployeeManagement = () => {
                           <Users className="w-12 h-12 text-blue-400" />
                         </div>
                         <h3 className="text-xl font-bold text-blue-900 mb-2">
-                          {t('system.noEmployeesFound', 'ไม่พบข้อมูลพนักงาน')}
+                          {t('system.noEmployeesFound')}
                         </h3>
                         <p className="text-blue-600 text-center max-w-md">
-                          {t('system.noEmployeesFoundDesc', 'ไม่พบพนักงานที่ตรงกับเงื่อนไขการกรองที่เลือก กรุณาลองเปลี่ยนเงื่อนไขหรือรีเซ็ตตัวกรอง')}
+                          {t('system.noEmployeesFoundDesc')}
                         </p>
                         <button
                           className="mt-6 px-6 py-3 rounded-lg font-bold bg-gradient-to-r from-blue-500 to-indigo-400 text-white shadow-lg hover:from-blue-600 hover:to-indigo-500 hover:shadow-xl transition-all duration-200 transform hover:scale-105"
@@ -341,7 +349,7 @@ const EmployeeManagement = () => {
                             setRoleFilter("");
                           }}
                         >
-                          {t('common.reset', 'รีเซ็ตตัวกรอง')}
+                          {t('common.resetFilter')}
                         </button>
                       </div>
                     ) : (
@@ -396,11 +404,16 @@ const EmployeeManagement = () => {
                                   </span>
                                 )}
                               </td>
-                              <td className="px-3 py-2 text-center flex gap-1 justify-center">
-                                <Button asChild size="sm" variant="secondary" className="rounded-full px-2 py-1 font-bold bg-gradient-to-r from-blue-500 to-indigo-400 text-white shadow hover:scale-105 transition text-xs">
+                              <td className="px-3 py-3 text-center flex gap-1.5 justify-center">
+                                <Button 
+                                  asChild 
+                                  size="sm" 
+                                  variant="secondary"
+                                  className="rounded-lg px-3 py-1.5 font-medium bg-gradient-to-r from-blue-500 to-indigo-400 text-white shadow hover:scale-105 transition text-xs"
+                                >
                                   <Link to={`/admin/employees/${employee.id}?role=${employee.role}`}> 
-                                    <Eye className="w-4 h-4 mr-1" />
-                                    {t('system.seeDetails')}
+                                    <Eye className="w-3.5 h-3.5 mr-1" />
+                                    {t('common.viewDetails')}
                                   </Link>
                                 </Button>
                                 <AlertDialog>
@@ -408,11 +421,11 @@ const EmployeeManagement = () => {
                                     <Button
                                       size="sm"
                                       variant="destructive"
-                                      className="rounded-full px-2 py-1 font-bold bg-gradient-to-r from-red-500 to-pink-400 text-white shadow hover:scale-105 transition flex items-center gap-1 text-xs"
+                                      className="rounded-lg px-3 py-1.5 font-medium bg-gradient-to-r from-red-500 to-red-600 text-white shadow hover:scale-105 transition text-xs"
                                       onClick={() => setDeleteTarget(employee)}
                                     >
-                                      <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m5 0H6" /></svg>
-                                      {t('common.delete', 'ลบ')}
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m5 0H6" /></svg>
+                                      {t('common.delete')}
                                     </Button>
                                   </AlertDialogTrigger>
                                   <AlertDialogContent>
@@ -460,6 +473,8 @@ const EmployeeManagement = () => {
         <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-10 h-10 rounded-full mx-auto mb-1" />
         &copy; {new Date().getFullYear()} Siam IT Leave Management System
       </footer>
+
+
     </div>
   );
 };

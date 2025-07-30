@@ -86,6 +86,7 @@
     "hours": "hours",
     "ok": "OK",
     "reset": "Reset",
+    "resetFilter": "Reset Filter",
     "confirm": "Confirm",
     "month": "Month",
     "year": "Year",
@@ -492,7 +493,10 @@
     "allDepartments": "All Departments",
     "allRoles": "All Roles",
     "admin": "Admin",
-    "superadmin": "Superadmin"
+    "superadmin": "Superadmin",
+    "notSpecified": "Not specified",
+    "noEmployeesFound": "No employees found",
+    "noEmployeesFoundDesc": "No employees match the selected filter criteria. Please try changing the criteria or reset the filter"
   },
   "error": {
     "apiConnectionError": "API Connection Error",
