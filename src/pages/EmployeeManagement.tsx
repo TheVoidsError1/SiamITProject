@@ -375,15 +375,20 @@ const EmployeeManagement = () => {
                                 {/* Avatar with image or initials */}
                                 {employee.avatar ? (
                                   <img
-                                    src={employee.avatar}
+                                    src={`${API_BASE_URL}${employee.avatar}`}
                                     alt={employee.full_name}
                                     className="w-8 h-8 rounded-full object-cover shadow-md border border-blue-200"
+                                    onError={(e) => {
+                                      // ถ้าโหลดรูปไม่สำเร็จ ให้แสดง fallback
+                                      const target = e.target as HTMLImageElement;
+                                      target.style.display = 'none';
+                                      target.nextElementSibling?.classList.remove('hidden');
+                                    }}
                                   />
-                                ) : (
-                                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-200 via-indigo-200 to-purple-200 flex items-center justify-center text-blue-900 font-bold text-base shadow-md">
-                                    {employee.full_name ? employee.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : '?'}
-                                  </div>
-                                )}
+                                ) : null}
+                                <div className={`w-8 h-8 rounded-full bg-gradient-to-br from-blue-200 via-indigo-200 to-purple-200 flex items-center justify-center text-blue-900 font-bold text-base shadow-md ${employee.avatar ? 'hidden' : ''}`}>
+                                  {employee.full_name ? employee.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : '?'}
+                                </div>
                                 <span className="font-semibold text-blue-900 text-sm">{employee.full_name}</span>
                               </td>
                               <td className="px-3 py-2 text-blue-700 text-sm">{employee.email}</td>

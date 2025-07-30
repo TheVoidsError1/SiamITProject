@@ -21,5 +21,9 @@ module.exports = new EntitySchema({
      position: {
       type: 'varchar',
      },
+     avatar: {
+      type: 'varchar',
+      nullable: true,
+     },
   },
 }); 
