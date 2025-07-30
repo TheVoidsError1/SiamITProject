@@ -87,6 +87,11 @@ const AdminDashboard = () => {
   const [pendingFilterLeaveType, setPendingFilterLeaveType] = useState('');
   // --- state สำหรับ filter สถานะ ---
   const [historyStatusFilter, setHistoryStatusFilter] = useState('all'); // default เป็น all (All status)
+  // รายชื่อเดือนรองรับ i18n
+  const monthNames = i18n.language === 'th'
+    ? ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม']
+    : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
   // --- เพิ่ม state สำหรับ show more/less ของแต่ละ request ---
   const [expandedRejection, setExpandedRejection] = useState<{ [id: string]: boolean }>({});
   const [showApproveDialog, setShowApproveDialog] = useState(false);
@@ -104,45 +109,24 @@ const AdminDashboard = () => {
   const [historyFilterLeaveType, setHistoryFilterLeaveType] = useState('');
 
   // --- เพิ่ม state สำหรับ pending filter (Recent History) ---
-  const [pendingFilterMonth, setPendingFilterMonth] = useState(filterMonth);
-  const [pendingFilterYear, setPendingFilterYear] = useState(filterYear);
+  const [pendingFilterMonth, setPendingFilterMonth] = useState<number | ''>('');
+  const [pendingFilterYear, setPendingFilterYear] = useState<number | ''>(new Date().getFullYear());
   const [pendingHistoryStatusFilter, setPendingHistoryStatusFilter] = useState(historyStatusFilter);
   const [pendingHistoryFilterLeaveType, setPendingHistoryFilterLeaveType] = useState(historyFilterLeaveType);
   const [pendingRecentSingleDate, setPendingRecentSingleDate] = useState(recentSingleDate);
   const [pendingHistoryBackdatedFilter, setPendingHistoryBackdatedFilter] = useState(historyBackdatedFilter);
 
-  // --- เพิ่ม state สำหรับ pending filter (Pending Tab) ---
-  const [pendingPendingFilterLeaveType, setPendingPendingFilterLeaveType] = useState(pendingFilterLeaveType);
+
+  // เพิ่ม state สำหรับ month/year - เริ่มต้นด้วยเดือนและปีปัจจุบัน
+  const [pendingPendingMonth, setPendingPendingMonth] = useState<number | ''>('');
+  const [pendingPendingYear, setPendingPendingYear] = useState<number | ''>(new Date().getFullYear());
+  
+  // เพิ่ม state สำหรับ pending filter ที่ยังไม่ได้ apply
+  const [pendingPendingFilterLeaveType, setPendingPendingFilterLeaveType] = useState('');
   const [pendingPendingDateRange, setPendingPendingDateRange] = useState(pendingDateRange);
   const [pendingPendingSingleDate, setPendingPendingSingleDate] = useState(pendingSingleDate);
   const [pendingPendingBackdatedFilter, setPendingPendingBackdatedFilter] = useState(pendingBackdatedFilter);
   const [pendingPendingPage, setPendingPendingPage] = useState(pendingPage);
-  // เพิ่ม state สำหรับ month/year
-  const [pendingPendingMonth, setPendingPendingMonth] = useState<number | ''>('');
-  const [pendingPendingYear, setPendingPendingYear] = useState<number | ''>('');
-
-  // ปรับการคำนวณสถิติให้ใช้ข้อมูลจาก leave request ที่ดึงมา
-  const pendingCount = pendingRequests.length;
-  const approvedThisMonth = recentRequests.filter(r => {
-    const now = new Date();
-    const approvedDate = r.approvedTime ? new Date(r.approvedTime) : null;
-    return approvedDate && approvedDate.getMonth() === now.getMonth() && approvedDate.getFullYear() === now.getFullYear();
-  }).length;
-  // สมมุติว่าพนักงานทั้งหมดคือ user ที่มีใน leave request
-  const userCount = Array.from(new Set([...pendingRequests, ...recentRequests].map(r => r.user?.id))).length;
-  // วันลาเฉลี่ย (ถ้ามีข้อมูล)
-  const averageDayOff = recentRequests.length > 0 ?
-    (
-      recentRequests.reduce((sum, r) => {
-        const start = r.startDate ? new Date(r.startDate) : null;
-        const end = r.endDate ? new Date(r.endDate) : null;
-        if (start && end && !isNaN(start.getTime()) && !isNaN(end.getTime())) {
-          return sum + ((end.getTime() - start.getTime()) / (1000*60*60*24) + 1);
-        }
-        return sum;
-      }, 0) / recentRequests.length
-    ).toFixed(1)
-    : 0;
 
   const stats = [
     {
@@ -174,6 +158,29 @@ const AdminDashboard = () => {
       bgColor: "bg-blue-50",
     },
   ];
+
+  // ปรับการคำนวณสถิติให้ใช้ข้อมูลจาก leave request ที่ดึงมา
+  const pendingCount = pendingRequests.length;
+  const approvedThisMonth = recentRequests.filter(r => {
+    const now = new Date();
+    const approvedDate = r.approvedTime ? new Date(r.approvedTime) : null;
+    return approvedDate && approvedDate.getMonth() === now.getMonth() && approvedDate.getFullYear() === now.getFullYear();
+  }).length;
+  // สมมุติว่าพนักงานทั้งหมดคือ user ที่มีใน leave request
+  const userCount = Array.from(new Set([...pendingRequests, ...recentRequests].map(r => r.user?.id))).length;
+  // วันลาเฉลี่ย (ถ้ามีข้อมูล)
+  const averageDayOff = recentRequests.length > 0 ?
+    (
+      recentRequests.reduce((sum, r) => {
+        const start = r.startDate ? new Date(r.startDate) : null;
+        const end = r.endDate ? new Date(r.endDate) : null;
+        if (start && end && !isNaN(start.getTime()) && !isNaN(end.getTime())) {
+          return sum + ((end.getTime() - start.getTime()) / (1000*60*60*24) + 1);
+        }
+        return sum;
+      }, 0) / recentRequests.length
+    ).toFixed(1)
+    : 0;
 
   // --- เพิ่มฟังก์ชันแปลงวันที่ตามภาษา ---
   const formatDateLocalized = (dateStr: string) => {
@@ -408,7 +415,7 @@ const AdminDashboard = () => {
           if (pendingDateRange.from) url += `&startDate=${format(pendingDateRange.from, 'yyyy-MM-dd')}`;
           if (pendingDateRange.to) url += `&endDate=${format(pendingDateRange.to, 'yyyy-MM-dd')}`;
         }
-        // ใช้ filterMonth, filterYear (ไม่ใช่ pendingPendingMonth/Year)
+        // ใช้ filterMonth และ filterYear สำหรับ filter เดือน/ปี
         if (filterMonth) url += `&month=${filterMonth}`;
         if (filterYear) url += `&year=${filterYear}`;
         const res = await fetch(url, {
@@ -444,6 +451,36 @@ const AdminDashboard = () => {
     };
     fetchPending();
   }, [t, pendingPage, pendingLimit, pendingFilterLeaveType, pendingDateRange, pendingSingleDate, pendingBackdatedFilter, filterMonth, filterYear]);
+
+  // ตั้งค่าเริ่มต้นของ filter เดือนและปี
+  useEffect(() => {
+    const currentMonth = new Date().getMonth() + 1;
+    const currentYear = new Date().getFullYear();
+    
+    // ตั้งค่าเริ่มต้นสำหรับ pending tab
+    if (!pendingPendingMonth) {
+      setPendingPendingMonth(currentMonth);
+    }
+    if (!pendingPendingYear) {
+      setPendingPendingYear(currentYear);
+    }
+    
+    // ตั้งค่าเริ่มต้นสำหรับ history tab
+    if (!pendingFilterMonth) {
+      setPendingFilterMonth(currentMonth);
+    }
+    if (!pendingFilterYear) {
+      setPendingFilterYear(currentYear);
+    }
+    
+    // ตั้งค่าเริ่มต้นสำหรับ filter จริง
+    if (!filterMonth) {
+      setFilterMonth(currentMonth);
+    }
+    if (!filterYear) {
+      setFilterYear(currentYear);
+    }
+  }, []);
 
   useEffect(() => {
     fetchHistoryRequests();
@@ -511,10 +548,7 @@ const AdminDashboard = () => {
     fetchPositions();
   }, []);
 
-  // รายชื่อเดือนรองรับ i18n
-  const monthNames = i18n.language === 'th'
-    ? ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม']
-    : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+
 
   // Fetch leave types for pending filter
   useEffect(() => {
@@ -553,21 +587,45 @@ const AdminDashboard = () => {
 
   // --- ปรับ clearHistoryFilters ให้รีเซ็ต pending ด้วย ---
   const clearHistoryFilters = () => {
-    setFilterMonth('');
-    setFilterYear('');
+    const currentYear = new Date().getFullYear();
+    setFilterMonth(''); // <-- reset เป็นค่าว่าง
+    setFilterYear(currentYear);
     setHistoryStatusFilter('all');
     setDateRange({ from: undefined, to: undefined });
     setRecentSingleDate(undefined);
     setHistoryPage(1);
     setHistoryBackdatedFilter('all');
     setHistoryFilterLeaveType('');
-    // reset pending
-    setPendingFilterMonth('');
-    setPendingFilterYear('');
+    setPendingFilterMonth(''); // <-- reset เป็นค่าว่าง
+    setPendingFilterYear(currentYear);
     setPendingHistoryStatusFilter('all');
     setPendingHistoryFilterLeaveType('');
     setPendingRecentSingleDate(undefined);
     setPendingHistoryBackdatedFilter('all');
+  };
+
+  // --- ฟังก์ชันสำหรับจัดการการเปลี่ยนแปลงของวันที่ ---
+  const handleDateChange = (date: Date | undefined) => {
+    setPendingPendingSingleDate(date);
+    // เมื่อเลือกวันที่แล้ว ให้ล็อกเดือนและปี
+    if (date) {
+      setPendingPendingMonth(date.getMonth() + 1);
+      setPendingPendingYear(date.getFullYear());
+    }
+  };
+
+  // --- ฟังก์ชันสำหรับจัดการการเปลี่ยนแปลงของเดือน ---
+  const handleMonthChange = (month: number | '') => {
+    setPendingPendingMonth(month);
+    // เมื่อเลือกเดือนแล้ว ให้ล้างวันที่
+    setPendingPendingSingleDate(undefined);
+  };
+
+  // --- ฟังก์ชันสำหรับจัดการการเปลี่ยนแปลงของปี ---
+  const handleYearChange = (year: number | '') => {
+    setPendingPendingYear(year);
+    // เมื่อเลือกปีแล้ว ให้ล้างวันที่
+    setPendingPendingSingleDate(undefined);
   };
 
   // --- ฟังก์ชัน apply filter ---
@@ -577,12 +635,14 @@ const AdminDashboard = () => {
     setPendingSingleDate(pendingPendingSingleDate);
     setPendingBackdatedFilter(pendingPendingBackdatedFilter);
     setPendingPage(1);
+    // ใช้ pendingPendingMonth และ pendingPendingYear สำหรับ filter เดือน/ปี
     setFilterMonth(pendingPendingMonth);
     setFilterYear(pendingPendingYear);
   };
 
   // --- ปรับ clearPendingFilters ให้รีเซ็ต pending ด้วย ---
   const clearPendingFilters = () => {
+    const currentYear = new Date().getFullYear();
     setPendingFilterLeaveType('');
     setPendingDateRange({ from: undefined, to: undefined });
     setPendingSingleDate(undefined);
@@ -593,10 +653,10 @@ const AdminDashboard = () => {
     setPendingPendingSingleDate(undefined);
     setPendingPendingBackdatedFilter('all');
     setPendingPendingPage(1);
-    setPendingPendingMonth('');
-    setPendingPendingYear('');
-    setFilterMonth('');
-    setFilterYear('');
+    setPendingPendingMonth(''); // <-- reset เป็นค่าว่าง
+    setPendingPendingYear(currentYear);
+    setFilterMonth(''); // <-- reset เป็นค่าว่าง
+    setFilterYear(currentYear);
   };
 
   // --- ฟังก์ชันกลางสำหรับแสดงชื่อประเภทการลา ---
@@ -963,6 +1023,7 @@ const AdminDashboard = () => {
           <div className="flex-1">
             <h1 className="text-3xl font-extrabold text-blue-900 tracking-tight drop-shadow-lg animate-slide-in-left">{t('navigation.adminDashboard')}</h1>
             <p className="text-sm text-blue-500 animate-slide-in-left" style={{ animationDelay: '0.2s' }}>{t('admin.dashboardDesc')}</p>
+
           </div>
           {/* Language Switcher at top right */}
         </div>
@@ -986,6 +1047,7 @@ const AdminDashboard = () => {
                     <div>
                       <p className="text-3xl font-extrabold text-blue-900 drop-shadow animate-bounce-in">{stat.value}</p>
                       <p className="text-base text-blue-500 font-medium animate-fade-in-up" style={{ animationDelay: '0.2s' }}>{stat.title}</p>
+
                     </div>
                   </CardContent>
                 </Card>
@@ -1002,6 +1064,7 @@ const AdminDashboard = () => {
             <TabsContent value="pending" className="space-y-4">
               {/* --- Filter UI --- */}
               <div className="flex flex-wrap gap-4 items-end mb-4 bg-gradient-to-r from-white/80 via-blue-50/30 to-indigo-50/30 backdrop-blur rounded-2xl border border-blue-100 p-6 shadow-lg animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+
                 {/* Leave Type Filter */}
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.3s' }}>
                   <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('leave.leaveType')}</label>
@@ -1023,18 +1086,23 @@ const AdminDashboard = () => {
                     type="date"
                     className="border border-blue-200 rounded-xl px-3 py-2 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
                     value={pendingPendingSingleDate ? format(pendingPendingSingleDate, 'yyyy-MM-dd') : ''}
-                    onChange={e => setPendingPendingSingleDate(e.target.value ? new Date(e.target.value) : undefined)}
+                    onChange={e => handleDateChange(e.target.value ? new Date(e.target.value) : undefined)}
                   />
                 </div>
                 {/* Month Filter */}
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.5s' }}>
                   <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.month')}</label>
                   <select
-                    className="border border-blue-200 rounded-xl px-3 py-2 w-28 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
+                    className={`border border-blue-200 rounded-xl px-3 py-2 w-28 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press ${
+                      pendingPendingSingleDate 
+                        ? 'opacity-50 cursor-not-allowed bg-gray-100' 
+                        : 'hover:bg-blue-50 hover:border-blue-300'
+                    }`}
                     value={pendingPendingMonth}
-                    onChange={e => setPendingPendingMonth(e.target.value ? Number(e.target.value) : '')}
+                    onChange={e => handleMonthChange(e.target.value ? Number(e.target.value) : '')}
+                    disabled={!!pendingPendingSingleDate}
                   >
-                    <option value="">{t('months.all')}</option>
+                    <option value="">{t('months.all', 'ทั้งหมด')}</option>
                     {monthNames.map((name, idx) => (
                       <option key={idx + 1} value={idx + 1}>{name}</option>
                     ))}
@@ -1047,10 +1115,15 @@ const AdminDashboard = () => {
                     type="number"
                     min={2000}
                     max={2100}
-                    className="border border-blue-200 rounded-xl px-3 py-2 w-24 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
+                    className={`border border-blue-200 rounded-xl px-3 py-2 w-24 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press ${
+                      pendingPendingSingleDate 
+                        ? 'opacity-50 cursor-not-allowed bg-gray-100' 
+                        : 'hover:bg-blue-50 hover:border-blue-300'
+                    }`}
                     value={pendingPendingYear}
-                    onChange={e => setPendingPendingYear(e.target.value ? Number(e.target.value) : '')}
+                    onChange={e => handleYearChange(e.target.value ? Number(e.target.value) : '')}
                     placeholder="YYYY"
+                    disabled={!!pendingPendingSingleDate}
                   />
                 </div>
                 {/* Backdated Filter */}
@@ -1102,7 +1175,9 @@ const AdminDashboard = () => {
                   ) : (
                     <div className="space-y-4 p-6">
                       {pendingRequests.length === 0 && (
-                        <div className="text-center text-gray-500 text-base py-8 animate-fade-in-up">{t('admin.noPendingRequests')}</div>
+                        <div className="text-center text-gray-500 text-base py-8 animate-fade-in-up">
+                          {t('admin.noPendingRequests')}
+                        </div>
                       )}
                       {pendingRequests.map((request, idx) => (
                         <div 
@@ -1279,6 +1354,7 @@ const AdminDashboard = () => {
             <TabsContent value="recent" className="space-y-4">
               {/* --- Filter UI สำหรับประวัติการอนุมัติล่าสุด --- */}
               <div className="flex flex-wrap gap-4 items-end mb-4 bg-gradient-to-r from-white/80 via-blue-50/30 to-indigo-50/30 backdrop-blur rounded-2xl border border-blue-100 p-6 shadow-lg animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+
                 {/* Leave Type Filter */}
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.3s' }}>
                   <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('leave.leaveType')}</label>
@@ -1301,7 +1377,6 @@ const AdminDashboard = () => {
                     value={pendingFilterMonth}
                     onChange={e => setPendingFilterMonth(e.target.value ? Number(e.target.value) : '')}
                   >
-                    <option value="">{t('months.all')}</option>
                     {monthNames.map((name, idx) => (
                       <option key={idx + 1} value={idx + 1}>{name}</option>
                     ))}
@@ -1380,7 +1455,9 @@ const AdminDashboard = () => {
                   ) : (
                     <div className="space-y-4 p-6">
                       {historyRequests.length === 0 && (
-                        <div className="text-center text-gray-500 text-base py-8 animate-fade-in-up">{t('admin.noApprovalHistory')}</div>
+                        <div className="text-center text-gray-500 text-base py-8 animate-fade-in-up">
+                          {t('admin.noApprovalHistory')}
+                        </div>
                       )}
                       {historyRequests.sort((a, b) => {
                         const dateA = new Date(a.createdAt || a.startDate || 0).getTime();
