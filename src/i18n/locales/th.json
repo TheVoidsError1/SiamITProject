@@ -294,21 +294,18 @@
     "quickActions": "เมนูด่วน",
     "quickActionsDesc": "เข้าถึงฟังก์ชันที่ใช้บ่อย",
     "recentLeaveStats": "การลาล่าสุด",
-    "recentLeaveStatsDesc": "ภาพรวมการใช้สิทธิการลา",
-    "fillCompleteInfo": "กรุณากรอกข้อมูลให้ครบถ้วน",
     "recentNotifications": "แจ้งเตือนล่าสุด",
     "upcomingHolidays": "วันหยุด/กิจกรรม",
-    "announcements": "ข่าวสารบริษัท",
-    "noUpcomingHolidays": "ไม่มีวันหยุดในเดือนนี้",
     "recentLeaveStatsDesc": "การใช้สิทธิการลาล่าสุด",
     "fillCompleteInfo": "กรุณากรอกข้อมูลให้ครบถ้วน",
     "manageAllDesc": "จัดการตำแหน่ง แผนก และประเภทการลาทั้งหมด",
     "backdatedRequests": "ใบลาย้อนหลัง",
     "user": "ผู้ใช้",
     "companyHolidays": "วันหยุดบริษัท",
-    "holidaysActivities": "วันหยุด/กิจกรรม",
+    "annualHolidays": "วันหยุดราชการ",
     "companyNews": "ข่าวสารบริษัท",
     "noUpcomingHolidays": "ไม่มีวันหยุดที่กำลังจะมาถึง",
+    "noCompanyHolidays": "ไม่มีวันหยุดบริษัทในเดือนนี้",
     "announcements": "ข่าวสาร"
   },
   "profile": {
@@ -455,7 +452,6 @@
   "error": {
     "apiConnectionError": "ข้อผิดพลาดการเชื่อมต่อ API",
     "cannotLoadStats": "ไม่สามารถโหลดสถิติได้",
-    "apiConnectionError": "ข้อผิดพลาดการเชื่อมต่อ API",
     "title": "ข้อผิดพลาด",
     "message": "ข้อผิดพลาดในการเชื่อมต่อ API"
   },

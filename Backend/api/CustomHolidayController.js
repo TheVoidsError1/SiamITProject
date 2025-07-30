@@ -302,5 +302,49 @@ router.post('/custom-holidays', authMiddleware, async (req, res) => {
     }
 });
 
+  // GET custom holidays by year and month
+  router.get('/custom-holidays/year/:year/month/:month', async (req, res) => {
+      try {
+          const { year, month } = req.params;
+          
+          if (!year || isNaN(year) || !month || isNaN(month)) {
+              return res.status(400).json({
+                  status: 'error',
+                  message: 'Valid year and month are required'
+              });
+          }
+          
+          // Validate month is between 1-12
+          if (month < 1 || month > 12) {
+              return res.status(400).json({
+                  status: 'error',
+                  message: 'Month must be between 1 and 12'
+              });
+          }
+          
+          const startDate = `${year}-${month.toString().padStart(2, '0')}-01`;
+          const endDate = `${year}-${month.toString().padStart(2, '0')}-31`;
+          
+          const customHolidayRepository = AppDataSource.getRepository('CustomHoliday');
+        const holidays = await customHolidayRepository
+            .createQueryBuilder('holiday')
+            .where('holiday.date >= :startDate', { startDate })
+            .andWhere('holiday.date <= :endDate', { endDate })
+            .orderBy('holiday.date', 'ASC')
+            .getMany();
+        
+        res.json({
+            status: 'success',
+            data: holidays
+        });
+    } catch (error) {
+        console.error('Error fetching custom holidays by year and month:', error);
+        res.status(500).json({
+            status: 'error',
+            message: 'Failed to fetch custom holidays by year and month'
+        });
+    }
+});
+
   return router;
 };

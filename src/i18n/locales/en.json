@@ -89,8 +89,7 @@
     "close": "Close",
     "add": "Add",
     "update": "Update",
-    "allMonths": "All Months",
-    "year": "Year"
+    "allMonths": "All Months"
   },
   "approved": "Approved",
   "rejected": "Rejected",
@@ -169,7 +168,6 @@
     "employeeName": "Employee Name",
     "position": "Position",
     "department": "Department",
-    "submittedDate": "Submitted Date",
     "attachment": "Attachment",
     "hour": "hour",
     "day": "day",
@@ -201,11 +199,7 @@
     "backdatedOnly": "Backdated only",
     "notBackdatedOnly": "Non-backdated only",
     "statusAll": "All status",
-    "leaveRequestForm": "Leave Request Form",
-    "day": "day",
-    "days": "days",
-    "hour": "hour",
-    "hours": "hours"
+    "leaveRequestForm": "Leave Request Form"
   },
   "leaveTypes": {
     "all": "All",
@@ -291,9 +285,10 @@
     "backdatedRequests": "Backdated Requests",
     "user": "User",
     "companyHolidays": "Company Holidays",
-    "holidaysActivities": "Holidays/Activities",
+    "annualHolidays": "Annual Holidays",
     "companyNews": "Company News",
     "noUpcomingHolidays": "No upcoming holidays",
+    "noCompanyHolidays": "No company holidays this month",
     "announcements": "Announcements"
   },
   "profile": {
@@ -432,8 +427,7 @@
     "allDepartments": "All Departments",
     "allRoles": "All Roles",
     "admin": "Admin",
-    "superadmin": "Superadmin",
-    "employee": "Employee"
+    "superadmin": "Superadmin"
   },
   "error": {
     "apiConnectionError": "API Connection Error",

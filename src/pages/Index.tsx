@@ -6,8 +6,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
-
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import NotificationBell from '@/components/NotificationBell';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -301,19 +299,6 @@ const Index = () => {
     fetchAnnouncements();
   }, [t]);
 
-  // Chart data for demo
-  const chartData = [
-    { name: t('leaveTypes.sick'), value: leaveStats.sick },
-    { name: t('leaveTypes.vacation'), value: leaveStats.vacation },
-    { name: t('leaveTypes.personal'), value: leaveStats.business },
-  ];
-
-  // MOCK: Recent notifications
-  const recentNotifications = [
-    { id: 1, title: 'คำขอลาได้รับการอนุมัติ', message: 'ลาพักผ่อน 15-17 มี.ค. ได้รับการอนุมัติ', time: '2 ชม.ที่แล้ว', type: 'success' },
-    { id: 2, title: 'เตือนวันลาคงเหลือ', message: 'คุณมีวันลาพักผ่อนเหลือ 7 วัน', time: '1 วันที่แล้ว', type: 'info' },
-    { id: 3, title: 'คำขอลาถูกปฏิเสธ', message: 'ลาธุรกิจ 10 มี.ค. ถูกปฏิเสธ', time: '3 วันที่แล้ว', type: 'error' },
-  ];
   // Upcoming holidays (Thai calendar, 3 next)
   const upcomingHolidays = getUpcomingThaiHolidays(3, t);
   // State สำหรับเลือกเดือน/ปี
@@ -336,6 +321,56 @@ const Index = () => {
   const [loadingAnnouncements, setLoadingAnnouncements] = useState(true);
   const [errorAnnouncements, setErrorAnnouncements] = useState("");
 
+  // Company holidays state
+  const [companyHolidaysOfMonth, setCompanyHolidaysOfMonth] = useState<Array<{
+    date: string;
+    title: string;
+  }>>([]);
+  const [loadingCompanyHolidays, setLoadingCompanyHolidays] = useState(true);
+  const [errorCompanyHolidays, setErrorCompanyHolidays] = useState("");
+
+  // Fetch company holidays
+  useEffect(() => {
+    const fetchCompanyHolidays = async () => {
+      setLoadingCompanyHolidays(true);
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          showSessionExpiredDialog();
+          return;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/custom-holidays/year/${selectedYear}/month/${selectedMonth + 1}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.status === 'success' && Array.isArray(data.data)) {
+            setCompanyHolidaysOfMonth(data.data);
+          } else {
+            console.error('Failed to fetch company holidays:', data.message);
+            setCompanyHolidaysOfMonth([]);
+          }
+        } else if (response.status === 401) {
+          showSessionExpiredDialog();
+        } else {
+          console.error('Failed to fetch company holidays:', response.statusText);
+          setCompanyHolidaysOfMonth([]);
+        }
+      } catch (error) {
+        console.error('Error fetching company holidays:', error);
+        setCompanyHolidaysOfMonth([]);
+      } finally {
+        setLoadingCompanyHolidays(false);
+      }
+    };
+
+    fetchCompanyHolidays();
+  }, [API_BASE_URL, selectedYear, selectedMonth, showSessionExpiredDialog]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-100 to-purple-100 dark:from-gray-900 dark:via-gray-950 dark:to-indigo-900 transition-colors relative overflow-x-hidden">
       {/* Parallax/Floating Background Shapes */}
@@ -353,7 +388,7 @@ const Index = () => {
             <p className="text-sm text-blue-500 dark:text-blue-200 animate-fade-in-up delay-100">{t('main.welcomeMessage')}</p>
           </div>
           {/* Calendar Filter (now left of language/world icon) */}
-          <div className="flex gap-2 ml-4">
+          <div className="flex gap-2 ml-4 mr-16">
             <select
               className="rounded-lg border px-2 py-1 text-blue-700 bg-white/80 shadow"
               value={filterMonth}
@@ -373,7 +408,6 @@ const Index = () => {
               ))}
             </select>
           </div>
-          <LanguageSwitcher />
 
         </div>
       </div>
@@ -491,33 +525,48 @@ const Index = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2 pt-0">
-              <table className="w-full text-sm text-blue-900">
-                <thead>
-                  <tr className="bg-blue-50">
-                    <th className="px-3 py-2 text-left">วันที่</th>
-                    <th className="px-3 py-2 text-left">ชื่อวันหยุด/กิจกรรม</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {/* Mock company holidays, replace with real data as needed */}
-                  {[
-                    { date: '2024-07-15', name: 'วันหยุดบริษัทกลางปี' },
-                    { date: '2024-08-12', name: 'กิจกรรม Outing' },
-                    { date: '2024-12-31', name: 'วันหยุดสิ้นปี' },
-                  ].map((h, idx) => {
-                    const d = new Date(h.date);
-                    const day = d.getDate();
-                    const month = d.getMonth() + 1;
-                    const year = d.getFullYear() + 543;
-                    return (
-                      <tr key={h.date} className="hover:bg-blue-50">
-                        <td className="px-3 py-2">{day}/{month}/{year}</td>
-                        <td className="px-3 py-2">{h.name}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+              {/* Dropdown เลือกเดือน/ปี */}
+              <div className="flex gap-2 mb-2">
+                <select
+                  className="rounded-lg border px-2 py-1 text-blue-700 bg-white/80 shadow"
+                  value={selectedMonth}
+                  onChange={e => setSelectedMonth(Number(e.target.value))}
+                >
+                  {months.map((m, idx) => (
+                    <option key={idx} value={idx}>{m}</option>
+                  ))}
+                </select>
+                <select
+                  className="rounded-lg border px-2 py-1 text-blue-700 bg-white/80 shadow"
+                  value={selectedYear}
+                  onChange={e => setSelectedYear(Number(e.target.value))}
+                >
+                  {[now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1].map(y => (
+                    <option key={y} value={y}>{y + 543}</option>
+                  ))}
+                </select>
+              </div>
+              <ul className="space-y-2">
+                {loadingCompanyHolidays ? (
+                  <div className="text-center py-4 text-gray-500 animate-pulse text-sm">{t('common.loading')}</div>
+                ) : errorCompanyHolidays ? (
+                  <div className="text-center py-4 text-red-500 animate-shake text-sm">{errorCompanyHolidays}</div>
+                ) : companyHolidaysOfMonth.length === 0 ? (
+                  <li className="text-blue-500 italic">{t('main.noCompanyHolidays')}</li>
+                ) : (
+                  companyHolidaysOfMonth.map(h => (
+                    <li key={h.date} className="flex items-center gap-3 bg-white/60 rounded-xl px-4 py-2 shadow hover:bg-blue-50 transition animate-pop-in">
+                      <span className="font-bold text-blue-700 w-24">
+                        {new Date(h.date).toLocaleDateString(
+                          i18n.language.startsWith('th') ? 'th-TH' : 'en-US', 
+                          { day: '2-digit', month: 'short', year: 'numeric' }
+                        )}
+                      </span>
+                      <span className="text-blue-900 font-medium">{h.title}</span>
+                    </li>
+                  ))
+                )}
+              </ul>
             </CardContent>
           </Card>
           {/* Upcoming Holidays/Events Section */}
@@ -525,7 +574,7 @@ const Index = () => {
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-blue-700 text-base font-bold animate-slide-in-left">
                 <Calendar className="w-5 h-5 text-blue-500" />
-                {t('main.holidaysActivities')}
+                {t('main.annualHolidays')}
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2 pt-0">
