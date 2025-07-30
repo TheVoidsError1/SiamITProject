@@ -573,5 +573,42 @@
     "easter": "วันอีสเตอร์",
     "goodFriday": "วันศุกร์ประเสริฐ",
     "easterMonday": "วันจันทร์อีสเตอร์"
+  },
+  "calendar": {
+    "title": "ปฏิทิน",
+    "subtitle": "ดูปฎิทินกิจกรรมและวันสำคัญของบริษัท",
+    "currentYear": "ปีปัจจุบัน",
+    "annualHolidays": "วันหยุดประจำปี",
+    "companyHolidays": "วันหยุดบริษัท",
+    "loading": "กำลังโหลด...",
+    "months": {
+      "january": "มกราคม",
+      "february": "กุมภาพันธ์",
+      "march": "มีนาคม",
+      "april": "เมษายน",
+      "may": "พฤษภาคม",
+      "june": "มิถุนายน",
+      "july": "กรกฎาคม",
+      "august": "สิงหาคม",
+      "september": "กันยายน",
+      "october": "ตุลาคม",
+      "november": "พฤศจิกายน",
+      "december": "ธันวาคม"
+    },
+    "weekdays": {
+      "sunday": "อา",
+      "monday": "จ",
+      "tuesday": "อ",
+      "wednesday": "พ",
+      "thursday": "พฤ",
+      "friday": "ศ",
+      "saturday": "ส"
+    },
+    "legend": {
+      "title": "คำอธิบาย",
+      "annualHoliday": "วันหยุดประจำปี",
+      "companyHoliday": "วันหยุดบริษัท",
+      "dualEvent": "กิจกรรมร่วม"
+    }
   }
 }

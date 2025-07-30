@@ -533,5 +533,42 @@
     "easter": "Easter",
     "goodFriday": "Good Friday",
     "easterMonday": "Easter Monday"
+  },
+  "calendar": {
+    "title": "Calendar",
+    "subtitle": "View company events and important dates",
+    "currentYear": "Current Year",
+    "annualHolidays": "Annual Holidays",
+    "companyHolidays": "Company Holidays",
+    "loading": "Loading...",
+    "months": {
+      "january": "January",
+      "february": "February",
+      "march": "March",
+      "april": "April",
+      "may": "May",
+      "june": "June",
+      "july": "July",
+      "august": "August",
+      "september": "September",
+      "october": "October",
+      "november": "November",
+      "december": "December"
+    },
+    "weekdays": {
+      "sunday": "Sun",
+      "monday": "Mon",
+      "tuesday": "Tue",
+      "wednesday": "Wed",
+      "thursday": "Thu",
+      "friday": "Fri",
+      "saturday": "Sat"
+    },
+    "legend": {
+      "title": "Legend",
+      "annualHoliday": "Annual Holiday",
+      "companyHoliday": "Company Holiday",
+      "dualEvent": "Dual Event"
+    }
   }
 }
