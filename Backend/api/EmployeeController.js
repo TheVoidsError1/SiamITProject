@@ -497,7 +497,7 @@ module.exports = (AppDataSource) => {
         if (backdated === '1') {
           leaves = leaves.filter(l => Number(l.backdated) === 1);
         } else if (backdated === '0') {
-          leaves = leaves.filter(l => !l.backdated || Number(l.backdated) === 0);
+          leaves = leaves.filter(l => Number(l.backdated) === 0); // เปลี่ยน logic: ต้องเป็น 0 เท่านั้น
         }
       }
 

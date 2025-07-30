@@ -1,26 +1,25 @@
-import React, { useState, useRef, useEffect } from 'react';
+import ChangePasswordDialog from "@/components/dialogs/ChangePasswordDialog";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
+import { usePushNotification } from '@/contexts/PushNotificationContext';
 import { useToast } from '@/hooks/use-toast';
-import { User, Mail, Building, Briefcase, Shield, Calendar, Camera, Save, Bell, Lock } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "../components/ui/select";
-import ChangePasswordDialog from "@/components/dialogs/ChangePasswordDialog";
-import { cn } from "@/lib/utils";
 import axios from 'axios';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { Bell, Building, Camera, Lock, Mail, Save, Shield } from 'lucide-react';
+import React, { useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
 
 const Profile = () => {
   const { t, i18n } = useTranslation();
   const { user, updateUser, showSessionExpiredDialog } = useAuth();
   const { toast } = useToast();
+  const { enabled: pushNotificationEnabled, setEnabled: setPushNotificationEnabled } = usePushNotification();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
@@ -41,8 +40,6 @@ const Profile = () => {
   const [leaveQuota, setLeaveQuota] = useState<any[]>([]);
   const [leaveLoading, setLeaveLoading] = useState(false);
   const [allLeaveTypes, setAllLeaveTypes] = useState<any[]>([]);
-  // ถ้ามี context push notification จริง ให้ import/use จริง แต่ถ้าไม่มี ให้ mock ไว้ก่อน
-  const pushNotificationEnabled = false;
 
   const getKeyByLabel = (label: string, options: string[], tPrefix: string) => {
     for (const key of options) {
@@ -119,8 +116,8 @@ const Profile = () => {
         updateUser({
           full_name: data.name,
           email: data.email,
-          department: data.department_name, // for display
-          position: data.position_name,     // for display
+          department: data.department_name || '', // for display
+          position: data.position_name || '',     // for display
         });
       } catch (err: any) {
         if (err.response?.status === 401) {
@@ -245,6 +242,18 @@ const Profile = () => {
     // This effect is no longer needed as pushNotificationEnabled is managed by usePushNotification
   }, [pushNotificationEnabled]);
 
+  // Listen for enable push notifications event
+  useEffect(() => {
+    const handleEnablePushNotifications = () => {
+      setPushNotificationEnabled(true);
+    };
+
+    window.addEventListener('enablePushNotifications', handleEnablePushNotifications);
+    return () => {
+      window.removeEventListener('enablePushNotifications', handleEnablePushNotifications);
+    };
+  }, [setPushNotificationEnabled]);
+
   // New leaveStats for new API response
   const leaveStats = leaveQuota.map(item => {
     return {
@@ -329,8 +338,8 @@ const Profile = () => {
       const requestData = {
         name: formData.full_name,
         email: formData.email,
-        position_id: formData.position,      // <-- use _id for backend compatibility
-        department_id: formData.department,  // <-- use _id for backend compatibility
+        position_id: formData.position || null,      // <-- use null for empty values
+        department_id: formData.department || null,  // <-- use null for empty values
       };
 
       const response = await axios.put(`${API_BASE_URL}/api/profile`, requestData, {
@@ -353,15 +362,15 @@ const Profile = () => {
         setFormData({
           full_name: updatedData.name || formData.full_name,
           email: updatedData.email || formData.email,
-          department: updatedData.department_name_th || updatedData.department || formData.department,
-          position: updatedData.position_name_th || updatedData.position || formData.position,
+          department: updatedData.department_id ? String(updatedData.department_id) : '',
+          position: updatedData.position_id ? String(updatedData.position_id) : '',
         });
         
         // Update user context with new data
         updateUser({
           full_name: updatedData.name || formData.full_name,
-          position: updatedData.position_name || formData.position,
-          department: updatedData.department_name || formData.department,
+          position: updatedData.position_name || '',
+          department: updatedData.department_name || '',
           email: updatedData.email || formData.email,
         });
       } else {
@@ -462,15 +471,46 @@ const Profile = () => {
           </div>
           <div className="mt-4 text-center">
             <h2 className="text-2xl font-bold text-blue-900 tracking-tight">{user?.full_name}</h2>
-            <p className="text-gray-500 mb-2 text-base">{user?.position ? t(`positions.${user.position}`) : '-'}</p>
+            <p className="text-gray-500 mb-2 text-base">
+              {(() => {
+                // Find position name from positions array
+                if (!formData.position) {
+                  return t('positions.noPosition');
+                }
+                const position = positions.find(p => String(p.id) === formData.position);
+                if (position) {
+                  return i18n.language.startsWith('th') ? position.position_name_th : position.position_name_en;
+                }
+                return t('positions.noPosition');
+              })()}
+            </p>
             <div className="flex items-center justify-center gap-3 mt-2">
               <Badge variant={user?.role === 'admin' ? 'default' : 'secondary'} className="flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 shadow-sm">
                 <Shield className="h-4 w-4" />
-                {user?.role === 'admin' ? t('main.systemAdmin') : (user?.position ? t(`positions.${user.position}`) : t('main.employee'))}
+                {user?.role === 'admin' ? t('main.systemAdmin') : (() => {
+                  if (!formData.position) {
+                    return t('positions.noPosition');
+                  }
+                  const position = positions.find(p => String(p.id) === formData.position);
+                  if (position) {
+                    return i18n.language.startsWith('th') ? position.position_name_th : position.position_name_en;
+                  }
+                  return t('positions.noPosition');
+                })()}
               </Badge>
               <Badge variant="outline" className="flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 shadow-sm">
                 <Building className="h-4 w-4" />
-                {user?.department ? t(`departments.${user.department}`) : '-'}
+                {(() => {
+                  // Find department name from departments array
+                  if (!formData.department) {
+                    return t('departments.noDepartment');
+                  }
+                  const department = departments.find(d => String(d.id) === formData.department);
+                  if (department) {
+                    return i18n.language.startsWith('th') ? department.department_name_th : department.department_name_en;
+                  }
+                  return t('departments.noDepartment');
+                })()}
               </Badge>
             </div>
           </div>
@@ -509,8 +549,8 @@ const Profile = () => {
                   <div className="space-y-3">
                     <Label htmlFor="position" className="text-base text-blue-900 font-medium">{t('auth.position')}</Label>
                     <Select
-                      value={formData.position}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, position: value }))}
+                      value={formData.position || "not_specified"}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, position: value === "not_specified" ? "" : value }))}
                     >
                       <SelectTrigger className="input-blue">
                         <SelectValue placeholder={t('positions.selectPosition')} />
@@ -532,15 +572,15 @@ const Profile = () => {
                   <div className="space-y-3">
                     <Label htmlFor="department" className="text-base text-blue-900 font-medium">{t('auth.department')}</Label>
                     <Select
-                      value={formData.department}
-                      onValueChange={(value) => setFormData(prev => ({ ...prev, department: value }))}
+                      value={formData.department || "not_specified"}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, department: value === "not_specified" ? "" : value }))}
                     >
                       <SelectTrigger className="input-blue">
                         <SelectValue placeholder={t('departments.selectDepartment')} />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="not_specified" className="text-blue-900">
-                          {t('departments.notSpecified', t('departments.selectDepartment'))}
+                          {t('departments.notSpecified')}
                         </SelectItem>
                         {departments
                           .filter(dept => (dept.department_name_th || dept.department_name_en) && (dept.department_name_th?.trim() !== '' || dept.department_name_en?.trim() !== ''))
@@ -607,9 +647,26 @@ const Profile = () => {
                 <div className="flex items-center justify-between p-6 border rounded-2xl bg-blue-50 shadow-sm">
                   <div>
                     <h3 className="font-semibold text-blue-900 flex items-center gap-2"><Bell className="h-5 w-5 text-blue-400" /> {t('profile.pushNotifications')}</h3>
-                    <p className="text-sm text-gray-500 mt-1">{t('profile.pushNotificationsDesc')}</p>
+                    <p className="text-sm text-gray-500 mt-1">
+                      {pushNotificationEnabled ? t('profile.pushNotificationsEnabled') : t('profile.pushNotificationsDisabled')}
+                    </p>
                   </div>
-                  <Button variant="outline" size="sm" className="btn-blue-outline">{t('common.enable')}</Button>
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      id="push-notifications-switch"
+                      checked={pushNotificationEnabled}
+                      onCheckedChange={(checked) => {
+                        setPushNotificationEnabled(checked);
+                        toast({
+                          title: checked ? t('profile.pushNotificationsEnabled') : t('profile.pushNotificationsDisabled'),
+                          description: checked ? t('profile.pushNotificationsEnabledDesc') : t('profile.pushNotificationsDisabledDesc'),
+                        });
+                      }}
+                    />
+                    <span className="text-sm text-gray-600">
+                      {pushNotificationEnabled ? t('common.enabled') : t('common.disabled')}
+                    </span>
+                  </div>
                 </div>
                 <div className="flex items-center justify-between p-6 border rounded-2xl bg-blue-50 shadow-sm">
                   <div>

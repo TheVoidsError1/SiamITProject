@@ -188,6 +188,8 @@ module.exports = (AppDataSource) => {
       const lang = (req.headers['accept-language'] || 'en').toLowerCase().startsWith('th') ? 'th' : 'en';
       profile.department_id = department ? department.id : '';
       profile.department_name = department ? (lang === 'th' ? department.department_name_th : department.department_name_en) : '';
+      profile.department_name_th = department ? department.department_name_th : '';
+      profile.department_name_en = department ? department.department_name_en : '';
       // Position
       let position = null;
       if (userEntity.position) {
@@ -195,6 +197,8 @@ module.exports = (AppDataSource) => {
       }
       profile.position_id = position ? position.id : '';
       profile.position_name = position ? (lang === 'th' ? position.position_name_th : position.position_name_en) : '';
+      profile.position_name_th = position ? position.position_name_th : '';
+      profile.position_name_en = position ? position.position_name_en : '';
       return res.json({ success: true, data: profile });
     } catch (err) {
       console.error('Profile error:', err);
@@ -323,6 +327,8 @@ module.exports = (AppDataSource) => {
       }
       profile.department_id = department ? department.id : '';
       profile.department_name = department ? (lang === 'th' ? department.department_name_th : department.department_name_en) : '';
+      profile.department_name_th = department ? department.department_name_th : '';
+      profile.department_name_en = department ? department.department_name_en : '';
       // Position
       let position = null;
       if (updated.position) {
@@ -330,6 +336,8 @@ module.exports = (AppDataSource) => {
       }
       profile.position_id = position ? position.id : '';
       profile.position_name = position ? (lang === 'th' ? position.position_name_th : position.position_name_en) : '';
+      profile.position_name_th = position ? position.position_name_th : '';
+      profile.position_name_en = position ? position.position_name_en : '';
       // Name
       if (role === 'admin') profile.name = updated.admin_name;
       else if (role === 'superadmin') profile.name = updated.superadmin_name;
