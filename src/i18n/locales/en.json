@@ -59,6 +59,7 @@
     "createUser": "Create User",
     "manageAll": "Manage All",
     "companyNews": "Company News",
+    "announcementsFeed": "Announcements Feed",
     "calendar": "Calendar"
   },
   "common": {
@@ -572,6 +573,8 @@
   "companyNews": {
     "title": "Company News",
     "companyNewsDesc": "Important announcements, company news, activities, and information that employees should know",
+    "managePosts": "Manage Posts",
+    "managePostsDesc": "Create, edit, and manage company announcements and news posts",
     "subject": "Subject",
     "addMore": "Add more",
     "noNews": "No news",
@@ -590,6 +593,17 @@
     "cancel": "Cancel",
     "viewDetail": "View Detail",
     "addNews": "Add News"
+  },
+  "announcementsFeed": {
+    "title": "Announcements Feed",
+    "subtitle": "View latest announcements and news from the company",
+    "noAnnouncements": "No announcements",
+    "noAnnouncementsDesc": "There are no announcements yet",
+    "errorMessage": "Error loading announcements",
+    "attachedImage": "Attached image",
+    "managePosts": "Manage Posts",
+    "createPost": "Create Post",
+    "selectImage": "Select Image"
   },
   "holidays": {
     "newYearsDay": "New Year's Day",
