@@ -107,6 +107,9 @@
     "december": "ธันวาคม",
     "all": "ทั้งหมด"
   },
+  "approved": "อนุมัติแล้ว",
+  "rejected": "ปฏิเสธแล้ว",
+  "markAllAsRead": "อ่านทั้งหมด",
   "leave": {
     "all": "ทั้งหมด",
     "statusAll": "ทุกสถานะ",
@@ -328,16 +331,19 @@
     "quickActions": "เมนูด่วน",
     "quickActionsDesc": "เข้าถึงฟังก์ชันที่ใช้บ่อย",
     "recentLeaveStats": "การลาล่าสุด",
-    "recentLeaveStatsDesc": "ภาพรวมการใช้สิทธิการลา",
-    "fillCompleteInfo": "กรุณากรอกข้อมูลให้ครบถ้วน",
     "recentNotifications": "แจ้งเตือนล่าสุด",
     "upcomingHolidays": "วันหยุด/กิจกรรม",
-    "announcements": "ข่าวสารบริษัท",
-    "noUpcomingHolidays": "ไม่มีวันหยุดในเดือนนี้",
     "recentLeaveStatsDesc": "การใช้สิทธิการลาล่าสุด",
     "fillCompleteInfo": "กรุณากรอกข้อมูลให้ครบถ้วน",
     "manageAllDesc": "จัดการตำแหน่ง แผนก และประเภทการลาทั้งหมด",
-    "backdatedRequests": "ใบลาย้อนหลัง"
+    "backdatedRequests": "ใบลาย้อนหลัง",
+    "user": "ผู้ใช้",
+    "companyHolidays": "วันหยุดบริษัท",
+    "annualHolidays": "วันหยุดราชการ",
+    "companyNews": "ข่าวสารบริษัท",
+    "noUpcomingHolidays": "ไม่มีวันหยุดที่กำลังจะมาถึง",
+    "noCompanyHolidays": "ไม่มีวันหยุดบริษัทในเดือนนี้",
+    "announcements": "ข่าวสาร"
   },
   "profile": {
     "personalInfo": "ข้อมูลส่วนตัว",
@@ -506,7 +512,6 @@
   "error": {
     "apiConnectionError": "ข้อผิดพลาดการเชื่อมต่อ API",
     "cannotLoadStats": "ไม่สามารถโหลดสถิติได้",
-    "apiConnectionError": "ข้อผิดพลาดการเชื่อมต่อ API",
     "title": "ข้อผิดพลาด",
     "message": "ข้อผิดพลาดในการเชื่อมต่อ API"
   },
@@ -553,6 +558,9 @@
     "noEmployeesFound": "ไม่พบข้อมูลพนักงานตามเงื่อนไขที่เลือก"
   },
   "notification": {
+    "notifications": "การแจ้งเตือน",
+    "noNotifications": "ไม่มีการแจ้งเตือน",
+    "read": "ทำเครื่องหมายว่าอ่านแล้ว",
     "title": "การแจ้งเตือน",
     "notifications": "การแจ้งเตือน",
     "empty": "ไม่มีการแจ้งเตือน",
@@ -611,5 +619,73 @@
     "deleteError": "ลบข่าวสารไม่สำเร็จ",
     "deleteErrorDesc": "ลบข่าวสารไม่สำเร็จ",
     "deleteConfirmDesc": "คุณต้องการลบข่าวสารนี้หรือไม่?"
+  },
+  "holidays": {
+    "newYearsDay": "วันขึ้นปีใหม่",
+    "childrensDay": "วันเด็กแห่งชาติ",
+    "makhaBucha": "วันมาฆบูชา",
+    "chakriMemorialDay": "วันจักรี",
+    "songkranFestival": "วันสงกรานต์",
+    "labourDay": "วันแรงงานแห่งชาติ",
+    "coronationDay": "วันฉัตรมงคล",
+    "royalPloughingCeremony": "วันพืชมงคล",
+    "visakhaBucha": "วันวิสาขบูชา",
+    "asalhaPuja": "วันอาสาฬหบูชา",
+    "buddhistLent": "วันเข้าพรรษา",
+    "queenBirthday": "วันเฉลิมพระชนมพรรษาสมเด็จพระนางเจ้าสุทิดา",
+    "mothersDay": "วันเฉลิมพระชนมพรรษาสมเด็จพระนางเจ้าสิริกิติ์ (วันแม่)",
+    "kingBhumibolMemorialDay": "วันคล้ายวันสวรรคตพระบรมชนกาธิเบศรฯ (วันนวมินทรมหาราช)",
+    "kingChulalongkornDay": "วันปิยะมหาราช",
+    "kingsBirthday": "วันเฉลิมพระชนมพรรษาพระบาทสมเด็จพระเจ้าอยู่หัว",
+    "endOfBuddhistLent": "วันออกพรรษา",
+    "chulalongkornDay": "วันปิยะมหาราช",
+    "loyKrathong": "วันลอยกระทง",
+    "fathersDay": "วันเฉลิมพระชนมพรรษา ร.9 (วันพ่อ)",
+    "constitutionDay": "วันรัฐธรรมนูญ",
+    "newYearsEve": "วันสิ้นปี",
+    "christmasDay": "วันคริสต์มาส",
+    "christmasEve": "วันคริสต์มาสอีฟ",
+    "valentinesDay": "วันวาเลนไทน์",
+    "halloween": "วันฮาโลวีน",
+    "easter": "วันอีสเตอร์",
+    "goodFriday": "วันศุกร์ประเสริฐ",
+    "easterMonday": "วันจันทร์อีสเตอร์"
+  },
+  "calendar": {
+    "title": "ปฏิทิน",
+    "subtitle": "ดูปฎิทินกิจกรรมและวันสำคัญของบริษัท",
+    "currentYear": "ปีปัจจุบัน",
+    "annualHolidays": "วันหยุดประจำปี",
+    "companyHolidays": "วันหยุดบริษัท",
+    "loading": "กำลังโหลด...",
+    "months": {
+      "january": "มกราคม",
+      "february": "กุมภาพันธ์",
+      "march": "มีนาคม",
+      "april": "เมษายน",
+      "may": "พฤษภาคม",
+      "june": "มิถุนายน",
+      "july": "กรกฎาคม",
+      "august": "สิงหาคม",
+      "september": "กันยายน",
+      "october": "ตุลาคม",
+      "november": "พฤศจิกายน",
+      "december": "ธันวาคม"
+    },
+    "weekdays": {
+      "sunday": "อา",
+      "monday": "จ",
+      "tuesday": "อ",
+      "wednesday": "พ",
+      "thursday": "พฤ",
+      "friday": "ศ",
+      "saturday": "ส"
+    },
+    "legend": {
+      "title": "คำอธิบาย",
+      "annualHoliday": "วันหยุดประจำปี",
+      "companyHoliday": "วันหยุดบริษัท",
+      "dualEvent": "กิจกรรมร่วม"
+    }
   }
 }

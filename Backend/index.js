@@ -217,6 +217,9 @@ app.use('/api', superAdminController);
 const announcementsController = require('./api/AnnouncementsController')(AppDataSource);
 app.use('/api', announcementsController);
 
+const customHolidayController = require('./api/CustomHolidayController')(AppDataSource);
+app.use('/api', customHolidayController);
+
 app.listen(port, '0.0.0.0', () => {
   console.log(`Server is running on http://localhost:${port}`);
 }); 

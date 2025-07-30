@@ -24,9 +24,7 @@ import ManageAll from './pages/SuperAdmin/ManageAll';
 import SuperAdminList from './pages/SuperAdmin/SuperAdminList';
 import CompanyNews from './pages/CompanyNews';
 import CalendarPage from './pages/CalendarPage';
-import CalendarAnnualPage from './pages/CalendarAnnualPage';
-import CalendarMonthDetailPage from './pages/CalendarMonthDetailPage';
-import CalendarCompanyPage from './pages/CalendarCompanyPage';
+import CompanyMonthDetailPage from './pages/CompanyMonthDetailPage';
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const queryClient = new QueryClient();
@@ -55,10 +53,11 @@ const AppContent = () => {
   return (
     <SidebarProvider>
       <div className="min-h-screen flex w-full relative">
-        {/* ปุ่มเปลี่ยนภาษามุมขวาบน */}
-        <div className="absolute top-0 right-0 p-4 z-50">
+        {/* Global Language Switcher */}
+        <div className="fixed top-4 right-4 z-50">
           <LanguageSwitcher />
         </div>
+
         <AppSidebar />
         <main className="flex-1">
           <Routes>
@@ -88,9 +87,7 @@ const AppContent = () => {
               </ProtectedRoute>
             } />
             <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
-            <Route path="/calendar/annual" element={<ProtectedRoute><CalendarAnnualPage /></ProtectedRoute>} />
-            <Route path="/calendar/annual/:year/:month" element={<ProtectedRoute><CalendarMonthDetailPage /></ProtectedRoute>} />
-            <Route path="/calendar/company" element={<ProtectedRoute><CalendarCompanyPage /></ProtectedRoute>} />
+            <Route path="/calendar/:year/:month" element={<ProtectedRoute><CompanyMonthDetailPage /></ProtectedRoute>} />
             <Route path="/admin" element={
               <ProtectedRoute adminOnly>
                 <AdminDashboard />

@@ -6,12 +6,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import NotificationBell from '@/components/NotificationBell';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SidebarTrigger } from '@/components/ui/sidebar';
-import { holidays } from "@/constants/holidays";
 import { getUpcomingThaiHolidays, getThaiHolidaysByMonth } from "@/constants/getThaiHolidays";
 import Profile from './Profile';
 import { format } from 'date-fns';
@@ -270,21 +268,39 @@ const Index = () => {
     fetchUserProfile();
   }, [API_BASE_URL, showSessionExpiredDialog]);
 
-  // Chart data for demo
-  const chartData = [
-    { name: t('leaveTypes.sick'), value: leaveStats.sick },
-    { name: t('leaveTypes.vacation'), value: leaveStats.vacation },
-    { name: t('leaveTypes.personal'), value: leaveStats.business },
-  ];
+  // Fetch announcements
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      setLoadingAnnouncements(true);
+      try {
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+        const response = await fetch(`${API_BASE_URL}/api/announcements`);
+        
+        if (response.ok) {
+          const data = await response.json();
+          if (data.status === 'success' && Array.isArray(data.data)) {
+            // Sort by creation date (latest first) and take only the latest 3
+            const sortedAnnouncements = data.data
+              .sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+              .slice(0, 3);
+            setAnnouncements(sortedAnnouncements);
+          }
+        } else {
+          setErrorAnnouncements(t('error.cannotLoadStats'));
+        }
+      } catch (error) {
+        console.error('Error fetching announcements:', error);
+        setErrorAnnouncements(t('error.apiConnectionError'));
+      } finally {
+        setLoadingAnnouncements(false);
+      }
+    };
 
-  // MOCK: Recent notifications
-  const recentNotifications = [
-    { id: 1, title: 'คำขอลาได้รับการอนุมัติ', message: 'ลาพักผ่อน 15-17 มี.ค. ได้รับการอนุมัติ', time: '2 ชม.ที่แล้ว', type: 'success' },
-    { id: 2, title: 'เตือนวันลาคงเหลือ', message: 'คุณมีวันลาพักผ่อนเหลือ 7 วัน', time: '1 วันที่แล้ว', type: 'info' },
-    { id: 3, title: 'คำขอลาถูกปฏิเสธ', message: 'ลาธุรกิจ 10 มี.ค. ถูกปฏิเสธ', time: '3 วันที่แล้ว', type: 'error' },
-  ];
+    fetchAnnouncements();
+  }, [t]);
+
   // Upcoming holidays (Thai calendar, 3 next)
-  const upcomingHolidays = getUpcomingThaiHolidays(3);
+  const upcomingHolidays = getUpcomingThaiHolidays(3, t);
   // State สำหรับเลือกเดือน/ปี
   const now = new Date();
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
@@ -293,38 +309,70 @@ const Index = () => {
     t('months.1'), t('months.2'), t('months.3'), t('months.4'), t('months.5'), t('months.6'),
     t('months.7'), t('months.8'), t('months.9'), t('months.10'), t('months.11'), t('months.12')
   ];
-  const holidaysOfMonth = getThaiHolidaysByMonth(selectedYear, selectedMonth);
-  // MOCK: Announcements
-  const announcements = [
-    { id: 1, title: 'ปรับปรุงระบบ', message: 'ระบบจะปิดปรับปรุง 20 มี.ค. 22:00-23:00 น.' },
-    { id: 2, title: 'กิจกรรมบริษัท', message: 'เชิญร่วมกิจกรรม Outing 30 เม.ย. ลงทะเบียนได้ที่ HR' },
-  ];
+  const holidaysOfMonth = getThaiHolidaysByMonth(selectedYear, selectedMonth, t);
+  // Announcements state
+  const [announcements, setAnnouncements] = useState<Array<{
+    id: string;
+    subject: string;
+    detail: string;
+    createdBy?: string;
+    createdAt?: string;
+  }>>([]);
+  const [loadingAnnouncements, setLoadingAnnouncements] = useState(true);
+  const [errorAnnouncements, setErrorAnnouncements] = useState("");
+
+  // Company holidays state
+  const [companyHolidaysOfMonth, setCompanyHolidaysOfMonth] = useState<Array<{
+    date: string;
+    title: string;
+  }>>([]);
+  const [loadingCompanyHolidays, setLoadingCompanyHolidays] = useState(true);
+  const [errorCompanyHolidays, setErrorCompanyHolidays] = useState("");
+
+  // Fetch company holidays
+  useEffect(() => {
+    const fetchCompanyHolidays = async () => {
+      setLoadingCompanyHolidays(true);
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          showSessionExpiredDialog();
+          return;
+        }
+
+        const response = await fetch(`${API_BASE_URL}/api/custom-holidays/year/${selectedYear}/month/${selectedMonth + 1}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.status === 'success' && Array.isArray(data.data)) {
+            setCompanyHolidaysOfMonth(data.data);
+          } else {
+            console.error('Failed to fetch company holidays:', data.message);
+            setCompanyHolidaysOfMonth([]);
+          }
+        } else if (response.status === 401) {
+          showSessionExpiredDialog();
+        } else {
+          console.error('Failed to fetch company holidays:', response.statusText);
+          setCompanyHolidaysOfMonth([]);
+        }
+      } catch (error) {
+        console.error('Error fetching company holidays:', error);
+        setCompanyHolidaysOfMonth([]);
+      } finally {
+        setLoadingCompanyHolidays(false);
+      }
+    };
+
+    fetchCompanyHolidays();
+  }, [API_BASE_URL, selectedYear, selectedMonth, showSessionExpiredDialog]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-100 to-purple-100 dark:from-gray-900 dark:via-gray-950 dark:to-indigo-900 transition-colors relative overflow-x-hidden">
-      {/* Hero Section (replace top bar and welcome section) */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <svg viewBox="0 0 1440 320" className="w-full h-32 md:h-48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path fill="url(#waveGradient)" fillOpacity="1" d="M0,160L60,170.7C120,181,240,203,360,197.3C480,192,600,160,720,133.3C840,107,960,85,1080,101.3C1200,117,1320,171,1380,197.3L1440,224L1440,0L1380,0C1320,0,1200,0,1080,0C960,0,840,0,720,0C600,0,480,0,360,0C240,0,120,0,60,0L0,0Z" />
-            <defs>
-              <linearGradient id="waveGradient" x1="0" y1="0" x2="1440" y2="0" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#3b82f6" />
-                <stop offset="1" stopColor="#6366f1" />
-              </linearGradient>
-            </defs>
-          </svg>
-        </div>
-        <div className="relative z-10 flex flex-col items-center justify-center py-10 md:py-16">
-          <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-24 h-24 rounded-full bg-white/80 shadow-2xl border-4 border-white mb-4" />
-          <h1 className="text-4xl md:text-5xl font-extrabold text-indigo-900 drop-shadow mb-2 flex items-center gap-3">
-            {t('main.leaveManagementSystem')}
-          </h1>
-          <p className="text-lg md:text-xl text-blue-900/70 mb-2 font-medium text-center max-w-2xl">
-            {t('main.welcomeMessage')}
-          </p>
-        </div>
-      </div>
       {/* Parallax/Floating Background Shapes */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <div className="absolute -top-32 -left-32 w-[350px] h-[350px] rounded-full bg-gradient-to-br from-blue-200 via-indigo-100 to-purple-100 opacity-30 blur-2xl animate-float-slow" />
@@ -340,7 +388,7 @@ const Index = () => {
             <p className="text-sm text-blue-500 dark:text-blue-200 animate-fade-in-up delay-100">{t('main.welcomeMessage')}</p>
           </div>
           {/* Calendar Filter (now left of language/world icon) */}
-          <div className="flex gap-2 ml-4">
+          <div className="flex gap-2 ml-4 mr-16">
             <select
               className="rounded-lg border px-2 py-1 text-blue-700 bg-white/80 shadow"
               value={filterMonth}
@@ -360,18 +408,7 @@ const Index = () => {
               ))}
             </select>
           </div>
-          <LanguageSwitcher />
-          {/* Dark mode toggle */}
-          <button
-            className="ml-2 p-2 rounded-full bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 transition"
-            onClick={() => { document.documentElement.classList.toggle('dark'); }}
-            aria-label="Toggle dark mode"
-          >
-            <svg className="w-5 h-5 text-gray-700 dark:text-yellow-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-              <path d="M12 3v1m0 16v1m8.66-13.66l-.71.71M4.05 19.07l-.71.71M21 12h-1M4 12H3m16.66 5.66l-.71-.71M4.05 4.93l-.71-.71" />
-              <circle cx="12" cy="12" r="5" />
-            </svg>
-          </button>
+
         </div>
       </div>
 
@@ -379,7 +416,7 @@ const Index = () => {
         {/* Welcome Section */}
         <div className="relative rounded-2xl p-5 text-white overflow-hidden glass shadow-xl flex flex-col md:flex-row items-center justify-between gap-4 animate-fade-in-up bg-gradient-to-tr from-blue-100 via-indigo-200 to-purple-100">
           <div className="z-10 flex-1 space-y-2">
-            <h2 className="text-2xl md:text-3xl font-extrabold mb-1 drop-shadow-lg animate-slide-in-left" style={{ color: '#2563eb' }}>{t('main.hello')} สมชาย ใจดี! 👋</h2>
+            <h2 className="text-2xl md:text-3xl font-extrabold mb-1 drop-shadow-lg animate-slide-in-left" style={{ color: '#2563eb' }}>{t('main.hello')} {loadingUserProfile ? t('common.loading') : (userProfile?.name || t('main.user'))}! 👋</h2>
             <p className="mb-3 text-base font-medium animate-slide-in-left delay-100" style={{ color: '#6366f1' }}>
               {t('main.today')} {new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
             </p>
@@ -484,37 +521,52 @@ const Index = () => {
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-blue-700 text-base font-bold animate-slide-in-left">
                 <Calendar className="w-5 h-5 text-blue-500" />
-                วันหยุดบริษัท
+                {t('main.companyHolidays')}
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2 pt-0">
-              <table className="w-full text-sm text-blue-900">
-                <thead>
-                  <tr className="bg-blue-50">
-                    <th className="px-3 py-2 text-left">วันที่</th>
-                    <th className="px-3 py-2 text-left">ชื่อวันหยุด/กิจกรรม</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {/* Mock company holidays, replace with real data as needed */}
-                  {[
-                    { date: '2024-07-15', name: 'วันหยุดบริษัทกลางปี' },
-                    { date: '2024-08-12', name: 'กิจกรรม Outing' },
-                    { date: '2024-12-31', name: 'วันหยุดสิ้นปี' },
-                  ].map((h, idx) => {
-                    const d = new Date(h.date);
-                    const day = d.getDate();
-                    const month = d.getMonth() + 1;
-                    const year = d.getFullYear() + 543;
-                    return (
-                      <tr key={h.date} className="hover:bg-blue-50">
-                        <td className="px-3 py-2">{day}/{month}/{year}</td>
-                        <td className="px-3 py-2">{h.name}</td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+              {/* Dropdown เลือกเดือน/ปี */}
+              <div className="flex gap-2 mb-2">
+                <select
+                  className="rounded-lg border px-2 py-1 text-blue-700 bg-white/80 shadow"
+                  value={selectedMonth}
+                  onChange={e => setSelectedMonth(Number(e.target.value))}
+                >
+                  {months.map((m, idx) => (
+                    <option key={idx} value={idx}>{m}</option>
+                  ))}
+                </select>
+                <select
+                  className="rounded-lg border px-2 py-1 text-blue-700 bg-white/80 shadow"
+                  value={selectedYear}
+                  onChange={e => setSelectedYear(Number(e.target.value))}
+                >
+                  {[now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1].map(y => (
+                    <option key={y} value={y}>{y + 543}</option>
+                  ))}
+                </select>
+              </div>
+              <ul className="space-y-2">
+                {loadingCompanyHolidays ? (
+                  <div className="text-center py-4 text-gray-500 animate-pulse text-sm">{t('common.loading')}</div>
+                ) : errorCompanyHolidays ? (
+                  <div className="text-center py-4 text-red-500 animate-shake text-sm">{errorCompanyHolidays}</div>
+                ) : companyHolidaysOfMonth.length === 0 ? (
+                  <li className="text-blue-500 italic">{t('main.noCompanyHolidays')}</li>
+                ) : (
+                  companyHolidaysOfMonth.map(h => (
+                    <li key={h.date} className="flex items-center gap-3 bg-white/60 rounded-xl px-4 py-2 shadow hover:bg-blue-50 transition animate-pop-in">
+                      <span className="font-bold text-blue-700 w-24">
+                        {new Date(h.date).toLocaleDateString(
+                          i18n.language.startsWith('th') ? 'th-TH' : 'en-US', 
+                          { day: '2-digit', month: 'short', year: 'numeric' }
+                        )}
+                      </span>
+                      <span className="text-blue-900 font-medium">{h.title}</span>
+                    </li>
+                  ))
+                )}
+              </ul>
             </CardContent>
           </Card>
           {/* Upcoming Holidays/Events Section */}
@@ -522,14 +574,10 @@ const Index = () => {
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-blue-700 text-base font-bold animate-slide-in-left">
                 <Calendar className="w-5 h-5 text-blue-500" />
-                {t('main.upcomingHolidays') || 'วันหยุด/กิจกรรม'}
+                {t('main.annualHolidays')}
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2 pt-0">
-              <div className="flex items-center gap-2 mb-2">
-                <Calendar className="w-6 h-6 text-blue-400 animate-bounce" />
-                <h2 className="text-xl font-bold text-blue-900 drop-shadow">{t('main.upcomingHolidays')}</h2>
-              </div>
               {/* Dropdown เลือกเดือน/ปี */}
               <div className="flex gap-2 mb-2">
                 <select
@@ -557,7 +605,12 @@ const Index = () => {
                 ) : (
                   holidaysOfMonth.map(h => (
                     <li key={h.date} className="flex items-center gap-3 bg-white/60 rounded-xl px-4 py-2 shadow hover:bg-blue-50 transition animate-pop-in">
-                      <span className="font-bold text-blue-700 w-24">{new Date(h.date).toLocaleDateString('th-TH', { day: '2-digit', month: 'short', year: 'numeric' })}</span>
+                      <span className="font-bold text-blue-700 w-24">
+                        {new Date(h.date).toLocaleDateString(
+                          i18n.language.startsWith('th') ? 'th-TH' : 'en-US', 
+                          { day: '2-digit', month: 'short', year: 'numeric' }
+                        )}
+                      </span>
                       <span className="text-blue-900 font-medium">{h.name}</span>
                     </li>
                   ))
@@ -570,21 +623,29 @@ const Index = () => {
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-blue-700 text-base font-bold animate-slide-in-left">
                 <Bell className="w-5 h-5 text-purple-500" />
-                {t('main.announcements') || 'ข่าวสารบริษัท'}
+                {t('main.companyNews')}
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2 pt-0">
-              {announcements.map((a, idx) => (
-                <div key={a.id} className="flex items-start gap-2 p-2 rounded-xl glass bg-gradient-to-br from-white/80 via-blue-50/80 to-indigo-100/80 shadow border-0 animate-pop-in" style={{ animationDelay: `${idx * 60}ms` }}>
-                  <span className="w-7 h-7 flex items-center justify-center rounded-full bg-purple-100 text-purple-600">
-                    <Bell className="w-4 h-4" />
-                  </span>
-                  <div className="flex-1">
-                    <div className="font-semibold text-sm text-blue-900">{a.title}</div>
-                    <div className="text-xs text-gray-500">{a.message}</div>
+              {loadingAnnouncements ? (
+                <div className="text-center py-4 text-gray-500 animate-pulse text-sm">{t('common.loading')}</div>
+              ) : errorAnnouncements ? (
+                <div className="text-center py-4 text-red-500 animate-shake text-sm">{errorAnnouncements}</div>
+              ) : announcements.length === 0 ? (
+                <div className="text-center py-4 text-blue-400 text-sm">{t('companyNews.noNews')}</div>
+              ) : (
+                announcements.map((a, idx) => (
+                  <div key={a.id} className="flex items-start gap-2 p-2 rounded-xl glass bg-gradient-to-br from-white/80 via-blue-50/80 to-indigo-100/80 shadow border-0 animate-pop-in" style={{ animationDelay: `${idx * 60}ms` }}>
+                    <span className="w-7 h-7 flex items-center justify-center rounded-full bg-purple-100 text-purple-600">
+                      <Bell className="w-4 h-4" />
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-semibold text-sm text-blue-900 truncate">{a.subject}</div>
+                      <div className="text-xs text-gray-500 line-clamp-2 overflow-hidden">{a.detail}</div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </CardContent>
           </Card>
         </div>
@@ -616,6 +677,18 @@ const Index = () => {
                   {t('leave.leaveHistory')}
                 </Button>
               </Link>
+              <Link to="/calendar">
+                <Button className="w-full justify-start btn-blue-outline-lg text-base py-2 px-3 gap-2 animate-pop-in delay-200" variant="outline">
+                  <Calendar className="w-5 h-5" />
+                  {t('navigation.calendar')}
+                </Button>
+              </Link>
+              <Link to="/company-news">
+                <Button className="w-full justify-start btn-blue-outline-lg text-base py-2 px-3 gap-2 animate-pop-in delay-300" variant="outline">
+                  <Bell className="w-5 h-5" />
+                  {t('main.companyNews')}
+                </Button>
+              </Link>
             </CardContent>
           </Card>
 
@@ -632,49 +705,48 @@ const Index = () => {
             </CardHeader>
             <CardContent className="flex flex-col gap-2 pt-0">
               {loadingRecentLeaves ? (
-                <div className="text-center py-6 text-gray-500 animate-pulse text-base">{t('common.loading')}</div>
+                <div className="text-center py-4 text-gray-500 animate-pulse text-sm">{t('common.loading')}</div>
               ) : errorRecentLeaves ? (
-                <div className="text-center py-6 text-red-500 animate-shake text-base">{errorRecentLeaves}</div>
+                <div className="text-center py-4 text-red-500 animate-shake text-sm">{errorRecentLeaves}</div>
               ) : recentLeaves.length === 0 ? (
-                <div className="text-center py-6 text-blue-400 text-base">{t('main.noRecentLeaveRequests', 'ไม่มีคำขอลาล่าสุด')}</div>
+                <div className="text-center py-4 text-blue-400 text-sm">{t('main.noRecentLeaveRequests', 'ไม่มีคำขอลาล่าสุด')}</div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-blue-200">
-                    <thead>
-                      <tr className="bg-blue-50">
-                        <th className="px-4 py-2 text-left text-xs font-bold text-blue-700 uppercase">{t('leave.type')}</th>
-                        <th className="px-4 py-2 text-left text-xs font-bold text-blue-700 uppercase">{t('leave.duration')}</th>
-                        <th className="px-4 py-2 text-left text-xs font-bold text-blue-700 uppercase">{t('leave.startDate')}</th>
-                        <th className="px-4 py-2 text-left text-xs font-bold text-blue-700 uppercase">{t('leave.status')}</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {recentLeaves.map((l, idx) => (
-                        <tr key={idx} className="bg-white even:bg-blue-50">
-                          <td className="px-4 py-2 font-medium text-blue-900">
-                            {i18n.language.startsWith('th') ? (l.leavetype_th || l.leavetype) : (l.leavetype_en || l.leavetype)}
-                          </td>
-                          <td className="px-4 py-2 text-blue-800">
-                            {(() => {
-                              if (!l.duration) return '-';
-                              // Replace 'day' or 'days' with translation
-                              const match = l.duration.match(/(\d+)\s*day/);
-                              if (match) {
-                                return `${match[1]} ${t('common.days')}`;
-                              }
-                              return l.duration;
-                            })()}
-                          </td>
-                          <td className="px-4 py-2 text-blue-800">
-                            {l.startdate ? format(new Date(l.startdate), 'dd/MM/yyyy') : '-'}
-                          </td>
-                          <td className="px-4 py-2">
-                            <span className={`text-xs font-bold rounded-full px-3 py-1 ${l.status === 'approved' ? 'bg-green-100 text-green-600' : l.status === 'pending' ? 'bg-yellow-100 text-yellow-600' : 'bg-red-100 text-red-600'}`}>{l.status === 'approved' ? t('leave.approved') : l.status === 'pending' ? t('leave.pending') : t('leave.rejected')}</span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="space-y-2">
+                  {recentLeaves.map((l, idx) => (
+                    <div key={idx} className="bg-white/80 rounded-lg p-3 shadow-sm border border-blue-100 hover:shadow-md transition-all duration-200 animate-pop-in" style={{ animationDelay: `${idx * 50}ms` }}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <Calendar className="w-4 h-4 text-blue-600" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <h4 className="font-semibold text-blue-900 text-sm">
+                                {i18n.language.startsWith('th') ? (l.leavetype_th || l.leavetype) : (l.leavetype_en || l.leavetype)}
+                              </h4>
+                              <span className={`text-xs font-bold rounded-full px-2 py-0.5 ${l.status === 'approved' ? 'bg-green-100 text-green-600' : l.status === 'pending' ? 'bg-yellow-100 text-yellow-600' : 'bg-red-100 text-red-600'}`}>
+                                {l.status === 'approved' ? t('leave.approved') : l.status === 'pending' ? t('leave.pending') : t('leave.rejected')}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3 text-xs text-blue-600 mt-1">
+                              <span>
+                                {(() => {
+                                  if (!l.duration) return '-';
+                                  const match = l.duration.match(/(\d+)\s*day/);
+                                  if (match) {
+                                    return `${match[1]} ${t('common.days')}`;
+                                  }
+                                  return l.duration;
+                                })()}
+                              </span>
+                              <span>•</span>
+                              <span>{l.startdate ? format(new Date(l.startdate), 'dd/MM/yyyy') : '-'}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
             </CardContent>
@@ -693,6 +765,12 @@ const Index = () => {
           .btn-blue-outline-lg:hover {
             background: #eff6ff;
             color: #1e293b;
+          }
+          .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
           }
           .animate-float { animation: float 3s ease-in-out infinite alternate; }
           .animate-float-slow { animation: float 8s ease-in-out infinite alternate; }

@@ -25,5 +25,10 @@ module.exports = new EntitySchema({
         createdBy: {
             type: 'varchar',
         },
+        type: {
+            type: 'varchar',
+            length: 20,
+            default: 'company',
+        },
     },
 });

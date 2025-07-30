@@ -95,6 +95,9 @@
     "allMonths": "All Months",
     "all": "All"
   },
+  "approved": "Approved",
+  "rejected": "Rejected",
+  "markAllAsRead": "Mark All as Read",
   "leave": {
     "all": "All",
     "statusAll": "All Statuses",
@@ -170,7 +173,6 @@
     "employeeName": "Employee Name",
     "position": "Position",
     "department": "Department",
-    "submittedDate": "Submitted Date",
     "attachment": "Attachment",
     "hour": "hour",
     "day": "day",
@@ -307,7 +309,14 @@
     "recentLeaveStatsDesc": "Latest leave requests",
     "fillCompleteInfo": "Please fill out complete information",
     "manageAllDesc": "Manage all positions, departments, and leave types",
-    "backdatedRequests": "Backdated Requests"
+    "backdatedRequests": "Backdated Requests",
+    "user": "User",
+    "companyHolidays": "Company Holidays",
+    "annualHolidays": "Annual Holidays",
+    "companyNews": "Company News",
+    "noUpcomingHolidays": "No upcoming holidays",
+    "noCompanyHolidays": "No company holidays this month",
+    "announcements": "Announcements"
   },
   "profile": {
     "personalInfo": "Personal Information",
@@ -483,8 +492,7 @@
     "allDepartments": "All Departments",
     "allRoles": "All Roles",
     "admin": "Admin",
-    "superadmin": "Superadmin",
-    "employee": "Employee"
+    "superadmin": "Superadmin"
   },
   "error": {
     "apiConnectionError": "API Connection Error",
@@ -517,6 +525,9 @@
     "noEmployeesFound": "No employees found"
   },
   "notification": {
+    "notifications": "Notifications",
+    "noNotifications": "No notifications",
+    "read": "Mark as Read",
     "title": "Notifications",
     "notifications": "Notifications",
     "empty": "No notifications",
@@ -573,5 +584,73 @@
     "cancel": "Cancel",
     "viewDetail": "View Detail",
     "addNews": "Add News"
+  },
+  "holidays": {
+    "newYearsDay": "New Year's Day",
+    "childrensDay": "Children's Day",
+    "makhaBucha": "Makha Bucha",
+    "chakriMemorialDay": "Chakri Memorial Day",
+    "songkranFestival": "Songkran Festival",
+    "labourDay": "Labour Day",
+    "coronationDay": "Coronation Day",
+    "royalPloughingCeremony": "Royal Ploughing Ceremony",
+    "visakhaBucha": "Visakha Bucha",
+    "asalhaPuja": "Asalha Puja",
+    "buddhistLent": "Buddhist Lent",
+    "queenBirthday": "Queen Suthida's Birthday",
+    "mothersDay": "Queen Mother's Birthday (Mother’s Day)",
+    "kingBhumibolMemorialDay": "King Bhumibol Memorial Day",
+    "kingChulalongkornDay": "King Chulalongkorn Day",
+    "kingsBirthday": "King Vajiralongkorn's Birthday",
+    "endOfBuddhistLent": "End of Buddhist Lent",
+    "chulalongkornDay": "Chulalongkorn Day",
+    "loyKrathong": "Loy Krathong",
+    "fathersDay": "King Bhumibol's Birthday (Father’s Day)",
+    "constitutionDay": "Constitution Day",
+    "newYearsEve": "New Year's Eve",
+    "christmasDay": "Christmas Day",
+    "christmasEve": "Christmas Eve",
+    "valentinesDay": "Valentine's Day",
+    "halloween": "Halloween",
+    "easter": "Easter",
+    "goodFriday": "Good Friday",
+    "easterMonday": "Easter Monday"
+  },
+  "calendar": {
+    "title": "Calendar",
+    "subtitle": "View company events and important dates",
+    "currentYear": "Current Year",
+    "annualHolidays": "Annual Holidays",
+    "companyHolidays": "Company Holidays",
+    "loading": "Loading...",
+    "months": {
+      "january": "January",
+      "february": "February",
+      "march": "March",
+      "april": "April",
+      "may": "May",
+      "june": "June",
+      "july": "July",
+      "august": "August",
+      "september": "September",
+      "october": "October",
+      "november": "November",
+      "december": "December"
+    },
+    "weekdays": {
+      "sunday": "Sun",
+      "monday": "Mon",
+      "tuesday": "Tue",
+      "wednesday": "Wed",
+      "thursday": "Thu",
+      "friday": "Fri",
+      "saturday": "Sat"
+    },
+    "legend": {
+      "title": "Legend",
+      "annualHoliday": "Annual Holiday",
+      "companyHoliday": "Company Holiday",
+      "dualEvent": "Dual Event"
+    }
   }
 }

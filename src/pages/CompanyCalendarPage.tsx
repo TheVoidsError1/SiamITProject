@@ -5,8 +5,45 @@ import { useNavigate } from 'react-router-dom';
 import { Switch } from '@/components/ui/switch';
 import { getAllThaiHolidays } from '@/constants/getThaiHolidays';
 
-const CalendarPage = () => {
-  const { t, i18n } = useTranslation();
+const monthNames = [
+  'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
+  'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
+];
+
+function getDaysInMonth(year: number, month: number) {
+  return new Date(year, month + 1, 0).getDate();
+}
+
+interface CompanyEvent {
+  id: string;
+  title: string;
+  description: string;
+  date: string;
+  createdAt: string;
+  createdBy: string;
+  type?: 'company' | 'annual';
+}
+
+interface ThaiHoliday {
+  date: string;
+  name: string;
+  type: string;
+}
+
+interface CalendarEvent {
+  id?: string;
+  title: string;
+  description?: string;
+  date: string;
+  createdAt?: string;
+  createdBy?: string;
+  type: 'company' | 'annual';
+  isThaiHoliday?: boolean;
+  isDual?: boolean;
+}
+
+const CompanyCalendarPage = () => {
+  const { t } = useTranslation();
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [companyEvents, setCompanyEvents] = useState<CompanyEvent[]>([]);
@@ -16,71 +53,6 @@ const CalendarPage = () => {
   const [showAnnualHolidays, setShowAnnualHolidays] = useState(true);
   const navigate = useNavigate();
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
-  // Month names based on current language
-  const monthNames = [
-    t('calendar.months.january'),
-    t('calendar.months.february'),
-    t('calendar.months.march'),
-    t('calendar.months.april'),
-    t('calendar.months.may'),
-    t('calendar.months.june'),
-    t('calendar.months.july'),
-    t('calendar.months.august'),
-    t('calendar.months.september'),
-    t('calendar.months.october'),
-    t('calendar.months.november'),
-    t('calendar.months.december')
-  ];
-
-  // Weekday names based on current language
-  const weekdayNames = [
-    t('calendar.weekdays.sunday'),
-    t('calendar.weekdays.monday'),
-    t('calendar.weekdays.tuesday'),
-    t('calendar.weekdays.wednesday'),
-    t('calendar.weekdays.thursday'),
-    t('calendar.weekdays.friday'),
-    t('calendar.weekdays.saturday')
-  ];
-
-  // Update month names and weekday names when language changes
-  useEffect(() => {
-    // This will trigger a re-render when the language changes
-    // The monthNames and weekdayNames arrays will be recreated with new translations
-  }, [i18n.language, t]);
-
-  function getDaysInMonth(year: number, month: number) {
-    return new Date(year, month + 1, 0).getDate();
-  }
-
-  interface CompanyEvent {
-    id: string;
-    title: string;
-    description: string;
-    date: string;
-    createdAt: string;
-    createdBy: string;
-    type?: 'company' | 'annual';
-  }
-
-  interface ThaiHoliday {
-    date: string;
-    name: string;
-    type: string;
-  }
-
-  interface CalendarEvent {
-    id?: string;
-    title: string;
-    description?: string;
-    date: string;
-    createdAt?: string;
-    createdBy?: string;
-    type: 'company' | 'annual';
-    isThaiHoliday?: boolean;
-    isDual?: boolean;
-  }
 
   // Fetch company events and Thai holidays
   useEffect(() => {
@@ -198,12 +170,15 @@ const CalendarPage = () => {
           </svg>
         </div>
         <div className="relative z-10 flex flex-col items-center justify-center py-10 md:py-16">
+          <button onClick={() => navigate(-1)} className="absolute left-4 top-4 md:left-10 md:top-10 p-2 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 shadow">
+            <ChevronLeft className="w-6 h-6" />
+          </button>
           <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-24 h-24 rounded-full bg-white/80 shadow-2xl border-4 border-white mb-4" />
           <h1 className="text-4xl md:text-5xl font-extrabold text-indigo-900 drop-shadow mb-2 flex items-center gap-3">
-            {t('calendar.title')}
+            ปฎิทินทางบริษัท
           </h1>
           <p className="text-lg md:text-xl text-blue-900/70 mb-2 font-medium text-center max-w-2xl">
-            {t('calendar.subtitle')}
+            ดูปฎิทินกิจกรรมและวันสำคัญของบริษัท
           </p>
         </div>
       </div>
@@ -212,16 +187,16 @@ const CalendarPage = () => {
           <button onClick={() => setYear(y => y - 1)} className="p-2 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 shadow">
             <ChevronLeft className="w-6 h-6" />
           </button>
-          <span className="text-2xl font-bold text-blue-900">{year + (i18n.language.startsWith('th') ? 543 : 0)}</span>
+          <span className="text-2xl font-bold text-blue-900">{year + 543}</span>
           <button onClick={() => setYear(now.getFullYear())} className="px-4 py-2 rounded-lg bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-semibold shadow">
-            {t('calendar.currentYear')}
+            ปีปัจจุบัน
           </button>
           <button onClick={() => setYear(y => y + 1)} className="p-2 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 shadow">
             <ChevronRight className="w-6 h-6" />
           </button>
         </div>
         
-        {/* Filter Switches and Legend */}
+        {/* Filter Switches */}
         <div className="flex items-center justify-center gap-6 mb-6 bg-white/60 rounded-xl p-4 shadow-lg">
           <div className="flex items-center gap-3">
             <Switch 
@@ -229,7 +204,7 @@ const CalendarPage = () => {
               onCheckedChange={setShowAnnualHolidays}
               className="data-[state=checked]:bg-red-500"
             />
-            <span className="text-sm font-medium text-red-700">{t('calendar.annualHolidays')}</span>
+            <span className="text-sm font-medium text-red-700">วันหยุดประจำปี</span>
           </div>
           <div className="flex items-center gap-3">
             <Switch 
@@ -237,30 +212,13 @@ const CalendarPage = () => {
               onCheckedChange={setShowCompanyHolidays}
               className="data-[state=checked]:bg-blue-500"
             />
-            <span className="text-sm font-medium text-blue-700">{t('calendar.companyHolidays')}</span>
-          </div>
-          
-          {/* Legend */}
-          <div className="flex items-center gap-4 ml-6 pl-6 border-l border-gray-300">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-              <span className="text-xs text-red-700">{t('calendar.legend.annualHoliday')}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-              <span className="text-xs text-blue-700">{t('calendar.legend.companyHoliday')}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-              <span className="text-xs text-purple-700">{t('calendar.legend.dualEvent')}</span>
-            </div>
+            <span className="text-sm font-medium text-blue-700">วันหยุดบริษัท</span>
           </div>
         </div>
         
         {loading ? (
           <div className="flex items-center justify-center py-20">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-            <span className="ml-3 text-blue-600">{t('calendar.loading')}</span>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full max-w-6xl">
@@ -309,10 +267,10 @@ const CalendarPage = () => {
               return (
                 <div key={month} className="bg-white/80 rounded-2xl shadow-xl p-4 flex flex-col items-center">
                   <div className="flex items-center gap-2 mb-2">
-                    <Calendar className="w-5 h-5 text-indigo-400" />
+                    <Building2 className="w-5 h-5 text-indigo-400" />
                     <button
                       className="text-lg font-bold text-blue-900 hover:underline hover:text-indigo-600 transition cursor-pointer bg-transparent border-0 p-0"
-                      onClick={() => navigate(`/calendar/${year}/${mIdx + 1}`)}
+                      onClick={() => navigate(`/calendar/company/${year}/${mIdx + 1}`)}
                     >
                       {month}
                     </button>
@@ -320,13 +278,13 @@ const CalendarPage = () => {
                   <table className="w-full text-center">
                     <thead>
                       <tr className="text-blue-500">
-                        <th className="py-1">{weekdayNames[0]}</th>
-                        <th className="py-1">{weekdayNames[1]}</th>
-                        <th className="py-1">{weekdayNames[2]}</th>
-                        <th className="py-1">{weekdayNames[3]}</th>
-                        <th className="py-1">{weekdayNames[4]}</th>
-                        <th className="py-1">{weekdayNames[5]}</th>
-                        <th className="py-1">{weekdayNames[6]}</th>
+                        <th className="py-1">อา</th>
+                        <th className="py-1">จ</th>
+                        <th className="py-1">อ</th>
+                        <th className="py-1">พ</th>
+                        <th className="py-1">พฤ</th>
+                        <th className="py-1">ศ</th>
+                        <th className="py-1">ส</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -403,10 +361,9 @@ const CalendarPage = () => {
             })}
           </div>
         )}
-        
       </div>
     </div>
   );
 };
 
-export default CalendarPage; 
+export default CompanyCalendarPage; 
