@@ -483,7 +483,7 @@ const EmployeeDetail = () => {
                           ))}
                         </select>
                       ) : (
-                        <p className="text-lg text-blue-700 mt-1">{getPositionLabel(employee.position)}</p>
+                        <p className="text-lg text-blue-700 mt-1">{getPositionLabel(employee.position_id || employee.position)}</p>
                       )}
                     </div>
                     {/* Department */}
@@ -503,7 +503,7 @@ const EmployeeDetail = () => {
                           ))}
                         </select>
                       ) : (
-                        <p className="text-lg text-blue-700 mt-1">{getDepartmentLabel(employee.department)}</p>
+                        <p className="text-lg text-blue-700 mt-1">{getDepartmentLabel(employee.department_id || employee.department)}</p>
                       )}
                     </div>
                   </div>
@@ -790,7 +790,13 @@ const EmployeeDetail = () => {
                                   return <span className="text-gray-400">-</span>;
                               }
                             } else if (leave.durationType === 'hour') {
-                                return <span className="font-medium text-sm whitespace-nowrap">{Number(leave.duration)} {t(Number(leave.duration) === 1 ? 'leave.hour' : 'leave.hours')}</span>;
+                                // ใช้ durationHours แทน duration เมื่อเป็นชั่วโมง
+                                const hours = Number(leave.durationHours || leave.duration);
+                                if (hours > 0) {
+                                    return <span className="font-medium text-sm whitespace-nowrap">{hours} {t(hours === 1 ? 'leave.hour' : 'leave.hours')}</span>;
+                                } else {
+                                    return <span className="text-gray-400">-</span>;
+                                }
                             } else {
                                 return <span className="text-gray-400">-</span>;
                             }

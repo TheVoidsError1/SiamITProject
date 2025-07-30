@@ -132,6 +132,32 @@ module.exports = (AppDataSource) => {
           const admin = await adminRepo.findOneBy({ id: leave.statusBy });
           rejectedBy = admin ? admin.admin_name + ' ผู้จัดการ' : leave.statusBy;
         }
+        // คำนวณระยะเวลาการลา
+        let days = 0;
+        let durationHours = 0;
+        let durationType = 'day';
+        
+        if (leave.startTime && leave.endTime) {
+          // ลาชั่วโมง
+          const [sh, sm] = leave.startTime.split(":").map(Number);
+          const [eh, em] = leave.endTime.split(":").map(Number);
+          let start = sh + (sm || 0) / 60;
+          let end = eh + (em || 0) / 60;
+          let diff = end - start;
+          if (diff < 0) diff += 24;
+          durationType = 'hour';
+          durationHours = Math.floor(diff);
+          days = 0;
+        } else if (leave.startDate && leave.endDate) {
+          // ลาวัน
+          const start = new Date(leave.startDate);
+          const end = new Date(leave.endDate);
+          days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+          if (days < 0 || isNaN(days)) days = 0;
+          durationType = 'day';
+          durationHours = 0;
+        }
+        
         return {
           id: leave.id,
           type: leaveTypeId, // id
@@ -142,7 +168,9 @@ module.exports = (AppDataSource) => {
           endDate: leave.endDate,
           startTime: leave.startTime,
           endTime: leave.endTime,
-          days: leave.startDate && leave.endDate ? (Math.floor((new Date(leave.endDate) - new Date(leave.startDate)) / (1000*60*60*24)) + 1) : 1,
+          days,
+          durationHours,
+          durationType,
           reason: leave.reason,
           status: leave.status,
           approvedBy,
