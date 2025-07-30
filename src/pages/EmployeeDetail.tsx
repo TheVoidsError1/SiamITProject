@@ -687,16 +687,9 @@ const EmployeeDetail = () => {
                   </div>
 
                   {/* Filter Buttons */}
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={resetFilters}
-                      variant="outline"
-                      size="sm"
-                      className="w-full py-2 text-lg rounded-lg border-gray-300 text-gray-700 hover:bg-gray-50"
-                    >
-                      {t('common.reset')}
-                    </Button>
-                    <Button
+                  <div className="flex gap-3 items-end h-full shrink-0">
+                    <button
+                      className="min-h-[42px] min-w-[100px] px-5 py-2.5 rounded-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-500 text-white shadow-lg hover:from-blue-700 hover:to-indigo-600 hover:shadow-xl transition-all duration-200 transform hover:scale-105 text-sm"
                       onClick={() => {
                         // เพิ่ม debug log
                         console.log('🔘 Confirm button clicked');
@@ -711,11 +704,17 @@ const EmployeeDetail = () => {
                         setFilterBackdated(String(pendingFilterBackdated)); // บังคับเป็น string เสมอ
                         setLeavePage(1);
                       }}
-                      size="sm"
-                      className="w-full py-2 text-lg rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+                      type="button"
                     >
-                      {t('common.confirm')}
-                    </Button>
+                      {t('common.confirm', 'ยืนยัน')}
+                    </button>
+                    <button
+                      className="min-h-[42px] min-w-[100px] px-5 py-2.5 rounded-lg font-bold border border-blue-300 text-blue-700 bg-white hover:bg-blue-50 shadow transition-all duration-200 text-sm"
+                      onClick={resetFilters}
+                      type="button"
+                    >
+                      {t('common.reset', 'รีเซ็ต')}
+                    </button>
                   </div>
                 </div>
               </div>
