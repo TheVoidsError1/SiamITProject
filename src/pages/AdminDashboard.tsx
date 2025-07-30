@@ -611,6 +611,10 @@ const AdminDashboard = () => {
     if (date) {
       setPendingPendingMonth(date.getMonth() + 1);
       setPendingPendingYear(date.getFullYear());
+    } else {
+      // เมื่อล้างวันที่แล้ว ให้ปลดล็อกเดือนและปี
+      setPendingPendingMonth('');
+      setPendingPendingYear(new Date().getFullYear());
     }
   };
 
@@ -1084,9 +1088,14 @@ const AdminDashboard = () => {
                   <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.date')}</label>
                   <input
                     type="date"
-                    className="border border-blue-200 rounded-xl px-3 py-2 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
+                    className={`border border-blue-200 rounded-xl px-3 py-2 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press ${
+                      pendingPendingMonth !== '' && !pendingPendingSingleDate
+                        ? 'opacity-50 cursor-not-allowed bg-gray-100'
+                        : 'hover:bg-blue-50 hover:border-blue-300'
+                    }`}
                     value={pendingPendingSingleDate ? format(pendingPendingSingleDate, 'yyyy-MM-dd') : ''}
                     onChange={e => handleDateChange(e.target.value ? new Date(e.target.value) : undefined)}
+                    disabled={pendingPendingMonth !== '' && !pendingPendingSingleDate}
                   />
                 </div>
                 {/* Month Filter */}
@@ -1377,6 +1386,7 @@ const AdminDashboard = () => {
                     value={pendingFilterMonth}
                     onChange={e => setPendingFilterMonth(e.target.value ? Number(e.target.value) : '')}
                   >
+                    <option value="">{t('months.all', 'ทั้งหมด')}</option>
                     {monthNames.map((name, idx) => (
                       <option key={idx + 1} value={idx + 1}>{name}</option>
                     ))}
