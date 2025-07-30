@@ -2,19 +2,16 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from "@/hooks/use-toast";
 import { differenceInCalendarDays, format } from "date-fns";
 import { th } from "date-fns/locale";
-import { AlertCircle, CheckCircle, Clock, Eye, FileText, Users, XCircle, History, Calendar, User, ChevronLeft, ChevronRight } from "lucide-react";
+import { AlertCircle, Calendar, CheckCircle, ChevronLeft, ChevronRight, Clock, Eye, FileText, History, User, Users, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Avatar } from "@/components/ui/avatar";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type LeaveRequest = {
   id: number;
