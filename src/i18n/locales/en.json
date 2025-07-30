@@ -39,7 +39,13 @@
     "loginAgain": "Login Again",
     "allPositions": "All Positions",
     "allRoles": "All Roles",
-    "allDepartments": "All Departments"
+    "allDepartments": "All Departments",
+    "roles": {
+      "user": "User",
+      "employee": "User",
+      "admin": "Admin",
+      "superadmin": "Superadmin"
+    }
   },
   "navigation": {
     "home": "Home",

@@ -10,7 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePushNotification } from '@/contexts/PushNotificationContext';
 import { useToast } from '@/hooks/use-toast';
 import axios from 'axios';
-import { Bell, Building, Camera, Lock, Mail, Save, Shield } from 'lucide-react';
+import { Bell, Building, Camera, Lock, Mail, Save, Shield, Crown } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
@@ -255,25 +255,32 @@ const Profile = () => {
   }, [setPushNotificationEnabled]);
 
   // New leaveStats for new API response
-  const leaveStats = leaveQuota.map(item => {
-    return {
-      label: i18n.language.startsWith('th') ? (item.leave_type_th || item.leave_type_en) : (item.leave_type_en || item.leave_type_th),
-      used: { days: item.used_day ?? '-', hours: item.used_hour ?? '-' },
-      quota: item.quota,
-      color:
-        item.leave_type_en?.toLowerCase() === 'personal' || item.leave_type_th === 'ลากิจ' ? 'bg-orange-500' :
-        item.leave_type_en?.toLowerCase() === 'vacation' ? 'bg-blue-500' :
-        item.leave_type_en?.toLowerCase() === 'sick' ? 'bg-green-500' :
-        item.leave_type_en?.toLowerCase() === 'maternity' ? 'bg-purple-500' :
-        'bg-gray-400',
-      type: item.leave_type_en,
-      remaining: { days: item.remaining_day ?? '-', hours: item.remaining_hour ?? '-' },
-      quotaRaw: item.quota,
-      usedRaw: item.used_day + (item.used_hour / 9),
-      remainingRaw: item.remaining_day + (item.remaining_hour / 9),
-      unit: 'day',
-    };
-  });
+  const leaveStats = leaveQuota
+    .filter(item => {
+      // Filter out emergency leave type
+      const leaveTypeEn = item.leave_type_en?.toLowerCase() || '';
+      const leaveTypeTh = item.leave_type_th?.toLowerCase() || '';
+      return !leaveTypeEn.includes('emergency') && !leaveTypeTh.includes('ฉุกเฉิน');
+    })
+    .map(item => {
+      return {
+        label: i18n.language.startsWith('th') ? (item.leave_type_th || item.leave_type_en) : (item.leave_type_en || item.leave_type_th),
+        used: { days: item.used_day ?? '-', hours: item.used_hour ?? '-' },
+        quota: item.quota,
+        color:
+          item.leave_type_en?.toLowerCase() === 'personal' || item.leave_type_th === 'ลากิจ' ? 'bg-orange-500' :
+          item.leave_type_en?.toLowerCase() === 'vacation' ? 'bg-blue-500' :
+          item.leave_type_en?.toLowerCase() === 'sick' ? 'bg-green-500' :
+          item.leave_type_en?.toLowerCase() === 'maternity' ? 'bg-purple-500' :
+          'bg-gray-400',
+        type: item.leave_type_en,
+        remaining: { days: item.remaining_day ?? '-', hours: item.remaining_hour ?? '-' },
+        quotaRaw: item.quota,
+        usedRaw: item.used_day + (item.used_hour / 9),
+        remainingRaw: item.remaining_day + (item.remaining_hour / 9),
+        unit: 'day',
+      };
+    });
 
   const handleCameraClick = () => {
     fileInputRef.current?.click();
@@ -485,17 +492,28 @@ const Profile = () => {
               })()}
             </p>
             <div className="flex items-center justify-center gap-3 mt-2">
-              <Badge variant={user?.role === 'admin' ? 'default' : 'secondary'} className="flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 shadow-sm">
-                <Shield className="h-4 w-4" />
-                {user?.role === 'admin' ? t('main.systemAdmin') : (() => {
-                  if (!formData.position) {
-                    return t('positions.noPosition');
+              <Badge variant={user?.role === 'admin' || user?.role === 'superadmin' ? 'default' : 'secondary'} className={`flex items-center gap-1 px-3 py-1 border shadow-sm ${
+                user?.role === 'superadmin' 
+                  ? 'bg-purple-50 text-purple-700 border-purple-200' 
+                  : user?.role === 'admin' 
+                    ? 'bg-red-50 text-red-700 border-red-200' 
+                    : 'bg-blue-50 text-blue-700 border-blue-200'
+              }`}>
+                {user?.role === 'superadmin' ? (
+                  <Crown className="h-4 w-4" />
+                ) : (
+                  <Shield className="h-4 w-4" />
+                )}
+                {(() => {
+                  switch (user?.role) {
+                    case 'admin':
+                      return t('auth.roles.admin');
+                    case 'superadmin':
+                      return t('auth.roles.superadmin');
+                    case 'employee':
+                    default:
+                      return t('auth.roles.user');
                   }
-                  const position = positions.find(p => String(p.id) === formData.position);
-                  if (position) {
-                    return i18n.language.startsWith('th') ? position.position_name_th : position.position_name_en;
-                  }
-                  return t('positions.noPosition');
                 })()}
               </Badge>
               <Badge variant="outline" className="flex items-center gap-1 px-3 py-1 bg-blue-50 text-blue-700 border border-blue-200 shadow-sm">
