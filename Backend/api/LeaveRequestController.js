@@ -1004,6 +1004,9 @@
          console.log('Detail API called for leave id:', id);
          if (!leave) return res.status(404).json({ success: false, message: 'Not found' });
          console.log('Leave row:', leave);
+         console.log('Days from database:', leave.days);
+         console.log('StartDate from database:', leave.startDate);
+         console.log('EndDate from database:', leave.endDate);
 
          // Get name by looking up Repid in ProcessCheck, then correct table by role
          let name = '-';
@@ -1071,21 +1074,33 @@
          res.json({
            success: true,
            data: {
+             id: leave.id,
              name,
              status: leave.status,
              leaveType: leave.leaveType, // id
              leaveTypeName, // th
              leaveTypeEn, // en
-             leaveDate,
-             endDate,
+             startDate: leave.startDate,
+             endDate: leave.endDate,
+             leaveDate: leaveDate, // สำหรับ backward compatibility
              reason: leave.reason,
-             rejectionReason: leave.rejectedReason, // เพิ่มเหตุผลที่ไม่อนุมัติ
+             rejectedReason: leave.rejectedReason,
              submittedDate,
-             createdAt: leave.createdAt, // เพิ่มฟิลด์นี้
+             createdAt: leave.createdAt,
              attachments: parseAttachments(leave.attachments),
              contact: leave.contact || null,
-             // เพิ่ม backdated
              backdated: Number(leave.backdated),
+             // เพิ่มข้อมูลที่จำเป็นสำหรับการแสดงผล
+             startTime: leave.startTime,
+             endTime: leave.endTime,
+             days: leave.days, // ส่งค่า days จากฐานข้อมูลโดยตรง
+             durationType: leave.durationType || 'day', // ถ้าไม่มีให้เป็น day
+             durationHours: leave.durationHours || null,
+             statusBy: leave.statusBy,
+             approvedTime: leave.approvedTime,
+             rejectedTime: leave.rejectedTime,
+             employeeType: leave.employeeType,
+             Repid: leave.Repid,
            }
          });
        } catch (err) {
