@@ -7,13 +7,14 @@ import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Eye, EyeOff, Mail, Lock, User, Building } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Building, Users, Shield, Crown, Plus, X, CheckCircle, AlertCircle, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useTranslation } from 'react-i18next';
 
 const SuperAdminList: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
+  const [activeTab, setActiveTab] = useState<'employee' | 'admin' | 'superadmin'>('employee');
   const [form, setForm] = useState({
     full_name: '',
     email: '',
@@ -21,13 +22,15 @@ const SuperAdminList: React.FC = () => {
     confirmPassword: '',
     department: '',
     position: '',
-    role: '', // No default, force user to select
+    role: '',
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [departments, setDepartments] = useState<any[]>([]);
   const [positions, setPositions] = useState<any[]>([]);
   const [error, setError] = useState<{ email?: string; full_name?: string; general?: string }>({});
+  const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong'>('weak');
 
   const lang = i18n.language.startsWith('th') ? 'th' : 'en';
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -76,16 +79,95 @@ const SuperAdminList: React.FC = () => {
   }, [lang]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setForm({ ...form, [name]: value });
+    
+    // Password strength checker
+    if (name === 'password') {
+      const hasLower = /[a-z]/.test(value);
+      const hasUpper = /[A-Z]/.test(value);
+      const hasNumber = /\d/.test(value);
+      const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(value);
+      const length = value.length;
+      
+      if (length >= 8 && hasLower && hasUpper && hasNumber && hasSpecial) {
+        setPasswordStrength('strong');
+      } else if (length >= 6 && ((hasLower && hasUpper) || (hasNumber && hasSpecial))) {
+        setPasswordStrength('medium');
+      } else {
+        setPasswordStrength('weak');
+      }
+    }
   };
 
-  const handleRoleChange = (value: string) => {
-    setForm({ ...form, role: value });
+  const handleTabChange = (tab: 'employee' | 'admin' | 'superadmin') => {
+    setActiveTab(tab);
+    setForm({ ...form, role: tab });
+  };
+
+  const getPasswordStrengthColor = () => {
+    switch (passwordStrength) {
+      case 'strong': return 'text-green-600';
+      case 'medium': return 'text-yellow-600';
+      case 'weak': return 'text-red-600';
+      default: return 'text-gray-600';
+    }
+  };
+
+  const getPasswordStrengthText = () => {
+    switch (passwordStrength) {
+      case 'strong': return 'รหัสผ่านแข็งแกร่ง';
+      case 'medium': return 'รหัสผ่านปานกลาง';
+      case 'weak': return 'รหัสผ่านอ่อนแอ';
+      default: return '';
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError({});
+    
+    // Validation
+    if (!form.full_name.trim()) {
+      toast({
+        title: 'กรุณากรอกชื่อ-นามสกุล',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    if (!form.email.trim()) {
+      toast({
+        title: 'กรุณากรอกอีเมล',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    if (!form.department) {
+      toast({
+        title: 'กรุณาเลือกแผนก',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    if (!form.position) {
+      toast({
+        title: 'กรุณาเลือกตำแหน่ง',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    if (form.password.length < 6) {
+      toast({
+        title: 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     if (form.password !== form.confirmPassword) {
       toast({
         title: t('auth.passwordMismatch'),
@@ -94,6 +176,7 @@ const SuperAdminList: React.FC = () => {
       });
       return;
     }
+    
     setLoading(true);
     try {
       const url = `${API_BASE_URL}/api/create-user-with-role`;
@@ -113,8 +196,8 @@ const SuperAdminList: React.FC = () => {
       const data = await res.json();
       if (res.ok && (data.success || data.token)) {
         toast({
-          title: t('auth.registerSuccess'),
-          description: t('auth.checkEmailVerification'),
+          title: 'สร้างผู้ใช้สำเร็จ!',
+          description: `สร้าง${getTabConfig(activeTab).title}ใหม่เรียบร้อยแล้ว`,
         });
         setForm({
           full_name: '',
@@ -125,17 +208,18 @@ const SuperAdminList: React.FC = () => {
           position: '',
           role: form.role,
         });
+        setPasswordStrength('weak');
       } else {
         toast({
-          title: t('auth.registerError'),
-          description: data.message || t('common.error'),
+          title: 'เกิดข้อผิดพลาด',
+          description: data.message || 'ไม่สามารถสร้างผู้ใช้ได้',
           variant: 'destructive',
         });
       }
     } catch (err: any) {
       toast({
-        title: t('auth.registerError'),
-        description: err.message || t('common.error'),
+        title: 'เกิดข้อผิดพลาด',
+        description: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้',
         variant: 'destructive',
       });
     } finally {
@@ -143,165 +227,503 @@ const SuperAdminList: React.FC = () => {
     }
   };
 
+  const getTabConfig = (tab: 'employee' | 'admin' | 'superadmin') => {
+    const configs = {
+      employee: {
+        icon: Users,
+        title: t('employee.employee'),
+        color: 'from-blue-500 to-blue-600',
+        bgColor: 'bg-blue-50',
+        borderColor: 'border-blue-200',
+        textColor: 'text-blue-700',
+        hoverColor: 'hover:bg-blue-100',
+        activeColor: 'bg-blue-600',
+        activeTextColor: 'text-white',
+        gradient: 'from-blue-400 via-blue-500 to-blue-600',
+        shadow: 'shadow-blue-500/25'
+      },
+      admin: {
+        icon: Shield,
+        title: t('employee.admin'),
+        color: 'from-purple-500 to-purple-600',
+        bgColor: 'bg-purple-50',
+        borderColor: 'border-purple-200',
+        textColor: 'text-purple-700',
+        hoverColor: 'hover:bg-purple-100',
+        activeColor: 'bg-purple-600',
+        activeTextColor: 'text-white',
+        gradient: 'from-purple-400 via-purple-500 to-purple-600',
+        shadow: 'shadow-purple-500/25'
+      },
+      superadmin: {
+        icon: Crown,
+        title: t('employee.superadmin'),
+        color: 'from-indigo-500 to-indigo-600',
+        bgColor: 'bg-indigo-50',
+        borderColor: 'border-indigo-200',
+        textColor: 'text-indigo-700',
+        hoverColor: 'hover:bg-indigo-100',
+        activeColor: 'bg-indigo-600',
+        activeTextColor: 'text-white',
+        gradient: 'from-indigo-400 via-indigo-500 to-indigo-600',
+        shadow: 'shadow-indigo-500/25'
+      }
+    };
+    return configs[tab];
+  };
+
+  const currentConfig = getTabConfig(activeTab);
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-100 via-indigo-50 to-white flex flex-col">
-      {/* Hero Section */}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-white flex flex-col animate-fade-in">
+      {/* Enhanced Hero Section */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 z-0">
-          <svg viewBox="0 0 1440 320" className="w-full h-32 md:h-48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <svg viewBox="0 0 1440 320" className="w-full h-32 md:h-48 animate-wave" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path fill="url(#waveGradient)" fillOpacity="1" d="M0,160L60,170.7C120,181,240,203,360,197.3C480,192,600,160,720,133.3C840,107,960,85,1080,101.3C1200,117,1320,171,1380,197.3L1440,224L1440,0L1380,0C1320,0,1200,0,1080,0C960,0,840,0,720,0C600,0,480,0,360,0C240,0,120,0,60,0L0,0Z" />
             <defs>
               <linearGradient id="waveGradient" x1="0" y1="0" x2="1440" y2="0" gradientUnits="userSpaceOnUse">
                 <stop stopColor="#3b82f6" />
+                <stop offset="0.5" stopColor="#8b5cf6" />
                 <stop offset="1" stopColor="#6366f1" />
               </linearGradient>
             </defs>
           </svg>
         </div>
-        <div className="relative z-10 flex flex-col items-center justify-center py-10 md:py-16">
-          <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-24 h-24 rounded-full bg-white/80 shadow-2xl border-4 border-white mb-4" />
-          <h2 className="text-4xl md:text-5xl font-extrabold text-indigo-900 drop-shadow mb-2 flex items-center gap-3">
+        <div className="relative z-10 flex flex-col items-center justify-center py-12 md:py-20 animate-slide-down">
+          <div className="relative">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full blur-xl opacity-30 animate-pulse-slow"></div>
+            <img 
+              src="/lovable-uploads/siamit.png" 
+              alt="Logo" 
+              className="relative w-28 h-28 rounded-full bg-white/90 shadow-2xl border-4 border-white mb-6 hover:scale-110 transition-all duration-500 hover:shadow-3xl" 
+            />
+          </div>
+          <h2 className="text-5xl md:text-6xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-indigo-900 via-purple-900 to-indigo-900 drop-shadow mb-3 flex items-center gap-3 animate-fade-in-up">
             {t('admin.createUser')}
           </h2>
-          <p className="text-lg md:text-xl text-blue-900/70 mb-2 font-medium text-center max-w-2xl">
+          <p className="text-xl md:text-2xl text-blue-900/80 mb-2 font-medium text-center max-w-3xl animate-fade-in-up-delay">
             {t('main.onlineLeaveSystemCompany', 'Siam IT Leave Management System')}
           </p>
+          <div className="flex items-center gap-2 text-blue-700/70 animate-fade-in-up-delay">
+            <Info className="w-5 h-5" />
+            <span className="text-sm">เลือกประเภทผู้ใช้ที่ต้องการสร้าง</span>
+          </div>
         </div>
       </div>
-      <div className="w-full max-w-lg mx-auto px-4 mt-0 animate-fade-in flex-1">
-        <div className="bg-white/80 backdrop-blur-md rounded-3xl shadow-2xl p-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2 mb-4 mt-2">
-              <Label htmlFor="role" className="mb-2 block text-indigo-700 font-semibold text-lg">{t('auth.role')}</Label>
-              <Select value={form.role} onValueChange={handleRoleChange}>
-                <SelectTrigger className="rounded-lg border-blue-200 shadow-sm text-lg">
-                  <SelectValue placeholder={t('auth.selectRole', 'Select Role')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="user">{t('employee.employee')}</SelectItem>
-                  <SelectItem value="admin">{t('employee.admin')}</SelectItem>
-                  <SelectItem value="superadmin">{t('employee.superadmin')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2 mb-4">
-              <Label htmlFor="full_name" className="mb-2 block text-indigo-700 font-semibold text-lg">{t('auth.fullName')}</Label>
-              <div className="relative">
-                <User className="absolute left-3 top-3 h-5 w-5 text-indigo-400" />
-                <Input
-                  id="full_name"
-                  name="full_name"
-                  placeholder={t('auth.fullName')}
-                  value={form.full_name}
-                  onChange={handleChange}
-                  className="pl-12 py-3 text-lg rounded-lg"
-                  required
-                />
-              </div>
-            </div>
-            <div className="space-y-2 mb-4">
-              <Label htmlFor="position" className="mb-2 block text-indigo-700 font-semibold text-lg">{t('auth.position')}</Label>
-              <Select value={form.position} onValueChange={value => setForm(f => ({ ...f, position: value }))}>
-                <SelectTrigger className="rounded-lg border-blue-200 shadow-sm text-lg">
-                  <SelectValue placeholder={t('positions.selectPosition')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {positions.map((pos) => (
-                    <SelectItem key={pos.id} value={pos.id}>
-                      {lang === 'th' ? pos.position_name_th : pos.position_name_en}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2 mb-4">
-              <Label htmlFor="department" className="mb-2 block text-indigo-700 font-semibold text-lg">{t('auth.department')}</Label>
-              <Select value={form.department} onValueChange={value => setForm(f => ({ ...f, department: value }))}>
-                <SelectTrigger className="rounded-lg border-blue-200 shadow-sm text-lg">
-                  <SelectValue placeholder={t('departments.selectDepartment')} />
-                </SelectTrigger>
-                <SelectContent>
-                  {departments.map((dep) => (
-                    <SelectItem key={dep.id} value={dep.id}>
-                      {lang === 'th' ? dep.department_name_th : dep.department_name_en}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-2 mb-4">
-              <Label htmlFor="email" className="mb-2 block text-indigo-700 font-semibold text-lg">{t('auth.email')}</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-3 h-5 w-5 text-indigo-400" />
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder={t('auth.email')}
-                  value={form.email}
-                  onChange={handleChange}
-                  className="pl-12 py-3 text-lg rounded-lg"
-                  required
-                />
-              </div>
-            </div>
-            <div className="space-y-2 mb-4">
-              <Label htmlFor="password" className="mb-2 block text-indigo-700 font-semibold text-lg">{t('auth.password')}</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-5 w-5 text-indigo-400" />
-                <Input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
-                  value={form.password}
-                  onChange={handleChange}
-                  className="pl-12 pr-12 py-3 text-lg rounded-lg"
-                  required
-                />
+      
+      <div className="w-full max-w-5xl mx-auto px-4 mt-0 animate-fade-in-up-slow flex-1">
+        {/* Enhanced Role Selection Tabs */}
+        <div className="mb-10 animate-fade-in-up-delay-1">
+          <div className="bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl p-3 flex gap-3 border border-white/20">
+            {(['employee', 'admin', 'superadmin'] as const).map((tab) => {
+              const config = getTabConfig(tab);
+              const IconComponent = config.icon;
+              const isActive = activeTab === tab;
+              
+              return (
                 <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-3 h-5 w-5 text-indigo-400 hover:text-indigo-600"
+                  key={tab}
+                  onClick={() => handleTabChange(tab)}
+                  className={`flex-1 flex items-center justify-center gap-4 py-6 px-8 rounded-2xl transition-all duration-500 transform hover:scale-105 relative overflow-hidden ${
+                    isActive 
+                      ? `bg-gradient-to-r ${config.gradient} ${config.activeTextColor} shadow-xl shadow-lg` 
+                      : `${config.bgColor} ${config.textColor} ${config.hoverColor} ${config.borderColor} border hover:shadow-lg`
+                  }`}
                 >
-                  {showPassword ? <EyeOff /> : <Eye />}
+                  {isActive && (
+                    <div className="absolute inset-0 bg-white/10 animate-pulse-slow"></div>
+                  )}
+                  <IconComponent className={`w-6 h-6 transition-all duration-300 ${isActive ? 'animate-bounce' : ''}`} />
+                  <span className="font-bold text-base md:text-lg">{config.title}</span>
                 </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Enhanced Form Container */}
+        <div className={`bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-10 animate-slide-up hover:shadow-3xl transition-all duration-500 hover:scale-[1.01] border-2 ${currentConfig.borderColor} relative overflow-hidden`}>
+          {/* Background Pattern */}
+          <div className="absolute inset-0 opacity-5">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full -translate-y-16 translate-x-16"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-indigo-400 to-blue-500 rounded-full translate-y-12 -translate-x-12"></div>
+          </div>
+          
+          {/* Form Header */}
+          <div className="text-center mb-10 animate-fade-in-up-delay-2 relative z-10">
+            <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r ${currentConfig.gradient} mb-6 shadow-xl ${currentConfig.shadow}`}>
+              <currentConfig.icon className="w-10 h-10 text-white" />
+            </div>
+            <h3 className={`text-3xl font-bold ${currentConfig.textColor} mb-3`}>
+              สร้าง{currentConfig.title}
+            </h3>
+            <p className="text-gray-600 text-lg max-w-md mx-auto">
+              กรอกข้อมูลเพื่อสร้าง{currentConfig.title}ใหม่ในระบบ
+            </p>
+          </div>
+
+          <form onSubmit={handleSubmit} className="space-y-8 relative z-10">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Full Name */}
+              <div className="space-y-3 animate-fade-in-up-delay-3">
+                <Label htmlFor="full_name" className={`mb-3 block ${currentConfig.textColor} font-bold text-lg transition-all duration-300 hover:text-opacity-80 flex items-center gap-2`}>
+                  <User className="w-5 h-5" />
+                  {t('auth.fullName')}
+                  <span className="text-red-500">*</span>
+                </Label>
+                <div className="relative group">
+                  <Input
+                    id="full_name"
+                    name="full_name"
+                    placeholder="กรอกชื่อ-นามสกุล"
+                    value={form.full_name}
+                    onChange={handleChange}
+                    className={`pl-6 py-4 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm`}
+                    required
+                  />
+                  {form.full_name && (
+                    <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-green-500" />
+                  )}
+                </div>
+              </div>
+
+              {/* Email */}
+              <div className="space-y-3 animate-fade-in-up-delay-4">
+                <Label htmlFor="email" className={`mb-3 block ${currentConfig.textColor} font-bold text-lg transition-all duration-300 hover:text-opacity-80 flex items-center gap-2`}>
+                  <Mail className="w-5 h-5" />
+                  {t('auth.email')}
+                  <span className="text-red-500">*</span>
+                </Label>
+                <div className="relative group">
+                  <Input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="กรอกอีเมล"
+                    value={form.email}
+                    onChange={handleChange}
+                    className={`pl-6 py-4 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm`}
+                    required
+                  />
+                  {form.email && (
+                    <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-green-500" />
+                  )}
+                </div>
+              </div>
+
+              {/* Position */}
+              <div className="space-y-3 animate-fade-in-up-delay-5">
+                <Label htmlFor="position" className={`mb-3 block ${currentConfig.textColor} font-bold text-lg transition-all duration-300 hover:text-opacity-80 flex items-center gap-2`}>
+                  <Building className="w-5 h-5" />
+                  {t('auth.position')}
+                  <span className="text-red-500">*</span>
+                </Label>
+                <Select value={form.position} onValueChange={value => setForm(f => ({ ...f, position: value }))}>
+                  <SelectTrigger className={`rounded-xl shadow-sm text-lg transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm py-4`}>
+                    <SelectValue placeholder="เลือกตำแหน่ง" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white/95 backdrop-blur-md border-2 border-gray-200 rounded-xl">
+                    {positions.map((pos) => (
+                      <SelectItem key={pos.id} value={pos.id} className="hover:bg-indigo-50 transition-colors duration-200 rounded-lg">
+                        {lang === 'th' ? pos.position_name_th : pos.position_name_en}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Department */}
+              <div className="space-y-3 animate-fade-in-up-delay-6">
+                <Label htmlFor="department" className={`mb-3 block ${currentConfig.textColor} font-bold text-lg transition-all duration-300 hover:text-opacity-80 flex items-center gap-2`}>
+                  <Building className="w-5 h-5" />
+                  {t('auth.department')}
+                  <span className="text-red-500">*</span>
+                </Label>
+                <Select value={form.department} onValueChange={value => setForm(f => ({ ...f, department: value }))}>
+                  <SelectTrigger className={`rounded-xl shadow-sm text-lg transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm py-4`}>
+                    <SelectValue placeholder="เลือกแผนก" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white/95 backdrop-blur-md border-2 border-gray-200 rounded-xl">
+                    {departments.map((dep) => (
+                      <SelectItem key={dep.id} value={dep.id} className="hover:bg-indigo-50 transition-colors duration-200 rounded-lg">
+                        {lang === 'th' ? dep.department_name_th : dep.department_name_en}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
-            <div className="space-y-2 mb-4">
-              <Label htmlFor="confirmPassword" className="mb-2 block text-indigo-700 font-semibold text-lg">{t('auth.confirmPassword')}</Label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-3 h-5 w-5 text-indigo-400" />
-                <Input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  placeholder="••••••••"
-                  value={form.confirmPassword}
-                  onChange={handleChange}
-                  className="pl-12 py-3 text-lg rounded-lg"
-                  required
-                />
+
+            {/* Password Fields */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {/* Password */}
+              <div className="space-y-3 animate-fade-in-up-delay-7">
+                <Label htmlFor="password" className={`mb-3 block ${currentConfig.textColor} font-bold text-lg transition-all duration-300 hover:text-opacity-80 flex items-center gap-2`}>
+                  <Lock className="w-5 h-5" />
+                  {t('auth.password')}
+                  <span className="text-red-500">*</span>
+                </Label>
+                <div className="relative group">
+                  <Input
+                    id="password"
+                    name="password"
+                    type={showPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={form.password}
+                    onChange={handleChange}
+                    className={`pl-6 pr-12 py-4 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm`}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-6 h-6 ${currentConfig.textColor} hover:scale-110 transition-all duration-300`}
+                  >
+                    {showPassword ? <EyeOff /> : <Eye />}
+                  </button>
+                </div>
+                {/* Password Strength Indicator */}
+                {form.password && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className={getPasswordStrengthColor()}>
+                      {getPasswordStrengthText()}
+                    </span>
+                    <div className="flex gap-1">
+                      {[1, 2, 3].map((level) => (
+                        <div
+                          key={level}
+                          className={`w-2 h-2 rounded-full transition-all duration-300 ${
+                            passwordStrength === 'weak' && level === 1
+                              ? 'bg-red-500'
+                              : passwordStrength === 'medium' && level <= 2
+                              ? 'bg-yellow-500'
+                              : passwordStrength === 'strong' && level <= 3
+                              ? 'bg-green-500'
+                              : 'bg-gray-300'
+                          }`}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Confirm Password */}
+              <div className="space-y-3 animate-fade-in-up-delay-8">
+                <Label htmlFor="confirmPassword" className={`mb-3 block ${currentConfig.textColor} font-bold text-lg transition-all duration-300 hover:text-opacity-80 flex items-center gap-2`}>
+                  <Lock className="w-5 h-5" />
+                  {t('auth.confirmPassword')}
+                  <span className="text-red-500">*</span>
+                </Label>
+                <div className="relative group">
+                  <Input
+                    id="confirmPassword"
+                    name="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    placeholder="••••••••"
+                    value={form.confirmPassword}
+                    onChange={handleChange}
+                    className={`pl-6 pr-12 py-4 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm`}
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className={`absolute right-3 top-1/2 transform -translate-y-1/2 w-6 h-6 ${currentConfig.textColor} hover:scale-110 transition-all duration-300`}
+                  >
+                    {showConfirmPassword ? <EyeOff /> : <Eye />}
+                  </button>
+                </div>
+                {/* Password Match Indicator */}
+                {form.confirmPassword && (
+                  <div className="flex items-center gap-2 text-sm">
+                    {form.password === form.confirmPassword ? (
+                      <>
+                        <CheckCircle className="w-4 h-4 text-green-500" />
+                        <span className="text-green-600">รหัสผ่านตรงกัน</span>
+                      </>
+                    ) : (
+                      <>
+                        <AlertCircle className="w-4 h-4 text-red-500" />
+                        <span className="text-red-600">รหัสผ่านไม่ตรงกัน</span>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
-            <Button type="submit" className="w-full py-3 text-lg font-bold rounded-xl shadow-lg bg-indigo-600 hover:bg-indigo-700 text-white transition-all duration-200" disabled={loading}>
-              {loading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                  {t('common.loading')}
-                </>
-              ) : (
-                t('auth.register')
-              )}
-            </Button>
+
+            {/* Enhanced Submit Button */}
+            <div className="animate-fade-in-up-delay-9 pt-6">
+              <Button 
+                type="submit" 
+                className={`w-full py-6 text-xl font-bold rounded-2xl shadow-2xl bg-gradient-to-r ${currentConfig.gradient} hover:shadow-3xl text-white transition-all duration-500 hover:scale-105 active:scale-95 transform relative overflow-hidden group`}
+                disabled={loading}
+              >
+                {loading ? (
+                  <div className="flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-4"></div>
+                    <span>กำลังสร้างผู้ใช้...</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                    <span className="flex items-center justify-center gap-3 relative z-10">
+                      <Plus className="w-6 h-6" />
+                      สร้าง{currentConfig.title}
+                    </span>
+                  </>
+                )}
+              </Button>
+            </div>
           </form>
         </div>
       </div>
-      {/* Footer */}
-      <footer className="w-full mt-16 py-8 bg-gradient-to-r from-blue-100 via-indigo-50 to-white text-center text-gray-400 text-base font-medium shadow-inner flex flex-col items-center gap-2">
-        <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-10 h-10 rounded-full mx-auto mb-1" />
-        &copy; {new Date().getFullYear()} Siam IT Leave Management System
+      
+      {/* Enhanced Footer */}
+      <footer className="w-full mt-20 py-12 bg-gradient-to-r from-blue-50 via-indigo-50 to-white text-center text-gray-500 text-base font-medium shadow-inner flex flex-col items-center gap-4 animate-fade-in-up-slow">
+        <div className="flex items-center gap-3">
+          <img 
+            src="/lovable-uploads/siamit.png" 
+            alt="Logo" 
+            className="w-12 h-12 rounded-full hover:scale-110 transition-all duration-300" 
+          />
+          <span className="text-lg font-semibold text-gray-700">
+            Siam IT Leave Management System
+          </span>
+        </div>
+        <span className="transition-all duration-300 hover:text-indigo-600 text-sm">
+          &copy; {new Date().getFullYear()} All rights reserved. Developed with ❤️ by Siam IT Team
+        </span>
       </footer>
+      
+      <style>{`
+        @keyframes fade-in {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        
+        @keyframes slide-down {
+          from { transform: translateY(-50px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes slide-up {
+          from { transform: translateY(50px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes fade-in-up {
+          from { transform: translateY(30px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
+        }
+        
+        @keyframes wave {
+          0%, 100% { transform: translateX(0); }
+          50% { transform: translateX(-10px); }
+        }
+        
+        @keyframes pulse-slow {
+          0%, 100% { opacity: 0.3; }
+          50% { opacity: 0.6; }
+        }
+        
+        @keyframes bounce {
+          0%, 20%, 53%, 80%, 100% { transform: translate3d(0,0,0); }
+          40%, 43% { transform: translate3d(0, -8px, 0); }
+          70% { transform: translate3d(0, -4px, 0); }
+          90% { transform: translate3d(0, -2px, 0); }
+        }
+        
+        .animate-fade-in {
+          animation: fade-in 1s ease-out;
+        }
+        
+        .animate-slide-down {
+          animation: slide-down 1.2s ease-out;
+        }
+        
+        .animate-slide-up {
+          animation: slide-up 1s ease-out;
+        }
+        
+        .animate-fade-in-up {
+          animation: fade-in-up 1s ease-out;
+        }
+        
+        .animate-fade-in-up-slow {
+          animation: fade-in-up 1.5s ease-out;
+        }
+        
+        .animate-fade-in-up-delay {
+          animation: fade-in-up 1s ease-out 0.3s both;
+        }
+        
+        .animate-fade-in-up-delay-1 {
+          animation: fade-in-up 0.8s ease-out 0.1s both;
+        }
+        
+        .animate-fade-in-up-delay-2 {
+          animation: fade-in-up 0.8s ease-out 0.2s both;
+        }
+        
+        .animate-fade-in-up-delay-3 {
+          animation: fade-in-up 0.8s ease-out 0.3s both;
+        }
+        
+        .animate-fade-in-up-delay-4 {
+          animation: fade-in-up 0.8s ease-out 0.4s both;
+        }
+        
+        .animate-fade-in-up-delay-5 {
+          animation: fade-in-up 0.8s ease-out 0.5s both;
+        }
+        
+        .animate-fade-in-up-delay-6 {
+          animation: fade-in-up 0.8s ease-out 0.6s both;
+        }
+        
+        .animate-fade-in-up-delay-7 {
+          animation: fade-in-up 0.8s ease-out 0.7s both;
+        }
+        
+        .animate-fade-in-up-delay-8 {
+          animation: fade-in-up 0.8s ease-out 0.8s both;
+        }
+        
+        .animate-fade-in-up-delay-9 {
+          animation: fade-in-up 0.8s ease-out 0.9s both;
+        }
+        
+        .animate-wave {
+          animation: wave 6s ease-in-out infinite;
+        }
+        
+        .animate-pulse-slow {
+          animation: pulse-slow 3s ease-in-out infinite;
+        }
+        
+        .animate-bounce {
+          animation: bounce 1s ease-in-out;
+        }
+        
+        .hover\\:shadow-3xl:hover {
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        
+        .shadow-3xl {
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+        }
+        
+        .shadow-2xl {
+          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .shadow-xl {
+          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+      `}</style>
     </div>
   );
 };
