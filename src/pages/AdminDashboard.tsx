@@ -948,36 +948,26 @@ const AdminDashboard = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 page-transition">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-100 to-purple-100 relative overflow-x-hidden">
       {customAnimationStyle}
-      {/* Hero Section (replace old top bar) */}
-      <div className="relative overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <svg viewBox="0 0 1440 320" className="w-full h-32 md:h-48 wave-animation" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path fill="url(#waveGradient)" fillOpacity="1" d="M0,160L60,170.7C120,181,240,203,360,197.3C480,192,600,160,720,133.3C840,107,960,85,1080,101.3C1200,117,1320,171,1380,197.3L1440,224L1440,0L1380,0C1320,0,1200,0,1080,0C960,0,840,0,720,0C600,0,480,0,360,0C240,0,120,0,60,0L0,0Z" />
-            <defs>
-              <linearGradient id="waveGradient" x1="0" y1="0" x2="1440" y2="0" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#3b82f6" />
-                <stop offset="1" stopColor="#6366f1" />
-              </linearGradient>
-            </defs>
-          </svg>
+      {/* Floating/Parallax Background Shapes */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute -top-32 -left-32 w-[350px] h-[350px] rounded-full bg-gradient-to-br from-blue-200 via-indigo-100 to-purple-100 opacity-30 blur-2xl animate-float" />
+        <div className="absolute bottom-0 right-0 w-[250px] h-[250px] rounded-full bg-gradient-to-tr from-purple-200 via-blue-100 to-indigo-100 opacity-20 blur-xl animate-float" />
+        <div className="absolute top-1/2 left-1/2 w-24 h-24 rounded-full bg-blue-100 opacity-10 blur-xl animate-pulse" style={{transform:'translate(-50%,-50%)'}} />
       </div>
-        <div className="relative z-10 flex flex-col items-center justify-center py-10 md:py-16">
-          <div className="w-28 h-28 rounded-full bg-gradient-to-br from-white/90 to-white/70 shadow-2xl border-4 border-white/50 backdrop-blur-sm flex items-center justify-center mb-6 animate-bounce-in">
-            <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-20 h-20 rounded-full" />
+      {/* Topbar */}
+      <div className="border-b bg-white/80 backdrop-blur-sm z-10 relative shadow-lg animate-fade-in-up">
+        <div className="flex h-16 items-center px-4 gap-4">
+          <SidebarTrigger />
+          <div className="flex-1">
+            <h1 className="text-3xl font-extrabold text-blue-900 tracking-tight drop-shadow-lg animate-slide-in-left">{t('navigation.adminDashboard')}</h1>
+            <p className="text-sm text-blue-500 animate-slide-in-left" style={{ animationDelay: '0.2s' }}>{t('admin.dashboardDesc')}</p>
           </div>
-          <h1 className="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-indigo-900 via-blue-800 to-indigo-900 bg-clip-text text-transparent drop-shadow mb-3 flex items-center gap-3 animate-fade-in-up">
-            <Users className="w-10 h-10 text-blue-600" />
-            {t('navigation.adminDashboard')}
-          </h1>
-          <p className="text-lg md:text-xl text-blue-900/80 mb-2 font-medium text-center max-w-2xl leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-            {t('admin.dashboardDesc')}
-          </p>
-          <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full mt-4 animate-scale-in" style={{ animationDelay: '0.4s' }}></div>
+          {/* Language Switcher at top right */}
         </div>
       </div>
-      <div className="p-6 animate-fade-in">
+      <div className="p-6 animate-fade-in-up">
         <div className="max-w-6xl mx-auto space-y-8">
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
@@ -1188,16 +1178,16 @@ const AdminDashboard = () => {
 
                               {/* Page Numbers */}
                               <div className="flex items-center gap-1">
-                          {(() => {
-                            const pages = [];
-                            const maxPageButtons = 5;
-                            let start = Math.max(1, pendingPage - 2);
-                            let end = Math.min(pendingTotalPages, start + maxPageButtons - 1);
-                            if (end - start < maxPageButtons - 1) {
-                              start = Math.max(1, end - maxPageButtons + 1);
-                            }
-                            if (start > 1) {
-                              pages.push(
+                                {(() => {
+                                  const pages = [];
+                                  const maxPageButtons = 5;
+                                  let start = Math.max(1, pendingPage - 2);
+                                  let end = Math.min(pendingTotalPages, start + maxPageButtons - 1);
+                                  if (end - start < maxPageButtons - 1) {
+                                    start = Math.max(1, end - maxPageButtons + 1);
+                                  }
+                                  if (start > 1) {
+                                    pages.push(
                                       <Button
                                         key={1}
                                         variant={pendingPage === 1 ? "default" : "outline"}
@@ -1211,9 +1201,9 @@ const AdminDashboard = () => {
                                     if (start > 2) pages.push(
                                       <span key="start-ellipsis" className="px-2 text-gray-400">...</span>
                                     );
-                            }
-                            for (let i = start; i <= end; i++) {
-                              pages.push(
+                                  }
+                                  for (let i = start; i <= end; i++) {
+                                    pages.push(
                                       <Button
                                         key={i}
                                         variant={pendingPage === i ? "default" : "outline"}
@@ -1223,13 +1213,13 @@ const AdminDashboard = () => {
                                       >
                                         {i}
                                       </Button>
-                              );
-                            }
-                            if (end < pendingTotalPages) {
+                                    );
+                                  }
+                                  if (end < pendingTotalPages) {
                                     if (end < pendingTotalPages - 1) pages.push(
                                       <span key="end-ellipsis" className="px-2 text-gray-400">...</span>
                                     );
-                              pages.push(
+                                    pages.push(
                                       <Button
                                         key={pendingTotalPages}
                                         variant={pendingPage === pendingTotalPages ? "default" : "outline"}
@@ -1239,10 +1229,10 @@ const AdminDashboard = () => {
                                       >
                                         {pendingTotalPages}
                                       </Button>
-                              );
-                            }
-                            return pages;
-                          })()}
+                                    );
+                                  }
+                                  return pages;
+                                })()}
                               </div>
 
                               {/* Next Button */}
@@ -1264,14 +1254,14 @@ const AdminDashboard = () => {
                               value={pendingLimit.toString()}
                               onValueChange={(value) => {
                                 setPendingLimit(Number(value));
-                              setPendingPage(1);
-                            }}
-                          >
+                                setPendingPage(1);
+                              }}
+                            >
                               <SelectTrigger className="w-20 bg-white/80 backdrop-blur border-blue-200 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 rounded-xl h-9 transform hover:scale-105 hover:shadow-md">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent className="border-0 shadow-xl rounded-2xl">
-                            {[5, 10, 20, 50].map(n => (
+                                {[5, 10, 20, 50].map(n => (
                                   <SelectItem key={n} value={n.toString()} className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{n}</SelectItem>
                                 ))}
                               </SelectContent>
@@ -1486,16 +1476,16 @@ const AdminDashboard = () => {
 
                               {/* Page Numbers */}
                               <div className="flex items-center gap-1">
-                        {(() => {
-                          const pages = [];
-                          const maxPageButtons = 5;
-                          let start = Math.max(1, historyPage - 2);
-                          let end = Math.min(historyTotalPages, start + maxPageButtons - 1);
-                          if (end - start < maxPageButtons - 1) {
-                            start = Math.max(1, end - maxPageButtons + 1);
-                          }
-                          if (start > 1) {
-                            pages.push(
+                                {(() => {
+                                  const pages = [];
+                                  const maxPageButtons = 5;
+                                  let start = Math.max(1, historyPage - 2);
+                                  let end = Math.min(historyTotalPages, start + maxPageButtons - 1);
+                                  if (end - start < maxPageButtons - 1) {
+                                    start = Math.max(1, end - maxPageButtons + 1);
+                                  }
+                                  if (start > 1) {
+                                    pages.push(
                                       <Button
                                         key={1}
                                         variant={historyPage === 1 ? "default" : "outline"}
@@ -1509,9 +1499,9 @@ const AdminDashboard = () => {
                                     if (start > 2) pages.push(
                                       <span key="start-ellipsis" className="px-2 text-gray-400">...</span>
                                     );
-                          }
-                          for (let i = start; i <= end; i++) {
-                            pages.push(
+                                  }
+                                  for (let i = start; i <= end; i++) {
+                                    pages.push(
                                       <Button
                                         key={i}
                                         variant={historyPage === i ? "default" : "outline"}
@@ -1521,13 +1511,13 @@ const AdminDashboard = () => {
                                       >
                                         {i}
                                       </Button>
-                            );
-                          }
-                          if (end < historyTotalPages) {
+                                    );
+                                  }
+                                  if (end < historyTotalPages) {
                                     if (end < historyTotalPages - 1) pages.push(
                                       <span key="end-ellipsis" className="px-2 text-gray-400">...</span>
                                     );
-                            pages.push(
+                                    pages.push(
                                       <Button
                                         key={historyTotalPages}
                                         variant={historyPage === historyTotalPages ? "default" : "outline"}
@@ -1537,10 +1527,10 @@ const AdminDashboard = () => {
                                       >
                                         {historyTotalPages}
                                       </Button>
-                            );
-                          }
-                          return pages;
-                        })()}
+                                    );
+                                  }
+                                  return pages;
+                                })()}
                               </div>
 
                               {/* Next Button */}
@@ -1562,20 +1552,20 @@ const AdminDashboard = () => {
                               value={historyLimit.toString()}
                               onValueChange={(value) => {
                                 setHistoryLimit(Number(value));
-                            setHistoryPage(1);
-                          }}
-                        >
+                                setHistoryPage(1);
+                              }}
+                            >
                               <SelectTrigger className="w-20 bg-white/80 backdrop-blur border-blue-200 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 rounded-xl h-9 transform hover:scale-105 hover:shadow-md">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent className="border-0 shadow-xl rounded-2xl">
-                          {[5, 10, 20, 50].map(n => (
+                                {[5, 10, 20, 50].map(n => (
                                   <SelectItem key={n} value={n.toString()} className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{n}</SelectItem>
                                 ))}
                               </SelectContent>
                             </Select>
                             <span className="text-sm text-gray-600">{t('admin.itemsPerPage', 'รายการต่อหน้า')}</span>
-                      </div>
+                          </div>
                         </div>
                       )}
                     </div>
@@ -1625,15 +1615,15 @@ const AdminDashboard = () => {
                     <div className="flex items-center gap-4">
                       <div className={`text-3xl font-bold text-blue-900`}>
                         {getLeaveTypeDisplay(selectedRequest.leaveType || selectedRequest.leaveTypeName || selectedRequest.leaveTypeName_th || selectedRequest.leaveTypeName_en)}
-                </div>
-                </div>
+                      </div>
+                    </div>
                     <div className="text-right">
                       <div className="text-sm text-gray-500">{t('history.submittedOn')}</div>
                       <div className="text-lg font-semibold text-blue-600">
                         {selectedRequest.createdAt ? selectedRequest.createdAt.split('T')[0] : "-"}
-                </div>
-                </div>
-                </div>
+                      </div>
+                    </div>
+                  </div>
                 </CardContent>
               </Card>
 
@@ -1645,7 +1635,7 @@ const AdminDashboard = () => {
                     <div className="flex items-center gap-2">
                       <Calendar className="w-5 h-5 text-blue-600" />
                       <h3 className="text-lg font-semibold">{t('leave.dateInformation')}</h3>
-                </div>
+                    </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1656,8 +1646,8 @@ const AdminDashboard = () => {
                           <span className="font-medium text-blue-900">
                             {formatDateOnly(selectedRequest.startDate)}
                           </span>
-                </div>
-                </div>
+                        </div>
+                      </div>
                       <div className="space-y-2">
                         <Label className="text-sm font-medium text-gray-600">{t('leave.endDate')}</Label>
                         <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
@@ -1665,8 +1655,8 @@ const AdminDashboard = () => {
                           <span className="font-medium text-blue-900">
                             {formatDateOnly(selectedRequest.endDate)}
                           </span>
-                </div>
-              </div>
+                        </div>
+                      </div>
                     </div>
                     <div className="space-y-2">
                       <Label className="text-sm font-medium text-gray-600">{t('leave.duration')}</Label>
@@ -1822,17 +1812,17 @@ const AdminDashboard = () => {
                       </CardHeader>
                       <CardContent>
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {files.map((file: string, idx: number) => {
+                          {files.map((file: string, idx: number) => {
                             const fileName = file.split('/').pop() || file;
                             const ext = fileName.split('.').pop()?.toLowerCase();
-                          const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext || '');
-                          const fileUrl = `/leave-uploads/${file}`;
-                          return (
+                            const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext || '');
+                            const fileUrl = `/leave-uploads/${file}`;
+                            return (
                               <div key={file} className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
-                              {isImage ? (
+                                {isImage ? (
                                   <div className="space-y-3">
-                                  <img
-                                    src={fileUrl}
+                                    <img
+                                      src={fileUrl}
                                       alt={fileName}
                                       className="w-full h-32 object-cover rounded-lg border"
                                       onError={(e) => {
@@ -1860,11 +1850,11 @@ const AdminDashboard = () => {
                                       }}>{t('common.download')}</Button>
                                     </div>
                                   </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
                       </CardContent>
                     </Card>
                   );

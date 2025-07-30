@@ -3,17 +3,19 @@ import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
-import { Newspaper, Plus, Trash2, FileText, User, Calendar, Clock } from 'lucide-react';
+import { Newspaper, Plus, Trash2, FileText, User, Calendar, Clock, Image } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { useTranslation } from 'react-i18next';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-export default function CompanyNews() {
+export default function ManagePost() {
   const { t } = useTranslation();
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
@@ -28,6 +30,8 @@ export default function CompanyNews() {
     // createdBy, createdAt จะใส่ตอน submit
     Image: '',
   });
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   // โหลดข่าวสารจาก backend
   const fetchNews = async () => {
@@ -58,6 +62,18 @@ export default function CompanyNews() {
     // eslint-disable-next-line
   }, []);
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   // เพิ่มข่าวสารใหม่
   const handleAddNews = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,25 +81,29 @@ export default function CompanyNews() {
     setError('');
     try {
       const token = localStorage.getItem('token');
-      const body = {
-        subject: form.subject,
-        detail: form.detail,
-        Image: form.Image,
-        createdBy: user?.full_name || '',
-        createdAt: new Date().toISOString(),
-      };
+      const formData = new FormData();
+      formData.append('subject', form.subject);
+      formData.append('detail', form.detail);
+      formData.append('createdBy', user?.full_name || '');
+      formData.append('createdAt', new Date().toISOString());
+      
+      if (selectedFile) {
+        formData.append('Image', selectedFile);
+      }
+
       const res = await fetch(`${API_BASE_URL}/api/announcements`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
           Authorization: token ? `Bearer ${token}` : undefined,
         },
-        body: JSON.stringify(body),
+        body: formData,
       });
       const data = await res.json();
       if (data.status === 'success') {
         setAddOpen(false);
         setForm({ subject: '', detail: '', Image: '' });
+        setSelectedFile(null);
+        setImagePreview(null);
         fetchNews();
       } else {
         setError(data.message || 'บันทึกข่าวสารไม่สำเร็จ');
@@ -138,10 +158,10 @@ export default function CompanyNews() {
           <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-24 h-24 rounded-full bg-white/80 shadow-2xl border-4 border-white mb-4" />
           <h1 className="text-4xl md:text-5xl font-extrabold text-indigo-900 drop-shadow mb-2 flex items-center gap-3">
             <Newspaper className="w-8 h-8 text-blue-600" />
-            {t('companyNews.title')}
+            {t('companyNews.managePosts')}
           </h1>
           <p className="text-lg md:text-xl text-blue-900/70 mb-2 font-medium text-center max-w-2xl">
-            {t('companyNews.companyNewsDesc')}
+            {t('companyNews.managePostsDesc')}
           </p>
         </div>
       </div>
@@ -150,7 +170,7 @@ export default function CompanyNews() {
           <div className="flex justify-between items-center mb-6">
             <div className="text-xl font-bold text-blue-900 flex items-center gap-2">
               <Newspaper className="w-6 h-6 text-blue-600" />
-              {t('companyNews.title')}
+              {t('companyNews.managePosts')}
             </div>
             {isAdmin && (
               <Dialog open={addOpen} onOpenChange={setAddOpen}>
@@ -171,12 +191,13 @@ export default function CompanyNews() {
                   <form className="space-y-4 mt-2" onSubmit={handleAddNews}>
                     <div>
                       <label className="block text-blue-800 font-semibold mb-1">{t('companyNews.subject')}</label>
-                      <input
+                      <Input
                         type="text"
-                        className="w-full rounded-lg border border-blue-200 px-3 py-2 text-base focus:ring-2 focus:ring-blue-400"
                         value={form.subject}
                         onChange={e => setForm(f => ({ ...f, subject: e.target.value }))}
+                        placeholder={t('companyNews.subject')}
                         required
+                        className="w-full"
                       />
                     </div>
                     <div>
@@ -187,23 +208,56 @@ export default function CompanyNews() {
                         </span>
                       </label>
                       <textarea
-                        className="w-full rounded-lg border border-blue-200 px-3 py-2 text-base focus:ring-2 focus:ring-blue-400"
+                        className="w-full rounded-lg border border-blue-200 px-3 py-2 text-base focus:ring-2 focus:ring-blue-400 resize-none"
                         value={form.detail}
                         onChange={e => setForm(f => ({ ...f, detail: e.target.value }))}
-                        rows={4}
+                        rows={6}
                         maxLength={500}
                         required
                       />
                     </div>
-                    {/* <div>
-                      <label className="block text-blue-800 font-semibold mb-1">รูปภาพ (URL)</label>
-                      <input
-                        type="text"
-                        className="w-full rounded-lg border border-blue-200 px-3 py-2 text-base focus:ring-2 focus:ring-blue-400"
-                        value={form.Image}
-                        onChange={e => setForm(f => ({ ...f, Image: e.target.value }))}
-                      />
-                    </div> */}
+                    <div>
+                      <label className="block text-blue-800 font-semibold mb-1">
+                        {t('announcementsFeed.attachedImage')}
+                      </label>
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-3">
+                          <label className="flex items-center justify-center w-10 h-10 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg cursor-pointer transition-colors border border-blue-200 hover:border-blue-300">
+                            <Image className="w-5 h-5" />
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={handleFileSelect}
+                              className="hidden"
+                            />
+                          </label>
+                          {selectedFile && (
+                            <span className="text-sm text-green-600 font-medium">
+                              ✓ {selectedFile.name}
+                            </span>
+                          )}
+                        </div>
+                        {imagePreview && (
+                          <div className="relative">
+                            <img
+                              src={imagePreview}
+                              alt="Preview"
+                              className="w-full max-h-48 object-cover rounded-lg border border-gray-200"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedFile(null);
+                                setImagePreview(null);
+                              }}
+                              className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                     <div className="flex justify-end gap-2 mt-4">
                       <button
                         type="button"

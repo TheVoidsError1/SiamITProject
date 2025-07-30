@@ -1,5 +1,5 @@
 
-import { Calendar, Home, Clock, Settings, User, LogOut, Users, Building, Newspaper } from "lucide-react";
+import { Calendar, Home, Clock, Settings, User, LogOut, Users, Building, Newspaper, Rss } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import {
@@ -28,9 +28,9 @@ const items = [
     icon: Home,
   },
   {
-    title: "navigation.companyNews",
-    url: "/company-news",
-    icon: Newspaper,
+    title: "navigation.announcementsFeed",
+    url: "/announcements",
+    icon: Rss,
   },
   {
     title: "navigation.calendar",

@@ -683,7 +683,7 @@ const Index = () => {
                   {t('navigation.calendar')}
                 </Button>
               </Link>
-              <Link to="/company-news">
+              <Link to="/announcements/manage-post">
                 <Button className="w-full justify-start btn-blue-outline-lg text-base py-2 px-3 gap-2 animate-pop-in delay-300" variant="outline">
                   <Bell className="w-5 h-5" />
                   {t('main.companyNews')}

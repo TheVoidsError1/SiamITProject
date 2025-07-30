@@ -39,7 +39,13 @@
     "loginAgain": "Login Again",
     "allPositions": "All Positions",
     "allRoles": "All Roles",
-    "allDepartments": "All Departments"
+    "allDepartments": "All Departments",
+    "roles": {
+      "user": "User",
+      "employee": "User",
+      "admin": "Admin",
+      "superadmin": "Superadmin"
+    }
   },
   "navigation": {
     "home": "Home",
@@ -53,6 +59,7 @@
     "createUser": "Create User",
     "manageAll": "Manage All",
     "companyNews": "Company News",
+    "announcementsFeed": "Announcements Feed",
     "calendar": "Calendar"
   },
   "common": {
@@ -570,6 +577,8 @@
   "companyNews": {
     "title": "Company News",
     "companyNewsDesc": "Important announcements, company news, activities, and information that employees should know",
+    "managePosts": "Manage Posts",
+    "managePostsDesc": "Create, edit, and manage company announcements and news posts",
     "subject": "Subject",
     "addMore": "Add more",
     "noNews": "No news",
@@ -597,6 +606,17 @@
     "newsType": "News type",
     "companyNews": "Company News",
     "newsTypeDesc": "Important company news and announcements"
+  },
+  "announcementsFeed": {
+    "title": "Announcements Feed",
+    "subtitle": "View latest announcements and news from the company",
+    "noAnnouncements": "No announcements",
+    "noAnnouncementsDesc": "There are no announcements yet",
+    "errorMessage": "Error loading announcements",
+    "attachedImage": "Attached image",
+    "managePosts": "Manage Posts",
+    "createPost": "Create Post",
+    "selectImage": "Select Image"
   },
   "holidays": {
     "newYearsDay": "New Year's Day",

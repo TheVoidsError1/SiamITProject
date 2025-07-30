@@ -36,7 +36,13 @@
     "passwordRequired": "กรุณากรอกรหัสผ่านใหม่ และ กรุณายืนยันรหัสผ่าน",
     "role": "บทบาท",
     "selectRole": "เลือกบทบาท",
-    "loginAgain": "กรุณาเข้าสู่ระบบใหม่"
+    "loginAgain": "กรุณาเข้าสู่ระบบใหม่",
+    "roles": {
+      "user": "ผู้ใช้",
+      "employee": "ผู้ใช้",
+      "admin": "ผู้ดูแลระบบ",
+      "superadmin": "ซูเปอร์แอดมิน"
+    }
   },
   "navigation": {
     "home": "หน้าหลัก",
@@ -50,6 +56,7 @@
     "createUser": "สร้างผู้ใช้",
     "manageAll": "จัดการทั้งหมด",
     "companyNews": "ข่าวสารทางบริษัท",
+    "announcementsFeed": "ฟีดข่าวสาร",
     "calendar": "ปฏิทิน"
   },
   "common": {
@@ -605,6 +612,8 @@
   "companyNews": {
     "title": "ข่าวสารทางบริษัท",
     "companyNewsDesc": "ประกาศสำคัญ ข่าวสาร กิจกรรม และข้อมูลที่ควรทราบสำหรับพนักงานทุกท่าน",
+    "managePosts": "จัดการโพสต์",
+    "managePostsDesc": "สร้าง แก้ไข และจัดการประกาศและข่าวสารของบริษัท",
     "addNews": "เพิ่มข่าวสาร",
     "viewDetail": "ดูรายละเอียด",
     "detail": "รายละเอียด",
@@ -632,6 +641,17 @@
     "newsType": "ประเภทข่าวสาร",
     "companyNews": "ข่าวสารบริษัท",
     "newsTypeDesc": "ข่าวสารและประกาศสำคัญของบริษัท"
+  },
+  "announcementsFeed": {
+    "title": "ฟีดข่าวสาร",
+    "subtitle": "ดูข่าวสารและประกาศล่าสุดจากบริษัท",
+    "noAnnouncements": "ไม่มีข่าวสาร",
+    "noAnnouncementsDesc": "ยังไม่มีข่าวสารหรือประกาศใดๆ",
+    "errorMessage": "เกิดข้อผิดพลาดในการโหลดข่าวสาร",
+    "attachedImage": "รูปภาพแนบ",
+    "managePosts": "จัดการโพสต์",
+    "createPost": "สร้างโพสต์",
+    "selectImage": "เลือกรูปภาพ"
   },
   "holidays": {
     "newYearsDay": "วันขึ้นปีใหม่",
