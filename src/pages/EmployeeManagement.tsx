@@ -97,13 +97,21 @@ const EmployeeManagement = () => {
 
   // ฟังก์ชันแปลง id เป็นชื่อ
   const getPositionName = (id: string) => {
+    // ถ้า id เป็น null, undefined, หรือค่าว่าง ให้แสดงข้อความที่เหมาะสม
+    if (!id || id === 'null' || id === 'undefined' || id === '') {
+      return t('system.notSpecified', 'ไม่ระบุ');
+    }
     const found = positions.find((p) => p.id === id);
-    if (!found) return id;
+    if (!found) return t('system.notSpecified', 'ไม่ระบุ');
     return i18n.language === 'th' ? found.position_name_th : found.position_name_en;
   };
   const getDepartmentName = (id: string) => {
+    // ถ้า id เป็น null, undefined, หรือค่าว่าง ให้แสดงข้อความที่เหมาะสม
+    if (!id || id === 'null' || id === 'undefined' || id === '') {
+      return t('departments.noDepartment', 'ไม่มีแผนก');
+    }
     const found = departments.find((d) => d.id === id);
-    if (!found) return id;
+    if (!found) return t('departments.noDepartment', 'ไม่มีแผนก');
     return i18n.language === 'th' ? found.department_name_th : found.department_name_en;
   };
 
@@ -319,94 +327,126 @@ const EmployeeManagement = () => {
               ) : (
                 <div className="flex-1 flex flex-col overflow-hidden">
                   <div className="flex-1 overflow-auto min-h-0">
-                    <table className="w-full">
-                      <thead className="sticky top-0 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 z-10">
-                        <tr className="text-sm">
-                          <th className="px-3 py-2 text-left font-bold text-blue-900">{t('auth.fullName')}</th>
-                          <th className="px-3 py-2 text-left font-bold text-blue-900">{t('auth.email')}</th>
-                          <th className="px-3 py-2 text-left font-bold text-blue-900">{t('auth.position')}</th>
-                          <th className="px-3 py-2 text-left font-bold text-blue-900">{t('auth.department')}</th>
-                          <th className="px-3 py-2 text-left font-bold text-blue-900">{t('common.status')}</th>
-                          <th className="px-3 py-2 text-center font-bold text-blue-900">{t('system.management')}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {paginatedEmployees.map((employee, idx) => (
-                          <tr
-                            key={employee.id}
-                            className="transition hover:bg-blue-50/60 group animate-fade-in-up text-sm"
-                            style={{ animationDelay: `${idx * 60}ms` }}
-                          >
-                            <td className="px-3 py-2 whitespace-nowrap flex items-center gap-2">
-                              {/* Avatar with image or initials */}
-                              {employee.avatar ? (
-                                <img
-                                  src={employee.avatar}
-                                  alt={employee.full_name}
-                                  className="w-8 h-8 rounded-full object-cover shadow-md border border-blue-200"
-                                />
-                              ) : (
-                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-200 via-indigo-200 to-purple-200 flex items-center justify-center text-blue-900 font-bold text-base shadow-md">
-                                  {employee.full_name ? employee.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : '?'}
-                                </div>
-                              )}
-                              <span className="font-semibold text-blue-900 text-sm">{employee.full_name}</span>
-                            </td>
-                            <td className="px-3 py-2 text-blue-700 text-sm">{employee.email}</td>
-                            <td className="px-3 py-2 text-blue-700 text-sm">{getPositionName(employee.position)}</td>
-                            <td className="px-3 py-2 text-blue-700 text-sm">{getDepartmentName(employee.department)}</td>
-                            <td className="px-3 py-2">
-                              {employee.role === 'superadmin' ? (
-                                <span className="text-xs px-2 py-0.5 rounded-full border border-purple-300 bg-purple-50 text-purple-700 font-bold shadow-sm" style={{letterSpacing:0.5}}>
-                                  Superadmin
-                                </span>
-                              ) : employee.role === 'admin' ? (
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-blue-500 to-indigo-400 text-white font-bold shadow-sm">
-                                  ผู้ดูแลระบบ
-                                </span>
-                              ) : (
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold shadow-sm">
-                                  พนักงาน
-                                </span>
-                              )}
-                            </td>
-                            <td className="px-3 py-2 text-center flex gap-1 justify-center">
-                              <Button asChild size="sm" variant="secondary" className="rounded-full px-2 py-1 font-bold bg-gradient-to-r from-blue-500 to-indigo-400 text-white shadow hover:scale-105 transition text-xs">
-                                <Link to={`/admin/employees/${employee.id}?role=${employee.role}`}> 
-                                  <Eye className="w-4 h-4 mr-1" />
-                                  {t('system.seeDetails')}
-                                </Link>
-                              </Button>
-                              <AlertDialog>
-                                <AlertDialogTrigger asChild>
-                                  <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    className="rounded-full px-2 py-1 font-bold bg-gradient-to-r from-red-500 to-pink-400 text-white shadow hover:scale-105 transition flex items-center gap-1 text-xs"
-                                    onClick={() => setDeleteTarget(employee)}
-                                  >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m5 0H6" /></svg>
-                                    {t('common.delete', 'ลบ')}
-                                  </Button>
-                                </AlertDialogTrigger>
-                                <AlertDialogContent>
-                                  <AlertDialogHeader>
-                                    <AlertDialogTitle>{t('system.confirmDelete', 'ยืนยันการลบ')}</AlertDialogTitle>
-                                    <AlertDialogDescription>{t('system.confirmDeleteDesc', 'คุณแน่ใจหรือไม่ว่าต้องการลบผู้ใช้งานนี้?')}</AlertDialogDescription>
-                                  </AlertDialogHeader>
-                                  <AlertDialogFooter>
-                                    <AlertDialogCancel>{t('common.cancel', 'ยกเลิก')}</AlertDialogCancel>
-                                    <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-gradient-to-r from-red-500 to-pink-400 text-white">
-                                      {deleting ? t('common.loading', 'กำลังลบ...') : t('common.delete', 'ลบ')}
-                                    </AlertDialogAction>
-                                  </AlertDialogFooter>
-                                </AlertDialogContent>
-                              </AlertDialog>
-                            </td>
+                    {paginatedEmployees.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center h-full py-16">
+                        <div className="w-24 h-24 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mb-6">
+                          <Users className="w-12 h-12 text-blue-400" />
+                        </div>
+                        <h3 className="text-xl font-bold text-blue-900 mb-2">
+                          {t('system.noEmployeesFound')}
+                        </h3>
+                        <p className="text-blue-600 text-center max-w-md">
+                          {t('system.noEmployeesFoundDesc')}
+                        </p>
+                        <button
+                          className="mt-6 px-6 py-3 rounded-lg font-bold bg-gradient-to-r from-blue-500 to-indigo-400 text-white shadow-lg hover:from-blue-600 hover:to-indigo-500 hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                          onClick={() => {
+                            setPendingPositionFilter("");
+                            setPendingDepartmentFilter("");
+                            setPendingRoleFilter("");
+                            setPositionFilter("");
+                            setDepartmentFilter("");
+                            setRoleFilter("");
+                          }}
+                        >
+                          {t('common.resetFilter')}
+                        </button>
+                      </div>
+                    ) : (
+                      <table className="w-full">
+                        <thead className="sticky top-0 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 z-10">
+                          <tr className="text-sm">
+                            <th className="px-3 py-2 text-left font-bold text-blue-900">{t('auth.fullName')}</th>
+                            <th className="px-3 py-2 text-left font-bold text-blue-900">{t('auth.email')}</th>
+                            <th className="px-3 py-2 text-left font-bold text-blue-900">{t('auth.position')}</th>
+                            <th className="px-3 py-2 text-left font-bold text-blue-900">{t('auth.department')}</th>
+                            <th className="px-3 py-2 text-left font-bold text-blue-900">{t('common.status')}</th>
+                            <th className="px-3 py-2 text-center font-bold text-blue-900">{t('system.management')}</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {paginatedEmployees.map((employee, idx) => (
+                            <tr
+                              key={employee.id}
+                              className="transition hover:bg-blue-50/60 group animate-fade-in-up text-sm"
+                              style={{ animationDelay: `${idx * 60}ms` }}
+                            >
+                              <td className="px-3 py-2 whitespace-nowrap flex items-center gap-2">
+                                {/* Avatar with image or initials */}
+                                {employee.avatar ? (
+                                  <img
+                                    src={employee.avatar}
+                                    alt={employee.full_name}
+                                    className="w-8 h-8 rounded-full object-cover shadow-md border border-blue-200"
+                                  />
+                                ) : (
+                                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-200 via-indigo-200 to-purple-200 flex items-center justify-center text-blue-900 font-bold text-base shadow-md">
+                                    {employee.full_name ? employee.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : '?'}
+                                  </div>
+                                )}
+                                <span className="font-semibold text-blue-900 text-sm">{employee.full_name}</span>
+                              </td>
+                              <td className="px-3 py-2 text-blue-700 text-sm">{employee.email}</td>
+                              <td className="px-3 py-2 text-blue-700 text-sm">{getPositionName(employee.position)}</td>
+                              <td className="px-3 py-2 text-blue-700 text-sm">{getDepartmentName(employee.department)}</td>
+                              <td className="px-3 py-2">
+                                {employee.role === 'superadmin' ? (
+                                  <span className="text-xs px-2 py-0.5 rounded-full border border-purple-300 bg-purple-50 text-purple-700 font-bold shadow-sm" style={{letterSpacing:0.5}}>
+                                    Superadmin
+                                  </span>
+                                ) : employee.role === 'admin' ? (
+                                  <span className="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-blue-500 to-indigo-400 text-white font-bold shadow-sm">
+                                    ผู้ดูแลระบบ
+                                  </span>
+                                ) : (
+                                  <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold shadow-sm">
+                                    พนักงาน
+                                  </span>
+                                )}
+                              </td>
+                              <td className="px-3 py-3 text-center flex gap-1.5 justify-center">
+                                <Button 
+                                  asChild 
+                                  size="sm" 
+                                  variant="secondary"
+                                  className="rounded-lg px-3 py-1.5 font-medium bg-gradient-to-r from-blue-500 to-indigo-400 text-white shadow hover:scale-105 transition text-xs"
+                                >
+                                  <Link to={`/admin/employees/${employee.id}?role=${employee.role}`}> 
+                                    <Eye className="w-3.5 h-3.5 mr-1" />
+                                    {t('common.viewDetails')}
+                                  </Link>
+                                </Button>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button
+                                      size="sm"
+                                      variant="destructive"
+                                      className="rounded-lg px-3 py-1.5 font-medium bg-gradient-to-r from-red-500 to-red-600 text-white shadow hover:scale-105 transition text-xs"
+                                      onClick={() => setDeleteTarget(employee)}
+                                    >
+                                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m5 0H6" /></svg>
+                                      {t('common.delete')}
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>{t('system.confirmDelete', 'ยืนยันการลบ')}</AlertDialogTitle>
+                                      <AlertDialogDescription>{t('system.confirmDeleteDesc', 'คุณแน่ใจหรือไม่ว่าต้องการลบผู้ใช้งานนี้?')}</AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>{t('common.cancel', 'ยกเลิก')}</AlertDialogCancel>
+                                      <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-gradient-to-r from-red-500 to-pink-400 text-white">
+                                        {deleting ? t('common.loading', 'กำลังลบ...') : t('common.delete', 'ลบ')}
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
                   </div>
                   {/* Pagination */}
                   {totalPages > 1 && (
@@ -433,6 +473,8 @@ const EmployeeManagement = () => {
         <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-10 h-10 rounded-full mx-auto mb-1" />
         &copy; {new Date().getFullYear()} Siam IT Leave Management System
       </footer>
+
+
     </div>
   );
 };

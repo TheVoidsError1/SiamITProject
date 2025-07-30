@@ -83,6 +83,7 @@
     "hours": "ชั่วโมง",
     "ok": "ตกลง",
     "reset": "รีเซ็ต",
+    "resetFilter": "รีเซ็ตตัวกรอง",
     "confirm": "ยืนยัน",
     "month": "เดือน",
     "year": "ปี",
@@ -507,7 +508,10 @@
     "allDepartments": "ทุกแผนก",
     "allRoles": "ทุกบทบาท",
     "admin": "ผู้ดูแลระบบ",
-    "superadmin": "ซูเปอร์แอดมิน"
+    "superadmin": "ซูเปอร์แอดมิน",
+    "notSpecified": "ไม่ระบุ",
+    "noEmployeesFound": "ไม่พบข้อมูลพนักงาน",
+    "noEmployeesFoundDesc": "ไม่พบพนักงานที่ตรงกับเงื่อนไขการกรองที่เลือก กรุณาลองเปลี่ยนเงื่อนไขหรือรีเซ็ตตัวกรอง"
   },
   "error": {
     "apiConnectionError": "ข้อผิดพลาดการเชื่อมต่อ API",
