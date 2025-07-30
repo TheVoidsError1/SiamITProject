@@ -743,6 +743,13 @@ const LeaveHistory = () => {
                           <span className="font-medium">{t('leave.duration')}:</span>
                           <span>{leave.days} {t('leave.days')}</span>
                         </div>
+                        {leave.startTime && leave.endTime && (
+                          <div className="flex items-center gap-2 text-base text-blue-900">
+                            <Clock className="w-5 h-5 text-blue-400" />
+                            <span className="font-medium">{t('leave.hours')}:</span>
+                            <span>{calcHours(leave.startTime, leave.endTime)} {hourUnit}</span>
+                          </div>
+                        )}
                         {isRetroactiveLeave(leave) && (
                           <div className="flex items-center gap-2 text-base text-purple-700">
                             <History className="w-5 h-5 text-purple-500" />
@@ -1011,6 +1018,17 @@ const LeaveHistory = () => {
                         </span>
                       </div>
                     </div>
+                    {selectedLeave.startTime && selectedLeave.endTime && (
+                      <div className="space-y-2">
+                        <Label className="text-sm font-medium text-gray-600">{t('leave.hours')}</Label>
+                        <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
+                          <Clock className="w-4 h-4 text-blue-500" />
+                          <span className="font-medium text-blue-900">
+                            {calcHours(selectedLeave.startTime, selectedLeave.endTime)} {hourUnit}
+                          </span>
+                        </div>
+                      </div>
+                    )}
                                             {isRetroactiveLeave(selectedLeave) && (
                       <div className="space-y-2">
                         <Label className="text-sm font-medium text-purple-600">{t('history.retroactiveLeave')}</Label>

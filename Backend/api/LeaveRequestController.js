@@ -256,18 +256,8 @@
            if (leaveStart && leaveStart < today) {
              // ถ้าวันลาอยู่ในอดีต (ย้อนหลัง) ให้ backdated = 1
              backdated = 1;
-           } else if (leaveStart && leaveStart.getTime() === today.getTime() && startTime) {
-             // ถ้าวันลาเป็นวันนี้ ให้ตรวจสอบเวลาเริ่มลา
-             const now = new Date();
-             const [startHour, startMinute] = startTime.split(":").map(Number);
-             const leaveStartDateTime = new Date(leaveStart);
-             leaveStartDateTime.setHours(startHour, startMinute, 0, 0);
-             if (leaveStartDateTime < now) {
-               // ถ้าเวลาเริ่มลาอยู่ในอดีต ให้ backdated = 1
-               backdated = 1;
-             }
            }
-           // ถ้าวันลาเป็นปัจจุบันหรืออนาคต ให้ backdated = 0 (ค่าเริ่มต้น)
+           // ถ้าวันลาเป็นวันปัจจุบันหรืออนาคต ให้ backdated = 0 (ไม่นับเป็นย้อนหลัง)
          }
          const leaveData = {
            Repid: userId, // ใส่ user_id จาก JWT
@@ -973,7 +963,6 @@
          if (startDate !== undefined || startTime !== undefined) {
            let backdated = 0; // Default to 0 (not backdated)
            const currentStartDate = startDate !== undefined ? startDate : leave.startDate;
-           const currentStartTime = startTime !== undefined ? startTime : leave.startTime;
            
            if (currentStartDate) {
              const today = new Date();
@@ -982,18 +971,8 @@
              if (leaveStart && leaveStart < today) {
                // ถ้าวันลาอยู่ในอดีต (ย้อนหลัง) ให้ backdated = 1
                backdated = 1;
-             } else if (leaveStart && leaveStart.getTime() === today.getTime() && currentStartTime) {
-               // ถ้าวันลาเป็นวันนี้ ให้ตรวจสอบเวลาเริ่มลา
-               const now = new Date();
-               const [startHour, startMinute] = currentStartTime.split(":").map(Number);
-               const leaveStartDateTime = new Date(leaveStart);
-               leaveStartDateTime.setHours(startHour, startMinute, 0, 0);
-               if (leaveStartDateTime < now) {
-                 // ถ้าเวลาเริ่มลาอยู่ในอดีต ให้ backdated = 1
-                 backdated = 1;
-               }
              }
-             // ถ้าวันลาเป็นปัจจุบันหรืออนาคต ให้ backdated = 0 (ค่าเริ่มต้น)
+             // ถ้าวันลาเป็นวันปัจจุบันหรืออนาคต ให้ backdated = 0 (ไม่นับเป็นย้อนหลัง)
            }
            leave.backdated = backdated;
          }
