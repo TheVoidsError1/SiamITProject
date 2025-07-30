@@ -583,7 +583,16 @@
     "save": "Save",
     "cancel": "Cancel",
     "viewDetail": "View Detail",
-    "addNews": "Add News"
+    "addNews": "Add News",
+    "news": "News",
+    "publisher": "Publisher",
+    "publishedBy": "Published by",
+    "publishedDate": "Published date",
+    "publishedTime": "Published time",
+    "publishedOn": "Published on",
+    "newsType": "News type",
+    "companyNews": "Company News",
+    "newsTypeDesc": "Important company news and announcements"
   },
   "holidays": {
     "newYearsDay": "New Year's Day",

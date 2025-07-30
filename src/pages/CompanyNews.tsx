@@ -1,11 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
-import { Newspaper, Plus, Trash2 } from 'lucide-react';
+import { Newspaper, Plus, Trash2, FileText, User, Calendar, Clock } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
+import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import { useTranslation } from 'react-i18next';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -177,12 +180,18 @@ export default function CompanyNews() {
                       />
                     </div>
                     <div>
-                      <label className="block text-blue-800 font-semibold mb-1">{t('companyNews.detail')}</label>
+                      <label className="block text-blue-800 font-semibold mb-1">
+                        {t('companyNews.detail')} 
+                        <span className="text-sm text-gray-500 ml-2">
+                          ({form.detail.length}/500)
+                        </span>
+                      </label>
                       <textarea
                         className="w-full rounded-lg border border-blue-200 px-3 py-2 text-base focus:ring-2 focus:ring-blue-400"
                         value={form.detail}
                         onChange={e => setForm(f => ({ ...f, detail: e.target.value }))}
                         rows={4}
+                        maxLength={500}
                         required
                       />
                     </div>
@@ -236,7 +245,12 @@ export default function CompanyNews() {
                 ) : newsList.map((news, idx) => (
                   <TableRow key={news.id} className="hover:bg-blue-50 text-base">
                     <TableCell className="p-4 text-center font-semibold text-blue-800">{news.subject}</TableCell>
-                    <TableCell className="p-4 text-center">{news.detail}</TableCell>
+                    <TableCell className="p-4 text-center">
+                      {news.detail.length > 25 
+                        ? `${news.detail.substring(0, 25)}...` 
+                        : news.detail
+                      }
+                    </TableCell>
                     <TableCell className="p-4 text-center">{news.createdBy}</TableCell>
                     {isAdmin && (
                       <TableCell className="p-4 text-center">
@@ -259,19 +273,151 @@ export default function CompanyNews() {
                             {t('companyNews.viewDetail')}
                           </button>
                         </DialogTrigger>
-                        <DialogContent>
+                        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto animate-scale-in">
                           <DialogHeader>
-                            <DialogTitle className="text-2xl font-bold text-blue-900 mb-2 flex items-center gap-2">
-                              <Newspaper className="w-6 h-6 text-blue-600" />
-                              {news.subject}
-                            </DialogTitle>
-                            <DialogDescription>
-                              <div className="space-y-2 mt-2">
-                                <div><span className="font-semibold text-blue-800">{t('companyNews.detail')}:</span> {news.detail}</div>
-                                <div><span className="font-semibold text-blue-800">{t('companyNews.createdBy')}:</span> {news.createdBy}</div>
+                            <DialogTitle className="flex items-center">
+                              <div className="flex items-center gap-3">
+                                <span className="text-2xl font-bold text-blue-600">
+                                  {t('companyNews.viewDetail')}
+                                </span>
+                                <div className="flex flex-wrap gap-2">
+                                  <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                                    <Newspaper className="w-3 h-3 mr-1" />
+                                    {t('companyNews.news')}
+                                  </Badge>
+                                </div>
                               </div>
-                            </DialogDescription>
+                            </DialogTitle>
                           </DialogHeader>
+                          
+                          {news && (
+                            <div className="space-y-6">
+                              {/* Header Section */}
+                              <Card className="border-0 shadow-lg bg-gradient-to-r from-blue-50 to-indigo-50">
+                                <CardContent className="p-6">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-4">
+                                      <div className="text-3xl font-bold text-blue-900">
+                                        {news.subject}
+                                      </div>
+                                    </div>
+                                    <div className="text-right">
+                                      <div className="text-sm text-gray-500">{t('companyNews.publishedOn')}</div>
+                                      <div className="text-lg font-semibold text-blue-600">
+                                        {new Date(news.createdAt).toLocaleDateString('th-TH', {
+                                          year: 'numeric',
+                                          month: 'short',
+                                          day: 'numeric'
+                                        })}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+
+                              {/* Main Information Grid */}
+                              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                {/* Left Column - News Details */}
+                                <Card className="border-0 shadow-md">
+                                  <CardHeader className="pb-3">
+                                    <div className="flex items-center gap-2">
+                                      <FileText className="w-5 h-5 text-orange-600" />
+                                      <h3 className="text-lg font-semibold">{t('companyNews.detail')}</h3>
+                                    </div>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <div className="p-4 bg-orange-50 rounded-lg overflow-hidden">
+                                      <div className="prose prose-lg max-w-none break-words">
+                                        {news.detail.split('\n').map((paragraph, index) => (
+                                          <div key={index} className="mb-4 last:mb-0">
+                                            {paragraph ? (
+                                              <p className="text-orange-900 leading-relaxed break-words overflow-hidden">
+                                                {paragraph}
+                                              </p>
+                                            ) : (
+                                              <div className="h-4"></div>
+                                            )}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+
+                                {/* Right Column - Publisher Info */}
+                                <Card className="border-0 shadow-md">
+                                  <CardHeader className="pb-3">
+                                    <div className="flex items-center gap-2">
+                                      <User className="w-5 h-5 text-indigo-600" />
+                                      <h3 className="text-lg font-semibold">{t('companyNews.publisher')}</h3>
+                                    </div>
+                                  </CardHeader>
+                                  <CardContent className="space-y-4">
+                                    <div className="space-y-2">
+                                      <Label className="text-sm font-medium text-gray-600">{t('companyNews.publishedBy')}</Label>
+                                      <div className="flex items-center gap-2 p-3 bg-indigo-50 rounded-lg">
+                                        <User className="w-4 h-4 text-indigo-500" />
+                                        <span className="font-medium text-indigo-900">{news.createdBy}</span>
+                                      </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label className="text-sm font-medium text-gray-600">{t('companyNews.publishedDate')}</Label>
+                                      <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
+                                        <Calendar className="w-4 h-4 text-green-500" />
+                                        <span className="font-medium text-green-900">
+                                          {new Date(news.createdAt).toLocaleDateString('th-TH', {
+                                            year: 'numeric',
+                                            month: 'long',
+                                            day: 'numeric'
+                                          })}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label className="text-sm font-medium text-gray-600">{t('companyNews.publishedTime')}</Label>
+                                      <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
+                                        <Clock className="w-4 h-4 text-blue-500" />
+                                        <span className="font-medium text-blue-900">
+                                          {new Date(news.createdAt).toLocaleTimeString('th-TH', {
+                                            hour: '2-digit',
+                                            minute: '2-digit'
+                                          })}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              </div>
+
+                              {/* News Type Section */}
+                              <Card className="border-0 shadow-md">
+                                <CardHeader className="pb-3">
+                                  <div className="flex items-center gap-2">
+                                    <Newspaper className="w-5 h-5 text-blue-600" />
+                                    <h3 className="text-lg font-semibold">{t('companyNews.newsType')}</h3>
+                                  </div>
+                                </CardHeader>
+                                <CardContent>
+                                  <div className="p-4 bg-blue-50 rounded-lg">
+                                    <div className="flex items-center gap-2">
+                                      <Badge className="bg-blue-100 text-blue-800 border-blue-200">
+                                        <Newspaper className="w-3 h-3 mr-1" />
+                                        {t('companyNews.companyNews')}
+                                      </Badge>
+                                      <span className="text-blue-900 font-medium">
+                                        {t('companyNews.newsTypeDesc')}
+                                      </span>
+                                    </div>
+                                  </div>
+                                </CardContent>
+                              </Card>
+                            </div>
+                          )}
+                          <DialogFooter className="pt-6 border-t">
+                            <Button variant="outline" onClick={() => setOpenIdx(null)} className="btn-press hover-glow">
+                              {t('common.close')}
+                            </Button>
+                          </DialogFooter>
                         </DialogContent>
                       </Dialog>
                     </TableCell>

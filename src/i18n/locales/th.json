@@ -618,7 +618,16 @@
     "deleteSuccessDesc": "ลบข่าวสารสำเร็จ",
     "deleteError": "ลบข่าวสารไม่สำเร็จ",
     "deleteErrorDesc": "ลบข่าวสารไม่สำเร็จ",
-    "deleteConfirmDesc": "คุณต้องการลบข่าวสารนี้หรือไม่?"
+    "deleteConfirmDesc": "คุณต้องการลบข่าวสารนี้หรือไม่?",
+    "news": "ข่าวสาร",
+    "publisher": "ผู้ประกาศ",
+    "publishedBy": "ประกาศโดย",
+    "publishedDate": "วันที่ประกาศ",
+    "publishedTime": "เวลาประกาศ",
+    "publishedOn": "ประกาศเมื่อ",
+    "newsType": "ประเภทข่าวสาร",
+    "companyNews": "ข่าวสารบริษัท",
+    "newsTypeDesc": "ข่าวสารและประกาศสำคัญของบริษัท"
   },
   "holidays": {
     "newYearsDay": "วันขึ้นปีใหม่",
