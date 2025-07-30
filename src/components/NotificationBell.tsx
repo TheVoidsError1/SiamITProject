@@ -158,7 +158,11 @@ const NotificationBell = () => {
   return (
     <Popover open={popoverOpen} onOpenChange={handlePopoverOpenChange}>
       <PopoverTrigger asChild>
-        <Button variant="ghost" size="sm" className="relative glass bg-white/60 backdrop-blur-md shadow-lg hover:scale-110 transition-all duration-200">
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className="relative bg-white/60 backdrop-blur-md shadow-lg hover:scale-110 transition-all duration-200 rounded-xl border border-white/20"
+        >
           <span className="relative">
             <Bell className="h-6 w-6 text-blue-500" />
             {unreadCount > 0 && (
@@ -169,7 +173,13 @@ const NotificationBell = () => {
           </span>
         </Button>
       </PopoverTrigger>
-      <PopoverContent className="w-80 glass bg-gradient-to-br from-white/80 via-blue-50/80 to-indigo-100/80 backdrop-blur-xl shadow-2xl border-0 rounded-2xl p-0 animate-fade-in-up" align="end">
+      <PopoverContent 
+        className="w-80 bg-gradient-to-br from-white/80 via-blue-50/80 to-indigo-100/80 backdrop-blur-xl shadow-2xl border-0 rounded-2xl p-0" 
+        align="end"
+        style={{
+          animation: 'fadeInUp 0.3s ease-out'
+        }}
+      >
         <Card className="border-0 shadow-none bg-transparent">
           <CardHeader className="pb-3 bg-gradient-to-r from-blue-500 via-indigo-400 to-purple-400 rounded-t-2xl text-white">
             <div className="flex items-center justify-between">
@@ -193,12 +203,15 @@ const NotificationBell = () => {
               notifications.map((notification, idx) => (
                 <div
                   key={notification.id}
-                  className={`flex items-start gap-3 p-4 rounded-xl glass shadow-md border-0 transition-all duration-200 animate-fade-in-up animate-pop-in ${
+                  className={`flex items-start gap-3 p-4 rounded-xl shadow-md border-0 transition-all duration-200 ${
                     notification.status === 'approved' 
                       ? 'bg-gradient-to-br from-green-50/80 via-emerald-50/80 to-green-100/80 border-l-4 border-green-400' 
                       : 'bg-gradient-to-br from-red-50/80 via-rose-50/80 to-red-100/80 border-l-4 border-red-400'
                   }`}
-                  style={{ animationDelay: `${idx * 80}ms` }}
+                  style={{ 
+                    animation: 'fadeInUp 0.3s ease-out',
+                    animationDelay: `${idx * 80}ms` 
+                  }}
                 >
                   <div className="flex-shrink-0 mt-1">
                     {notification.status === 'approved' ? (
@@ -241,6 +254,19 @@ const NotificationBell = () => {
           </CardContent>
         </Card>
       </PopoverContent>
+      
+      <style>{`
+        @keyframes fadeInUp {
+          from {
+            opacity: 0;
+            transform: translateY(10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+      `}</style>
     </Popover>
   );
 };

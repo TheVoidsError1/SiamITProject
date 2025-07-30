@@ -738,16 +738,30 @@ const LeaveHistory = () => {
                           <span className="font-medium">{t('leave.endDate')}:</span>
                           <span>{formatDateLocalized(leave.endDate)}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-base text-blue-900">
-                          <Clock className="w-5 h-5 text-blue-400" />
-                          <span className="font-medium">{t('leave.duration')}:</span>
-                          <span>{leave.days} {t('leave.days')}</span>
-                        </div>
-                        {leave.startTime && leave.endTime && (
+                        {/* แสดงระยะเวลาตามประเภทการลา */}
+                        {leave.startTime && leave.endTime ? (
+                          // ถ้ามีเวลาเริ่มและสิ้นสุด แสดงเป็นชั่วโมง
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-2 text-base text-blue-900">
+                              <Clock className="w-5 h-5 text-blue-400" />
+                              <span className="font-medium">{t('leave.duration')}:</span>
+                              <span>{calcHours(leave.startTime, leave.endTime)} {hourUnit}</span>
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-blue-700">
+                              <Clock className="w-4 h-4 text-blue-400" />
+                              <span className="font-medium">{t('leave.startTime')}:</span>
+                              <span>{leave.startTime}</span>
+                              <span className="mx-1">-</span>
+                              <span className="font-medium">{t('leave.endTime')}:</span>
+                              <span>{leave.endTime}</span>
+                            </div>
+                          </div>
+                        ) : (
+                          // ถ้าไม่มีเวลา แสดงเป็นวัน
                           <div className="flex items-center gap-2 text-base text-blue-900">
                             <Clock className="w-5 h-5 text-blue-400" />
-                            <span className="font-medium">{t('leave.hours')}:</span>
-                            <span>{calcHours(leave.startTime, leave.endTime)} {hourUnit}</span>
+                            <span className="font-medium">{t('leave.duration')}:</span>
+                            <span>{leave.days} {t('leave.days')}</span>
                           </div>
                         )}
                         {isRetroactiveLeave(leave) && (
@@ -1009,22 +1023,37 @@ const LeaveHistory = () => {
                         </div>
                       </div>
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-600">{t('leave.duration')}</Label>
-                      <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
-                        <Clock className="w-4 h-4 text-green-500" />
-                        <span className="font-medium text-green-900">
-                          {selectedLeave.days || 1} {t('leave.days')}
-                        </span>
+                    {/* แสดงระยะเวลาตามประเภทการลา */}
+                    {selectedLeave.startTime && selectedLeave.endTime ? (
+                      // ถ้ามีเวลาเริ่มและสิ้นสุด แสดงเป็นชั่วโมง
+                      <div className="space-y-4">
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-600">{t('leave.duration')}</Label>
+                          <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
+                            <Clock className="w-4 h-4 text-blue-500" />
+                            <span className="font-medium text-blue-900">
+                              {calcHours(selectedLeave.startTime, selectedLeave.endTime)} {hourUnit}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-600">{t('leave.leaveTime')}</Label>
+                          <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
+                            <Clock className="w-4 h-4 text-blue-500" />
+                            <span className="font-medium text-blue-900">
+                              {selectedLeave.startTime} - {selectedLeave.endTime}
+                            </span>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                    {selectedLeave.startTime && selectedLeave.endTime && (
+                    ) : (
+                      // ถ้าไม่มีเวลา แสดงเป็นวัน
                       <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-600">{t('leave.hours')}</Label>
-                        <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
-                          <Clock className="w-4 h-4 text-blue-500" />
-                          <span className="font-medium text-blue-900">
-                            {calcHours(selectedLeave.startTime, selectedLeave.endTime)} {hourUnit}
+                        <Label className="text-sm font-medium text-gray-600">{t('leave.duration')}</Label>
+                        <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
+                          <Clock className="w-4 h-4 text-green-500" />
+                          <span className="font-medium text-green-900">
+                            {selectedLeave.days || 1} {t('leave.days')}
                           </span>
                         </div>
                       </div>
