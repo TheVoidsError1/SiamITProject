@@ -855,7 +855,7 @@ const EmployeeDetail = () => {
                         </TableCell>
                           <TableCell className="text-blue-700 px-4 py-3">
                             {leave.submittedDate ? (
-                              <span className="font-medium text-sm whitespace-nowrap">{format(new Date(leave.submittedDate), "dd MMM yyyy", { locale: th })}</span>
+                              <span className="font-medium text-sm whitespace-nowrap">{format(new Date(leave.submittedDate), "dd MMM yyyy", { locale: i18n.language.startsWith('th') ? th : undefined })}</span>
                             ) : (
                               <span className="text-gray-400">-</span>
                             )}

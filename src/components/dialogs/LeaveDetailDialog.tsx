@@ -467,15 +467,29 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                                   target.style.display = 'none';
                                 }}
                               />
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm text-gray-600 truncate">{fileName}</span>
-                                <Button 
-                                  size="sm" 
-                                  variant="outline"
-                                  onClick={() => window.open(`/leave-uploads/${attachment}`, '_blank')}
-                                >
-                                  {t('common.view', 'View')}
-                                </Button>
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-sm text-gray-600 truncate flex-1">{fileName}</span>
+                                <div className="flex gap-1">
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    onClick={() => window.open(`/leave-uploads/${attachment}`, '_blank')}
+                                  >
+                                    {t('common.view', 'View')}
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    onClick={() => {
+                                      const link = document.createElement('a');
+                                      link.href = `/leave-uploads/${attachment}`;
+                                      link.download = fileName;
+                                      link.click();
+                                    }}
+                                  >
+                                    {t('common.download', 'Download')}
+                                  </Button>
+                                </div>
                               </div>
                             </div>
                           ) : (
