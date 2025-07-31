@@ -702,6 +702,7 @@
     "currentYear": "ปีปัจจุบัน",
     "annualHolidays": "วันหยุดประจำปี",
     "companyHolidays": "วันหยุดบริษัท",
+    "employeeLeaves": "การลาของพนักงาน",
     "loading": "กำลังโหลด...",
     "months": {
       "january": "มกราคม",
@@ -730,6 +731,7 @@
       "title": "คำอธิบาย",
       "annualHoliday": "วันหยุดประจำปี",
       "companyHoliday": "วันหยุดบริษัท",
+      "employeeLeave": "การลาของพนักงาน",
       "dualEvent": "กิจกรรมร่วม"
     }
   }

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Calendar, Building2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Building2, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Switch } from '@/components/ui/switch';
@@ -11,9 +11,11 @@ const CalendarPage = () => {
   const [year, setYear] = useState(now.getFullYear());
   const [companyEvents, setCompanyEvents] = useState<CompanyEvent[]>([]);
   const [thaiHolidays, setThaiHolidays] = useState<ThaiHoliday[]>([]);
+  const [employeeLeaves, setEmployeeLeaves] = useState<EmployeeLeave[]>([]);
   const [loading, setLoading] = useState(true);
   const [showCompanyHolidays, setShowCompanyHolidays] = useState(true);
   const [showAnnualHolidays, setShowAnnualHolidays] = useState(true);
+  const [showEmployeeLeaves, setShowEmployeeLeaves] = useState(true);
   const navigate = useNavigate();
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -70,6 +72,25 @@ const CalendarPage = () => {
     type: string;
   }
 
+  interface EmployeeLeave {
+    id: string;
+    userId: string;
+    userName: string;
+    department: string;
+    position: string;
+    leaveType: string;
+    leaveTypeEn: string;
+    startDate: string;
+    endDate: string;
+    startTime?: string;
+    endTime?: string;
+    duration: string;
+    durationType: string;
+    reason: string;
+    status: string;
+    createdAt: string;
+  }
+
   interface CalendarEvent {
     id?: string;
     title: string;
@@ -77,12 +98,20 @@ const CalendarPage = () => {
     date: string;
     createdAt?: string;
     createdBy?: string;
-    type: 'company' | 'annual';
+    type: 'company' | 'annual' | 'employee';
     isThaiHoliday?: boolean;
     isDual?: boolean;
+    employeeInfo?: {
+      userName: string;
+      leaveType: string;
+      startDate: string;
+      endDate: string;
+      duration: string;
+      durationType: string;
+    };
   }
 
-  // Fetch company events and Thai holidays
+  // Fetch company events, Thai holidays, and employee leaves
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -105,30 +134,27 @@ const CalendarPage = () => {
         
         // Get Thai holidays for the year
         const thaiHolidaysData = getAllThaiHolidays(year, t);
-        
-        // Debug: Add test holiday for July 28th, 2025 to test dual highlighting
-        if (year === 2025) {
-          console.log('All Thai holidays for 2025:', thaiHolidaysData);
-          const julyHolidays = thaiHolidaysData.filter(h => {
-            const date = new Date(h.date);
-            return date.getMonth() === 6; // July
-          });
-          console.log('July 2025 Thai holidays:', julyHolidays);
-          
-          // Add test holiday on July 28th
-          thaiHolidaysData.push({
-            date: '2025-07-28',
-            name: 'Test Holiday',
-            type: 'public'
-          });
-        }
-        
         setThaiHolidays(thaiHolidaysData);
+        
+        // Fetch employee leaves
+        const leaveResponse = await fetch(`${API_BASE_URL}/api/leave-request/calendar/${year}`, {
+          headers: {
+            'Authorization': token ? `Bearer ${token}` : undefined,
+          }
+        });
+        if (leaveResponse.ok) {
+          const leaveResult = await leaveResponse.json();
+          setEmployeeLeaves(leaveResult.data || []);
+        } else {
+          console.error('Failed to fetch employee leaves');
+          setEmployeeLeaves([]);
+        }
         
       } catch (error) {
         console.error('Error fetching data:', error);
         setCompanyEvents([]);
         setThaiHolidays([]);
+        setEmployeeLeaves([]);
       } finally {
         setLoading(false);
       }
@@ -137,7 +163,7 @@ const CalendarPage = () => {
     fetchData();
   }, [year, t]);
 
-  // Get all events (company + Thai holidays) for a specific month
+  // Get all events (company + Thai holidays + employee leaves) for a specific month
   const getEventsByMonth = (year: number, month: number): CalendarEvent[] => {
     const allEvents: CalendarEvent[] = [];
     
@@ -172,14 +198,70 @@ const CalendarPage = () => {
       })));
     }
     
-    // Debug: Log events for July 2025
-    if (year === 2025 && month === 6) { // July
-      console.log('Company events for July 2025:', companyEvents);
-      console.log('Thai holidays for July 2025:', thaiHolidays);
-      console.log('All events for July 2025:', allEvents);
+    // Add employee leaves if enabled
+    if (showEmployeeLeaves && Array.isArray(employeeLeaves)) {
+      const monthEmployeeLeaves = employeeLeaves.filter(leave => {
+        const startDate = new Date(leave.startDate);
+        const endDate = new Date(leave.endDate);
+        return (startDate.getFullYear() === year && startDate.getMonth() === month) ||
+               (endDate.getFullYear() === year && endDate.getMonth() === month) ||
+               (startDate <= new Date(year, month + 1, 0) && endDate >= new Date(year, month, 1));
+      });
+      
+      // Create events for each day of the leave period
+      monthEmployeeLeaves.forEach(leave => {
+        const startDate = new Date(leave.startDate);
+        const endDate = new Date(leave.endDate);
+        const currentDate = new Date(startDate);
+        
+        while (currentDate <= endDate) {
+          if (currentDate.getFullYear() === year && currentDate.getMonth() === month) {
+            allEvents.push({
+              id: `leave-${leave.id}-${currentDate.toISOString().split('T')[0]}`,
+              title: leave.userName,
+              description: leave.reason,
+              date: currentDate.toISOString().split('T')[0],
+              createdAt: leave.createdAt,
+              createdBy: leave.userId,
+              type: 'employee' as const,
+              employeeInfo: {
+                userName: leave.userName,
+                leaveType: i18n.language.startsWith('th') ? leave.leaveType : leave.leaveTypeEn,
+                startDate: leave.startDate,
+                endDate: leave.endDate,
+                duration: leave.duration,
+                durationType: leave.durationType
+              }
+            });
+          }
+          currentDate.setDate(currentDate.getDate() + 1);
+        }
+      });
     }
     
     return allEvents;
+  };
+
+  // Get color for event type
+  const getEventColor = (event: CalendarEvent) => {
+    if (event.isDual) return 'bg-purple-500';
+    switch (event.type) {
+      case 'annual': return 'bg-red-500';
+      case 'company': return 'bg-blue-500';
+      case 'employee': return 'bg-green-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  // Get tooltip content for event
+  const getEventTooltip = (event: CalendarEvent) => {
+    if (event.type === 'employee' && event.employeeInfo) {
+      const { userName, leaveType, startDate, endDate, duration, durationType } = event.employeeInfo;
+      const start = new Date(startDate).toLocaleDateString(i18n.language.startsWith('th') ? 'th-TH' : 'en-US');
+      const end = new Date(endDate).toLocaleDateString(i18n.language.startsWith('th') ? 'th-TH' : 'en-US');
+      return `${userName}\n${leaveType}\n${start} - ${end}\n${duration} ${durationType === 'day' ? 'วัน' : 'ชั่วโมง'}`;
+    }
+    return event.title;
   };
 
   return (
@@ -239,6 +321,14 @@ const CalendarPage = () => {
             />
             <span className="text-sm font-medium text-blue-700">{t('calendar.companyHolidays')}</span>
           </div>
+          <div className="flex items-center gap-3">
+            <Switch 
+              checked={showEmployeeLeaves}
+              onCheckedChange={setShowEmployeeLeaves}
+              className="data-[state=checked]:bg-green-500"
+            />
+            <span className="text-sm font-medium text-green-700">{t('calendar.employeeLeaves')}</span>
+          </div>
           
           {/* Legend */}
           <div className="flex items-center gap-4 ml-6 pl-6 border-l border-gray-300">
@@ -249,6 +339,10 @@ const CalendarPage = () => {
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
               <span className="text-xs text-blue-700">{t('calendar.legend.companyHoliday')}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+              <span className="text-xs text-green-700">{t('calendar.legend.employeeLeave')}</span>
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
@@ -290,12 +384,6 @@ const CalendarPage = () => {
                 eventCountMap[e.date] = (eventCountMap[e.date] || 0) + 1;
               });
               
-              // Debug: Log events for July 2025
-              if (year === 2025 && mIdx === 6) { // July
-                console.log('Events for July 2025:', events);
-                console.log('Event count map:', eventCountMap);
-              }
-              
               // Second pass: create event map with dual flag
               events.forEach(e => { 
                 if (eventCountMap[e.date] > 1) {
@@ -336,7 +424,7 @@ const CalendarPage = () => {
                             if (!d) return <td key={dIdx} className="py-1"> </td>;
                             const dateStr = `${year}-${(mIdx+1).toString().padStart(2,'0')}-${d.toString().padStart(2,'0')}`;
                             
-                            // Check for company event using multiple date formats
+                            // Check for events using multiple date formats
                             const event = eventMap[dateStr] || 
                                          eventMap[`${year}-${mIdx+1}-${d}`] ||
                                          eventMap[`${year}-${(mIdx+1).toString().padStart(2,'0')}-${d}`] ||
@@ -347,18 +435,21 @@ const CalendarPage = () => {
                               <td
                                 key={dIdx}
                                 className={`py-1 px-1 rounded-lg font-semibold transition`}
-                                title={event?.title || ''}
                               >
                                 {event ? (
-                                  <span className={`${
-                                    event.isDual
-                                      ? 'bg-purple-500' // Purple for dual events
-                                      : event.type === 'annual' 
-                                        ? 'bg-red-500' 
-                                        : 'bg-blue-500'
-                                  } text-white rounded-full w-7 h-7 flex items-center justify-center mx-auto font-bold shadow`}>
-                                    {d}
-                                  </span>
+                                  <div className="relative group">
+                                    <span 
+                                      className={`${getEventColor(event)} text-white rounded-full w-7 h-7 flex items-center justify-center mx-auto font-bold shadow cursor-pointer hover:scale-110 transition-transform`}
+                                      title={getEventTooltip(event)}
+                                    >
+                                      {d}
+                                    </span>
+                                    {/* Tooltip */}
+                                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-pre-line z-10 max-w-xs">
+                                      {getEventTooltip(event)}
+                                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                                    </div>
+                                  </div>
                                 ) : (
                                   <span>{d}</span>
                                 )}
@@ -369,30 +460,37 @@ const CalendarPage = () => {
                       ))}
                     </tbody>
                   </table>
-                  {/* แสดงรายการกิจกรรมของบริษัทของเดือนนี้ */}
-                  <ul className="mt-2 text-xs text-left w-full">
+                  {/* แสดงรายการกิจกรรมของเดือนนี้ */}
+                  <ul className="mt-2 text-xs text-left w-full max-h-32 overflow-y-auto">
                     {events.map(e => {
                       const d = new Date(e.date);
                       const day = d.getDate();
                       const monthNum = d.getMonth() + 1;
                       const eventType = e.type || 'company';
                       return (
-                        <li key={e.id || `event-${e.date}`} className="flex items-center gap-2">
+                        <li key={e.id || `event-${e.date}`} className="flex items-center gap-2 mb-1">
                           <span className={`inline-block w-2 h-2 rounded-full ${
                             e.isDual 
                               ? 'bg-purple-500' 
                               : eventType === 'annual' 
                                 ? 'bg-red-500' 
-                                : 'bg-blue-500'
+                                : eventType === 'employee'
+                                  ? 'bg-green-500'
+                                  : 'bg-blue-500'
                           }`}></span>
                           <span className={
                             e.isDual 
                               ? 'text-purple-600' 
                               : eventType === 'annual' 
                                 ? 'text-red-600' 
-                                : 'text-blue-600'
+                                : eventType === 'employee'
+                                  ? 'text-green-600'
+                                  : 'text-blue-600'
                           }>
-                            {e.title} ({day}/{monthNum})
+                            {eventType === 'employee' && e.employeeInfo 
+                              ? `${e.employeeInfo.userName} (${e.employeeInfo.leaveType})`
+                              : e.title
+                            } ({day}/{monthNum})
                           </span>
                         </li>
                       );

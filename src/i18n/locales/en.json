@@ -665,6 +665,7 @@
     "currentYear": "Current Year",
     "annualHolidays": "Annual Holidays",
     "companyHolidays": "Company Holidays",
+    "employeeLeaves": "Employee Leaves",
     "loading": "Loading...",
     "months": {
       "january": "January",
@@ -693,6 +694,7 @@
       "title": "Legend",
       "annualHoliday": "Annual Holiday",
       "companyHoliday": "Company Holiday",
+      "employeeLeave": "Employee Leave",
       "dualEvent": "Dual Event"
     }
   }
