@@ -134,11 +134,22 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
   };
 
   const getLeaveTypeLabel = (typeId: string) => {
-    // ใช้ i18n leaveTypes
-    const key = typeId;
-    if (key && t(`leaveTypes.${key}`) !== `leaveTypes.${key}`) {
-      return t(`leaveTypes.${key}`);
+    if (!typeId) return '';
+    
+    // ลองใช้ key ตรงๆ ก่อน
+    const directKey = `leaveTypes.${typeId}`;
+    if (t(directKey) !== directKey) {
+      return t(directKey);
     }
+    
+    // ถ้าไม่มี key ตรงๆ ลองหาในรูปแบบอื่น
+    const normalizedKey = typeId.replace(/\s+/g, ''); // ลบช่องว่าง
+    const normalizedDirectKey = `leaveTypes.${normalizedKey}`;
+    if (t(normalizedDirectKey) !== normalizedDirectKey) {
+      return t(normalizedDirectKey);
+    }
+    
+    // ถ้าไม่มีใน i18n ให้ส่งคืนค่าเดิม
     return typeId;
   };
 
@@ -212,7 +223,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className={`text-3xl font-bold ${getTypeColor(leaveDetail.leaveTypeName || leaveDetail.leaveType || leaveDetail.type)}`}>
-                      {leaveDetail.leaveTypeName || getLeaveTypeLabel(leaveDetail.leaveType || leaveDetail.type || '')}
+                      {getLeaveTypeLabel(leaveDetail.leaveTypeName || leaveDetail.leaveType || leaveDetail.type || '')}
                     </div>
                   </div>
                   <div className="text-right">

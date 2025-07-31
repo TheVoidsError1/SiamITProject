@@ -1,18 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar, Clock, Users, TrendingUp, Bell } from 'lucide-react';
-import { Link, useNavigate } from 'react-router-dom';
+import { SidebarTrigger } from '@/components/ui/sidebar';
+import { getThaiHolidaysByMonth, getUpcomingThaiHolidays } from "@/constants/getThaiHolidays";
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { useTranslation } from 'react-i18next';
-import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
-import NotificationBell from '@/components/NotificationBell';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { SidebarTrigger } from '@/components/ui/sidebar';
-import { getUpcomingThaiHolidays, getThaiHolidaysByMonth } from "@/constants/getThaiHolidays";
-import Profile from './Profile';
 import { format } from 'date-fns';
+import { Bell, Calendar, Clock, TrendingUp, Users } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Index = () => {
   const { t, i18n } = useTranslation();
@@ -143,7 +140,7 @@ const Index = () => {
           setLeaveStats({
             sick: stats["ลาป่วย"] || stats["sick"] || 0,
             vacation: stats["ลาพักผ่อน"] || stats["vacation"] || 0,
-            business: stats["ลากิจ"] || stats["business"] || 0,
+            business: stats["ลากิจ"] || stats["personal"] || 0,
           });
         } else {
           setErrorStats(t('error.cannotLoadStats'));

@@ -1,17 +1,15 @@
-import LanguageSwitcher from "@/components/LanguageSwitcher";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
-import { AlertCircle, Calendar, CheckCircle, Clock, FileText, Filter, X, XCircle, History, User, ChevronLeft, ChevronRight } from "lucide-react";
+import { AlertCircle, Calendar, CheckCircle, ChevronLeft, ChevronRight, Clock, FileText, Filter, History, User, X, XCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -298,10 +296,10 @@ const LeaveHistory = () => {
     const tPersonal = t('leaveTypes.personal');
     const tEmergency = t('leaveTypes.emergency');
     const typeLower = (type || '').toLowerCase();
-    if (type === tVacation || typeLower === 'vacation' || typeLower === 'ลาพักผ่อน') return "text-blue-600";
-    if (type === tSick || typeLower === 'sick' || typeLower === 'ลาป่วย') return "text-red-600";
-    if (type === tPersonal || typeLower === 'personal' || typeLower === 'ลากิจ') return "text-green-600";
-    if (type === tEmergency || typeLower === 'emergency' || typeLower === 'ลาฉุกเฉิน') return "text-orange-500";
+    if (type === tVacation || typeLower === 'vacation') return "text-blue-600";
+    if (type === tSick || typeLower === 'sick') return "text-red-600";
+    if (type === tPersonal || typeLower === 'personal') return "text-green-600";
+    if (type === tEmergency || typeLower === 'emergency') return "text-orange-500";
     return "text-gray-600";
   };
 
@@ -310,16 +308,11 @@ const LeaveHistory = () => {
     const typeLower = (type || '').toLowerCase();
     // mapping: key = lower-case, value = i18n key
     const typeMap: Record<string, string> = {
-      'vacation': 'leaveTypes.vacation',
-      'ลาพักผ่อน': 'leaveTypes.vacation',
-      'sick': 'leaveTypes.sick',
-      'ลาป่วย': 'leaveTypes.sick',
-      'personal': 'leaveTypes.personal',
-      'ลากิจ': 'leaveTypes.personal',
-      'emergency': 'leaveTypes.emergency',
-      'ลาฉุกเฉิน': 'leaveTypes.emergency',
-      'maternity': 'leaveTypes.maternity',
-      'ลาคลอด': 'leaveTypes.maternity',
+      'vacation': 'leaveTypes.Vacation',
+      'sick': 'leaveTypes.Sick',
+      'personal': 'leaveTypes.Personal',
+      'emergency': 'leaveTypes.Emergency',
+      'maternity': 'leaveTypes.Maternity',
     };
     const i18nKey = typeMap[typeLower];
     if (i18nKey) return t(i18nKey);
