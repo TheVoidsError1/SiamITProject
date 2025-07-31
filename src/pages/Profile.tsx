@@ -10,7 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePushNotification } from '@/contexts/PushNotificationContext';
 import { useToast } from '@/hooks/use-toast';
 import axios from 'axios';
-import { Bell, Building, Camera, Lock, Mail, Save, Shield, Crown } from 'lucide-react';
+import { Bell, Building, Camera, Crown, Lock, Mail, Save, Shield } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
@@ -268,7 +268,7 @@ const Profile = () => {
         used: { days: item.used_day ?? '-', hours: item.used_hour ?? '-' },
         quota: item.quota,
         color:
-          item.leave_type_en?.toLowerCase() === 'personal' || item.leave_type_th === 'ลากิจ' ? 'bg-orange-500' :
+          item.leave_type_en?.toLowerCase() === 'personal' ? 'bg-orange-500' :
           item.leave_type_en?.toLowerCase() === 'vacation' ? 'bg-blue-500' :
           item.leave_type_en?.toLowerCase() === 'sick' ? 'bg-green-500' :
           item.leave_type_en?.toLowerCase() === 'maternity' ? 'bg-purple-500' :
