@@ -39,6 +39,8 @@ module.exports = (AppDataSource) => {
       
       // ดึง leave request ของ user (paging) พร้อม filter เดือน/ปี (ใช้ createdAt)
       let where = { Repid: userId };
+      
+      // Filter ตามเดือนและปี
       if (month && year) {
         // กรอง createdAt ให้อยู่ในเดือน/ปีที่เลือก
         const startOfMonth = new Date(year, month - 1, 1);
@@ -56,16 +58,22 @@ module.exports = (AppDataSource) => {
           createdAt: Between(startOfYear, endOfYear)
         };
       }
-      if (leaveType) {
+      
+      // Filter ตามประเภทการลา
+      if (leaveType && leaveType !== 'all') {
         where = { ...where, leaveType };
       }
-      if (status) {
+      
+      // Filter ตามสถานะ
+      if (status && status !== 'all') {
         where = { ...where, status };
       }
       
       // กรองตาม retroactive parameter (ใช้คอลัมน์ backdated)
       if (retroactive === 'retroactive') {
-        where = { ...where, backdated: 1 };
+        where = { ...where, backdated: true };
+      } else if (retroactive === 'normal') {
+        where = { ...where, backdated: false };
       }
       
       // กรองช่วงวันที่ (startDate, endDate) จากฟิลด์ startDate
@@ -76,6 +84,8 @@ module.exports = (AppDataSource) => {
       } else if (endDate) {
         where = { ...where, startDate: Between(new Date(2000, 0, 1), endDate) };
       }
+      
+      // กรองตามวันที่เดียว
       if (date) {
         const startOfDay = new Date(date);
         startOfDay.setHours(0, 0, 0, 0);
@@ -83,6 +93,9 @@ module.exports = (AppDataSource) => {
         endOfDay.setHours(23, 59, 59, 999);
         where = { ...where, createdAt: Between(startOfDay, endOfDay) };
       }
+
+      // Debug log สำหรับ where clause
+      console.log('Debug - Where clause:', JSON.stringify(where, null, 2));
 
       // ดึง leave request ของ user (paging)
       const [leaves, total] = await Promise.all([
@@ -218,6 +231,7 @@ module.exports = (AppDataSource) => {
       const userId = req.user && req.user.userId;
       if (!userId) return res.status(401).json({ status: 'error', message: 'Unauthorized' });
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
+      const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
 
       // ดึง leave ทั้งหมดของ user
       const leaves = await leaveRepo.find({ where: { Repid: userId } });
@@ -229,11 +243,20 @@ module.exports = (AppDataSource) => {
       // Months (1-12)
       const months = Array.from(new Set(leaves.map(l => l.createdAt && (new Date(l.createdAt).getMonth() + 1)))).filter(Boolean).sort((a, b) => a - b);
 
+      // ดึง leave types ทั้งหมดจาก database
+      const allLeaveTypes = await leaveTypeRepo.find({ order: { leave_type_th: 'ASC' } });
+
       res.json({
         status: 'success',
         statuses,
         years,
-        months
+        months,
+        leaveTypes: allLeaveTypes.map(lt => ({
+          id: lt.id,
+          leave_type: lt.leave_type,
+          leave_type_th: lt.leave_type_th,
+          leave_type_en: lt.leave_type_en
+        }))
       });
     } catch (err) {
       res.status(500).json({ status: 'error', message: err.message });

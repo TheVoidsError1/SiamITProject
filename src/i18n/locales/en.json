@@ -422,6 +422,8 @@
     "filterDesc": "Filter data according to your requirements",
     "activeFilters": "Active filters",
     "showingRetroactive": "Showing retroactive leave only",
+    "showingNormal": "Showing normal leave only",
+    "normalLeave": "Normal Leave",
     "noLeaveHistory": "No leave history found",
     "noResultsForFilter": "No results found for selected filters",
     "tryDifferentFilter": "Try different filters or clear all filters",

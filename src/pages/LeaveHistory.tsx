@@ -70,16 +70,29 @@ const LeaveHistory = () => {
         return;
       }
       let url = `/api/leave-history?page=${page}&limit=${limit}`;
-      if (filterLeaveType) url += `&leaveType=${filterLeaveType}`;
-      if (filterMonth) url += `&month=${filterMonth}`;
-      if (filterYear) url += `&year=${filterYear}`;
-      if (filterStatus) url += `&status=${filterStatus}`;
-      if (filterRetroactive) {
+      
+      // เพิ่ม filter parameters
+      if (filterLeaveType && filterLeaveType !== 'all') {
+        url += `&leaveType=${filterLeaveType}`;
+      }
+      if (filterMonth !== '' && filterMonth !== null) {
+        url += `&month=${filterMonth}`;
+      }
+      if (filterYear !== '' && filterYear !== null) {
+        url += `&year=${filterYear}`;
+      }
+      if (filterStatus && filterStatus !== 'all') {
+        url += `&status=${filterStatus}`;
+      }
+      if (filterRetroactive && filterRetroactive !== 'all') {
         url += `&retroactive=${filterRetroactive}`;
       }
       if (singleDate) {
         url += `&date=${format(singleDate, 'yyyy-MM-dd')}`;
       }
+      
+      console.log('Debug - Fetching URL:', url);
+      
       const res = await fetch(url, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -149,48 +162,51 @@ const LeaveHistory = () => {
     }
   };
 
-  // Fetch leave types from backend
+  // Fetch leave types and filter options from backend
   useEffect(() => {
-    const fetchLeaveTypes = async () => {
+    const fetchFilters = async () => {
       setLeaveTypesLoading(true);
       setLeaveTypesError(null);
       try {
-        const res = await fetch('/api/leave-types');
+        const token = localStorage.getItem('token');
+        if (!token) {
+          showSessionExpiredDialog();
+          return;
+        }
+        const res = await fetch('/api/leave-history/filters', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (res.status === 401) {
+          showSessionExpiredDialog();
+          return;
+        }
         const data = await res.json();
-        if (data.success) {
-          setLeaveTypes(data.data);
+        if (data.status === 'success') {
+          setLeaveTypes(data.leaveTypes || []);
+          setStatusOptions(data.statuses || []);
+          setYearOptions(data.years || []);
+          setMonthOptions(data.months || []);
+          
+          // Debug log
+          console.log('Debug - Filter data loaded:', {
+            leaveTypes: data.leaveTypes?.length || 0,
+            statuses: data.statuses?.length || 0,
+            years: data.years?.length || 0,
+            months: data.months?.length || 0
+          });
         } else {
           setLeaveTypes([]);
-          setLeaveTypesError(data.message || 'Failed to fetch leave types');
+          setLeaveTypesError(data.message || 'Failed to fetch filter data');
         }
       } catch (err: any) {
         setLeaveTypes([]);
-        setLeaveTypesError(err.message || 'Failed to fetch leave types');
+        setLeaveTypesError(err.message || 'Failed to fetch filter data');
       } finally {
         setLeaveTypesLoading(false);
       }
     };
-    fetchLeaveTypes();
-  }, []);
-
-  // ดึง filter options จาก backend
-  useEffect(() => {
-    const fetchFilters = async () => {
-      const token = localStorage.getItem('token');
-      if (!token) return;
-      const res = await fetch('/api/leave-history/filters', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!res.ok) return;
-      const data = await res.json();
-      if (data.status === 'success') {
-        setStatusOptions(data.statuses || []);
-        setYearOptions(data.years || []);
-        setMonthOptions(data.months || []);
-      }
-    };
     fetchFilters();
-  }, []);
+  }, [showSessionExpiredDialog]);
 
   // ฟังก์ชันล้าง filter ทั้งหมด
   const clearAllFilters = () => {
@@ -517,19 +533,46 @@ const LeaveHistory = () => {
                       <FileText className="w-4 h-4 text-green-600" />
                       {t('leave.type', 'ประเภทการลา')}
                     </Label>
-                    <Select value={filterLeaveType || "all"} onValueChange={v => setFilterLeaveType(v === "all" ? "" : v)}>
+                    <Select value={filterLeaveType || "all"} onValueChange={v => setFilterLeaveType(v === "all" ? "" : v)} disabled={leaveTypesLoading}>
                       <SelectTrigger className="bg-white/80 backdrop-blur border-green-200 hover:bg-green-50 hover:border-green-300 transition-all duration-200 rounded-xl h-12">
-                        <SelectValue placeholder={t('leave.allTypes', 'ทั้งหมด')} />
+                        <SelectValue placeholder={
+                          leaveTypesLoading 
+                            ? t('common.loading', 'กำลังโหลด...') 
+                            : leaveTypesError 
+                              ? t('common.error', 'เกิดข้อผิดพลาด') 
+                              : t('leave.allTypes', 'ทั้งหมด')
+                        } />
                       </SelectTrigger>
                       <SelectContent className="border-0 shadow-xl rounded-2xl">
-                        <SelectItem value="all" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{t('leave.allTypes', 'ทั้งหมด')}</SelectItem>
-                        {leaveTypes.map((lt) => (
-                          <SelectItem key={lt.id} value={lt.id} className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">
-                            {i18n.language.startsWith('th') ? lt.leave_type_th : lt.leave_type_en}
+                        <SelectItem value="all" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">
+                          {t('leave.allTypes', 'ทั้งหมด')}
+                        </SelectItem>
+                        {leaveTypesLoading ? (
+                          <SelectItem value="loading" disabled className="rounded-lg">
+                            <div className="flex items-center gap-2">
+                              <div className="w-4 h-4 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                              {t('common.loading', 'กำลังโหลด...')}
+                            </div>
                           </SelectItem>
-                        ))}
+                        ) : leaveTypesError ? (
+                          <SelectItem value="error" disabled className="rounded-lg text-red-600">
+                            <div className="flex items-center gap-2">
+                              <XCircle className="w-4 h-4" />
+                              {t('common.error', 'เกิดข้อผิดพลาด')}
+                            </div>
+                          </SelectItem>
+                        ) : (
+                          leaveTypes.map((lt) => (
+                            <SelectItem key={lt.id} value={lt.id} className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">
+                              {i18n.language.startsWith('th') ? lt.leave_type_th : lt.leave_type_en}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
+                    {leaveTypesError && (
+                      <p className="text-xs text-red-600 mt-1">{leaveTypesError}</p>
+                    )}
                   </div>
 
                   {/* Status Filter */}
@@ -570,6 +613,13 @@ const LeaveHistory = () => {
                             {t('history.allTypes', 'ทั้งหมด')}
                           </div>
                         </SelectItem>
+                        <SelectItem value="normal" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">
+                          <div className="flex items-center gap-2">
+                            <div className="w-3 h-3 rounded-full bg-green-500"></div>
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            {t('history.normalLeave', 'การลาปกติ')}
+                          </div>
+                        </SelectItem>
                         <SelectItem value="retroactive" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">
                           <div className="flex items-center gap-2">
                             <div className="w-3 h-3 rounded-full bg-purple-500 animate-pulse"></div>
@@ -577,7 +627,6 @@ const LeaveHistory = () => {
                             {t('history.retroactiveLeave', 'การลาย้อนหลัง')}
                           </div>
                         </SelectItem>
-
                       </SelectContent>
                     </Select>
                   </div>
@@ -636,6 +685,11 @@ const LeaveHistory = () => {
                           <span className="flex items-center gap-1">
                             <History className="w-4 h-4 text-purple-600" />
                             {t('history.showingRetroactive', 'แสดงเฉพาะการลาย้อนหลัง')}
+                          </span>
+                        ) : filterRetroactive === 'normal' ? (
+                          <span className="flex items-center gap-1">
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                            {t('history.showingNormal', 'แสดงเฉพาะการลาปกติ')}
                           </span>
                         ) : (
                           t('history.activeFilters', 'มีตัวกรองที่ใช้งานอยู่')
@@ -715,7 +769,9 @@ const LeaveHistory = () => {
                 >
                   <CardHeader className="pb-2 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                     <div className="flex items-center gap-4">
-                      <div className={`text-xl font-bold ${getTypeColor(leave.type)}`}>{getLeaveTypeLabel(leave.type)}</div>
+                      <div className={`text-xl font-bold ${getTypeColor(leave.leaveTypeName_th || leave.leaveTypeName_en || leave.type)}`}>
+                        {leave.leaveTypeName_th || leave.leaveTypeName_en || getLeaveTypeLabel(leave.type)}
+                      </div>
                       <div className="flex flex-wrap gap-2">
                         {getStatusBadge(leave.status)}
                         {getRetroactiveBadge(leave)}
@@ -766,9 +822,6 @@ const LeaveHistory = () => {
                         )}
                         {isRetroactiveLeave(leave) && (
                           <div className="flex items-center gap-2 text-base text-purple-700">
-                            <History className="w-5 h-5 text-purple-500" />
-                            <span className="font-medium">{t('history.retroactiveLeave')}:</span>
-                            <span>{t('history.retroactiveLeaveDesc', 'การลาที่ส่งหลังจากวันที่เริ่มลา')}</span>
                           </div>
                         )}
 
@@ -978,8 +1031,8 @@ const LeaveHistory = () => {
                 <CardContent className="p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className={`text-3xl font-bold ${getTypeColor(selectedLeave.leaveTypeName || selectedLeave.type)}`}>
-                        {selectedLeave.leaveTypeName || getLeaveTypeLabel(selectedLeave.type)}
+                      <div className={`text-3xl font-bold ${getTypeColor(selectedLeave.leaveTypeName_th || selectedLeave.leaveTypeName_en || selectedLeave.type)}`}>
+                        {selectedLeave.leaveTypeName_th || selectedLeave.leaveTypeName_en || getLeaveTypeLabel(selectedLeave.type)}
                       </div>
                     </div>
                     <div className="text-right">
@@ -1063,7 +1116,7 @@ const LeaveHistory = () => {
                         <Label className="text-sm font-medium text-purple-600">{t('history.retroactiveLeave')}</Label>
                         <div className="flex items-center gap-2 p-3 bg-purple-50 rounded-lg">
                           <History className="w-4 h-4 text-purple-500" />
-                          <span className="text-purple-700">{t('history.retroactiveLeaveDesc')}</span>
+                          <span className="text-purple-700">{t('history.retroactiveLeave')}</span>
                         </div>
                       </div>
                     )}

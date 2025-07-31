@@ -437,6 +437,8 @@
     "files": "ไฟล์",
     "activeFilters": "มีตัวกรองที่ใช้งานอยู่",
     "showingRetroactive": "แสดงเฉพาะการลาย้อนหลัง",
+    "showingNormal": "แสดงเฉพาะการลาปกติ",
+    "normalLeave": "การลาปกติ",
     "noLeaveHistory": "ไม่พบประวัติการลา",
     "noResultsForFilter": "ไม่พบผลลัพธ์สำหรับตัวกรองที่เลือก",
     "tryDifferentFilter": "ลองเปลี่ยนตัวกรองหรือล้างตัวกรองทั้งหมด",
