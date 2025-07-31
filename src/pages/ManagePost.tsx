@@ -6,10 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, Calendar, Clock, Download, Eye, FileText, Image, Newspaper, Plus, Trash2, User } from 'lucide-react';
+import { getImageUrl, handleImageError } from '@/lib/utils';
+import { ArrowLeft, Calendar, Clock, Download, Eye, FileText, Image, Newspaper, Plus, Trash2, User, Edit, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -23,6 +25,8 @@ export default function ManagePost() {
   const [error, setError] = useState('');
   const [openIdx, setOpenIdx] = useState<number | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingNews, setEditingNews] = useState<any>(null);
   const [form, setForm] = useState({
     subject: '',
     detail: '',
@@ -32,72 +36,11 @@ export default function ManagePost() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  // ฟังก์ชันช่วยสำหรับการจัดการ path ของรูปภาพ
-  const getImageUrl = (imageName: string) => {
-    if (!imageName) return '';
-    
-    // ลองหลาย path ที่เป็นไปได้
-    const possiblePaths = [
-      `${API_BASE_URL}/uploads/announcements/${imageName}`,
-      `${API_BASE_URL}/uploads/${imageName}`,
-      `${API_BASE_URL}/public/uploads/announcements/${imageName}`,
-      `${API_BASE_URL}/public/uploads/${imageName}`,
-      `/uploads/announcements/${imageName}`,
-      `/uploads/${imageName}`,
-      `/public/uploads/announcements/${imageName}`,
-      `/public/uploads/${imageName}`
-    ];
-    
-    return possiblePaths[0]; // ใช้ path แรกเป็นค่าเริ่มต้น
-  };
 
-  // ฟังก์ชันช่วยสำหรับการจัดการ error ของรูปภาพ
-  const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>, imageName: string) => {
-    const target = e.target as HTMLImageElement;
-    console.error('Image load error for:', imageName);
-    console.error('Current URL:', target.src);
-    console.error('API_BASE_URL:', API_BASE_URL);
-    
-    // ลองใช้ path อื่นๆ
-    const possiblePaths = [
-      `${API_BASE_URL}/uploads/${imageName}`,
-      `${API_BASE_URL}/public/uploads/announcements/${imageName}`,
-      `${API_BASE_URL}/public/uploads/${imageName}`,
-      `/uploads/${imageName}`,
-      `/public/uploads/announcements/${imageName}`,
-      `/public/uploads/${imageName}`
-    ];
-    
-    const currentIndex = possiblePaths.findIndex(path => target.src.includes(path));
-    const nextIndex = currentIndex + 1;
-    
-    if (nextIndex < possiblePaths.length) {
-      console.log('Trying next path:', possiblePaths[nextIndex]);
-      target.src = possiblePaths[nextIndex];
-    } else {
-      console.log('All paths failed, using placeholder');
-      target.src = '/placeholder.svg';
-    }
-  };
+  // State สำหรับ Image Preview แบบ LeaveHistory
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [showImagePreview, setShowImagePreview] = useState(false);
 
-  // ฟังก์ชันสำหรับ debug ข้อมูลรูปภาพ
-  const debugImageInfo = (imageName: string) => {
-    console.log('=== Image Debug Info ===');
-    console.log('Image name:', imageName);
-    console.log('API_BASE_URL:', API_BASE_URL);
-    console.log('Primary URL:', getImageUrl(imageName));
-    console.log('All possible paths:', [
-      `${API_BASE_URL}/uploads/announcements/${imageName}`,
-      `${API_BASE_URL}/uploads/${imageName}`,
-      `${API_BASE_URL}/public/uploads/announcements/${imageName}`,
-      `${API_BASE_URL}/public/uploads/${imageName}`,
-      `/uploads/announcements/${imageName}`,
-      `/uploads/${imageName}`,
-      `/public/uploads/announcements/${imageName}`,
-      `/public/uploads/${imageName}`
-    ]);
-    console.log('=======================');
-  };
 
   // โหลดข่าวสารจาก backend
   const fetchNews = async () => {
@@ -217,6 +160,70 @@ export default function ManagePost() {
     }
   };
 
+  // เปิดฟอร์มแก้ไขข่าวสาร
+  const handleEditNews = (news: any) => {
+    setEditingNews(news);
+    setForm({
+      subject: news.subject,
+      detail: news.detail,
+      Image: news.Image || '',
+    });
+    setSelectedFile(null);
+    setImagePreview(news.Image ? getImageUrl(news.Image, API_BASE_URL) : null);
+    setEditOpen(true);
+  };
+
+  // แก้ไขข่าวสาร
+  const handleUpdateNews = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingNews) return;
+    
+    setLoading(true);
+    setError('');
+    try {
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('subject', form.subject);
+      formData.append('detail', form.detail);
+      formData.append('createdBy', user?.full_name || '');
+      
+      if (selectedFile) {
+        formData.append('Image', selectedFile);
+      }
+
+      const res = await fetch(`${API_BASE_URL}/api/announcements/${editingNews.id}`, {
+        method: 'PUT',
+        headers: {
+          Authorization: token ? `Bearer ${token}` : undefined,
+        },
+        body: formData,
+      });
+      const data = await res.json();
+      if (data.status === 'success') {
+        setEditOpen(false);
+        setEditingNews(null);
+        setForm({ subject: '', detail: '', Image: '' });
+        setSelectedFile(null);
+        setImagePreview(null);
+        fetchNews();
+      } else {
+        setError(data.message || 'แก้ไขข่าวสารไม่สำเร็จ');
+      }
+    } catch (err) {
+      setError('แก้ไขข่าวสารไม่สำเร็จ');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+
+  // ฟังก์ชันสำหรับเปิด Image Preview Dialog
+  const openImagePreview = (imageName: string) => {
+    const imageUrl = getImageUrl(imageName, API_BASE_URL);
+    setSelectedImage(imageUrl);
+    setShowImagePreview(true);
+  };
 
 
   return (
@@ -373,6 +380,106 @@ export default function ManagePost() {
                 </DialogContent>
               </Dialog>
             )}
+
+            {/* Edit News Dialog */}
+            <Dialog open={editOpen} onOpenChange={setEditOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold text-blue-900 mb-2 flex items-center gap-2">
+                    <Edit className="w-6 h-6 text-blue-600" />
+                    แก้ไขข่าวสาร
+                  </DialogTitle>
+                </DialogHeader>
+                <form className="space-y-4 mt-2" onSubmit={handleUpdateNews}>
+                  <div>
+                    <label className="block text-blue-800 font-semibold mb-1">{t('companyNews.subject')}</label>
+                    <Input
+                      type="text"
+                      value={form.subject}
+                      onChange={e => setForm(f => ({ ...f, subject: e.target.value }))}
+                      placeholder={t('companyNews.subject')}
+                      required
+                      className="w-full"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-blue-800 font-semibold mb-1">
+                      {t('companyNews.detail')} 
+                      <span className="text-sm text-gray-500 ml-2">
+                        ({form.detail.length}/500)
+                      </span>
+                    </label>
+                    <textarea
+                      className="w-full rounded-lg border border-blue-200 px-3 py-2 text-base focus:ring-2 focus:ring-blue-400 resize-none"
+                      value={form.detail}
+                      onChange={e => setForm(f => ({ ...f, detail: e.target.value }))}
+                      rows={6}
+                      maxLength={500}
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-blue-800 font-semibold mb-1">
+                      {t('announcementsFeed.attachedImage')}
+                    </label>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <label className="flex items-center justify-center w-10 h-10 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg cursor-pointer transition-colors border border-blue-200 hover:border-blue-300">
+                          <Image className="w-5 h-5" />
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleFileSelect}
+                            className="hidden"
+                          />
+                        </label>
+                        {selectedFile && (
+                          <span className="text-sm text-green-600 font-medium">
+                            ✓ {selectedFile.name}
+                          </span>
+                        )}
+                      </div>
+                      {imagePreview && (
+                        <div className="relative">
+                          <img
+                            src={imagePreview}
+                            alt="Preview"
+                            className="w-full max-h-48 object-cover rounded-lg border border-gray-200"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setSelectedFile(null);
+                              setImagePreview(null);
+                            }}
+                            className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2 mt-4">
+                    <button
+                      type="button"
+                      className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold"
+                      onClick={() => setEditOpen(false)}
+                    >
+                      {t('common.cancel')}
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold"
+                      disabled={loading}
+                    >
+                      {loading ? 'กำลังบันทึก...' : 'บันทึกการแก้ไข'}
+                    </button>
+                  </div>
+                  {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
+                </form>
+              </DialogContent>
+            </Dialog>
           </div>
           <div className="overflow-x-auto rounded-xl">
             <Table className="min-w-full bg-white rounded-xl">
@@ -381,15 +488,16 @@ export default function ManagePost() {
                   <TableHead className="p-4 text-center">{t('companyNews.subject')}</TableHead>
                   <TableHead className="p-4 text-center">{t('companyNews.detail')}</TableHead>
                   <TableHead className="p-4 text-center">{t('companyNews.createdBy')}</TableHead>
+                  {isAdmin && <TableHead className="p-4 text-center">{t('companyNews.edit')}</TableHead>}
                   {isAdmin && <TableHead className="p-4 text-center">{t('companyNews.delete')}</TableHead>}
                   <TableHead className="p-4 text-center">{t('companyNews.addMore')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
-                  <TableRow><TableCell colSpan={6} className="text-center">{t('common.loading')}</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={isAdmin ? 6 : 4} className="text-center">{t('common.loading')}</TableCell></TableRow>
                 ) : newsList.length === 0 ? (
-                  <TableRow><TableCell colSpan={6} className="text-center">{t('companyNews.noNews')}</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={isAdmin ? 6 : 4} className="text-center">{t('companyNews.noNews')}</TableCell></TableRow>
                 ) : newsList.map((news, idx) => (
                   <TableRow key={news.id} className="hover:bg-blue-50 text-base">
                     <TableCell className="p-4 text-center font-semibold text-blue-800">{news.subject}</TableCell>
@@ -403,6 +511,18 @@ export default function ManagePost() {
                     {isAdmin && (
                       <TableCell className="p-4 text-center">
                         <button
+                          className="p-2 rounded-full bg-yellow-100 hover:bg-yellow-200 text-yellow-600 shadow transition"
+                          onClick={() => handleEditNews(news)}
+                          aria-label={t('companyNews.edit')}
+                          disabled={loading}
+                        >
+                          <Edit className="w-5 h-5" />
+                        </button>
+                      </TableCell>
+                    )}
+                    {isAdmin && (
+                      <TableCell className="p-4 text-center">
+                        <button
                           className="p-2 rounded-full bg-red-100 hover:bg-red-200 text-red-600 shadow transition"
                           onClick={() => handleDeleteNews(news.id)}
                           aria-label={t('companyNews.delete')}
@@ -413,7 +533,7 @@ export default function ManagePost() {
                       </TableCell>
                     )}
                     <TableCell className="p-4 text-center">
-                      <Dialog open={openIdx === idx} onOpenChange={open => setOpenIdx(open ? idx : null)}>
+                                            <Dialog open={openIdx === idx} onOpenChange={open => setOpenIdx(open ? idx : null)}>
                         <DialogTrigger asChild>
                           <button
                             className="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 font-semibold rounded-lg shadow transition"
@@ -421,7 +541,7 @@ export default function ManagePost() {
                             {t('companyNews.viewDetail')}
                           </button>
                         </DialogTrigger>
-                        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto animate-scale-in">
                           <DialogHeader>
                             <DialogTitle className="flex items-center">
                               <div className="flex items-center gap-3">
@@ -554,79 +674,67 @@ export default function ManagePost() {
                                       <Badge variant="secondary" className="ml-2">
                                         {((news.Image ? 1 : 0) + (news.attachments ? news.attachments.length : 0))} ไฟล์
                                       </Badge>
-                                      {news.Image && (
-                                        <button
-                                          onClick={() => debugImageInfo(news.Image)}
-                                          className="ml-2 px-2 py-1 text-xs bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-                                        >
-                                          Debug
-                                        </button>
-                                      )}
                                     </div>
                                   </CardHeader>
                                   <CardContent>
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                       {/* Image Display */}
                                       {news.Image && (
-                                        <>
-                                          {console.log('=== Rendering Image ===', { newsId: news.id, imageName: news.Image, imageUrl: getImageUrl(news.Image) })}
-                                        <div className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
+                                        <div className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-all duration-300 hover:shadow-md">
                                           <div className="space-y-3">
-                                            <div className="w-full h-32 bg-white rounded-lg overflow-hidden flex-shrink-0 shadow-md border border-purple-100">
+                                            <div className="relative group cursor-pointer" onClick={() => openImagePreview(news.Image)}>
                                               <img
-                                                src={getImageUrl(news.Image)}
+                                                src={getImageUrl(news.Image, API_BASE_URL)}
                                                 alt="News Image"
-                                                className="w-full h-full object-cover"
-                                                onError={(e) => handleImageError(e, news.Image)}
-                                                onLoad={() => {
-                                                  console.log('Image loaded successfully:', news.Image);
-                                                  console.log('Full URL:', getImageUrl(news.Image));
-                                                }}
-                                                onMouseEnter={() => debugImageInfo(news.Image)}
+                                                className="w-full h-32 object-cover rounded-lg border transition-all duration-300 group-hover:scale-105"
+                                                onError={(e) => handleImageError(e, news.Image, API_BASE_URL)}
                                               />
+                                              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 rounded-lg flex items-center justify-center">
+                                                <div className="opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                                  <Eye className="w-8 h-8 text-white" />
+                                                </div>
+                                              </div>
                                             </div>
                                             <div className="flex items-center justify-between">
-                                              <div className="flex flex-col">
-                                                <span className="text-sm text-gray-600 truncate">รูปภาพข่าวสาร</span>
-                                                <span className="text-xs text-gray-400 truncate max-w-32" title={news.Image}>
-                                                  {news.Image}
-                                                </span>
-                                              </div>
-                                              <div className="flex gap-2">
+                                              <span className="text-sm text-gray-600 truncate flex-1 mr-2">
+                                                {(() => {
+                                                  const fullName = news.Image.split('/').pop() || news.Image;
+                                                  if (fullName.startsWith('announcement-')) {
+                                                    const parts = fullName.split('-');
+                                                    if (parts.length >= 3) {
+                                                      return parts.slice(2).join('-');
+                                                    }
+                                                  }
+                                                  return fullName;
+                                                })()}
+                                              </span>
+                                              <div className="flex gap-1">
                                                 <Button 
                                                   size="sm" 
                                                   variant="outline"
-                                                  onClick={() => {
-                                                    const imageUrl = getImageUrl(news.Image);
-                                                    console.log('Opening image URL:', imageUrl);
-                                                    debugImageInfo(news.Image);
-                                                    window.open(imageUrl, '_blank');
-                                                  }}
+                                                  onClick={() => openImagePreview(news.Image)}
+                                                  className="text-xs px-2 py-1"
                                                 >
-                                                  <Eye className="w-4 h-4 mr-1" />
-                                                  ดู
+                                                  {t('common.view')}
                                                 </Button>
                                                 <Button 
                                                   size="sm" 
                                                   variant="outline"
                                                   onClick={() => {
-                                                    const imageUrl = getImageUrl(news.Image);
-                                                    console.log('Downloading image URL:', imageUrl);
-                                                    debugImageInfo(news.Image);
+                                                    const imageUrl = getImageUrl(news.Image, API_BASE_URL);
                                                     const link = document.createElement('a');
                                                     link.href = imageUrl;
-                                                    link.download = news.Image;
+                                                    link.download = news.Image.split('/').pop() || news.Image;
                                                     link.click();
                                                   }}
+                                                  className="text-xs px-2 py-1"
                                                 >
-                                                  <Download className="w-4 h-4 mr-1" />
-                                                  ดาวน์โหลด
+                                                  {t('common.download')}
                                                 </Button>
                                               </div>
                                             </div>
                                           </div>
                                         </div>
-                                        </>
                                       )}
 
                                       {/* File Attachments */}
@@ -638,42 +746,46 @@ export default function ManagePost() {
                                             const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension || '');
                                             
                                             return (
-                                              <div key={index} className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
+                                              <div key={index} className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-all duration-300 hover:shadow-md">
                                                 {isImage ? (
                                                   <div className="space-y-3">
-                                                    <img 
-                                                      src={getImageUrl(fileName)} 
-                                                      alt={fileName}
-                                                      className="w-full h-32 object-cover rounded-lg border"
-                                                      onError={(e) => handleImageError(e, fileName)}
-                                                    />
+                                                    <div className="relative group cursor-pointer" onClick={() => openImagePreview(fileName)}>
+                                                      <img 
+                                                        src={getImageUrl(fileName, API_BASE_URL)} 
+                                                        alt={fileName}
+                                                        className="w-full h-32 object-cover rounded-lg border transition-all duration-300 group-hover:scale-105"
+                                                        onError={(e) => handleImageError(e, fileName, API_BASE_URL)}
+                                                      />
+                                                      <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 rounded-lg flex items-center justify-center">
+                                                        <div className="opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                                          <Eye className="w-8 h-8 text-white" />
+                                                        </div>
+                                                      </div>
+                                                    </div>
                                                     <div className="flex items-center justify-between">
-                                                      <span className="text-sm text-gray-600 truncate">{fileName}</span>
-                                                      <div className="flex gap-2">
+                                                      <span className="text-sm text-gray-600 truncate flex-1 mr-2">{fileName}</span>
+                                                      <div className="flex gap-1">
                                                         <Button 
                                                           size="sm" 
                                                           variant="outline"
-                                                          onClick={() => {
-                                                            const fileUrl = getImageUrl(fileName);
-                                                            window.open(fileUrl, '_blank');
-                                                          }}
+                                                          onClick={() => openImagePreview(fileName)}
+                                                          className="text-xs px-2 py-1"
                                                         >
-                                                          <Eye className="w-4 h-4 mr-1" />
-                                                          ดู
+                                                          {t('common.view')}
                                                         </Button>
                                                         <Button 
                                                           size="sm" 
                                                           variant="outline"
                                                           onClick={() => {
-                                                            const fileUrl = getImageUrl(fileName);
+                                                            const fileUrl = getImageUrl(fileName, API_BASE_URL);
                                                             const link = document.createElement('a');
                                                             link.href = fileUrl;
                                                             link.download = fileName;
                                                             link.click();
                                                           }}
+                                                          className="text-xs px-2 py-1"
                                                         >
-                                                          <Download className="w-4 h-4 mr-1" />
-                                                          ดาวน์โหลด
+                                                          {t('common.download')}
                                                         </Button>
                                                       </div>
                                                     </div>
@@ -684,32 +796,32 @@ export default function ManagePost() {
                                                       <FileText className="w-8 h-8 text-gray-400" />
                                                     </div>
                                                     <div className="flex items-center justify-between">
-                                                      <span className="text-sm text-gray-600 truncate">{fileName}</span>
-                                                      <div className="flex gap-2">
+                                                      <span className="text-sm text-gray-600 truncate flex-1 mr-2">{fileName}</span>
+                                                      <div className="flex gap-1">
                                                         <Button 
                                                           size="sm" 
                                                           variant="outline"
                                                           onClick={() => {
-                                                            const fileUrl = getImageUrl(fileName);
+                                                            const fileUrl = getImageUrl(fileName, API_BASE_URL);
                                                             window.open(fileUrl, '_blank');
                                                           }}
+                                                          className="text-xs px-2 py-1"
                                                         >
-                                                          <Eye className="w-4 h-4 mr-1" />
-                                                          ดู
+                                                          {t('common.view')}
                                                         </Button>
                                                         <Button 
                                                           size="sm" 
                                                           variant="outline"
                                                           onClick={() => {
-                                                            const fileUrl = getImageUrl(fileName);
+                                                            const fileUrl = getImageUrl(fileName, API_BASE_URL);
                                                             const link = document.createElement('a');
                                                             link.href = fileUrl;
                                                             link.download = fileName;
                                                             link.click();
                                                           }}
+                                                          className="text-xs px-2 py-1"
                                                         >
-                                                          <Download className="w-4 h-4 mr-1" />
-                                                          ดาวน์โหลด
+                                                          {t('common.download')}
                                                         </Button>
                                                       </div>
                                                     </div>
@@ -728,7 +840,7 @@ export default function ManagePost() {
                             </div>
                           )}
                           <DialogFooter className="pt-6 border-t">
-                            <Button variant="outline" onClick={() => setOpenIdx(null)}>
+                            <Button variant="outline" onClick={() => setOpenIdx(null)} className="btn-press hover-glow">
                               {t('common.close')}
                             </Button>
                           </DialogFooter>
@@ -748,6 +860,36 @@ export default function ManagePost() {
         <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-10 h-10 rounded-full mx-auto mb-1" />
         &copy; {new Date().getFullYear()} {t('common.companyName')}
       </footer>
+
+      {/* Image Preview Dialog */}
+      <Dialog open={showImagePreview} onOpenChange={setShowImagePreview}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0 bg-black/95">
+          <DialogHeader className="absolute top-4 right-4 z-10">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowImagePreview(false)}
+              className="bg-white/20 text-white border-white/30 hover:bg-white/30"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </DialogHeader>
+          
+          {selectedImage && (
+            <div className="flex items-center justify-center h-full p-4">
+              <img 
+                src={selectedImage} 
+                alt="Preview"
+                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                }}
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 } 

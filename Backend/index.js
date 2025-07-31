@@ -9,6 +9,7 @@ const swaggerJsdoc = require('swagger-jsdoc');
 const cors = require('cors');
 const path = require('path');
 const leaveQuota = require('./EnityTable/leaveQuota.js');
+const fs = require('fs');
 
 
 const app = express();
@@ -65,6 +66,17 @@ app.use(cors({
   origin: 'http://localhost:8081', // or use '*' for all origins (not recommended for production)
   credentials: true // if you need to send cookies/auth headers
 }));
+
+// Ensure uploads directories exist
+const uploadsDir = path.join(__dirname, 'uploads');
+const announcementsDir = path.join(uploadsDir, 'announcements');
+
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+if (!fs.existsSync(announcementsDir)) {
+  fs.mkdirSync(announcementsDir, { recursive: true });
+}
 
 // Serve static files for uploaded images
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

@@ -1,14 +1,21 @@
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 
 module.exports = (AppDataSource) => {
   const router = express.Router();
 
+  // Ensure uploads directory exists
+  const uploadsDir = path.join(__dirname, '../uploads/announcements');
+  if (!fs.existsSync(uploadsDir)) {
+    fs.mkdirSync(uploadsDir, { recursive: true });
+  }
+
   // Configure multer for file uploads
   const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-      cb(null, path.join(__dirname, '../uploads/announcements'));
+      cb(null, uploadsDir);
     },
     filename: function (req, file, cb) {
       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
@@ -60,8 +67,19 @@ module.exports = (AppDataSource) => {
     try {
       const announcementRepo = AppDataSource.getRepository('Announcements');
       const announcements = await announcementRepo.find();
+      
+      console.log('Fetched announcements:', {
+        count: announcements.length,
+        announcements: announcements.map(a => ({
+          id: a.id,
+          subject: a.subject,
+          imagePath: a.Image
+        }))
+      });
+      
       res.json({ status: 'success', data: announcements, message: 'Fetched all announcements' });
     } catch (err) {
+      console.error('Error fetching announcements:', err);
       res.status(500).json({ status: 'error', data: null, message: err.message });
     }
   });
@@ -282,6 +300,12 @@ module.exports = (AppDataSource) => {
       let imagePath = '';
       if (req.file) {
         imagePath = `/uploads/announcements/${req.file.filename}`;
+        console.log('File uploaded successfully:', {
+          originalName: req.file.originalname,
+          filename: req.file.filename,
+          path: imagePath,
+          size: req.file.size
+        });
       }
       
       const newAnnouncement = announcementRepo.create({ 
@@ -291,6 +315,13 @@ module.exports = (AppDataSource) => {
         createdBy 
       });
       await announcementRepo.save(newAnnouncement);
+      
+      console.log('Announcement created successfully:', {
+        id: newAnnouncement.id,
+        subject: newAnnouncement.subject,
+        imagePath: newAnnouncement.Image
+      });
+      
       res.json({ status: 'success', data: newAnnouncement, message: 'Announcement created' });
     } catch (err) {
       console.error('Error creating announcement:', err);
@@ -355,21 +386,46 @@ module.exports = (AppDataSource) => {
    *                   type: string
    */
   // Update announcement
-  router.put('/announcements/:id', async (req, res) => {
+  router.put('/announcements/:id', upload.single('Image'), async (req, res) => {
     try {
       const announcementRepo = AppDataSource.getRepository('Announcements');
-      const { subject, detail, Image, createdBy } = req.body;
+      const { subject, detail, createdBy } = req.body;
       let announcement = await announcementRepo.findOneBy({ id: req.params.id });
       if (!announcement) {
         return res.status(404).json({ status: 'error', data: null, message: 'Announcement not found' });
       }
+      
+      // Update basic fields
       announcement.subject = subject;
       announcement.detail = detail;
-      announcement.Image = Image;
       announcement.createdBy = createdBy;
+      
+      // Handle file upload if new file is provided
+      if (req.file) {
+        const oldImagePath = announcement.Image;
+        announcement.Image = `/uploads/announcements/${req.file.filename}`;
+        
+        console.log('File updated successfully:', {
+          announcementId: req.params.id,
+          oldImagePath: oldImagePath,
+          newImagePath: announcement.Image,
+          originalName: req.file.originalname,
+          filename: req.file.filename,
+          size: req.file.size
+        });
+      }
+      
       await announcementRepo.save(announcement);
+      
+      console.log('Announcement updated successfully:', {
+        id: announcement.id,
+        subject: announcement.subject,
+        imagePath: announcement.Image
+      });
+      
       res.json({ status: 'success', data: announcement, message: 'Announcement updated' });
     } catch (err) {
+      console.error('Error updating announcement:', err);
       res.status(500).json({ status: 'error', data: null, message: err.message });
     }
   });

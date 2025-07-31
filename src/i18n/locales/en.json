@@ -602,6 +602,7 @@
     "deleteConfirmDesc": "Are you sure you want to delete this news?",
     "detail": "Detail",
     "createdBy": "Created by",
+    "edit": "Edit",
     "saving": "Saving...",
     "save": "Save",
     "cancel": "Cancel",
