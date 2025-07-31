@@ -10,7 +10,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -447,11 +446,24 @@ const EmployeeDetail = () => {
             </CardHeader>
             <CardContent className="p-0">
               <div className="flex flex-col md:flex-row gap-8 p-6 items-center md:items-start">
-                <Avatar className="w-24 h-24 shadow-xl">
-                  <span className="w-full h-full flex items-center justify-center bg-gradient-to-br from-blue-200 via-indigo-200 to-purple-200 text-blue-900 font-bold text-3xl rounded-full">
-                    {employee.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase()}
-                  </span>
-                </Avatar>
+                <div className="relative w-24 h-24">
+                  {employee.avatar ? (
+                    <img
+                      src={`${API_BASE_URL}${employee.avatar}`}
+                      alt={employee.name}
+                      className="w-full h-full rounded-full object-cover shadow-xl"
+                      onError={(e) => {
+                        // ถ้าโหลดรูปไม่สำเร็จ ให้แสดง fallback
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        target.nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                  ) : null}
+                  <div className={`w-full h-full rounded-full bg-gradient-to-br from-blue-200 via-indigo-200 to-purple-200 flex items-center justify-center text-blue-900 font-bold text-3xl shadow-xl ${employee.avatar ? 'hidden' : ''}`}>
+                    {employee.name ? employee.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : '?'}
+                  </div>
+                </div>
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-8">
                   {/* ซ้าย: Full Name, Position, Department */}
                   <div className="space-y-8">

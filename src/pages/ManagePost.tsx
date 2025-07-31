@@ -1,23 +1,22 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { SidebarTrigger } from '@/components/ui/sidebar';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
-import { Newspaper, Plus, Trash2, FileText, User, Calendar, Clock, Image } from 'lucide-react';
-import React, { useEffect, useState } from 'react';
-import { useAuth } from '@/contexts/AuthContext';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
-import { Label } from '@/components/ui/label';
-import { useTranslation } from 'react-i18next';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { useAuth } from '@/contexts/AuthContext';
+import { ArrowLeft, Calendar, Clock, Download, Eye, FileText, Image, Newspaper, Plus, Trash2, User } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function ManagePost() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const navigate = useNavigate();
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
   const [newsList, setNewsList] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -139,6 +138,8 @@ export default function ManagePost() {
     }
   };
 
+
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-100 via-indigo-50 to-white flex flex-col">
       {/* Hero Section */}
@@ -154,6 +155,20 @@ export default function ManagePost() {
             </defs>
           </svg>
         </div>
+        
+        {/* Navigation Controls */}
+        <div className="relative z-20 flex justify-start items-center px-6 py-4">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => navigate(-1)}
+              className="flex items-center gap-2 px-4 py-2 bg-white/90 hover:bg-white text-blue-700 font-semibold rounded-xl shadow-lg transition-all duration-200 backdrop-blur-sm border border-blue-200 hover:border-blue-300"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              ย้อนกลับ
+            </button>
+          </div>
+        </div>
+
         <div className="relative z-10 flex flex-col items-center justify-center py-10 md:py-16">
           <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-24 h-24 rounded-full bg-white/80 shadow-2xl border-4 border-white mb-4" />
           <h1 className="text-4xl md:text-5xl font-extrabold text-indigo-900 drop-shadow mb-2 flex items-center gap-3">
@@ -443,28 +458,138 @@ export default function ManagePost() {
                                 </Card>
                               </div>
 
-                              {/* News Type Section */}
-                              <Card className="border-0 shadow-md">
-                                <CardHeader className="pb-3">
-                                  <div className="flex items-center gap-2">
-                                    <Newspaper className="w-5 h-5 text-blue-600" />
-                                    <h3 className="text-lg font-semibold">{t('companyNews.newsType')}</h3>
-                                  </div>
-                                </CardHeader>
-                                <CardContent>
-                                  <div className="p-4 bg-blue-50 rounded-lg">
-                                    <div className="flex items-center gap-2">
-                                      <Badge className="bg-blue-100 text-blue-800 border-blue-200">
-                                        <Newspaper className="w-3 h-3 mr-1" />
-                                        {t('companyNews.companyNews')}
-                                      </Badge>
-                                      <span className="text-blue-900 font-medium">
-                                        {t('companyNews.newsTypeDesc')}
-                                      </span>
+                              {/* Attachments Section */}
+                              {(news.Image || news.attachments) && (
+                                <Card className="border-0 shadow-md">
+                                  <CardHeader className="pb-3">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center gap-2">
+                                        <Image className="w-5 h-5 text-purple-600" />
+                                        <h3 className="text-lg font-semibold">ไฟล์แนบ</h3>
+                                      </div>
+                                      <div className="text-sm text-gray-500 bg-purple-50 px-3 py-1 rounded-full">
+                                        {((news.Image ? 1 : 0) + (news.attachments ? news.attachments.length : 0))} ไฟล์
+                                      </div>
                                     </div>
-                                  </div>
-                                </CardContent>
-                              </Card>
+                                  </CardHeader>
+                                  <CardContent>
+                                    <div className="space-y-4">
+                                      {/* Image Display */}
+                                      {news.Image && (
+                                        <div className="bg-gradient-to-r from-purple-50 to-pink-50 rounded-xl border border-purple-200 p-4 hover:shadow-lg transition-all duration-200">
+                                          <div className="flex items-center justify-between">
+                                            <div className="flex items-center gap-4">
+                                                                                             <div className="w-20 h-20 bg-white rounded-xl overflow-hidden flex-shrink-0 shadow-md border border-purple-100">
+                                                 <img
+                                                   src={`${API_BASE_URL}/uploads/announcements/${news.Image}`}
+                                                   alt="News Image"
+                                                   className="w-full h-full object-cover"
+                                                   onError={(e) => {
+                                                     console.error('Image load error for:', news.Image);
+                                                     console.error('Full URL:', `${API_BASE_URL}/uploads/announcements/${news.Image}`);
+                                                     // ลองใช้ path อื่น
+                                                     if (e.currentTarget.src.includes('/uploads/announcements/')) {
+                                                       e.currentTarget.src = `${API_BASE_URL}/uploads/${news.Image}`;
+                                                     } else {
+                                                       e.currentTarget.src = '/placeholder.svg';
+                                                     }
+                                                   }}
+                                                   onLoad={() => {
+                                                     console.log('Image loaded successfully:', news.Image);
+                                                     console.log('Full URL:', `${API_BASE_URL}/uploads/announcements/${news.Image}`);
+                                                   }}
+                                                 />
+                                               </div>
+                                              <div className="flex flex-col gap-1">
+                                                <div className="text-sm font-semibold text-purple-800">
+                                                  รูปภาพข่าวสาร
+                                                </div>
+                                                <div className="text-xs text-purple-600 font-mono">
+                                                  {news.Image}
+                                                </div>
+                                              </div>
+                                            </div>
+                                            <div className="flex gap-2">
+                                              <button
+                                                onClick={() => {
+                                                  const imageUrl = `${API_BASE_URL}/uploads/announcements/${news.Image}`;
+                                                  console.log('Opening image URL:', imageUrl);
+                                                  window.open(imageUrl, '_blank');
+                                                }}
+                                                className="px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 hover:shadow-md"
+                                              >
+                                                <Eye className="w-4 h-4" />
+                                                ดู
+                                              </button>
+                                              <button
+                                                onClick={() => {
+                                                  const imageUrl = `${API_BASE_URL}/uploads/announcements/${news.Image}`;
+                                                  console.log('Downloading image URL:', imageUrl);
+                                                  const link = document.createElement('a');
+                                                  link.href = imageUrl;
+                                                  link.download = news.Image;
+                                                  link.click();
+                                                }}
+                                                className="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 hover:shadow-md"
+                                              >
+                                                <Download className="w-4 h-4" />
+                                                ดาวน์โหลด
+                                              </button>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+
+                                      {/* File Attachments */}
+                                      {news.attachments && news.attachments.length > 0 && (
+                                        <>
+                                          {news.attachments.map((attachment: any, index: number) => (
+                                            <div key={index} className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 p-4 hover:shadow-lg transition-all duration-200">
+                                              <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-4">
+                                                  <div className="w-20 h-20 bg-white rounded-xl overflow-hidden flex-shrink-0 shadow-md border border-blue-100 flex items-center justify-center">
+                                                    <FileText className="w-10 h-10 text-blue-500" />
+                                                  </div>
+                                                  <div className="flex flex-col gap-1">
+                                                    <div className="text-sm font-semibold text-blue-800">
+                                                      ไฟล์แนบ {index + 1}
+                                                    </div>
+                                                    <div className="text-xs text-blue-600 font-mono">
+                                                      {attachment.filename || attachment.name || `file-${index + 1}`}
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                  <button
+                                                    onClick={() => window.open(`${API_BASE_URL}/uploads/announcements/${attachment.filename}`, '_blank')}
+                                                    className="px-4 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 hover:shadow-md"
+                                                  >
+                                                    <Eye className="w-4 h-4" />
+                                                    ดู
+                                                  </button>
+                                                  <button
+                                                    onClick={() => {
+                                                      const link = document.createElement('a');
+                                                      link.href = `${API_BASE_URL}/uploads/announcements/${attachment.filename}`;
+                                                      link.download = attachment.filename || attachment.name || `file-${index + 1}`;
+                                                      link.click();
+                                                    }}
+                                                    className="px-4 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-2 hover:shadow-md"
+                                                  >
+                                                    <Download className="w-4 h-4" />
+                                                    ดาวน์โหลด
+                                                  </button>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          ))}
+                                        </>
+                                      )}
+                                    </div>
+                                  </CardContent>
+                                </Card>
+                              )}
+
                             </div>
                           )}
                           <DialogFooter className="pt-6 border-t">

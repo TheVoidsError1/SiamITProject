@@ -337,7 +337,8 @@ module.exports = (AppDataSource) => {
           department_id: department_id,
           role,
           usedLeaveDays,
-          totalLeaveDays
+          totalLeaveDays,
+          avatar: processCheck ? processCheck.avatar_url || null : null
         }
       });
     } catch (err) {
