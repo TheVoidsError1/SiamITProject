@@ -178,6 +178,12 @@ const CompanyMonthDetailPage = () => {
     }
   });
 
+  // Filter allEvents for the current month for the detail list
+  const eventsThisMonth = allEvents.filter(event => {
+    const d = new Date(event.date);
+    return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
+  });
+
   // Handlers
   const handleAdd = async () => {
     if (!newEvent.title || !newEvent.date) return;
@@ -275,6 +281,13 @@ const CompanyMonthDetailPage = () => {
     }
   };
 
+  // Add Event Dialog: open with default date for current month
+  const handleOpenAdd = () => {
+    const defaultDate = `${currentYear}-${(currentMonth + 1).toString().padStart(2, '0')}-01`;
+    setNewEvent({ title: '', description: '', date: defaultDate });
+    setShowAdd(true);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-100 to-purple-100 flex flex-col">
       {/* Hero Section */}
@@ -330,7 +343,7 @@ const CompanyMonthDetailPage = () => {
             <Building2 className="w-5 h-5 text-indigo-400" />
             <span className="text-lg font-bold text-blue-900">{monthNames[currentMonth]}</span>
             {user?.role === 'superadmin' && (
-              <Button size="sm" className="ml-2" onClick={() => setShowAdd(true)}>
+              <Button size="sm" className="ml-2" onClick={handleOpenAdd}>
                 <Plus className="w-4 h-4 mr-1" /> เพิ่มกิจกรรม
               </Button>
             )}
@@ -386,11 +399,11 @@ const CompanyMonthDetailPage = () => {
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
             </div>
-          ) : companyEvents.length === 0 ? (
+          ) : eventsThisMonth.length === 0 ? (
             <div className="text-blue-400 text-base">ไม่มีกิจกรรมของบริษัทในเดือนนี้</div>
           ) : (
             <ul className="space-y-3">
-              {allEvents.map(event => {
+              {eventsThisMonth.map(event => {
                 const d = new Date(event.date);
                 const day = d.getDate();
                 const monthNum = d.getMonth() + 1;
@@ -452,28 +465,29 @@ const CompanyMonthDetailPage = () => {
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>เพิ่มกิจกรรมของบริษัท</DialogTitle>
+            <DialogTitle>{t('companyEvent.addTitle', 'เพิ่มกิจกรรมของบริษัท')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <Input 
-              placeholder="ชื่อกิจกรรม" 
+              placeholder={t('companyEvent.name', 'ชื่อกิจกรรม')} 
               value={newEvent.title} 
               onChange={e => setNewEvent(prev => ({ ...prev, title: e.target.value }))} 
             />
             <Textarea 
-              placeholder="รายละเอียดกิจกรรม (ไม่บังคับ)" 
+              placeholder={t('companyEvent.description', 'รายละเอียดกิจกรรม (ไม่บังคับ)')} 
               value={newEvent.description} 
               onChange={e => setNewEvent(prev => ({ ...prev, description: e.target.value }))} 
             />
             <Input 
               type="date" 
+              placeholder={t('companyEvent.datePlaceholder', 'yyyy-mm-dd')}
               value={newEvent.date} 
               onChange={e => setNewEvent(prev => ({ ...prev, date: e.target.value }))} 
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAdd(false)}>ยกเลิก</Button>
-            <Button onClick={handleAdd}>บันทึก</Button>
+            <Button variant="outline" onClick={() => setShowAdd(false)}>{t('common.cancel', 'ยกเลิก')}</Button>
+            <Button onClick={handleAdd}>{t('common.save', 'บันทึก')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
