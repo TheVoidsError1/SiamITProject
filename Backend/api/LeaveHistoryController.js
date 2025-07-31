@@ -191,6 +191,15 @@ module.exports = (AppDataSource) => {
           rejectionReason: leave.rejectedReason,
           submittedDate: leave.createdAt,
           backdated: Boolean(leave.backdated), // แปลงเป็น boolean เพื่อให้แน่ใจ
+          attachments: leave.attachments ? (() => {
+            try {
+              return JSON.parse(leave.attachments);
+            } catch (error) {
+              console.error('Error parsing attachments JSON:', error);
+              return [];
+            }
+          })() : [], // แปลง JSON string เป็น array พร้อม error handling
+          contact: leave.contact || null, // เพิ่มข้อมูลการติดต่อ
         };
       }));
       // Debug log สำหรับ pagination

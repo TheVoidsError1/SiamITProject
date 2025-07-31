@@ -39,6 +39,8 @@ const LeaveHistory = () => {
   const [filterYear, setFilterYear] = useState<number | ''>('');
   const [selectedLeave, setSelectedLeave] = useState<any | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [showImagePreview, setShowImagePreview] = useState(false);
   // --- เพิ่ม state สำหรับ items per page ---
   const [limit, setLimit] = useState(5);
   const [filterLeaveType, setFilterLeaveType] = useState('');
@@ -137,6 +139,14 @@ const LeaveHistory = () => {
     if (leaveData) {
       setSelectedLeave(leaveData);
       setShowDetailDialog(true);
+      
+      // Debug log
+      console.log('Debug - Leave data from list:', {
+        id: leaveData.id,
+        attachments: leaveData.attachments,
+        attachmentsType: typeof leaveData.attachments,
+        isArray: Array.isArray(leaveData.attachments)
+      });
       return;
     }
     
@@ -151,14 +161,23 @@ const LeaveHistory = () => {
       const data = await res.json();
       if (data.success) {
         // map ให้แน่ใจว่ามี startDate และ submittedDate ที่ frontend ใช้
-        setSelectedLeave({
+        const leaveDetail = {
           ...data.data,
           startDate: data.data.startDate || data.data.leaveDate || '-',
           submittedDate: data.data.createdAt || data.data.submittedDate || '-',
+        };
+        setSelectedLeave(leaveDetail);
+        
+        // Debug log
+        console.log('Debug - Leave data from API:', {
+          id: leaveDetail.id,
+          attachments: leaveDetail.attachments,
+          attachmentsType: typeof leaveDetail.attachments,
+          isArray: Array.isArray(leaveDetail.attachments)
         });
       }
     } catch (e) {
-      // handle error
+      console.error('Error fetching leave detail:', e);
     }
   };
 
@@ -1208,7 +1227,7 @@ const LeaveHistory = () => {
               )}
 
               {/* Attachments Section */}
-              {selectedLeave.attachments && selectedLeave.attachments.length > 0 && (
+              {selectedLeave.attachments && Array.isArray(selectedLeave.attachments) && selectedLeave.attachments.length > 0 && (
                 <Card className="border-0 shadow-md">
                   <CardHeader className="pb-3">
                     <div className="flex items-center gap-2">
@@ -1224,51 +1243,99 @@ const LeaveHistory = () => {
                       {selectedLeave.attachments.map((attachment: string, index: number) => {
                         const fileName = attachment.split('/').pop() || attachment;
                         const fileExtension = fileName.split('.').pop()?.toLowerCase();
-                        const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension || '');
+                        const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(fileExtension || '');
+                        const isPDF = fileExtension === 'pdf';
+                        const isDocument = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt'].includes(fileExtension || '');
                         
                         return (
-                          <div key={index} className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
+                          <div key={index} className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-all duration-300 hover:shadow-md">
                             {isImage ? (
                               <div className="space-y-3">
-                                <img 
-                                  src={`/leave-uploads/${attachment}`} 
-                                  alt={fileName}
-                                  className="w-full h-32 object-cover rounded-lg border"
-                                  onError={(e) => {
-                                    const target = e.target as HTMLImageElement;
-                                    target.style.display = 'none';
-                                  }}
-                                />
+                                <div className="relative group cursor-pointer" onClick={() => {
+                                  setSelectedImage(`/leave-uploads/${attachment}`);
+                                  setShowImagePreview(true);
+                                }}>
+                                  <img 
+                                    src={`/leave-uploads/${attachment}`} 
+                                    alt={fileName}
+                                    className="w-full h-32 object-cover rounded-lg border transition-all duration-300 group-hover:scale-105"
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      target.style.display = 'none';
+                                    }}
+                                  />
+                                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 rounded-lg flex items-center justify-center">
+                                    <div className="opacity-0 group-hover:opacity-100 transition-all duration-300">
+                                      <FileText className="w-8 h-8 text-white" />
+                                    </div>
+                                  </div>
+                                </div>
                                 <div className="flex items-center justify-between">
-                                  <span className="text-sm text-gray-600 truncate">{fileName}</span>
-                                  <Button 
-                                    size="sm" 
-                                    variant="outline"
-                                    onClick={() => window.open(`/leave-uploads/${attachment}`, '_blank')}
-                                  >
-                                    {t('common.view')}
-                                  </Button>
+                                  <span className="text-sm text-gray-600 truncate flex-1 mr-2">{fileName}</span>
+                                  <div className="flex gap-1">
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline"
+                                      onClick={() => {
+                                        setSelectedImage(`/leave-uploads/${attachment}`);
+                                        setShowImagePreview(true);
+                                      }}
+                                      className="text-xs px-2 py-1"
+                                    >
+                                      {t('common.view')}
+                                    </Button>
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline"
+                                      onClick={() => {
+                                        const link = document.createElement('a');
+                                        link.href = `/leave-uploads/${attachment}`;
+                                        link.download = fileName;
+                                        link.click();
+                                      }}
+                                      className="text-xs px-2 py-1"
+                                    >
+                                      {t('common.download')}
+                                    </Button>
+                                  </div>
                                 </div>
                               </div>
                             ) : (
                               <div className="space-y-3">
                                 <div className="w-full h-32 bg-gray-200 rounded-lg flex items-center justify-center">
-                                  <FileText className="w-8 h-8 text-gray-400" />
+                                  {isPDF ? (
+                                    <FileText className="w-8 h-8 text-red-500" />
+                                  ) : isDocument ? (
+                                    <FileText className="w-8 h-8 text-blue-500" />
+                                  ) : (
+                                    <FileText className="w-8 h-8 text-gray-400" />
+                                  )}
                                 </div>
                                 <div className="flex items-center justify-between">
-                                  <span className="text-sm text-gray-600 truncate">{fileName}</span>
-                                  <Button 
-                                    size="sm" 
-                                    variant="outline"
-                                    onClick={() => {
-                                      const link = document.createElement('a');
-                                      link.href = `/leave-uploads/${attachment}`;
-                                      link.download = fileName;
-                                      link.click();
-                                    }}
-                                  >
-                                    {t('common.download')}
-                                  </Button>
+                                  <span className="text-sm text-gray-600 truncate flex-1 mr-2">{fileName}</span>
+                                  <div className="flex gap-1">
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline"
+                                      onClick={() => window.open(`/leave-uploads/${attachment}`, '_blank')}
+                                      className="text-xs px-2 py-1"
+                                    >
+                                      {t('common.view')}
+                                    </Button>
+                                    <Button 
+                                      size="sm" 
+                                      variant="outline"
+                                      onClick={() => {
+                                        const link = document.createElement('a');
+                                        link.href = `/leave-uploads/${attachment}`;
+                                        link.download = fileName;
+                                        link.click();
+                                      }}
+                                      className="text-xs px-2 py-1"
+                                    >
+                                      {t('common.download')}
+                                    </Button>
+                                  </div>
                                 </div>
                               </div>
                             )}
@@ -1292,7 +1359,35 @@ const LeaveHistory = () => {
         </DialogContent>
       </Dialog>
 
-
+      {/* Image Preview Dialog */}
+      <Dialog open={showImagePreview} onOpenChange={setShowImagePreview}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0 bg-black/95">
+          <DialogHeader className="absolute top-4 right-4 z-10">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowImagePreview(false)}
+              className="bg-white/20 text-white border-white/30 hover:bg-white/30"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </DialogHeader>
+          
+          {selectedImage && (
+            <div className="flex items-center justify-center h-full p-4">
+              <img 
+                src={selectedImage} 
+                alt="Preview"
+                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                }}
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <style>{`
         .glass-card-history {
