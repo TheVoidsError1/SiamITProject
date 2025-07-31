@@ -52,6 +52,9 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
   const { t, i18n } = useTranslation();
   const [leaveDetail, setLeaveDetail] = useState<LeaveRequest | null>(leaveRequest);
   const [loading, setLoading] = useState(false);
+  const [leaveTypes, setLeaveTypes] = useState<{ id: string; leave_type: string; leave_type_th: string; leave_type_en: string }[]>([]);
+  const [leaveTypesLoading, setLeaveTypesLoading] = useState(false);
+  const [leaveTypesError, setLeaveTypesError] = useState<string | null>(null);
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -80,6 +83,29 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
       setLeaveDetail(null);
     }
   }, [open, leaveRequest]);
+
+  useEffect(() => {
+    const fetchLeaveTypes = async () => {
+      setLeaveTypesLoading(true);
+      setLeaveTypesError(null);
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/leave-types`);
+        const data = await res.json();
+        if (data.success) {
+          setLeaveTypes(data.data);
+        } else {
+          setLeaveTypes([]);
+          setLeaveTypesError(data.message || 'Failed to fetch leave types');
+        }
+      } catch (err: any) {
+        setLeaveTypes([]);
+        setLeaveTypesError(err.message || 'Failed to fetch leave types');
+      } finally {
+        setLeaveTypesLoading(false);
+      }
+    };
+    fetchLeaveTypes();
+  }, []);
 
   const getStatusBadge = (status: string) => {
     if (status === 'approved') return <Badge className="bg-green-100 text-green-800 border-green-200">{t('leave.approved')}</Badge>;
@@ -135,18 +161,13 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
 
   const getLeaveTypeLabel = (typeId: string) => {
     if (!typeId) return '';
-    
-    // ลองใช้ key ตรงๆ ก่อน
-    const directKey = `leaveTypes.${typeId}`;
-    if (t(directKey) !== directKey) {
-      return t(directKey);
+    const found = leaveTypes.find(lt => lt.id === typeId || lt.leave_type === typeId);
+    if (found) {
+      return i18n.language.startsWith('th') ? found.leave_type_th : found.leave_type_en;
     }
-    
-    // ถ้าไม่มี key ตรงๆ ลองหาในรูปแบบอื่น
-    const normalizedKey = typeId.replace(/\s+/g, ''); // ลบช่องว่าง
-    const normalizedDirectKey = `leaveTypes.${normalizedKey}`;
-    if (t(normalizedDirectKey) !== normalizedDirectKey) {
-      return t(normalizedDirectKey);
+    // fallback: i18n string หรือ id
+    if (t(`leaveTypes.${typeId}`) !== `leaveTypes.${typeId}`) {
+      return t(`leaveTypes.${typeId}`);
     }
     
     // ถ้าไม่มีใน i18n ให้ส่งคืนค่าเดิม
@@ -223,7 +244,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className={`text-3xl font-bold ${getTypeColor(leaveDetail.leaveTypeName || leaveDetail.leaveType || leaveDetail.type)}`}>
-                      {getLeaveTypeLabel(leaveDetail.leaveTypeName || leaveDetail.leaveType || leaveDetail.type || '')}
+                      {getLeaveTypeLabel(leaveDetail.leaveType || leaveDetail.type || leaveDetail.leaveTypeName || '')}
                     </div>
                   </div>
                   <div className="text-right">
