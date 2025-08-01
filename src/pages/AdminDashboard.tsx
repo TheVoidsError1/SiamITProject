@@ -454,28 +454,27 @@ const AdminDashboard = () => {
 
   // ตั้งค่าเริ่มต้นของ filter เดือนและปี
   useEffect(() => {
-    const currentMonth = new Date().getMonth() + 1;
     const currentYear = new Date().getFullYear();
     
-    // ตั้งค่าเริ่มต้นสำหรับ pending tab
+    // ตั้งค่าเริ่มต้นสำหรับ pending tab - เริ่มต้นเป็น all (ค่าว่าง)
     if (!pendingPendingMonth) {
-      setPendingPendingMonth(currentMonth);
+      setPendingPendingMonth('');
     }
     if (!pendingPendingYear) {
       setPendingPendingYear(currentYear);
     }
     
-    // ตั้งค่าเริ่มต้นสำหรับ history tab
+    // ตั้งค่าเริ่มต้นสำหรับ history tab - เริ่มต้นเป็น all (ค่าว่าง)
     if (!pendingFilterMonth) {
-      setPendingFilterMonth(currentMonth);
+      setPendingFilterMonth('');
     }
     if (!pendingFilterYear) {
       setPendingFilterYear(currentYear);
     }
     
-    // ตั้งค่าเริ่มต้นสำหรับ filter จริง
+    // ตั้งค่าเริ่มต้นสำหรับ filter จริง - เริ่มต้นเป็น all (ค่าว่าง)
     if (!filterMonth) {
-      setFilterMonth(currentMonth);
+      setFilterMonth('');
     }
     if (!filterYear) {
       setFilterYear(currentYear);
@@ -1085,7 +1084,7 @@ const AdminDashboard = () => {
                 </div>
                 {/* Date Filter */}
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.4s' }}>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.date')}</label>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.date', 'วันที่')}</label>
                   <input
                     type="date"
                     className={`border border-blue-200 rounded-xl px-3 py-2 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press ${
@@ -1100,7 +1099,7 @@ const AdminDashboard = () => {
                 </div>
                 {/* Month Filter */}
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.5s' }}>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.month')}</label>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.month', 'เดือน')}</label>
                   <select
                     className={`border border-blue-200 rounded-xl px-3 py-2 w-28 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press ${
                       pendingPendingSingleDate 
@@ -1119,7 +1118,7 @@ const AdminDashboard = () => {
                 </div>
                 {/* Year Filter */}
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.6s' }}>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.year')}</label>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.year', 'ปี')}</label>
                   <input
                     type="number"
                     min={2000}
@@ -1380,7 +1379,7 @@ const AdminDashboard = () => {
                 </div>
                 {/* Month Filter */}
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.4s' }}>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.month')}</label>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.month', 'เดือน')}</label>
                   <select
                     className="border border-blue-200 rounded-xl px-3 py-2 w-28 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
                     value={pendingFilterMonth}
@@ -1394,7 +1393,7 @@ const AdminDashboard = () => {
                 </div>
                 {/* Year Filter */}
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.5s' }}>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.year')}</label>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.year', 'ปี')}</label>
                   <input
                     type="number"
                     min={2000}

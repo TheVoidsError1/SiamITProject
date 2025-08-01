@@ -428,7 +428,6 @@ const EmployeeDetail = () => {
             <h1 className="text-3xl font-extrabold text-blue-900 tracking-tight drop-shadow-lg animate-slide-in-left">{t('employee.details')}</h1>
             <p className="text-sm text-blue-500 animate-slide-in-left delay-100">{employee.name}</p>
           </div>
-          <LanguageSwitcher />
         </div>
       </div>
       <div className="p-6 animate-fade-in">
