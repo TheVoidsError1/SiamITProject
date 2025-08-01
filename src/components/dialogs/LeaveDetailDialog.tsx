@@ -52,6 +52,9 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
   const { t, i18n } = useTranslation();
   const [leaveDetail, setLeaveDetail] = useState<LeaveRequest | null>(leaveRequest);
   const [loading, setLoading] = useState(false);
+  const [leaveTypes, setLeaveTypes] = useState<{ id: string; leave_type: string; leave_type_th: string; leave_type_en: string }[]>([]);
+  const [leaveTypesLoading, setLeaveTypesLoading] = useState(false);
+  const [leaveTypesError, setLeaveTypesError] = useState<string | null>(null);
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -80,6 +83,29 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
       setLeaveDetail(null);
     }
   }, [open, leaveRequest]);
+
+  useEffect(() => {
+    const fetchLeaveTypes = async () => {
+      setLeaveTypesLoading(true);
+      setLeaveTypesError(null);
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/leave-types`);
+        const data = await res.json();
+        if (data.success) {
+          setLeaveTypes(data.data);
+        } else {
+          setLeaveTypes([]);
+          setLeaveTypesError(data.message || 'Failed to fetch leave types');
+        }
+      } catch (err: any) {
+        setLeaveTypes([]);
+        setLeaveTypesError(err.message || 'Failed to fetch leave types');
+      } finally {
+        setLeaveTypesLoading(false);
+      }
+    };
+    fetchLeaveTypes();
+  }, []);
 
   const getStatusBadge = (status: string) => {
     if (status === 'approved') return <Badge className="bg-green-100 text-green-800 border-green-200">{t('leave.approved')}</Badge>;
@@ -134,11 +160,17 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
   };
 
   const getLeaveTypeLabel = (typeId: string) => {
-    // ใช้ i18n leaveTypes
-    const key = typeId;
-    if (key && t(`leaveTypes.${key}`) !== `leaveTypes.${key}`) {
-      return t(`leaveTypes.${key}`);
+    if (!typeId) return '';
+    const found = leaveTypes.find(lt => lt.id === typeId || lt.leave_type === typeId);
+    if (found) {
+      return i18n.language.startsWith('th') ? found.leave_type_th : found.leave_type_en;
     }
+    // fallback: i18n string หรือ id
+    if (t(`leaveTypes.${typeId}`) !== `leaveTypes.${typeId}`) {
+      return t(`leaveTypes.${typeId}`);
+    }
+    
+    // ถ้าไม่มีใน i18n ให้ส่งคืนค่าเดิม
     return typeId;
   };
 
@@ -212,7 +244,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className={`text-3xl font-bold ${getTypeColor(leaveDetail.leaveTypeName || leaveDetail.leaveType || leaveDetail.type)}`}>
-                      {leaveDetail.leaveTypeName || getLeaveTypeLabel(leaveDetail.leaveType || leaveDetail.type || '')}
+                      {getLeaveTypeLabel(leaveDetail.leaveType || leaveDetail.type || leaveDetail.leaveTypeName || '')}
                     </div>
                   </div>
                   <div className="text-right">
@@ -456,15 +488,29 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                                   target.style.display = 'none';
                                 }}
                               />
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm text-gray-600 truncate">{fileName}</span>
-                                <Button 
-                                  size="sm" 
-                                  variant="outline"
-                                  onClick={() => window.open(`/leave-uploads/${attachment}`, '_blank')}
-                                >
-                                  {t('common.view', 'View')}
-                                </Button>
+                              <div className="flex items-center justify-between gap-2">
+                                <span className="text-sm text-gray-600 truncate flex-1">{fileName}</span>
+                                <div className="flex gap-1">
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    onClick={() => window.open(`/leave-uploads/${attachment}`, '_blank')}
+                                  >
+                                    {t('common.view', 'View')}
+                                  </Button>
+                                  <Button 
+                                    size="sm" 
+                                    variant="outline"
+                                    onClick={() => {
+                                      const link = document.createElement('a');
+                                      link.href = `/leave-uploads/${attachment}`;
+                                      link.download = fileName;
+                                      link.click();
+                                    }}
+                                  >
+                                    {t('common.download', 'Download')}
+                                  </Button>
+                                </div>
                               </div>
                             </div>
                           ) : (

@@ -1,20 +1,21 @@
 
+// ใช้ i18n keys แทน hardcoded text
 export const leaveTypes = [
-  { value: "sick", label: "ลาป่วย", requiresAttachment: true },
-  { value: "vacation", label: "ลาพักร้อน", requiresAttachment: false },
-  { value: "personal", label: "ลากิจ", requiresAttachment: false, hasTimeOption: true },
-  { value: "maternity", label: "ลาคลอด", requiresAttachment: true },
-  { value: "emergency", label: "ลาฉุกเฉิน", requiresAttachment: true },
+  { value: "sick", labelKey: "leaveTypes.Sick", requiresAttachment: true },
+  { value: "vacation", labelKey: "leaveTypes.Vacation", requiresAttachment: false },
+  { value: "personal", labelKey: "leaveTypes.Personal", requiresAttachment: false, hasTimeOption: true },
+  { value: "maternity", labelKey: "leaveTypes.Maternity", requiresAttachment: true },
+  { value: "emergency", labelKey: "leaveTypes.Emergency", requiresAttachment: true },
 ];
 
 export const employeeTypes = [
-  { value: "intern", label: "เด็กฝึกงาน" },
-  { value: "employee", label: "พนักงานบริษัท" },
+  { value: "intern", labelKey: "employeeTypes.intern" },
+  { value: "employee", labelKey: "employeeTypes.employee" },
 ];
 
 export const personalLeaveOptions = [
-  { value: "day", label: "ลาเป็นวัน" },
-  { value: "hour", label: "ลาเป็นชั่วโมง" },
+  { value: "day", labelKey: "leave.dayLeave" },
+  { value: "hour", labelKey: "leave.hourLeave" },
 ];
 
 export const timeSlots = [

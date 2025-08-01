@@ -1186,5 +1186,138 @@
          res.status(500).json({ success: false, message: err.message });
        }
      });
+
+     // GET /api/leave-request/calendar/:year - Get approved leave requests for calendar display
+     router.get('/calendar/:year', async (req, res) => {
+       try {
+         const { year } = req.params;
+         const { month } = req.query;
+         
+         const leaveRepo = AppDataSource.getRepository('LeaveRequest');
+         const userRepo = AppDataSource.getRepository('User');
+         const adminRepo = AppDataSource.getRepository('Admin');
+         const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+         const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+         
+         const { Between } = require('typeorm');
+         
+         // Create date range for the year
+         const startOfYear = new Date(parseInt(year), 0, 1);
+         const endOfYear = new Date(parseInt(year), 11, 31, 23, 59, 59, 999);
+         
+         let where = {
+           status: 'approved',
+           startDate: Between(startOfYear, endOfYear)
+         };
+         
+         // If month is specified, filter by month
+         if (month) {
+           const startOfMonth = new Date(parseInt(year), parseInt(month) - 1, 1);
+           const endOfMonth = new Date(parseInt(year), parseInt(month), 0, 23, 59, 59, 999);
+           where = {
+             status: 'approved',
+             startDate: Between(startOfMonth, endOfMonth)
+           };
+         }
+         
+         const approvedLeaves = await leaveRepo.find({
+           where,
+           order: { startDate: 'ASC' }
+         });
+         
+         const result = await Promise.all(approvedLeaves.map(async (leave) => {
+           let user = null;
+           let leaveTypeObj = null;
+           
+           // Find user information
+           if (leave.Repid) {
+             user = await userRepo.findOneBy({ id: leave.Repid });
+             if (!user) {
+               // Try admin
+               const admin = await adminRepo.findOneBy({ id: leave.Repid });
+               if (admin) {
+                 user = { 
+                   User_name: admin.admin_name, 
+                   department: admin.department, 
+                   position: admin.position 
+                 };
+               } else {
+                 // Try superadmin
+                 const superadmin = await superadminRepo.findOneBy({ id: leave.Repid });
+                 if (superadmin) {
+                   user = { 
+                     User_name: superadmin.superadmin_name, 
+                     department: superadmin.department, 
+                     position: superadmin.position 
+                   };
+                 }
+               }
+             } else {
+               user = { 
+                 User_name: user.User_name, 
+                 department: user.department, 
+                 position: user.position 
+               };
+             }
+           }
+           
+           // Get leave type information
+           if (leave.leaveType) {
+             leaveTypeObj = await leaveTypeRepo.findOneBy({ id: leave.leaveType });
+           }
+           
+           // Calculate duration
+           let duration = '';
+           let durationType = '';
+           if (leave.startTime && leave.endTime) {
+             // Calculate hours
+             const [sh, sm] = leave.startTime.split(':').map(Number);
+             const [eh, em] = leave.endTime.split(':').map(Number);
+             let start = sh + (sm || 0) / 60;
+             let end = eh + (em || 0) / 60;
+             let diff = end - start;
+             if (diff < 0) diff += 24; // Cross day
+             duration = diff.toFixed(2);
+             durationType = 'hour';
+           } else if (leave.startDate && leave.endDate) {
+             const start = new Date(leave.startDate);
+             const end = new Date(leave.endDate);
+             duration = Math.abs((end - start) / (1000*60*60*24)) + 1;
+             durationType = 'day';
+           }
+           
+           return {
+             id: leave.id,
+             userId: leave.Repid,
+             userName: user ? user.User_name : 'Unknown',
+             department: user ? user.department : '',
+             position: user ? user.position : '',
+             leaveType: leaveTypeObj ? leaveTypeObj.leave_type_th : leave.leaveType,
+             leaveTypeEn: leaveTypeObj ? leaveTypeObj.leave_type_en : leave.leaveType,
+             startDate: leave.startDate,
+             endDate: leave.endDate,
+             startTime: leave.startTime,
+             endTime: leave.endTime,
+             duration,
+             durationType,
+             reason: leave.reason,
+             status: leave.status,
+             createdAt: leave.createdAt
+           };
+         }));
+         
+         res.json({ 
+           status: 'success', 
+           data: result,
+           message: 'Calendar leave data fetched successfully'
+         });
+         
+       } catch (err) {
+         res.status(500).json({ 
+           status: 'error', 
+           message: err.message 
+         });
+       }
+     });
      return router;
    };

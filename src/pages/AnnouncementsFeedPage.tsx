@@ -13,6 +13,7 @@ import { th, enUS } from 'date-fns/locale';
 import axios from 'axios';
 import { Newspaper, User, Calendar, Image as ImageIcon, Settings, Plus, Upload, Image } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { getImageUrl, handleImageError } from '@/lib/utils';
 
 interface Announcement {
   subject: string;
@@ -358,7 +359,7 @@ const AnnouncementsFeedPage = () => {
                     <div className="flex items-start gap-4">
                       <Avatar className="h-16 w-16 border-3 border-blue-200 shadow-lg">
                         <AvatarImage 
-                          src={announcement.avatar ? `${API_BASE_URL}${announcement.avatar}` : '/placeholder-avatar.png'} 
+                                                     src={announcement.avatar ? getImageUrl(announcement.avatar, API_BASE_URL) : '/placeholder-avatar.png'} 
                           alt={announcement.createdBy}
                           className="object-cover"
                           onError={(e) => {
@@ -397,12 +398,10 @@ const AnnouncementsFeedPage = () => {
                       {announcement.Image && (
                         <div className="relative">
                           <img
-                            src={`${API_BASE_URL}${announcement.Image}`}
+                                                         src={getImageUrl(announcement.Image, API_BASE_URL)}
                             alt={announcement.subject}
                             className="w-full h-auto rounded-lg object-cover max-h-96 shadow-md"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none';
-                            }}
+                            onError={(e) => handleImageError(e, announcement.Image, API_BASE_URL)}
                           />
                         </div>
                       )}

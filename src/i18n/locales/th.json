@@ -222,6 +222,11 @@
     "backdatedNotice": "ใบลานี้เป็นการลาย้อนหลัง",
     "singleDay": "วันเดียว",
     "multipleDays": "หลายวัน",
+    "dateInformation": "ข้อมูลวันที่",
+    "statusAndApproval": "สถานะและการอนุมัติ",
+    "noDetailFound": "ไม่พบข้อมูลสำหรับคำขอลานี้",
+    "contactInformation": "ข้อมูลการติดต่อ",
+    "noReasonProvided": "ไม่มีเหตุผล",
     "submitted": "ส่งแล้ว",
     "approvedStatus": "อนุมัติแล้ว",
     "pendingStatus": "รอการอนุมัติ",
@@ -242,14 +247,19 @@
     "backdatedOnly": "เฉพาะย้อนหลัง",
     "notBackdatedOnly": "เฉพาะไม่ย้อนหลัง",
     "statusAll": "ทั้งหมด",
+    "view": "ดู",
+    "download": "ดาวน์โหลด",
+    "files": "ไฟล์",
     "leaveRequestForm": "แบบฟอร์มขอลา",
     "dateInformation":"ข้อมูลวันที่",
     "statusAndApproval":"สถานะและการอนุมัติ",
+
     "contactInformation":"ข้อมูลการติดต่อ",
     "day": "วัน",
     "days": "วัน",
     "hour": "ชั่วโมง",
     "hours": "ชั่วโมง"
+
   },
   "leaveTypes": {
     "all": "ทั้งหมด",
@@ -442,6 +452,8 @@
     "files": "ไฟล์",
     "activeFilters": "มีตัวกรองที่ใช้งานอยู่",
     "showingRetroactive": "แสดงเฉพาะการลาย้อนหลัง",
+    "showingNormal": "แสดงเฉพาะการลาปกติ",
+    "normalLeave": "การลาปกติ",
     "noLeaveHistory": "ไม่พบประวัติการลา",
     "noResultsForFilter": "ไม่พบผลลัพธ์สำหรับตัวกรองที่เลือก",
     "tryDifferentFilter": "ลองเปลี่ยนตัวกรองหรือล้างตัวกรองทั้งหมด",
@@ -628,6 +640,7 @@
     "viewDetail": "ดูรายละเอียด",
     "detail": "รายละเอียด",
     "createdBy": "ผู้ประกาศ",
+    "edit": "แก้ไข",
     "saving": "กำลังบันทึก...",
     "save": "บันทึก",
     "cancel": "ยกเลิก",
@@ -700,6 +713,7 @@
     "currentYear": "ปีปัจจุบัน",
     "annualHolidays": "วันหยุดประจำปี",
     "companyHolidays": "วันหยุดบริษัท",
+    "employeeLeaves": "การลาของพนักงาน",
     "loading": "กำลังโหลด...",
     "months": {
       "january": "มกราคม",
@@ -728,6 +742,7 @@
       "title": "คำอธิบาย",
       "annualHoliday": "วันหยุดประจำปี",
       "companyHoliday": "วันหยุดบริษัท",
+      "employeeLeave": "การลาของพนักงาน",
       "dualEvent": "กิจกรรมร่วม"
     }
   }

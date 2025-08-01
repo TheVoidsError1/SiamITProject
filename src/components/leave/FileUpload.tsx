@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Upload, X, Eye } from "lucide-react";
-import { ImagePreviewDialog } from "@/components/dialogs/ImagePreviewDialog";
+import ImagePreviewDialog from "@/components/dialogs/ImagePreviewDialog";
 
 interface FileUploadProps {
   attachments: File[];
@@ -106,10 +106,11 @@ export const FileUpload = ({
 
       {previewImage && (
         <ImagePreviewDialog
-          open={imageDialogOpen}
-          onOpenChange={setImageDialogOpen}
+          isOpen={imageDialogOpen}
+          onClose={() => setImageDialogOpen(false)}
           imageUrl={previewImage.url}
           imageName={previewImage.name}
+          title="รูปภาพแนบ"
         />
       )}
     </div>
