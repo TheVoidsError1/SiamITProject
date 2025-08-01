@@ -275,8 +275,8 @@ const SuperAdminList: React.FC = () => {
   const currentConfig = getTabConfig(activeTab);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-white flex flex-col animate-fade-in">
-      {/* Enhanced Hero Section */}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-white">
+      {/* Enhanced Hero Section with Wave */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 z-0">
           <svg viewBox="0 0 1440 320" className="w-full h-32 md:h-48 animate-wave" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -312,9 +312,9 @@ const SuperAdminList: React.FC = () => {
         </div>
       </div>
       
-      <div className="w-full max-w-5xl mx-auto px-4 mt-0 animate-fade-in-up-slow flex-1">
+      <div className="w-full max-w-6xl mx-auto px-6 pb-8 animate-fade-in-up-slow">
         {/* Enhanced Role Selection Tabs */}
-        <div className="mb-10 animate-fade-in-up-delay-1">
+        <div className="mb-8 animate-fade-in-up-delay-1">
           <div className="bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl p-3 flex gap-3 border border-white/20">
             {(['employee', 'admin', 'superadmin'] as const).map((tab) => {
               const config = getTabConfig(tab);

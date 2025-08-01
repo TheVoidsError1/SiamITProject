@@ -30,6 +30,11 @@
     "newPassword": "New Password",
     "passwordMismatch": "Passwords do not match",
     "passwordTooShort": "Password must be at least 6 characters",
+    "passwordStrong": "Strong password",
+    "passwordMedium": "Medium strength password",
+    "passwordWeak": "Weak password",
+    "passwordsMatch": "Passwords match",
+    "passwordsDoNotMatch": "Passwords do not match",
     "checkEmailVerification": "You can now log in with this user.",
     "sessionExpired": "Session expired, please login again",
     "pleaseLoginAgain": "Please login again",
@@ -470,6 +475,11 @@
     "rejectConfirmTitle": "Confirm Rejection",
     "approveConfirmDesc": "Do you want to approve {{name}}'s leave request?",
     "rejectConfirmDesc": "Do you want to reject {name}'s leave request?"
+  },
+  "employee": {
+    "employee": "Employee",
+    "admin": "Admin",
+    "superadmin": "Super Admin"
   },
   "system": {
     "onlineLeaveSystem": "Online Leave System",
