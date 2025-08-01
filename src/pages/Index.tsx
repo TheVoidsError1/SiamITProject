@@ -415,7 +415,7 @@ const Index = () => {
           <div className="z-10 flex-1 space-y-2">
             <h2 className="text-2xl md:text-3xl font-extrabold mb-1 drop-shadow-lg animate-slide-in-left" style={{ color: '#2563eb' }}>{t('main.hello')} {loadingUserProfile ? t('common.loading') : (userProfile?.name || t('main.user'))}! 👋</h2>
             <p className="mb-3 text-base font-medium animate-slide-in-left delay-100" style={{ color: '#6366f1' }}>
-              {t('main.today')} {new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
+              {t('main.today')} {formatCurrentDate()}
             </p>
             <Link to="/leave-request">
               <Button 

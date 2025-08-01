@@ -258,7 +258,12 @@
     "ลาฉุกเฉิน": "Emergency Leave",
     "ลาพักผ่อน": "Annual Leave",
     "ลาอื่นๆ": "Other Leave",
-    "notSpecified": "Not specified"
+    "notSpecified": "Not specified",
+    "vacation": "Vacation Leave",
+    "sick": "Sick Leave",
+    "personal": "Personal Leave",
+    "emergency": "Emergency Leave",
+    "maternity": "Maternity Leave"
   },
   "months": {
     "all": "All",
@@ -437,7 +442,9 @@
     "tryDifferentFilter": "Try different filters or clear all filters",
     "loadingData": "Loading leave history data",
     "noLeaveHistoryDesc": "No leave history available in the system",
-    "pageInfo": "Page {{page}} of {{totalPages}}"
+    "pageInfo": "Page {{page}} of {{totalPages}}",
+    "leaveTime": "Leave Time",
+    "days": "Days"
   },
   "admin": {
     "pendingRequests": "Pending Requests",
@@ -479,7 +486,40 @@
     "approveConfirmTitle": "Confirm Approval",
     "rejectConfirmTitle": "Confirm Rejection",
     "approveConfirmDesc": "Do you want to approve {{name}}'s leave request?",
-    "rejectConfirmDesc": "Do you want to reject {name}'s leave request?"
+    "rejectConfirmDesc": "Do you want to reject {name}'s leave request?",
+    "rejectConfirmDescTh": "Do you want to reject {name}'s leave request?",
+    "createUserTitle": "Create User",
+    "createUserDesc": "Create a new user in the system",
+    "selectUserType": "Select user type to create",
+    "createEmployee": "Create Employee",
+    "createAdmin": "Create Admin",
+    "createSuperAdmin": "Create Super Admin",
+    "fillInfoToCreate": "Fill in information to create",
+    "inSystem": "New in system",
+    "enterFullName": "Enter full name",
+    "enterEmail": "Enter email",
+    "selectPosition": "Select position",
+    "selectDepartment": "Select department",
+    "passwordStrength": {
+      "weak": "Weak",
+      "medium": "Medium",
+      "strong": "Strong"
+    },
+    "passwordMatch": "Passwords match",
+    "passwordMismatch": "Passwords do not match",
+    "creatingUser": "Creating user...",
+    "userCreatedSuccess": "User created successfully!",
+    "userCreatedDesc": "User created successfully!",
+    "successfully": "Successfully",
+    "createUserError": "Error creating user",
+    "cannotCreateUser": "Cannot create user",
+    "serverConnectionError": "Cannot connect to server",
+    "pleaseFillFullName": "Please fill in full name",
+    "pleaseEnterEmail": "Please enter email",
+    "pleaseSelectDepartment": "Please select department",
+    "pleaseSelectPosition": "Please select position",
+    "passwordMinLength": "Password must be at least 6 characters",
+    "chooseUserType": "Select user type to create"
   },
   "system": {
     "onlineLeaveSystem": "Online Leave System",
@@ -698,5 +738,9 @@
       "employeeLeave": "Employee Leave",
       "dualEvent": "Dual Event"
     }
+  },
+  "footer": {
+    "systemName": "Siam IT Leave Management System",
+    "copyright": "© 2025 All rights reserved. Developed with ❤️ by Siam IT Team"
   }
 }
