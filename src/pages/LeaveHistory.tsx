@@ -291,33 +291,67 @@ const LeaveHistory = () => {
 
 
   const getTypeColor = (type: string) => {
-    const tVacation = t('leaveTypes.vacation');
-    const tSick = t('leaveTypes.sick');
-    const tPersonal = t('leaveTypes.personal');
-    const tEmergency = t('leaveTypes.emergency');
-    const typeLower = (type || '').toLowerCase();
-    if (type === tVacation || typeLower === 'vacation') return "text-blue-600";
-    if (type === tSick || typeLower === 'sick') return "text-red-600";
-    if (type === tPersonal || typeLower === 'personal') return "text-green-600";
-    if (type === tEmergency || typeLower === 'emergency') return "text-orange-500";
+    if (!type) return "text-gray-600";
+    
+    const typeLower = type.toLowerCase();
+    
+    // ตรวจสอบจาก backend data ก่อน
+    const found = leaveTypes.find(lt => lt.id === type || lt.leave_type === type);
+    if (found) {
+      const typeKey = found.leave_type?.toLowerCase() || found.id?.toLowerCase();
+      if (typeKey === 'vacation' || typeKey === 'ลาพักร้อน') return "text-blue-600";
+      if (typeKey === 'sick' || typeKey === 'ลาป่วย') return "text-red-600";
+      if (typeKey === 'personal' || typeKey === 'ลากิจ') return "text-green-600";
+      if (typeKey === 'emergency' || typeKey === 'ลาฉุกเฉิน') return "text-orange-500";
+      if (typeKey === 'maternity' || typeKey === 'ลาคลอด') return "text-purple-600";
+    }
+    
+    // fallback: ตรวจสอบจาก i18n translation
+    const tVacation = t('leaveTypes.Vacation');
+    const tSick = t('leaveTypes.Sick');
+    const tPersonal = t('leaveTypes.Personal');
+    const tEmergency = t('leaveTypes.Emergency');
+    const tMaternity = t('leaveTypes.Maternity');
+    
+    if (type === tVacation || typeLower === 'vacation' || type === 'ลาพักร้อน') return "text-blue-600";
+    if (type === tSick || typeLower === 'sick' || type === 'ลาป่วย') return "text-red-600";
+    if (type === tPersonal || typeLower === 'personal' || type === 'ลากิจ') return "text-green-600";
+    if (type === tEmergency || typeLower === 'emergency' || type === 'ลาฉุกเฉิน') return "text-orange-500";
+    if (type === tMaternity || typeLower === 'maternity' || type === 'ลาคลอด') return "text-purple-600";
+    
     return "text-gray-600";
   };
 
   // ฟังก์ชันแปลประเภทการลาให้ตรงกับภาษาที่เลือก
   const translateLeaveType = (type: string) => {
-    const typeLower = (type || '').toLowerCase();
-    // mapping: key = lower-case, value = i18n key
+    if (!type) return '';
+    
+    // ตรวจสอบว่ามีข้อมูลจาก backend หรือไม่
+    const found = leaveTypes.find(lt => lt.id === type || lt.leave_type === type);
+    if (found) {
+      return i18n.language.startsWith('th') ? found.leave_type_th : found.leave_type_en;
+    }
+    
+    // fallback: ใช้ i18n translation
+    const typeLower = type.toLowerCase();
     const typeMap: Record<string, string> = {
       'vacation': 'leaveTypes.Vacation',
       'sick': 'leaveTypes.Sick',
       'personal': 'leaveTypes.Personal',
       'emergency': 'leaveTypes.Emergency',
       'maternity': 'leaveTypes.Maternity',
+      'ลาพักร้อน': 'leaveTypes.Vacation',
+      'ลาป่วย': 'leaveTypes.Sick',
+      'ลากิจ': 'leaveTypes.Personal',
+      'ลาฉุกเฉิน': 'leaveTypes.Emergency',
+      'ลาคลอด': 'leaveTypes.Maternity',
     };
-    const i18nKey = typeMap[typeLower];
+    
+    const i18nKey = typeMap[typeLower] || typeMap[type];
     if (i18nKey) return t(i18nKey);
-    // fallback: try t(`leaveTypes.${typeLower}`) or raw type
-    return t(`leaveTypes.${typeLower}`, type);
+    
+    // fallback: try direct translation หรือ return type เดิม
+    return t(`leaveTypes.${type}`, type);
   };
 
   // ฟังก์ชันคำนวณชั่วโมงจากเวลาเริ่มและเวลาสิ้นสุด (string HH:mm)
@@ -370,11 +404,18 @@ const LeaveHistory = () => {
   const currentYear = new Date().getFullYear();
   const allYears = Array.from({ length: 10 }, (_, i) => currentYear - 5 + i);
 
-  // เพิ่มฟังก์ชันนี้ด้านบน component
+  // ฟังก์ชันสำหรับแสดงชื่อประเภทการลาจาก backend หรือ i18n
   const getLeaveTypeLabel = (typeId: string) => {
+    if (!typeId) return '';
+    
+    // ตรวจสอบว่ามีข้อมูลจาก backend หรือไม่
     const found = leaveTypes.find(lt => lt.id === typeId || lt.leave_type === typeId);
-    if (!found) return typeId;
-    return i18n.language.startsWith('th') ? found.leave_type_th : found.leave_type_en;
+    if (found) {
+      return i18n.language.startsWith('th') ? found.leave_type_th : found.leave_type_en;
+    }
+    
+    // fallback: ใช้ translateLeaveType function
+    return translateLeaveType(typeId);
   };
 
   return (
@@ -782,7 +823,7 @@ const LeaveHistory = () => {
                   <CardHeader className="pb-2 flex flex-col md:flex-row md:items-center md:justify-between gap-2">
                     <div className="flex items-center gap-4">
                       <div className={`text-xl font-bold ${getTypeColor(leave.leaveTypeName_th || leave.leaveTypeName_en || leave.type)}`}>
-                        {leave.leaveTypeName_th || leave.leaveTypeName_en || getLeaveTypeLabel(leave.type)}
+                        {getLeaveTypeLabel(leave.type) || leave.leaveTypeName_th || leave.leaveTypeName_en || translateLeaveType(leave.type)}
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {getStatusBadge(leave.status)}
@@ -826,11 +867,11 @@ const LeaveHistory = () => {
                           </div>
                         ) : (
                           // ถ้าไม่มีเวลา แสดงเป็นวัน
-                          <div className="flex items-center gap-2 text-base text-blue-900">
-                            <Clock className="w-5 h-5 text-blue-400" />
-                            <span className="font-medium">{t('leave.duration')}:</span>
-                            <span>{leave.days} {t('leave.days')}</span>
-                          </div>
+                                                      <div className="flex items-center gap-2 text-base text-blue-900">
+                              <Clock className="w-5 h-5 text-blue-400" />
+                              <span className="font-medium">{t('leave.duration')}:</span>
+                              <span>{leave.days} {t('history.days')}</span>
+                            </div>
                         )}
                         {isRetroactiveLeave(leave) && (
                           <div className="flex items-center gap-2 text-base text-purple-700">
@@ -1044,7 +1085,7 @@ const LeaveHistory = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className={`text-3xl font-bold ${getTypeColor(selectedLeave.leaveTypeName_th || selectedLeave.leaveTypeName_en || selectedLeave.type)}`}>
-                        {selectedLeave.leaveTypeName_th || selectedLeave.leaveTypeName_en || getLeaveTypeLabel(selectedLeave.type)}
+                        {getLeaveTypeLabel(selectedLeave.type) || selectedLeave.leaveTypeName_th || selectedLeave.leaveTypeName_en || translateLeaveType(selectedLeave.type)}
                       </div>
                     </div>
                     <div className="text-right">
@@ -1064,7 +1105,7 @@ const LeaveHistory = () => {
                   <CardHeader className="pb-3">
                     <div className="flex items-center gap-2">
                       <Calendar className="w-5 h-5 text-blue-600" />
-                      <h3 className="text-lg font-semibold">{t('leave.dateInformation')}</h3>
+                      <h3 className="text-lg font-semibold">{t('history.dateInformation')}</h3>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -1102,7 +1143,7 @@ const LeaveHistory = () => {
                           </div>
                         </div>
                         <div className="space-y-2">
-                          <Label className="text-sm font-medium text-gray-600">{t('leave.leaveTime')}</Label>
+                          <Label className="text-sm font-medium text-gray-600">{t('history.leaveTime')}</Label>
                           <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
                             <Clock className="w-4 h-4 text-blue-500" />
                             <span className="font-medium text-blue-900">
@@ -1113,15 +1154,15 @@ const LeaveHistory = () => {
                       </div>
                     ) : (
                       // ถ้าไม่มีเวลา แสดงเป็นวัน
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-600">{t('leave.duration')}</Label>
-                        <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
-                          <Clock className="w-4 h-4 text-green-500" />
-                          <span className="font-medium text-green-900">
-                            {selectedLeave.days || 1} {t('leave.days')}
-                          </span>
+                                              <div className="space-y-2">
+                          <Label className="text-sm font-medium text-gray-600">{t('leave.duration')}</Label>
+                          <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
+                            <Clock className="w-4 h-4 text-green-500" />
+                            <span className="font-medium text-green-900">
+                              {selectedLeave.days || 1} {t('history.days')}
+                            </span>
+                          </div>
                         </div>
-                      </div>
                     )}
                                             {isRetroactiveLeave(selectedLeave) && (
                       <div className="space-y-2">
@@ -1140,7 +1181,7 @@ const LeaveHistory = () => {
                   <CardHeader className="pb-3">
                     <div className="flex items-center gap-2">
                       <CheckCircle className="w-5 h-5 text-green-600" />
-                      <h3 className="text-lg font-semibold">{t('leave.statusAndApproval')}</h3>
+                      <h3 className="text-lg font-semibold">{t('history.statusAndApproval')}</h3>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -1196,7 +1237,7 @@ const LeaveHistory = () => {
                 <CardContent>
                   <div className="p-4 bg-orange-50 rounded-lg">
                     <p className="text-orange-900 leading-relaxed">
-                      {selectedLeave.reason || t('leave.noReasonProvided')}
+                      {selectedLeave.reason || t('history.noReasonProvided')}
                     </p>
                   </div>
                 </CardContent>
@@ -1208,7 +1249,7 @@ const LeaveHistory = () => {
                   <CardHeader className="pb-3">
                     <div className="flex items-center gap-2">
                       <User className="w-5 h-5 text-teal-600" />
-                      <h3 className="text-lg font-semibold">{t('leave.contactInformation')}</h3>
+                      <h3 className="text-lg font-semibold">{t('history.contactInformation')}</h3>
                     </div>
                   </CardHeader>
                   <CardContent>

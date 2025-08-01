@@ -1,14 +1,10 @@
-import React, { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { SidebarTrigger } from '@/components/ui/sidebar';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
-import { useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Eye, EyeOff, Mail, Lock, User, Building, Users, Shield, Crown, Plus, X, CheckCircle, AlertCircle, Info } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { AlertCircle, Building, CheckCircle, Crown, Eye, EyeOff, Info, Lock, Mail, Plus, Shield, User, Users } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const SuperAdminList: React.FC = () => {
@@ -130,7 +126,7 @@ const SuperAdminList: React.FC = () => {
     // Validation
     if (!form.full_name.trim()) {
       toast({
-        title: 'กรุณากรอกชื่อ-นามสกุล',
+        title: t('admin.pleaseFillFullName'),
         variant: 'destructive',
       });
       return;
@@ -138,7 +134,7 @@ const SuperAdminList: React.FC = () => {
     
     if (!form.email.trim()) {
       toast({
-        title: 'กรุณากรอกอีเมล',
+        title: t('admin.pleaseFillEmail'),
         variant: 'destructive',
       });
       return;
@@ -146,7 +142,7 @@ const SuperAdminList: React.FC = () => {
     
     if (!form.department) {
       toast({
-        title: 'กรุณาเลือกแผนก',
+        title: t('admin.pleaseSelectDepartment'),
         variant: 'destructive',
       });
       return;
@@ -154,7 +150,7 @@ const SuperAdminList: React.FC = () => {
     
     if (!form.position) {
       toast({
-        title: 'กรุณาเลือกตำแหน่ง',
+        title: t('admin.pleaseSelectPosition'),
         variant: 'destructive',
       });
       return;
@@ -162,7 +158,7 @@ const SuperAdminList: React.FC = () => {
     
     if (form.password.length < 6) {
       toast({
-        title: 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร',
+        title: t('admin.passwordMinLength'),
         variant: 'destructive',
       });
       return;
@@ -196,7 +192,7 @@ const SuperAdminList: React.FC = () => {
       const data = await res.json();
       if (res.ok && (data.success || data.token)) {
         toast({
-          title: 'สร้างผู้ใช้สำเร็จ!',
+          title: t('admin.userCreatedSuccess'),
           description: `สร้าง${getTabConfig(activeTab).title}ใหม่เรียบร้อยแล้ว`,
         });
         setForm({
@@ -211,15 +207,15 @@ const SuperAdminList: React.FC = () => {
         setPasswordStrength('weak');
       } else {
         toast({
-          title: 'เกิดข้อผิดพลาด',
-          description: data.message || 'ไม่สามารถสร้างผู้ใช้ได้',
+          title: t('admin.errorOccurred'),
+          description: data.message || t('admin.cannotCreateUser'),
           variant: 'destructive',
         });
       }
     } catch (err: any) {
       toast({
-        title: 'เกิดข้อผิดพลาด',
-        description: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้',
+        title: t('admin.errorOccurred'),
+        description: t('admin.cannotConnectToServer'),
         variant: 'destructive',
       });
     } finally {
@@ -307,7 +303,7 @@ const SuperAdminList: React.FC = () => {
           </p>
           <div className="flex items-center gap-2 text-blue-700/70 animate-fade-in-up-delay">
             <Info className="w-5 h-5" />
-            <span className="text-sm">เลือกประเภทผู้ใช้ที่ต้องการสร้าง</span>
+            <span className="text-sm">{t('admin.selectUserType')}</span>
           </div>
         </div>
       </div>
@@ -356,10 +352,10 @@ const SuperAdminList: React.FC = () => {
               <currentConfig.icon className="w-10 h-10 text-white" />
             </div>
             <h3 className={`text-3xl font-bold ${currentConfig.textColor} mb-3`}>
-              สร้าง{currentConfig.title}
+              {t('admin.createUserTitle')} {currentConfig.title}
             </h3>
             <p className="text-gray-600 text-lg max-w-md mx-auto">
-              กรอกข้อมูลเพื่อสร้าง{currentConfig.title}ใหม่ในระบบ
+              {t('admin.fillInfoToCreate')} {currentConfig.title} {t('admin.inSystem')}
             </p>
           </div>
 
@@ -376,7 +372,7 @@ const SuperAdminList: React.FC = () => {
                   <Input
                     id="full_name"
                     name="full_name"
-                    placeholder="กรอกชื่อ-นามสกุล"
+                    placeholder={t('admin.enterFullName')}
                     value={form.full_name}
                     onChange={handleChange}
                     className={`pl-6 py-4 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm`}
@@ -400,7 +396,7 @@ const SuperAdminList: React.FC = () => {
                     id="email"
                     name="email"
                     type="email"
-                    placeholder="กรอกอีเมล"
+                    placeholder={t('admin.enterEmail')}
                     value={form.email}
                     onChange={handleChange}
                     className={`pl-6 py-4 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm`}
@@ -421,7 +417,7 @@ const SuperAdminList: React.FC = () => {
                 </Label>
                 <Select value={form.position} onValueChange={value => setForm(f => ({ ...f, position: value }))}>
                   <SelectTrigger className={`rounded-xl shadow-sm text-lg transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm py-4`}>
-                    <SelectValue placeholder="เลือกตำแหน่ง" />
+                    <SelectValue placeholder={t('admin.selectPosition')} />
                   </SelectTrigger>
                   <SelectContent className="bg-white/95 backdrop-blur-md border-2 border-gray-200 rounded-xl">
                     {positions.map((pos) => (
@@ -442,7 +438,7 @@ const SuperAdminList: React.FC = () => {
                 </Label>
                 <Select value={form.department} onValueChange={value => setForm(f => ({ ...f, department: value }))}>
                   <SelectTrigger className={`rounded-xl shadow-sm text-lg transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm py-4`}>
-                    <SelectValue placeholder="เลือกแผนก" />
+                    <SelectValue placeholder={t('admin.selectDepartment')} />
                   </SelectTrigger>
                   <SelectContent className="bg-white/95 backdrop-blur-md border-2 border-gray-200 rounded-xl">
                     {departments.map((dep) => (
@@ -487,7 +483,7 @@ const SuperAdminList: React.FC = () => {
                 {form.password && (
                   <div className="flex items-center gap-2 text-sm">
                     <span className={getPasswordStrengthColor()}>
-                      {getPasswordStrengthText()}
+                      {t(`admin.passwordStrength.${passwordStrength}`)}
                     </span>
                     <div className="flex gap-1">
                       {[1, 2, 3].map((level) => (
@@ -541,12 +537,12 @@ const SuperAdminList: React.FC = () => {
                     {form.password === form.confirmPassword ? (
                       <>
                         <CheckCircle className="w-4 h-4 text-green-500" />
-                        <span className="text-green-600">รหัสผ่านตรงกัน</span>
+                        <span className="text-green-600">{t('admin.passwordMatch')}</span>
                       </>
                     ) : (
                       <>
                         <AlertCircle className="w-4 h-4 text-red-500" />
-                        <span className="text-red-600">รหัสผ่านไม่ตรงกัน</span>
+                        <span className="text-red-600">{t('admin.passwordMismatch')}</span>
                       </>
                     )}
                   </div>
@@ -564,14 +560,14 @@ const SuperAdminList: React.FC = () => {
                 {loading ? (
                   <div className="flex items-center justify-center">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-4"></div>
-                    <span>กำลังสร้างผู้ใช้...</span>
+                    <span>{t('admin.creatingUser')}</span>
                   </div>
                 ) : (
                   <>
                     <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                     <span className="flex items-center justify-center gap-3 relative z-10">
                       <Plus className="w-6 h-6" />
-                      สร้าง{currentConfig.title}
+                      {t('admin.createUser')}
                     </span>
                   </>
                 )}
@@ -590,11 +586,11 @@ const SuperAdminList: React.FC = () => {
             className="w-12 h-12 rounded-full hover:scale-110 transition-all duration-300" 
           />
           <span className="text-lg font-semibold text-gray-700">
-            Siam IT Leave Management System
+            {t('footer.systemName')}
           </span>
         </div>
         <span className="transition-all duration-300 hover:text-indigo-600 text-sm">
-          &copy; {new Date().getFullYear()} All rights reserved. Developed with ❤️ by Siam IT Team
+          {t('footer.copyright')}
         </span>
       </footer>
       

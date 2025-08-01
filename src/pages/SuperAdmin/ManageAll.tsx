@@ -779,7 +779,8 @@ const ManageAll: React.FC = () => {
       {/* Footer */}
       <footer className="w-full mt-16 py-8 bg-gradient-to-r from-blue-100 via-indigo-50 to-white text-center text-gray-400 text-base font-medium shadow-inner flex flex-col items-center gap-2">
         <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-10 h-10 rounded-full mx-auto mb-1" />
-        &copy; {new Date().getFullYear()} Siam IT Leave Management System
+        <div className="font-bold text-gray-600">{t('footer.systemName')}</div>
+        <div className="text-sm">{t('footer.copyright')}</div>
       </footer>
     </div>
   );
