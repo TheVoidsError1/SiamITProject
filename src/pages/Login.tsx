@@ -64,7 +64,7 @@ const Login = () => {
       <div className="absolute top-4 right-4 z-10">
         <LanguageSwitcher />
       </div>
-      <div className="w-full max-w-4xl grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in z-10">
+      <div className="w-full max-w-2xl grid grid-cols-1 gap-8 animate-fade-in z-10">
         {/* Login Form */}
         <div className="space-y-8 flex flex-col justify-center animate-fade-in-up">
           <div className="text-center">
@@ -163,17 +163,7 @@ const Login = () => {
           </Card>
         </div>
 
-        {/* Demo Credentials */}
-        <div className="lg:mt-24 animate-fade-in-up">
-          <Card className="shadow-2xl border-0 glass-card-login animate-pop-in">
-            <CardHeader>
-              <CardTitle className="text-center text-blue-700">{t('auth.demoCredentials')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {/* Demo Credentials */}
-            </CardContent>
-          </Card>
-        </div>
+
       </div>
       <style>{`
         .glass-card-login {
