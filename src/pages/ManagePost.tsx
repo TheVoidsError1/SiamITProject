@@ -40,6 +40,9 @@ export default function ManagePost() {
   // State สำหรับ Image Preview แบบ LeaveHistory
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showImagePreview, setShowImagePreview] = useState(false);
+  const [previewImageOpen, setPreviewImageOpen] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string>('');
+  const [previewImageName, setPreviewImageName] = useState<string>('');
 
 
   // โหลดข่าวสารจาก backend
@@ -221,8 +224,9 @@ export default function ManagePost() {
   // ฟังก์ชันสำหรับเปิด Image Preview Dialog
   const openImagePreview = (imageName: string) => {
     const imageUrl = getImageUrl(imageName, API_BASE_URL);
-    setSelectedImage(imageUrl);
-    setShowImagePreview(true);
+    setPreviewImageUrl(imageUrl);
+    setPreviewImageName(imageName);
+    setPreviewImageOpen(true);
   };
 
 
@@ -343,7 +347,7 @@ export default function ManagePost() {
                             <img
                               src={imagePreview}
                               alt="Preview"
-                              className="w-full max-h-48 object-cover rounded-lg border border-gray-200"
+                              className="w-full max-h-48 object-contain rounded-lg border border-gray-200 bg-gray-50"
                             />
                             <button
                               type="button"
@@ -444,7 +448,7 @@ export default function ManagePost() {
                           <img
                             src={imagePreview}
                             alt="Preview"
-                            className="w-full max-h-48 object-cover rounded-lg border border-gray-200"
+                            className="w-full max-h-48 object-contain rounded-lg border border-gray-200 bg-gray-50"
                           />
                           <button
                             type="button"
@@ -686,7 +690,7 @@ export default function ManagePost() {
                                               <img
                                                 src={getImageUrl(news.Image, API_BASE_URL)}
                                                 alt="News Image"
-                                                className="w-full h-32 object-cover rounded-lg border transition-all duration-300 group-hover:scale-105"
+                                                className="w-full h-32 object-contain rounded-lg border transition-all duration-300 group-hover:scale-105 bg-gray-50"
                                                 onError={(e) => handleImageError(e, news.Image, API_BASE_URL)}
                                               />
                                               <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 rounded-lg flex items-center justify-center">
@@ -709,14 +713,6 @@ export default function ManagePost() {
                                                 })()}
                                               </span>
                                               <div className="flex gap-1">
-                                                <Button 
-                                                  size="sm" 
-                                                  variant="outline"
-                                                  onClick={() => openImagePreview(news.Image)}
-                                                  className="text-xs px-2 py-1"
-                                                >
-                                                  {t('common.view')}
-                                                </Button>
                                                 <Button 
                                                   size="sm" 
                                                   variant="outline"
@@ -753,7 +749,7 @@ export default function ManagePost() {
                                                       <img 
                                                         src={getImageUrl(fileName, API_BASE_URL)} 
                                                         alt={fileName}
-                                                        className="w-full h-32 object-cover rounded-lg border transition-all duration-300 group-hover:scale-105"
+                                                        className="w-full h-32 object-contain rounded-lg border transition-all duration-300 group-hover:scale-105 bg-gray-50"
                                                         onError={(e) => handleImageError(e, fileName, API_BASE_URL)}
                                                       />
                                                       <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 rounded-lg flex items-center justify-center">
@@ -862,25 +858,26 @@ export default function ManagePost() {
       </footer>
 
       {/* Image Preview Dialog */}
-      <Dialog open={showImagePreview} onOpenChange={setShowImagePreview}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0 bg-black/95">
-          <DialogHeader className="absolute top-4 right-4 z-10">
+      <Dialog open={previewImageOpen} onOpenChange={setPreviewImageOpen}>
+        <DialogContent className="w-screen h-screen max-w-none max-h-none p-0 bg-black/40 backdrop-blur-sm border-0">
+          <div className="absolute top-4 right-4 z-50">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowImagePreview(false)}
+              onClick={() => setPreviewImageOpen(false)}
               className="bg-white/20 text-white border-white/30 hover:bg-white/30"
             >
               <X className="w-4 h-4" />
             </Button>
-          </DialogHeader>
+          </div>
           
-          {selectedImage && (
+          {previewImageUrl && (
             <div className="flex items-center justify-center h-full p-4">
               <img 
-                src={selectedImage} 
-                alt="Preview"
-                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                src={previewImageUrl} 
+                alt={previewImageName}
+                style={{ maxWidth: '100vw', maxHeight: '100vh' }}
+                className="object-contain rounded-lg shadow-2xl"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.style.display = 'none';
