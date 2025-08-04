@@ -1,11 +1,22 @@
 const line = require('@line/bot-sdk');
 const axios = require('axios');
-const LineLinkingController = require('./LineLinkingController');
 
 // LINE Bot configuration using environment variables
 const config = {
   channelAccessToken: process.env.LINE_BOT_CHANNEL_ACCESS_TOKEN,
   channelSecret: process.env.LINE_BOT_CHANNEL_SECRET
+};
+
+// Debug: Log LINE Bot configuration (without exposing sensitive data)
+console.log('LINE Bot Configuration Debug:');
+console.log('Channel Access Token exists:', !!process.env.LINE_BOT_CHANNEL_ACCESS_TOKEN);
+console.log('Channel Secret exists:', !!process.env.LINE_BOT_CHANNEL_SECRET);
+console.log('Channel Access Token length:', process.env.LINE_BOT_CHANNEL_ACCESS_TOKEN ? process.env.LINE_BOT_CHANNEL_ACCESS_TOKEN.length : 0);
+console.log('Channel Secret length:', process.env.LINE_BOT_CHANNEL_SECRET ? process.env.LINE_BOT_CHANNEL_SECRET.length : 0);
+
+// Helper function to get API base URL
+const getApiBaseUrl = () => {
+  return process.env.VITE_API_BASE_URL || 'http://localhost:3001';
 };
 
 const client = new line.Client(config);
@@ -61,7 +72,8 @@ class LineController {
     
     if (!publicCommands.includes(command)) {
       // Check if user is linked
-      const user = await LineLinkingController.getUserByLineId(global.AppDataSource, userId);
+      const processRepo = global.AppDataSource.getRepository('ProcessCheck');
+      const user = await processRepo.findOneBy({ lineUserId: userId });
       
       if (!user) {
         return {
@@ -76,16 +88,16 @@ class LineController {
         return this.getHelpMessage();
 
       case 'status':
-        return await this.getLeaveStatus(userId);
+        return await this.getLeaveStatus(user);
 
       case 'balance':
-        return await this.getLeaveBalance(userId);
+        return await this.getLeaveBalance(user);
 
       case 'history':
-        return await this.getLeaveHistory(userId);
+        return await this.getLeaveHistory(user);
 
       case 'profile':
-        return await this.getUserProfile(userId);
+        return await this.getUserProfile(user);
 
       case 'announcements':
         return await this.getAnnouncements();
@@ -99,9 +111,9 @@ class LineController {
   }
 
   // Get leave status from API and format for LINE
-  static async getLeaveStatus(userId) {
+  static async getLeaveStatus(user) {
     try {
-      const response = await axios.get(`http://localhost:3001/api/leave-history/${userId}`);
+      const response = await axios.get(`${getApiBaseUrl()}/api/leave-history/${user.Repid}`);
       
       if (response.data.success) {
         const leaves = response.data.data;
@@ -131,9 +143,9 @@ class LineController {
   }
 
   // Get leave balance from API and format for LINE
-  static async getLeaveBalance(userId) {
+  static async getLeaveBalance(user) {
     try {
-      const response = await axios.get(`http://localhost:3001/api/leave-quota/${userId}`);
+      const response = await axios.get(`${getApiBaseUrl()}/api/leave-quota/${user.Repid}`);
       
       if (response.data.success) {
         const quotas = response.data.data;
@@ -158,9 +170,9 @@ class LineController {
   }
 
   // Get leave history from API and format for LINE
-  static async getLeaveHistory(userId) {
+  static async getLeaveHistory(user) {
     try {
-      const response = await axios.get(`http://localhost:3001/api/leave-history/${userId}`);
+      const response = await axios.get(`${getApiBaseUrl()}/api/leave-history/${user.Repid}`);
       
       if (response.data.success) {
         const leaves = response.data.data;
@@ -191,9 +203,9 @@ class LineController {
   }
 
   // Get user profile from API and format for LINE
-  static async getUserProfile(userId) {
+  static async getUserProfile(user) {
     try {
-      const response = await axios.get(`http://localhost:3001/api/profile/${userId}`);
+      const response = await axios.get(`${getApiBaseUrl()}/api/profile/${user.Repid}`);
       
       if (response.data.success) {
         const profile = response.data.data;
@@ -218,7 +230,7 @@ class LineController {
   // Get announcements from API and format for LINE
   static async getAnnouncements() {
     try {
-      const response = await axios.get('http://localhost:3001/api/announcements');
+      const response = await axios.get(`${getApiBaseUrl()}/api/announcements`);
       
       console.log('Announcements API response:', response.data);
       
@@ -295,13 +307,53 @@ You'll receive LINE notifications when your request is approved/rejected!`
   // Send notification to specific user (for other parts of your app to use)
   static async sendNotification(userId, message) {
     try {
+      console.log('=== LINE Notification Debug ===');
+      console.log('Attempting to send LINE notification to:', userId);
+      console.log('User ID type:', typeof userId);
+      console.log('User ID length:', userId ? userId.length : 0);
+      console.log('Message preview:', message.substring(0, 100) + '...');
+      console.log('LINE Bot config check:');
+      console.log('- Channel Access Token exists:', !!process.env.LINE_BOT_CHANNEL_ACCESS_TOKEN);
+      console.log('- Channel Secret exists:', !!process.env.LINE_BOT_CHANNEL_SECRET);
+      console.log('==============================');
+      
       await client.pushMessage(userId, {
         type: 'text',
         text: message
       });
+      
+      console.log('LINE notification sent successfully');
       return { success: true };
     } catch (error) {
+      console.error('=== LINE Notification Error ===');
       console.error('Error sending LINE notification:', error);
+      console.error('Error details:', {
+        userId: userId,
+        userIdType: typeof userId,
+        messageLength: message.length,
+        errorCode: error.statusCode,
+        errorMessage: error.message,
+        errorStack: error.stack
+      });
+      
+      // Check if it's a permission issue
+      if (error.statusCode === 403) {
+        return { 
+          success: false, 
+          error: 'User has not added the bot as a friend or blocked the bot',
+          details: error.message 
+        };
+      }
+      
+      // Check if it's a user not found issue
+      if (error.statusCode === 400) {
+        return { 
+          success: false, 
+          error: 'Invalid user ID or user not found',
+          details: error.message 
+        };
+      }
+      
       return { success: false, error: error.message };
     }
   }

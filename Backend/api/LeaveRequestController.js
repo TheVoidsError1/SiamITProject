@@ -5,6 +5,7 @@
    const fs = require('fs');
    const jwt = require('jsonwebtoken');
    const SECRET = process.env.JWT_SECRET || 'your-secret-key';
+   const LineController = require('./LineController');
 
    // ตั้งค่าที่เก็บไฟล์
    const storage = multer.diskStorage({
@@ -37,6 +38,96 @@
      // dateStr: 'YYYY-MM-DD'
      const [year, month, day] = dateStr.split('-').map(Number);
      return new Date(year, month - 1, day);
+   }
+
+     // Function to send LINE notification when leave request status changes
+  async function sendLineNotification(leave, status, approverName, rejectedReason) {
+    try {
+      // Get the user's LINE user ID from ProcessCheck table
+      const processRepo = AppDataSource.getRepository('ProcessCheck');
+      const processCheck = await processRepo.findOneBy({ Repid: leave.Repid });
+      
+      console.log('=== LINE Notification Database Debug ===');
+      console.log('Leave Repid:', leave.Repid);
+      console.log('ProcessCheck found:', !!processCheck);
+      if (processCheck) {
+        console.log('ProcessCheck lineUserId:', processCheck.lineUserId);
+        console.log('ProcessCheck lineUserId type:', typeof processCheck.lineUserId);
+        console.log('ProcessCheck lineUserId length:', processCheck.lineUserId ? processCheck.lineUserId.length : 0);
+      }
+      console.log('========================================');
+      
+      if (!processCheck || !processCheck.lineUserId) {
+        console.log('User not linked to LINE or not found:', leave.Repid);
+        return; // User not linked to LINE
+      }
+
+      // Get the leave type name from the database
+      const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+      const leaveTypeData = await leaveTypeRepo.findOneBy({ id: leave.leaveType });
+      const leaveTypeName = leaveTypeData ? leaveTypeData.leave_type_th : 'ไม่ระบุประเภท';
+
+      // Format the notification message (Thai and English)
+      let message = '';
+      const startDate = new Date(leave.startDate).toLocaleDateString('th-TH');
+      const endDate = new Date(leave.endDate).toLocaleDateString('th-TH');
+      const currentTime = new Date().toLocaleString('th-TH');
+       
+       if (status === 'approved') {
+         message = `✅ คำขอการลาของคุณได้รับการอนุมัติแล้ว!\n\n` +
+                   `📋 ประเภทการลา: ${leaveTypeName}\n` +
+                   `📅 วันที่: ${startDate} - ${endDate}\n` +
+                   `👤 ผู้อนุมัติ: ${approverName}\n` +
+                   `⏰ เวลาที่อนุมัติ: ${currentTime}\n\n` +
+                   `ขอบคุณที่ใช้ระบบจัดการการลาของเรา!\n\n` +
+                   `---\n` +
+                   `✅ Your leave request has been approved!\n\n` +
+                   `📋 Leave Type: ${leaveTypeName}\n` +
+                   `📅 Date: ${startDate} - ${endDate}\n` +
+                   `👤 Approved by: ${approverName}\n` +
+                   `⏰ Approved at: ${currentTime}\n\n` +
+                   `Thank you for using our leave management system!`;
+       } else if (status === 'rejected') {
+         message = `❌ คำขอการลาของคุณไม่ได้รับการอนุมัติ\n\n` +
+                   `📋 ประเภทการลา: ${leaveTypeName}\n` +
+                   `📅 วันที่: ${startDate} - ${endDate}\n` +
+                   `👤 ผู้อนุมัติ: ${approverName}\n` +
+                   `⏰ เวลาที่ปฏิเสธ: ${currentTime}`;
+         
+         if (rejectedReason) {
+           message += `\n📝 เหตุผล: ${rejectedReason}`;
+         }
+         
+         message += `\n\nหากมีข้อสงสัย กรุณาติดต่อผู้ดูแลระบบ\n\n` +
+                   `---\n` +
+                   `❌ Your leave request has been rejected\n\n` +
+                   `📋 Leave Type: ${leaveTypeName}\n` +
+                   `📅 Date: ${startDate} - ${endDate}\n` +
+                   `👤 Rejected by: ${approverName}\n` +
+                   `⏰ Rejected at: ${currentTime}`;
+         
+         if (rejectedReason) {
+           message += `\n📝 Reason: ${rejectedReason}`;
+         }
+         
+         message += `\n\nIf you have any questions, please contact the administrator.`;
+       }
+
+       // Send the notification via LINE
+       const notificationResult = await LineController.sendNotification(processCheck.lineUserId, message);
+       
+       if (notificationResult.success) {
+         console.log('LINE notification sent successfully to:', processCheck.lineUserId);
+       } else {
+         console.error('Failed to send LINE notification:', notificationResult.error);
+         console.log('LINE user ID:', processCheck.lineUserId);
+         console.log('Message length:', message.length);
+       }
+       
+     } catch (error) {
+       console.error('Error sending LINE notification:', error);
+       throw error;
+     }
    }
 
    module.exports = (AppDataSource) => {
@@ -1166,6 +1257,14 @@
            if (rejectedReason) leave.rejectedReason = rejectedReason;
          }
          await leaveRepo.save(leave);
+
+         // Send LINE notification to the user
+         try {
+           await sendLineNotification(leave, status, approverName, rejectedReason);
+         } catch (notificationError) {
+           console.error('Failed to send LINE notification:', notificationError);
+           // Don't fail the request if notification fails
+         }
 
          res.json({ success: true, data: leave });
        } catch (err) {
