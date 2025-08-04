@@ -1167,6 +1167,26 @@
          }
          await leaveRepo.save(leave);
 
+         // Emit Socket.io event for real-time notification
+         if (global.io) {
+           // Emit to specific user room
+           global.io.to(`user_${leave.Repid}`).emit('leaveRequestUpdated', {
+             requestId: leave.id,
+             status: leave.status,
+             statusBy: leave.statusBy,
+             employeeId: leave.Repid,
+             message: status === 'approved' ? 'คำขอลาของคุณได้รับการอนุมัติ' : 'คำขอลาของคุณถูกปฏิเสธ'
+           });
+
+           // Emit to admin room for dashboard updates
+           global.io.to('admin_room').emit('leaveRequestStatusChanged', {
+             requestId: leave.id,
+             status: leave.status,
+             employeeId: leave.Repid,
+             statusBy: leave.statusBy
+           });
+         }
+
          res.json({ success: true, data: leave });
        } catch (err) {
          res.status(500).json({ success: false, message: err.message });

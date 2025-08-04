@@ -10,10 +10,58 @@ const cors = require('cors');
 const path = require('path');
 const leaveQuota = require('./EnityTable/leaveQuota.js');
 const fs = require('fs');
+const { createServer } = require('http');
+const { Server } = require('socket.io');
 
 
 const app = express();
 const port = 3001;
+
+// Create HTTP server for Socket.io
+const server = createServer(app);
+
+// Initialize Socket.io
+const io = new Server(server, {
+  cors: {
+    origin: [
+      'http://localhost:8081',
+      'http://192.168.50.64:8081',
+      'http://192.168.50.125:8081',
+      'http://192.168.50.90:8081',
+      'http://192.168.50.54:8081',
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:8080',
+      'http://localhost:8001'
+    ],
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
+
+// Socket.io connection handling
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+  
+  // Join user to their personal room
+  socket.on('joinRoom', (userId) => {
+    socket.join(`user_${userId}`);
+    console.log(`User ${userId} joined room: user_${userId}`);
+  });
+  
+  // Handle admin joining admin room
+  socket.on('joinAdminRoom', () => {
+    socket.join('admin_room');
+    console.log('Admin joined admin room');
+  });
+  
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+});
+
+// Make io available globally
+global.io = io;
 
 // TypeORM DataSource config
 const AppDataSource = new DataSource({
@@ -232,6 +280,7 @@ app.use('/api', announcementsController);
 const customHolidayController = require('./api/CustomHolidayController')(AppDataSource);
 app.use('/api', customHolidayController);
 
-app.listen(port, '0.0.0.0', () => {
+server.listen(port, '0.0.0.0', () => {
   console.log(`Server is running on http://localhost:${port}`);
+  console.log('Socket.io server is ready');
 }); 
