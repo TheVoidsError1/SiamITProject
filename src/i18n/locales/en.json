@@ -88,6 +88,7 @@
     "disabled": "Disabled",
     "user": "User",
     "back": "Back",
+    "goBack": "Go Back",
     "actions": "Actions",
     "viewDetails": "See Details",
     "hours": "hours",
@@ -203,7 +204,7 @@
     "durationHour": "hour",
     "pleaseSelectAtLeastOne": "Please select at least one option",
     "noHistoryForPeriod": "No leave history for this period.",
-    "allTypes": "All",
+    "allTypes": "All Leave Types",
     "invalidPhone": "Please enter a valid phone number, e.g. 0912456147",
     "invalidEmail": "Please enter a valid email address, e.g. example@email.com",
     "durationType": "Duration Type",
@@ -252,7 +253,7 @@
     "contactInformation": "Contact Information"
   },
   "leaveTypes": {
-    "all": "All",
+    "all": "All Types",
     "Emergency": "Emergency Leave",
     "Vacation": "Vacation Leave",
     "Sick": "Sick Leave",
@@ -388,6 +389,7 @@
   "history": {
     "leaveHistoryTitle": "View your leave history",
     "totalLeaveDays": "Total Leave Days",
+    "totalLeaveHours": "Total Leave Hours",
     "approvedRequests": "Approved Requests",
     "pendingRequests": "Pending Requests",
     "pendingApproval": "Pending",
@@ -560,7 +562,9 @@
     "superadmin": "Superadmin",
     "notSpecified": "Not specified",
     "noEmployeesFound": "No employees found",
-    "noEmployeesFoundDesc": "No employees match the selected filter criteria. Please try changing the criteria or reset the filter"
+    "noEmployeesFoundDesc": "No employees match the selected filter criteria. Please try changing the criteria or reset the filter",
+    "confirmDelete": "Confirm Delete",
+    "confirmDeleteNewsDesc": "Are you sure you want to delete this news?"
   },
   "error": {
     "apiConnectionError": "API Connection Error",
@@ -663,7 +667,11 @@
     "publishedOn": "Published on",
     "newsType": "News type",
     "companyNews": "Company News",
-    "newsTypeDesc": "Important company news and announcements"
+    "newsTypeDesc": "Important company news and announcements",
+    "noDetailProvided": "No details provided",
+    "editNews": "Edit News",
+    "saveChanges": "Save Changes",
+    "editNewsError": "Failed to edit news"
   },
   "announcementsFeed": {
     "title": "Announcements Feed",

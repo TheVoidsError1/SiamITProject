@@ -1,3 +1,4 @@
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -12,11 +13,29 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
+// ฟังก์ชันสำหรับจัดการวันที่ให้รองรับ i18n
+const formatDate = (date: Date, locale: string, format: 'short' | 'long' = 'short') => {
+  const options: Intl.DateTimeFormatOptions = {
+    year: 'numeric',
+    day: 'numeric',
+    month: format === 'short' ? 'short' : 'long'
+  };
+  
+  return date.toLocaleDateString(locale, options);
+};
+
+const formatTime = (date: Date, locale: string) => {
+  return date.toLocaleTimeString(locale, {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function ManagePost() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
@@ -43,6 +62,10 @@ export default function ManagePost() {
   const [previewImageOpen, setPreviewImageOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string>('');
   const [previewImageName, setPreviewImageName] = useState<string>('');
+  
+  // State สำหรับจัดการการลบข่าวสาร
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null); 
+  const [deleting, setDeleting] = useState(false);
 
 
   // โหลดข่าวสารจาก backend
@@ -139,27 +162,31 @@ export default function ManagePost() {
     }
   };
 
-  // ลบข่าวสาร
-  const handleDeleteNews = async (id: string) => {
-    if (!window.confirm('ยืนยันการลบข่าวสารนี้?')) return;
-    setLoading(true);
+  // ฟังก์ชันลบข่าวสาร - จัดการการลบข่าวสารพร้อม Dialog ยืนยัน
+  const handleDeleteNews = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     setError('');
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`${API_BASE_URL}/api/announcements/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/announcements/${deleteTarget.id}`, {
         method: 'DELETE',
         headers: { Authorization: token ? `Bearer ${token}` : undefined },
       });
       const data = await res.json();
       if (data.status === 'success') {
-        fetchNews();
+        // ลบข่าวสารออกจากรายการและแสดงข้อความสำเร็จ
+        setNewsList(prev => prev.filter(news => news.id !== deleteTarget.id));
+        setDeleteTarget(null);
+        // แสดง toast หรือข้อความสำเร็จ
+        console.log('ลบข่าวสารสำเร็จ');
       } else {
         setError(data.message || 'ลบข่าวสารไม่สำเร็จ');
       }
     } catch (err) {
       setError('ลบข่าวสารไม่สำเร็จ');
     } finally {
-      setLoading(false);
+      setDeleting(false);
     }
   };
 
@@ -210,10 +237,10 @@ export default function ManagePost() {
         setImagePreview(null);
         fetchNews();
       } else {
-        setError(data.message || 'แก้ไขข่าวสารไม่สำเร็จ');
+        setError(data.message || t('companyNews.editNewsError'));
       }
     } catch (err) {
-      setError('แก้ไขข่าวสารไม่สำเร็จ');
+      setError(t('companyNews.editNewsError'));
     } finally {
       setLoading(false);
     }
@@ -254,7 +281,7 @@ export default function ManagePost() {
               className="flex items-center gap-2 px-4 py-2 bg-white/90 hover:bg-white text-blue-700 font-semibold rounded-xl shadow-lg transition-all duration-200 backdrop-blur-sm border border-blue-200 hover:border-blue-300"
             >
               <ArrowLeft className="w-5 h-5" />
-              ย้อนกลับ
+              {t('common.goBack')}
             </button>
           </div>
         </div>
@@ -391,7 +418,7 @@ export default function ManagePost() {
                 <DialogHeader>
                   <DialogTitle className="text-2xl font-bold text-blue-900 mb-2 flex items-center gap-2">
                     <Edit className="w-6 h-6 text-blue-600" />
-                    แก้ไขข่าวสาร
+                    {t('companyNews.editNews')}
                   </DialogTitle>
                 </DialogHeader>
                 <form className="space-y-4 mt-2" onSubmit={handleUpdateNews}>
@@ -477,7 +504,7 @@ export default function ManagePost() {
                       className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold"
                       disabled={loading}
                     >
-                      {loading ? 'กำลังบันทึก...' : 'บันทึกการแก้ไข'}
+                      {loading ? t('companyNews.saving') : t('companyNews.saveChanges')}
                     </button>
                   </div>
                   {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
@@ -526,14 +553,34 @@ export default function ManagePost() {
                     )}
                     {isAdmin && (
                       <TableCell className="p-4 text-center">
-                        <button
-                          className="p-2 rounded-full bg-red-100 hover:bg-red-200 text-red-600 shadow transition"
-                          onClick={() => handleDeleteNews(news.id)}
-                          aria-label={t('companyNews.delete')}
-                          disabled={loading}
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
+                        {/* ปุ่มลบข่าวสาร - เปิด Dialog ยืนยันการลบ */}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <button
+                              className="p-2 rounded-full bg-red-100 hover:bg-red-200 text-red-600 shadow transition"
+                              onClick={() => setDeleteTarget(news)}
+                              aria-label={t('companyNews.delete')}
+                              disabled={loading}
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </AlertDialogTrigger>
+                                                     <AlertDialogContent>
+                             <AlertDialogHeader>
+                               <AlertDialogTitle>{t('system.confirmDelete')}</AlertDialogTitle>
+                               <AlertDialogDescription>
+                                 {t('system.confirmDeleteNewsDesc')}
+                               </AlertDialogDescription>
+                             </AlertDialogHeader>
+                             <AlertDialogFooter>
+                               <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                               {/* ปุ่มยืนยันการลบใน Dialog */}
+                               <AlertDialogAction onClick={handleDeleteNews} disabled={deleting} className="bg-gradient-to-r from-red-500 to-pink-400 text-white">
+                                 {deleting ? t('common.loading') : t('common.delete')}
+                               </AlertDialogAction>
+                             </AlertDialogFooter>
+                           </AlertDialogContent>
+                        </AlertDialog>
                       </TableCell>
                     )}
                     <TableCell className="p-4 text-center">
@@ -576,11 +623,7 @@ export default function ManagePost() {
                                     <div className="text-right">
                                       <div className="text-sm text-gray-500">{t('companyNews.publishedOn')}</div>
                                       <div className="text-lg font-semibold text-blue-600">
-                                        {new Date(news.createdAt).toLocaleDateString('th-TH', {
-                                          year: 'numeric',
-                                          month: 'short',
-                                          day: 'numeric'
-                                        })}
+                                        {formatDate(new Date(news.createdAt), i18n.language, 'short')}
                                       </div>
                                     </div>
                                   </div>
@@ -600,7 +643,7 @@ export default function ManagePost() {
                                   <CardContent>
                                     <div className="p-4 bg-orange-50 rounded-lg">
                                       <p className="text-orange-900 leading-relaxed">
-                                        {news.detail || t('companyNews.noDetailProvided', 'ไม่มีรายละเอียด')}
+                                        {news.detail || t('companyNews.noDetailProvided')}
                                       </p>
                                     </div>
                                   </CardContent>
@@ -627,11 +670,7 @@ export default function ManagePost() {
                                       <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
                                         <Calendar className="w-4 h-4 text-green-500" />
                                         <span className="font-medium text-green-900">
-                                          {new Date(news.createdAt).toLocaleDateString('th-TH', {
-                                            year: 'numeric',
-                                            month: 'long',
-                                            day: 'numeric'
-                                          })}
+                                          {formatDate(new Date(news.createdAt), i18n.language, 'long')}
                                         </span>
                                       </div>
                                     </div>
@@ -640,10 +679,7 @@ export default function ManagePost() {
                                       <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
                                         <Clock className="w-4 h-4 text-blue-500" />
                                         <span className="font-medium text-blue-900">
-                                          {new Date(news.createdAt).toLocaleTimeString('th-TH', {
-                                            hour: '2-digit',
-                                            minute: '2-digit'
-                                          })}
+                                          {formatTime(new Date(news.createdAt), i18n.language)}
                                         </span>
                                       </div>
                                     </div>
@@ -657,7 +693,7 @@ export default function ManagePost() {
                                   <CardHeader className="pb-3">
                                     <div className="flex items-center gap-2">
                                       <User className="w-5 h-5 text-teal-600" />
-                                      <h3 className="text-lg font-semibold">{t('leave.contactInformation', 'Contact Information')}</h3>
+                                      <h3 className="text-lg font-semibold">{t('leave.contactInformation')}</h3>
                                     </div>
                                   </CardHeader>
                                   <CardContent>
@@ -674,9 +710,9 @@ export default function ManagePost() {
                                   <CardHeader className="pb-3">
                                     <div className="flex items-center gap-2">
                                       <Image className="w-5 h-5 text-purple-600" />
-                                      <h3 className="text-lg font-semibold">ไฟล์แนบ</h3>
+                                      <h3 className="text-lg font-semibold">{t('leave.attachments')}</h3>
                                       <Badge variant="secondary" className="ml-2">
-                                        {((news.Image ? 1 : 0) + (news.attachments ? news.attachments.length : 0))} ไฟล์
+                                        {((news.Image ? 1 : 0) + (news.attachments ? news.attachments.length : 0))} {t('leave.files')}
                                       </Badge>
                                     </div>
                                   </CardHeader>
