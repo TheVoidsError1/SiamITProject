@@ -1,20 +1,20 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from "@/hooks/use-toast";
 import { differenceInCalendarDays, format } from "date-fns";
-import { th } from "date-fns/locale";
-import { AlertCircle, CheckCircle, Clock, Eye, FileText, Users, XCircle, History, Calendar, User, ChevronLeft, ChevronRight } from "lucide-react";
+import { enUS, th } from "date-fns/locale";
+import { AlertCircle, Calendar, CalendarIcon, CheckCircle, ChevronLeft, ChevronRight, Clock, Eye, FileText, History, User, Users, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Avatar } from "@/components/ui/avatar";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type LeaveRequest = {
   id: number;
@@ -1085,17 +1085,41 @@ const AdminDashboard = () => {
                 {/* Date Filter */}
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.4s' }}>
                   <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.date', 'วันที่')}</label>
-                  <input
-                    type="date"
-                    className={`border border-blue-200 rounded-xl px-3 py-2 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press ${
-                      pendingPendingMonth !== '' && !pendingPendingSingleDate
-                        ? 'opacity-50 cursor-not-allowed bg-gray-100'
-                        : 'hover:bg-blue-50 hover:border-blue-300'
-                    }`}
-                    value={pendingPendingSingleDate ? format(pendingPendingSingleDate, 'yyyy-MM-dd') : ''}
-                    onChange={e => handleDateChange(e.target.value ? new Date(e.target.value) : undefined)}
-                    disabled={pendingPendingMonth !== '' && !pendingPendingSingleDate}
-                  />
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={`w-full justify-start text-left font-normal border border-blue-200 rounded-xl px-3 py-2 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press ${
+                          pendingPendingMonth !== '' && !pendingPendingSingleDate
+                            ? 'opacity-50 cursor-not-allowed bg-gray-100'
+                            : 'hover:bg-blue-50 hover:border-blue-300'
+                        }`}
+                        disabled={pendingPendingMonth !== '' && !pendingPendingSingleDate}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {pendingPendingSingleDate ? (
+                          format(pendingPendingSingleDate, "dd MMMM yyyy", { locale: i18n.language === 'th' ? th : enUS })
+                        ) : (
+                          <span>{t('leave.selectDate')}</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <CalendarComponent
+                        mode="single"
+                        selected={pendingPendingSingleDate}
+                        onSelect={(date) => handleDateChange(date)}
+                        initialFocus
+                        className="rounded-md border"
+                        modifiers={{
+                          today: new Date()
+                        }}
+                        modifiersStyles={{
+                          today: { backgroundColor: '#e5e7eb', color: '#374151' }
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 {/* Month Filter */}
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.5s' }}>
@@ -1377,8 +1401,42 @@ const AdminDashboard = () => {
                     ))}
                   </select>
                 </div>
-                {/* Month Filter */}
+                {/* Date Filter สำหรับ History */}
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.4s' }}>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.date', 'วันที่')}</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className="w-full justify-start text-left font-normal border border-blue-200 rounded-xl px-3 py-2 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {pendingRecentSingleDate ? (
+                          format(pendingRecentSingleDate, "dd MMMM yyyy", { locale: i18n.language === 'th' ? th : enUS })
+                        ) : (
+                          <span>{t('leave.selectDate')}</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <CalendarComponent
+                        mode="single"
+                        selected={pendingRecentSingleDate}
+                        onSelect={(date) => setPendingRecentSingleDate(date)}
+                        initialFocus
+                        className="rounded-md border"
+                        modifiers={{
+                          today: new Date()
+                        }}
+                        modifiersStyles={{
+                          today: { backgroundColor: '#e5e7eb', color: '#374151' }
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
+                </div>
+                {/* Month Filter */}
+                <div className="animate-slide-in-left" style={{ animationDelay: '0.5s' }}>
                   <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.month', 'เดือน')}</label>
                   <select
                     className="border border-blue-200 rounded-xl px-3 py-2 w-28 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
@@ -1392,7 +1450,7 @@ const AdminDashboard = () => {
                   </select>
                 </div>
                 {/* Year Filter */}
-                <div className="animate-slide-in-left" style={{ animationDelay: '0.5s' }}>
+                <div className="animate-slide-in-left" style={{ animationDelay: '0.6s' }}>
                   <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.year', 'ปี')}</label>
                   <input
                     type="number"
@@ -1405,7 +1463,7 @@ const AdminDashboard = () => {
                   />
                 </div>
                 {/* Backdated Filter */}
-                <div className="animate-slide-in-left" style={{ animationDelay: '0.6s' }}>
+                <div className="animate-slide-in-left" style={{ animationDelay: '0.7s' }}>
                   <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('leave.backdatedFilter')}</label>
                   <select
                     className="border border-blue-200 rounded-xl px-3 py-2 min-w-[120px] dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
@@ -1418,7 +1476,7 @@ const AdminDashboard = () => {
                   </select>
                 </div>
                 {/* Status Filter */}
-                <div className="animate-slide-in-left" style={{ animationDelay: '0.7s' }}>
+                <div className="animate-slide-in-left" style={{ animationDelay: '0.8s' }}>
                   <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.status')}</label>
                   <select
                     className="border border-blue-200 rounded-xl px-3 py-2 min-w-[120px] dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
@@ -1431,7 +1489,7 @@ const AdminDashboard = () => {
                   </select>
                 </div>
                 {/* Buttons */}
-                <div className="flex gap-3 mt-2 animate-slide-in-left" style={{ animationDelay: '0.8s' }}>
+                <div className="flex gap-3 mt-2 animate-slide-in-left" style={{ animationDelay: '0.9s' }}>
                   <button
                     className="bg-gradient-to-r from-gray-200 to-gray-300 dark:from-slate-700 dark:to-slate-600 text-blue-900 dark:text-white px-4 py-2 rounded-xl shadow-lg hover:from-gray-300 hover:to-gray-400 dark:hover:from-slate-600 dark:hover:to-slate-500 transition-all duration-300 transform hover:scale-105 hover:shadow-xl animate-bounce-in btn-press hover-glow"
                     onClick={clearHistoryFilters}
