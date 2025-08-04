@@ -382,6 +382,7 @@
   "history": {
     "leaveHistoryTitle": "View your leave history",
     "totalLeaveDays": "Total Leave Days",
+    "totalLeaveHours": "Total Leave Hours",
     "approvedRequests": "Approved Requests",
     "pendingRequests": "Pending Requests",
     "pendingApproval": "Pending",

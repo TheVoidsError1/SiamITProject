@@ -29,7 +29,7 @@ const LeaveHistory = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   // --- เพิ่ม state สำหรับ summary ---
-  const [summary, setSummary] = useState<{ totalLeaveDays: number; approvedCount: number; pendingCount: number; rejectedCount?: number; retroactiveCount?: number } | null>(null);
+  const [summary, setSummary] = useState<{ totalLeaveDays: number; totalLeaveHours: number; approvedCount: number; pendingCount: number; rejectedCount?: number; retroactiveCount?: number } | null>(null);
   // --- เพิ่ม state สำหรับ show more/less ---
   const [expandedReason, setExpandedReason] = useState<string | null>(null);
   const [expandedReject, setExpandedReject] = useState<string | null>(null);
@@ -387,6 +387,7 @@ const LeaveHistory = () => {
 
   // Calculate summary statistics from summary data (all pages)
   const totalLeaveDays = summary ? summary.totalLeaveDays : 0;
+  const totalLeaveHours = summary ? summary.totalLeaveHours : 0;
   const approvedCount = summary ? summary.approvedCount : 0;
   const pendingCount = summary ? summary.pendingCount : 0;
   const rejectedCount = summary && typeof summary.rejectedCount === 'number' ? summary.rejectedCount : 0;
@@ -450,7 +451,7 @@ const LeaveHistory = () => {
       <div className="p-6 animate-fade-in">
         <div className="max-w-4xl mx-auto space-y-10">
           {/* Summary Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-10">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6 mb-10">
             <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-blue-50/50 to-blue-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105 animate-stagger-1 card-entrance">
               <CardContent className="p-6 flex items-center gap-4">
                 <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110">
@@ -462,7 +463,18 @@ const LeaveHistory = () => {
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-green-50/50 to-green-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105 animate-stagger-2 card-entrance">
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-indigo-50/50 to-indigo-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105 animate-stagger-2 card-entrance">
+              <CardContent className="p-6 flex items-center gap-4">
+                <div className="w-14 h-14 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110">
+                  <Clock className="w-7 h-7 text-white transition-all duration-300" />
+                </div>
+                <div>
+                  <p className="text-3xl font-extrabold text-indigo-800 transition-all duration-300 group-hover:scale-110">{totalLeaveHours}</p>
+                  <p className="text-base text-indigo-600 font-medium">{t('history.totalLeaveHours')}</p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-green-50/50 to-green-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105 animate-stagger-3 card-entrance">
               <CardContent className="p-6 flex items-center gap-4">
                 <div className="w-14 h-14 bg-gradient-to-br from-green-500 to-green-600 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110">
                   <CheckCircle className="w-7 h-7 text-white transition-all duration-300" />
@@ -473,7 +485,7 @@ const LeaveHistory = () => {
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-yellow-50/50 to-yellow-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105 animate-stagger-3 card-entrance">
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-yellow-50/50 to-yellow-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105 animate-stagger-4 card-entrance">
               <CardContent className="p-6 flex items-center gap-4">
                 <div className="w-14 h-14 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110">
                   <Clock className="w-7 h-7 text-white transition-all duration-300" />
@@ -484,7 +496,7 @@ const LeaveHistory = () => {
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-red-50/50 to-red-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105 animate-stagger-4 card-entrance">
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-red-50/50 to-red-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105 animate-stagger-5 card-entrance">
               <CardContent className="p-6 flex items-center gap-4">
                 <div className="w-14 h-14 bg-gradient-to-br from-red-500 to-red-600 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110">
                   <XCircle className="w-7 h-7 text-white transition-all duration-300" />
@@ -495,7 +507,7 @@ const LeaveHistory = () => {
                 </div>
               </CardContent>
             </Card>
-            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-purple-50/50 to-purple-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105 animate-stagger-5 card-entrance">
+            <Card className="border-0 shadow-xl bg-gradient-to-br from-white/80 via-purple-50/50 to-purple-100/30 backdrop-blur rounded-2xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105 animate-stagger-6 card-entrance">
               <CardContent className="p-6 flex items-center gap-4">
                 <div className="w-14 h-14 bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 group-hover:scale-110">
                   <History className="w-7 h-7 text-white transition-all duration-300" />

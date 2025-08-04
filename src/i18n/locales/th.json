@@ -411,6 +411,7 @@
   "history": {
     "leaveHistoryTitle": "ดูประวัติการลาของคุณ",
     "totalLeaveDays": "จำนวนวันลาทั้งหมด",
+    "totalLeaveHours": "จำนวนชั่วโมงลาทั้งหมด",
     "approvedRequests": "คำขอที่อนุมัติแล้ว",
     "pendingRequests": "คำขอรออนุมัติ",
     "pendingApproval": "รอการอนุมัติ",
