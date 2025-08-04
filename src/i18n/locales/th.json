@@ -662,7 +662,12 @@
     "leaveDeletedMessage": "คำขอลาพักผ่อนวันที่ {startDate} - {endDate} ถูกลบแล้ว",
     "leaveReminderMessage": "คุณมีวันลาพักผ่อนเหลือ {days} วัน สำหรับปีนี้",
     "tooltipTitle": "การแจ้งเตือน",
-    "tooltipUnreadCount": "ข้อความที่ยังไม่ได้อ่าน"
+    "tooltipUnreadCount": "ข้อความที่ยังไม่ได้อ่าน",
+    "statusChanged": "สถานะคำขอเปลี่ยนแปลง",
+    "request": "คำขอ",
+    "hasBeen": "ได้รับการ",
+    "approved": "อนุมัติ",
+    "rejected": "ปฏิเสธ"
   },
   "usedLeaveDaysText": "วันลาที่ใช้ไปแล้ว:",
   "status": {

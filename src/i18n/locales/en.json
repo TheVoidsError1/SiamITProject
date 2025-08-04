@@ -626,7 +626,12 @@
     "leaveDeletedMessage": "Leave request for {startDate} - {endDate} has been deleted",
     "leaveReminderMessage": "You have {days} vacation days remaining for this year",
     "tooltipTitle": "Notifications",
-    "tooltipUnreadCount": "unread messages"
+    "tooltipUnreadCount": "unread messages",
+    "statusChanged": "Request Status Changed",
+    "request": "Request",
+    "hasBeen": "has been",
+    "approved": "approved",
+    "rejected": "rejected"
   },
   "usedLeaveDaysText": "Used leave days:",
   "status": {

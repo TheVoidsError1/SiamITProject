@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from '@/contexts/AuthContext';
+import { useSocket } from '@/contexts/SocketContext';
 import { useToast } from "@/hooks/use-toast";
 import { differenceInCalendarDays, format } from "date-fns";
 import { th } from "date-fns/locale";
@@ -37,6 +38,7 @@ const AdminDashboard = () => {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const { user, showSessionExpiredDialog } = useAuth();
+  const { socket, isConnected } = useSocket();
 
   // ลบ state ที่ไม่ได้ใช้จริง
   // const [adminName, setAdminName] = useState<string>("");
@@ -734,6 +736,31 @@ const AdminDashboard = () => {
       toast({ title: t('common.error'), description: t('system.deleteError', 'ลบไม่สำเร็จ'), variant: 'destructive' });
     }
   };
+
+  // Socket.io event listeners for real-time updates
+  useEffect(() => {
+    if (socket && isConnected) {
+      // Listen for leave request status changes
+      socket.on('leaveRequestStatusChanged', (data) => {
+        console.log('Received leave request status change:', data);
+        
+        // Show toast notification
+        toast({
+          title: t('notifications.statusChanged'),
+          description: `${t('notifications.request')} ${data.requestId} ${t('notifications.hasBeen')} ${data.status === 'approved' ? t('notifications.approved') : t('notifications.rejected')}`,
+          variant: 'default'
+        });
+        
+        // Refresh dashboard data
+        refreshLeaveRequests();
+        fetchHistoryRequests();
+      });
+
+      return () => {
+        socket.off('leaveRequestStatusChanged');
+      };
+    }
+  }, [socket, isConnected, toast, t]);
 
   // --- Custom animation styles for this file only ---
   const customAnimationStyle = (

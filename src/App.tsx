@@ -20,6 +20,7 @@ import EmployeeDetail from "./pages/EmployeeDetail";
 import NotFound from "./pages/NotFound";
 import '@/i18n';
 import { PushNotificationProvider } from "@/contexts/PushNotificationContext";
+import { SocketProvider } from "@/contexts/SocketContext";
 import ManageAll from './pages/SuperAdmin/ManageAll';
 import SuperAdminList from './pages/SuperAdmin/SuperAdminList';
 import ManagePost from './pages/ManagePost';
@@ -132,7 +133,9 @@ const App = () => (
         <BrowserRouter>
           <AuthProvider>
             <PushNotificationProvider>
-              <AppContent />
+              <SocketProvider>
+                <AppContent />
+              </SocketProvider>
             </PushNotificationProvider>
           </AuthProvider>
         </BrowserRouter>

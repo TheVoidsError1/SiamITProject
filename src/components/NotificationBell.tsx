@@ -3,6 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { usePushNotification } from "@/contexts/PushNotificationContext";
+import { useSocket } from "@/contexts/SocketContext";
+import { useToast } from '@/hooks/use-toast';
 import { AlertCircle, AlertTriangle, Bell, Check, Info, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -28,6 +30,8 @@ const NotificationBell = () => {
   const [popoverOpen, setPopoverOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const { enabled: pushNotificationEnabled } = usePushNotification();
+  const { socket, isConnected } = useSocket();
+  const { toast } = useToast();
 
   // Get leave type name
   const getLeaveTypeName = (leaveType: { name_th: string; name_en: string } | undefined) => {
@@ -35,37 +39,38 @@ const NotificationBell = () => {
     return i18n.language.startsWith('th') ? leaveType.name_th : leaveType.name_en;
   };
 
+  // Fetch notifications function
+  const fetchNotifications = async () => {
+    setLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setLoading(false);
+        return;
+      }
+      
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+      const res = await fetch(`${API_BASE_URL}/api/notifications`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        if (data.status === 'success' && Array.isArray(data.data)) {
+          setNotifications(data.data);
+        }
+      } else {
+        console.error('Failed to fetch notifications:', res.statusText);
+      }
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Fetch notifications on mount
   useEffect(() => {
-    const fetchNotifications = async () => {
-      setLoading(true);
-      try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          setLoading(false);
-          return;
-        }
-        
-        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-        const res = await fetch(`${API_BASE_URL}/api/notifications`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        
-        if (res.ok) {
-          const data = await res.json();
-          if (data.status === 'success' && Array.isArray(data.data)) {
-            setNotifications(data.data);
-          }
-        } else {
-          console.error('Failed to fetch notifications:', res.statusText);
-        }
-      } catch (error) {
-        console.error('Error fetching notifications:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
     // เฉพาะเมื่อเปิดการใช้งานแจ้งเตือนเท่านั้น
     if (pushNotificationEnabled) {
       fetchNotifications();
@@ -73,6 +78,30 @@ const NotificationBell = () => {
       setNotifications([]);
     }
   }, [pushNotificationEnabled]);
+
+  // Socket.io event listeners
+  useEffect(() => {
+    if (socket && isConnected && pushNotificationEnabled) {
+      // Listen for leave request updates
+      socket.on('leaveRequestUpdated', (data) => {
+        console.log('Received leave request update:', data);
+        
+        // Show toast notification
+        toast({
+          title: data.status === 'approved' ? t('notifications.approved') : t('notifications.rejected'),
+          description: data.message,
+          variant: data.status === 'approved' ? 'default' : 'destructive'
+        });
+        
+        // Refresh notifications
+        fetchNotifications();
+      });
+
+      return () => {
+        socket.off('leaveRequestUpdated');
+      };
+    }
+  }, [socket, isConnected, pushNotificationEnabled, toast, t]);
 
   useEffect(() => {
     const handler = () => {
