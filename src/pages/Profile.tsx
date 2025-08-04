@@ -642,7 +642,7 @@ const Profile = () => {
                     <div className="w-full bg-blue-100 rounded-full h-2">
                       <div
                         className={`${stat.color} h-2 rounded-full transition-all duration-500`}
-                        style={{ width: `${(Number(stat.used.days) / Number(stat.quota)) * 100}%` }}
+                        style={{ width: `${Math.min((Number(stat.used.days) / Number(stat.quota)) * 100, 100)}%` }}
                       ></div>
                     </div>
                     <div className="text-xs text-blue-500">

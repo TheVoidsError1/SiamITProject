@@ -215,6 +215,7 @@
     "required": "กรุณากรอกข้อมูลให้ครบถ้วน",
     "attachmentLabel": "แนบหลักฐาน",
     "allTypes": "ทั้งหมด",
+    "allBackdated": "ทั้งหมด",
     "attachmentHint": "(ใบรับรองแพทย์, เอกสารรับรอง ฯลฯ)",
     "invalidPhone": "กรุณากรอกเบอร์โทรศัพท์ที่ถูกต้อง เช่น 0912456147",
     "invalidEmail": "กรุณากรอกอีเมลที่ถูกต้อง เช่น example@email.com",
@@ -244,7 +245,7 @@
     "timeRangeError": "เวลาต้องอยู่ในช่วง 09:00 น. ถึง 18:00 น.",
     "contactMethod": "ช่องทางการติดต่อ",
     "backdatedFilter": "ย้อนหลัง/ไม่ย้อนหลัง",
-    "allBackdated": "ทั้งหมด",
+    "allBackdated": "ทุกประเภทการลา",
     "notBackdated": "ลาไม่ย้อนหลัง",
     "backdatedLabel": "ย้อนหลัง",
     "backdatedAll": "ทั้งหมด",
@@ -287,7 +288,7 @@
     "maternity": "ลาคลอด"
   },
   "months": {
-    "all": "ทั้งหมด",
+    "all": "ทุกเดือน",
     "month": "เดือน",
     "year": "ปี",
     "1": "มกราคม",
@@ -581,7 +582,8 @@
     "noEmployeesFound": "ไม่พบข้อมูลพนักงาน",
     "noEmployeesFoundDesc": "ไม่พบพนักงานที่ตรงกับเงื่อนไขการกรองที่เลือก กรุณาลองเปลี่ยนเงื่อนไขหรือรีเซ็ตตัวกรอง",
     "confirmDelete": "ยืนยันการลบ",
-    "confirmDeleteNewsDesc": "คุณแน่ใจหรือไม่ว่าต้องการลบข่าวสารนี้?"
+    "confirmDeleteNewsDesc": "คุณแน่ใจหรือไม่ว่าต้องการลบข่าวสารนี้?",
+    "confirmDeleteDesc": "คุณแน่ใจหรือไม่ว่าต้องการลบผู้ใช้งานนี้?"
   },
   "error": {
     "apiConnectionError": "ข้อผิดพลาดการเชื่อมต่อ API",
