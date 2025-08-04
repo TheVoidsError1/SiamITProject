@@ -269,13 +269,14 @@ module.exports = (AppDataSource) => {
         }
         // Calculate duration
         let duration = '';
-        if (normalizeType(leaveTypeNameTh) === "personal" && lr.startTime && lr.endTime) {
-          // Hour-based
+        if (lr.startTime && lr.endTime) {
+          // Hour-based (ทุกประเภท)
           const startMinutes = parseTimeToMinutes(lr.startTime);
           const endMinutes = parseTimeToMinutes(lr.endTime);
           let durationHours = (endMinutes - startMinutes) / 60;
           if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
-          duration = `${durationHours} hour`;
+          // แสดงเป็นจำนวนเต็มเท่านั้น (ปัดเศษทิ้ง)
+          duration = `${Math.floor(durationHours)} hour`;
         } else if (lr.startDate && lr.endDate) {
           // Day-based
           const start = new Date(lr.startDate);

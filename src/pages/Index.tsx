@@ -729,9 +729,16 @@ const Index = () => {
                               <span>
                                 {(() => {
                                   if (!l.duration) return '-';
+                                  // ถ้าเป็นวัน
                                   const match = l.duration.match(/(\d+)\s*day/);
                                   if (match) {
                                     return `${match[1]} ${t('common.days')}`;
+                                  }
+                                  // ถ้าเป็นชั่วโมง
+                                  const hourMatch = l.duration.match(/([\d.]+)\s*hour/);
+                                  if (hourMatch) {
+                                    const hours = Math.floor(Number(hourMatch[1]));
+                                    return `${hours} ${t('leave.hours')}`;
                                   }
                                   return l.duration;
                                 })()}
