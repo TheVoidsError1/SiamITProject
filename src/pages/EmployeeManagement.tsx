@@ -137,7 +137,7 @@ const EmployeeManagement = () => {
       title: t('system.regularEmployees'),
       value: employees.filter(emp => {
         const positionName = getPositionName(emp.position);
-        return positionName === 'พนักงาน' || positionName === 'Employee';
+        return positionName === t('auth.employee') || positionName === 'Employee';
       }).length.toString(),
       icon: User,
       color: "text-green-600",
@@ -147,7 +147,7 @@ const EmployeeManagement = () => {
       title: t('system.interns'),
       value: employees.filter(emp => {
         const positionName = getPositionName(emp.position);
-        return positionName === 'นักศึกษาฝึกงาน' || positionName === 'Intern';
+        return positionName === t('auth.intern') || positionName === 'Intern';
       }).length.toString(),
       icon: User,
       color: "text-orange-600",
@@ -397,15 +397,15 @@ const EmployeeManagement = () => {
                               <td className="px-3 py-2">
                                 {employee.role === 'superadmin' ? (
                                   <span className="text-xs px-2 py-0.5 rounded-full border border-purple-300 bg-purple-50 text-purple-700 font-bold shadow-sm" style={{letterSpacing:0.5}}>
-                                    Superadmin
+                                    {t('auth.roles.superadmin')}
                                   </span>
                                 ) : employee.role === 'admin' ? (
                                   <span className="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-blue-500 to-indigo-400 text-white font-bold shadow-sm">
-                                    ผู้ดูแลระบบ
+                                    {t('auth.roles.admin')}
                                   </span>
                                 ) : (
                                   <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold shadow-sm">
-                                    พนักงาน
+                                    {t('auth.roles.employee')}
                                   </span>
                                 )}
                               </td>

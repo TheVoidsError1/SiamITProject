@@ -113,7 +113,14 @@
     "october": "ตุลาคม",
     "november": "พฤศจิกายน",
     "december": "ธันวาคม",
-    "all": "ทั้งหมด"
+    "all": "ทั้งหมด",
+    "confirmDelete": "ยืนยันการลบ",
+    "confirmDeletePosition": "คุณต้องการลบตำแหน่ง",
+    "confirmDeleteDepartment": "คุณต้องการลบแผนก",
+    "confirmDeleteLeaveType": "คุณต้องการลบประเภทการลา",
+    "confirmDeleteQuestion": "หรือไม่?",
+    "deleteSuccess": "ลบสำเร็จ",
+    "deleteError": "ลบไม่สำเร็จ"
   },
   "approved": "อนุมัติแล้ว",
   "rejected": "ปฏิเสธแล้ว",

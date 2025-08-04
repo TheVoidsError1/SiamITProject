@@ -26,3 +26,4 @@ dist-ssr
 Backend/uploads/*
 README.md
 .env
+public

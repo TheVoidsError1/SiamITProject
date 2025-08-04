@@ -101,7 +101,14 @@
     "add": "Add",
     "update": "Update",
     "allMonths": "All Months",
-    "all": "All"
+    "all": "All",
+    "confirmDelete": "Confirm Delete",
+    "confirmDeletePosition": "Do you want to delete position",
+    "confirmDeleteDepartment": "Do you want to delete department",
+    "confirmDeleteLeaveType": "Do you want to delete leave type",
+    "confirmDeleteQuestion": "?",
+    "deleteSuccess": "Deleted successfully",
+    "deleteError": "Failed to delete"
   },
   "approved": "Approved",
   "rejected": "Rejected",

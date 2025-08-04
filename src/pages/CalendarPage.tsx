@@ -4,9 +4,12 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Switch } from '@/components/ui/switch';
 import { getAllThaiHolidays } from '@/constants/getThaiHolidays';
+import { useAuth } from '@/contexts/AuthContext';
 
 const CalendarPage = () => {
   const { t, i18n } = useTranslation();
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [companyEvents, setCompanyEvents] = useState<CompanyEvent[]>([]);
@@ -15,7 +18,7 @@ const CalendarPage = () => {
   const [loading, setLoading] = useState(true);
   const [showCompanyHolidays, setShowCompanyHolidays] = useState(true);
   const [showAnnualHolidays, setShowAnnualHolidays] = useState(true);
-  const [showEmployeeLeaves, setShowEmployeeLeaves] = useState(true);
+  const [showEmployeeLeaves, setShowEmployeeLeaves] = useState(isAdmin);
   const navigate = useNavigate();
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -200,7 +203,12 @@ const CalendarPage = () => {
     
     // Add employee leaves if enabled
     if (showEmployeeLeaves && Array.isArray(employeeLeaves)) {
-      const monthEmployeeLeaves = employeeLeaves.filter(leave => {
+      // Filter employee leaves based on user role
+      const filteredEmployeeLeaves = isAdmin 
+        ? employeeLeaves 
+        : employeeLeaves.filter(leave => leave.userId === user?.id);
+      
+      const monthEmployeeLeaves = filteredEmployeeLeaves.filter(leave => {
         const startDate = new Date(leave.startDate);
         const endDate = new Date(leave.endDate);
         return (startDate.getFullYear() === year && startDate.getMonth() === month) ||
@@ -321,14 +329,16 @@ const CalendarPage = () => {
             />
             <span className="text-sm font-medium text-blue-700">{t('calendar.companyHolidays')}</span>
           </div>
-          <div className="flex items-center gap-3">
-            <Switch 
-              checked={showEmployeeLeaves}
-              onCheckedChange={setShowEmployeeLeaves}
-              className="data-[state=checked]:bg-green-500"
-            />
-            <span className="text-sm font-medium text-green-700">{t('calendar.employeeLeaves')}</span>
-          </div>
+          {isAdmin && (
+            <div className="flex items-center gap-3">
+              <Switch 
+                checked={showEmployeeLeaves}
+                onCheckedChange={setShowEmployeeLeaves}
+                className="data-[state=checked]:bg-green-500"
+              />
+              <span className="text-sm font-medium text-green-700">{t('calendar.employeeLeaves')}</span>
+            </div>
+          )}
           
           {/* Legend */}
           <div className="flex items-center gap-4 ml-6 pl-6 border-l border-gray-300">
@@ -340,14 +350,18 @@ const CalendarPage = () => {
               <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
               <span className="text-xs text-blue-700">{t('calendar.legend.companyHoliday')}</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              <span className="text-xs text-green-700">{t('calendar.legend.employeeLeave')}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-              <span className="text-xs text-purple-700">{t('calendar.legend.dualEvent')}</span>
-            </div>
+            {isAdmin && (
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                <span className="text-xs text-green-700">{t('calendar.legend.employeeLeave')}</span>
+              </div>
+            )}
+            {isAdmin && (
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
+                <span className="text-xs text-purple-700">{t('calendar.legend.dualEvent')}</span>
+              </div>
+            )}
           </div>
         </div>
         

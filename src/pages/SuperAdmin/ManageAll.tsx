@@ -3,6 +3,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -14,6 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 
 const ManageAll: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const { toast } = useToast();
   const lang = i18n.language.startsWith('th') ? 'th' : 'en';
   // Position state
   const [positions, setPositions] = useState<any[]>([]);
@@ -45,6 +56,11 @@ const ManageAll: React.FC = () => {
   // Department handlers
   const [inlineDepartmentEdit, setInlineDepartmentEdit] = useState<null | { id: string; name_en: string; name_th: string }>(null);
   const [inlineDepartmentError, setInlineDepartmentError] = useState<string | null>(null);
+  
+  // Delete confirmation states
+  const [deletePositionDialog, setDeletePositionDialog] = useState<{ open: boolean; position: any | null }>({ open: false, position: null });
+  const [deleteDepartmentDialog, setDeleteDepartmentDialog] = useState<{ open: boolean; department: any | null }>({ open: false, department: null });
+  const [deleteLeaveTypeDialog, setDeleteLeaveTypeDialog] = useState<{ open: boolean; leaveType: any | null }>({ open: false, leaveType: null });
   const handleDepartmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setDepartmentForm({ ...departmentForm, [e.target.name]: e.target.value });
   };
@@ -89,10 +105,25 @@ const ManageAll: React.FC = () => {
     }
   };
   const handleDeleteDepartment = async (id: string) => {
-    await fetch(`${API_BASE_URL}/api/departments/${id}`, {
-      method: 'DELETE',
-    });
-    fetchDepartments();
+    const department = departments.find(dep => dep.id === id);
+    if (department) {
+      setDeleteDepartmentDialog({ open: true, department });
+    }
+  };
+
+  const confirmDeleteDepartment = async () => {
+    if (!deleteDepartmentDialog.department) return;
+    
+    try {
+      await fetch(`${API_BASE_URL}/api/departments/${deleteDepartmentDialog.department.id}`, {
+        method: 'DELETE',
+      });
+      fetchDepartments();
+      setDeleteDepartmentDialog({ open: false, department: null });
+      toast({ title: t('common.success', 'Success'), description: t('common.deleteSuccess', 'Deleted successfully'), variant: 'default' });
+    } catch (error) {
+      toast({ title: t('common.error', 'Error'), description: t('common.deleteError', 'Failed to delete'), variant: 'destructive' });
+    }
   };
 
   // Leave type handlers
@@ -111,17 +142,32 @@ const ManageAll: React.FC = () => {
     }
   };
   const handleDeleteLeaveType = async (id: string) => {
-    await fetch(`${API_BASE_URL}/api/leave-types/${id}`, {
-      method: 'DELETE',
-    });
-    // Refresh leave types
-    fetch(`${API_BASE_URL}/api/leave-types`)
-      .then(res => res.json())
-      .then(data => {
-        if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
-          setLeaveTypes(data.data);
-        }
+    const leaveType = leaveTypes.find(lt => lt.id === id);
+    if (leaveType) {
+      setDeleteLeaveTypeDialog({ open: true, leaveType });
+    }
+  };
+
+  const confirmDeleteLeaveType = async () => {
+    if (!deleteLeaveTypeDialog.leaveType) return;
+    
+    try {
+      await fetch(`${API_BASE_URL}/api/leave-types/${deleteLeaveTypeDialog.leaveType.id}`, {
+        method: 'DELETE',
       });
+      // Refresh leave types
+      fetch(`${API_BASE_URL}/api/leave-types`)
+        .then(res => res.json())
+        .then(data => {
+          if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
+            setLeaveTypes(data.data);
+          }
+        });
+      setDeleteLeaveTypeDialog({ open: false, leaveType: null });
+      toast({ title: t('common.success', 'Success'), description: t('common.deleteSuccess', 'Deleted successfully'), variant: 'default' });
+    } catch (error) {
+      toast({ title: t('common.error', 'Error'), description: t('common.deleteError', 'Failed to delete'), variant: 'destructive' });
+    }
   };
   const handleLeaveTypeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -390,20 +436,33 @@ const ManageAll: React.FC = () => {
     }
   };
   const handleDeletePosition = async (id: string) => {
-    await fetch(`${API_BASE_URL}/api/positions-with-quotas/${id}`, {
-      method: 'DELETE',
-    });
-    // Refresh positions
-    fetch(`${API_BASE_URL}/api/positions-with-quotas`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && Array.isArray(data.data)) {
-          setPositions(data.data);
-        }
-      });
+    const position = positions.find(pos => pos.id === id);
+    if (position) {
+      setDeletePositionDialog({ open: true, position });
+    }
   };
 
-  const { toast } = useToast();
+  const confirmDeletePosition = async () => {
+    if (!deletePositionDialog.position) return;
+    
+    try {
+      await fetch(`${API_BASE_URL}/api/positions-with-quotas/${deletePositionDialog.position.id}`, {
+        method: 'DELETE',
+      });
+      // Refresh positions
+      fetch(`${API_BASE_URL}/api/positions-with-quotas`)
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && Array.isArray(data.data)) {
+            setPositions(data.data);
+          }
+        });
+      setDeletePositionDialog({ open: false, position: null });
+      toast({ title: t('common.success', 'Success'), description: t('common.deleteSuccess', 'Deleted successfully'), variant: 'default' });
+    } catch (error) {
+      toast({ title: t('common.error', 'Error'), description: t('common.deleteError', 'Failed to delete'), variant: 'destructive' });
+    }
+  };
 
   // Add a handler for toggling require_attachment
   const handleToggleRequireAttachment = async (lt: any) => {
@@ -776,6 +835,63 @@ const ManageAll: React.FC = () => {
           </Tabs>
         </div>
       </div>
+
+      {/* Delete Confirmation Dialogs */}
+      
+      {/* Position Delete Confirmation */}
+      <AlertDialog open={deletePositionDialog.open} onOpenChange={(open) => setDeletePositionDialog({ open, position: null })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('common.confirmDelete', 'ยืนยันการลบ')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('common.confirmDeletePosition', 'คุณต้องการลบตำแหน่ง')} "{deletePositionDialog.position?.position_name_th || deletePositionDialog.position?.position_name_en}" {t('common.confirmDeleteQuestion', 'หรือไม่?')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel', 'ยกเลิก')}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeletePosition} className="bg-red-600 hover:bg-red-700">
+              {t('common.delete', 'ลบ')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Department Delete Confirmation */}
+      <AlertDialog open={deleteDepartmentDialog.open} onOpenChange={(open) => setDeleteDepartmentDialog({ open, department: null })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('common.confirmDelete', 'ยืนยันการลบ')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('common.confirmDeleteDepartment', 'คุณต้องการลบแผนก')} "{deleteDepartmentDialog.department?.department_name_th || deleteDepartmentDialog.department?.department_name_en}" {t('common.confirmDeleteQuestion', 'หรือไม่?')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel', 'ยกเลิก')}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteDepartment} className="bg-red-600 hover:bg-red-700">
+              {t('common.delete', 'ลบ')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Leave Type Delete Confirmation */}
+      <AlertDialog open={deleteLeaveTypeDialog.open} onOpenChange={(open) => setDeleteLeaveTypeDialog({ open, leaveType: null })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('common.confirmDelete', 'ยืนยันการลบ')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('common.confirmDeleteLeaveType', 'คุณต้องการลบประเภทการลา')} "{deleteLeaveTypeDialog.leaveType?.leave_type_th || deleteLeaveTypeDialog.leaveType?.leave_type_en}" {t('common.confirmDeleteQuestion', 'หรือไม่?')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel', 'ยกเลิก')}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteLeaveType} className="bg-red-600 hover:bg-red-700">
+              {t('common.delete', 'ลบ')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {/* Footer */}
       <footer className="w-full mt-16 py-8 bg-gradient-to-r from-blue-100 via-indigo-50 to-white text-center text-gray-400 text-base font-medium shadow-inner flex flex-col items-center gap-2">
         <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-10 h-10 rounded-full mx-auto mb-1" />
