@@ -1193,6 +1193,21 @@
          const { year } = req.params;
          const { month } = req.query;
          
+         // Get user info from JWT token
+         let currentUserId = null;
+         let currentUserRole = null;
+         const authHeader = req.headers.authorization;
+         if (authHeader && authHeader.startsWith('Bearer ')) {
+           const token = authHeader.split(' ')[1];
+           try {
+             const decoded = jwt.verify(token, SECRET);
+             currentUserId = decoded.userId;
+             currentUserRole = decoded.role;
+           } catch (err) {
+             return res.status(401).json({ status: 'error', message: 'Invalid or expired token' });
+           }
+         }
+         
          const leaveRepo = AppDataSource.getRepository('LeaveRequest');
          const userRepo = AppDataSource.getRepository('User');
          const adminRepo = AppDataSource.getRepository('Admin');
@@ -1218,6 +1233,11 @@
              status: 'approved',
              startDate: Between(startOfMonth, endOfMonth)
            };
+         }
+         
+         // Filter by user role - admin/superadmin can see all, user can only see their own
+         if (currentUserRole === 'user') {
+           where.Repid = currentUserId;
          }
          
          const approvedLeaves = await leaveRepo.find({

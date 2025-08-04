@@ -750,6 +750,7 @@
     "annualHolidays": "วันหยุดประจำปี",
     "companyHolidays": "วันหยุดบริษัท",
     "employeeLeaves": "การลาของพนักงาน",
+    "myLeaves": "การลาของฉัน",
     "loading": "กำลังโหลด...",
     "months": {
       "january": "มกราคม",
@@ -779,7 +780,7 @@
       "annualHoliday": "วันหยุดประจำปี",
       "companyHoliday": "วันหยุดบริษัท",
       "employeeLeave": "การลาของพนักงาน",
-      "dualEvent": "กิจกรรมร่วม"
+      "myLeave": "การลาของฉัน"
     }
   },
   "footer": {

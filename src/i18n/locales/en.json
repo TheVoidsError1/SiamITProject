@@ -714,6 +714,7 @@
     "annualHolidays": "Annual Holidays",
     "companyHolidays": "Company Holidays",
     "employeeLeaves": "Employee Leaves",
+    "myLeaves": "My Leaves",
     "loading": "Loading...",
     "months": {
       "january": "January",
@@ -743,7 +744,7 @@
       "annualHoliday": "Annual Holiday",
       "companyHoliday": "Company Holiday",
       "employeeLeave": "Employee Leave",
-      "dualEvent": "Dual Event"
+      "myLeave": "My Leave"
     }
   },
   "footer": {
