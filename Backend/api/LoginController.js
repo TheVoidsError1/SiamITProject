@@ -22,7 +22,7 @@ module.exports = (AppDataSource) => {
     // Save token to ProcessCheck table
     processCheck.Token = token;
     await processRepo.save(processCheck);
-    res.json({ success: true, data: { token, role: processCheck.Role }, message: 'Login successful' });
+    res.json({ success: true, data: { token, role: processCheck.Role, userId: processCheck.Repid }, message: 'Login successful' });
   });
   return router;
 };

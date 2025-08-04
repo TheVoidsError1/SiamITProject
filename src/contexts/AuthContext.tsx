@@ -113,7 +113,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Initial user info from login
     const userInfo = {
-      id: data.data?.repid || data.data?.userId || '',
+      id: data.data?.userId || data.data?.repid || '',
       email: email,
       role: data.data?.role,
     };

@@ -69,6 +69,7 @@ const EmployeeManagement = () => {
             totalLeaveDays: item.totalLeaveDays ?? 0,
             avatar: item.avatar || undefined, // เพิ่ม avatar จากข้อมูล
           }));
+
           setEmployees(employees);
         } else {
           setEmployees([]);
@@ -76,7 +77,7 @@ const EmployeeManagement = () => {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, []);
+  }, [user]);
 
   // ดึงตำแหน่ง
   useEffect(() => {
@@ -393,7 +394,15 @@ const EmployeeManagement = () => {
                                 <div className={`w-8 h-8 rounded-full bg-gradient-to-br from-blue-200 via-indigo-200 to-purple-200 flex items-center justify-center text-blue-900 font-bold text-base shadow-md ${employee.avatar ? 'hidden' : ''}`}>
                                   {employee.full_name ? employee.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : '?'}
                                 </div>
-                                <span className="font-semibold text-blue-900 text-sm">{employee.full_name}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-blue-900 text-sm">{employee.full_name}</span>
+                                  {/* แสดง "Me" badge สำหรับผู้ใช้ปัจจุบัน */}
+                                  {user && employee.id === user.id && (
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-green-500 to-emerald-400 text-white font-bold shadow-sm animate-pulse">
+                                      {t('common.me', 'Me')}
+                                    </span>
+                                  )}
+                                </div>
                               </td>
                               <td className="px-3 py-2 text-blue-700 text-sm">{employee.email}</td>
                               <td className="px-3 py-2 text-blue-700 text-sm">{getPositionName(employee.position)}</td>
