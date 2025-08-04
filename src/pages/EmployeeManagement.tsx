@@ -41,8 +41,9 @@ const EmployeeManagement = () => {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6; // เพิ่มจำนวนแถวต่อหน้า
-  const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  // State สำหรับจัดการการลบพนักงาน
+  const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null); // พนักงานที่จะลบ
+  const [deleting, setDeleting] = useState(false); // สถานะกำลังลบ
   const [pendingPositionFilter, setPendingPositionFilter] = useState<string>("");
   const [pendingDepartmentFilter, setPendingDepartmentFilter] = useState<string>("");
   const [pendingRoleFilter, setPendingRoleFilter] = useState<string>("");
@@ -155,10 +156,12 @@ const EmployeeManagement = () => {
     },
   ];
 
+  // ฟังก์ชันลบพนักงาน - จัดการการลบพนักงานตามบทบาท (superadmin, admin, user)
   const handleDelete = async () => {
     if (!deleteTarget || !user) return;
     setDeleting(true);
     let url = "";
+    // กำหนด URL ตามบทบาทของพนักงานที่จะลบ
     if (deleteTarget.role === "superadmin") {
       url = `${API_BASE_URL}/api/superadmin/${deleteTarget.id}`;
     } else if (deleteTarget.role === "admin") {
@@ -170,6 +173,7 @@ const EmployeeManagement = () => {
       const res = await fetch(url, { method: "DELETE" });
       const data = await res.json();
       if (data.success) {
+        // ลบพนักงานออกจากรายการและแสดงข้อความสำเร็จ
         setEmployees((prev) => prev.filter((e) => e.id !== deleteTarget.id));
         setDeleteTarget(null);
         toast({
@@ -421,6 +425,7 @@ const EmployeeManagement = () => {
                                     {t('common.viewDetails')}
                                   </Link>
                                 </Button>
+                                {/* ปุ่มลบพนักงาน - เปิด Dialog ยืนยันการลบ */}
                                 <AlertDialog>
                                   <AlertDialogTrigger asChild>
                                     <Button
@@ -440,6 +445,7 @@ const EmployeeManagement = () => {
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                       <AlertDialogCancel>{t('common.cancel', 'ยกเลิก')}</AlertDialogCancel>
+                                      {/* ปุ่มยืนยันการลบใน Dialog */}
                                       <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-gradient-to-r from-red-500 to-pink-400 text-white">
                                         {deleting ? t('common.loading', 'กำลังลบ...') : t('common.delete', 'ลบ')}
                                       </AlertDialogAction>

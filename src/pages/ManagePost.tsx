@@ -1,3 +1,4 @@
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -43,6 +44,10 @@ export default function ManagePost() {
   const [previewImageOpen, setPreviewImageOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string>('');
   const [previewImageName, setPreviewImageName] = useState<string>('');
+  
+  // State สำหรับจัดการการลบข่าวสาร
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null); 
+  const [deleting, setDeleting] = useState(false);
 
 
   // โหลดข่าวสารจาก backend
@@ -139,27 +144,31 @@ export default function ManagePost() {
     }
   };
 
-  // ลบข่าวสาร
-  const handleDeleteNews = async (id: string) => {
-    if (!window.confirm('ยืนยันการลบข่าวสารนี้?')) return;
-    setLoading(true);
+  // ฟังก์ชันลบข่าวสาร - จัดการการลบข่าวสารพร้อม Dialog ยืนยัน
+  const handleDeleteNews = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     setError('');
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`${API_BASE_URL}/api/announcements/${id}`, {
+      const res = await fetch(`${API_BASE_URL}/api/announcements/${deleteTarget.id}`, {
         method: 'DELETE',
         headers: { Authorization: token ? `Bearer ${token}` : undefined },
       });
       const data = await res.json();
       if (data.status === 'success') {
-        fetchNews();
+        // ลบข่าวสารออกจากรายการและแสดงข้อความสำเร็จ
+        setNewsList(prev => prev.filter(news => news.id !== deleteTarget.id));
+        setDeleteTarget(null);
+        // แสดง toast หรือข้อความสำเร็จ
+        console.log('ลบข่าวสารสำเร็จ');
       } else {
         setError(data.message || 'ลบข่าวสารไม่สำเร็จ');
       }
     } catch (err) {
       setError('ลบข่าวสารไม่สำเร็จ');
     } finally {
-      setLoading(false);
+      setDeleting(false);
     }
   };
 
@@ -526,14 +535,34 @@ export default function ManagePost() {
                     )}
                     {isAdmin && (
                       <TableCell className="p-4 text-center">
-                        <button
-                          className="p-2 rounded-full bg-red-100 hover:bg-red-200 text-red-600 shadow transition"
-                          onClick={() => handleDeleteNews(news.id)}
-                          aria-label={t('companyNews.delete')}
-                          disabled={loading}
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
+                        {/* ปุ่มลบข่าวสาร - เปิด Dialog ยืนยันการลบ */}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <button
+                              className="p-2 rounded-full bg-red-100 hover:bg-red-200 text-red-600 shadow transition"
+                              onClick={() => setDeleteTarget(news)}
+                              aria-label={t('companyNews.delete')}
+                              disabled={loading}
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>{t('system.confirmDelete', 'ยืนยันการลบ')}</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                {t('system.confirmDeleteNewsDesc', 'คุณแน่ใจหรือไม่ว่าต้องการลบข่าวสารนี้?')}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>{t('common.cancel', 'ยกเลิก')}</AlertDialogCancel>
+                              {/* ปุ่มยืนยันการลบใน Dialog */}
+                              <AlertDialogAction onClick={handleDeleteNews} disabled={deleting} className="bg-gradient-to-r from-red-500 to-pink-400 text-white">
+                                {deleting ? t('common.loading', 'กำลังลบ...') : t('common.delete', 'ลบ')}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
                       </TableCell>
                     )}
                     <TableCell className="p-4 text-center">
