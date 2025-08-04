@@ -1401,40 +1401,6 @@ const AdminDashboard = () => {
                     ))}
                   </select>
                 </div>
-                {/* Date Filter สำหรับ History */}
-                <div className="animate-slide-in-left" style={{ animationDelay: '0.4s' }}>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.date', 'วันที่')}</label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        variant="outline"
-                        className="w-full justify-start text-left font-normal border border-blue-200 rounded-xl px-3 py-2 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {pendingRecentSingleDate ? (
-                          format(pendingRecentSingleDate, "dd MMMM yyyy", { locale: i18n.language === 'th' ? th : enUS })
-                        ) : (
-                          <span>{t('leave.selectDate')}</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0">
-                      <CalendarComponent
-                        mode="single"
-                        selected={pendingRecentSingleDate}
-                        onSelect={(date) => setPendingRecentSingleDate(date)}
-                        initialFocus
-                        className="rounded-md border"
-                        modifiers={{
-                          today: new Date()
-                        }}
-                        modifiersStyles={{
-                          today: { backgroundColor: '#e5e7eb', color: '#374151' }
-                        }}
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
                 {/* Month Filter */}
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.5s' }}>
                   <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.month', 'เดือน')}</label>
