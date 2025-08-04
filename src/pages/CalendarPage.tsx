@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Calendar, Building2, Users } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Building2, Users, Filter, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { getAllThaiHolidays } from '@/constants/getThaiHolidays';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -19,6 +21,19 @@ const CalendarPage = () => {
   const [showCompanyHolidays, setShowCompanyHolidays] = useState(true);
   const [showAnnualHolidays, setShowAnnualHolidays] = useState(true);
   const [showEmployeeLeaves, setShowEmployeeLeaves] = useState(true); // Show for all users
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  const [leaveFilters, setLeaveFilters] = useState<LeaveFilters>({
+    departments: [],
+    leaveTypes: [],
+    statuses: [],
+    employees: []
+  });
+  const [availableFilters, setAvailableFilters] = useState<AvailableFilters>({
+    departments: [],
+    leaveTypes: [],
+    statuses: [],
+    employees: []
+  });
   const navigate = useNavigate();
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -92,6 +107,20 @@ const CalendarPage = () => {
     reason: string;
     status: string;
     createdAt: string;
+  }
+
+  interface LeaveFilters {
+    departments: string[];
+    leaveTypes: string[];
+    statuses: string[];
+    employees: string[];
+  }
+
+  interface AvailableFilters {
+    departments: string[];
+    leaveTypes: string[];
+    statuses: string[];
+    employees: string[];
   }
 
   interface CalendarEvent {
