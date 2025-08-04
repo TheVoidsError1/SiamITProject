@@ -1072,11 +1072,11 @@ const AdminDashboard = () => {
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.3s' }}>
                   <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('leave.leaveType')}</label>
                   <select
-                    className="border border-blue-200 rounded-xl px-3 py-2 min-w-[140px] dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
+                    className="border border-blue-200 rounded-xl px-3 py-2 min-w-[160px] dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
                     value={pendingPendingFilterLeaveType}
                     onChange={e => setPendingPendingFilterLeaveType(e.target.value)}
                   >
-                    <option value="">{t('leave.allTypes')}</option>
+                    <option value="">{t('leave.allTypes', 'All Types')}</option>
                     {pendingLeaveTypes.map(lt => (
                       <option key={lt.id} value={lt.id}>{i18n.language.startsWith('th') ? lt.leave_type_th : lt.leave_type_en}</option>
                     ))}
@@ -1125,7 +1125,7 @@ const AdminDashboard = () => {
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.5s' }}>
                   <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.month', 'เดือน')}</label>
                   <select
-                    className={`border border-blue-200 rounded-xl px-3 py-2 w-28 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press ${
+                    className={`border border-blue-200 rounded-xl px-3 py-2 w-32 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press ${
                       pendingPendingSingleDate 
                         ? 'opacity-50 cursor-not-allowed bg-gray-100' 
                         : 'hover:bg-blue-50 hover:border-blue-300'
@@ -1134,7 +1134,7 @@ const AdminDashboard = () => {
                     onChange={e => handleMonthChange(e.target.value ? Number(e.target.value) : '')}
                     disabled={!!pendingPendingSingleDate}
                   >
-                    <option value="">{t('months.all', 'ทั้งหมด')}</option>
+                    <option value="">{t('months.all', 'All Months')}</option>
                     {monthNames.map((name, idx) => (
                       <option key={idx + 1} value={idx + 1}>{name}</option>
                     ))}
@@ -1147,7 +1147,7 @@ const AdminDashboard = () => {
                     type="number"
                     min={2000}
                     max={2100}
-                    className={`border border-blue-200 rounded-xl px-3 py-2 w-24 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press ${
+                    className={`border border-blue-200 rounded-xl px-3 py-2 w-28 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press ${
                       pendingPendingSingleDate 
                         ? 'opacity-50 cursor-not-allowed bg-gray-100' 
                         : 'hover:bg-blue-50 hover:border-blue-300'
@@ -1162,11 +1162,11 @@ const AdminDashboard = () => {
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.7s' }}>
                   <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('leave.backdatedFilter')}</label>
                   <select
-                    className="border border-blue-200 rounded-xl px-3 py-2 min-w-[120px] dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
+                    className="border border-blue-200 rounded-xl px-3 py-2 min-w-[140px] dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
                     value={pendingPendingBackdatedFilter}
                     onChange={e => setPendingPendingBackdatedFilter(e.target.value)}
                   >
-                    <option value="all">{t('leave.allBackdated')}</option>
+                    <option value="all">{t('leave.allBackdated', 'All Types')}</option>
                     <option value="backdated">{t('leave.backdatedOnly')}</option>
                     <option value="normal">{t('leave.notBackdatedOnly')}</option>
                   </select>
@@ -1174,14 +1174,14 @@ const AdminDashboard = () => {
                 {/* Buttons */}
                 <div className="flex gap-3 mt-2 animate-slide-in-left" style={{ animationDelay: '0.8s' }}>
                   <button
-                    className="bg-gradient-to-r from-gray-200 to-gray-300 dark:from-slate-700 dark:to-slate-600 text-blue-900 dark:text-white px-4 py-2 rounded-xl shadow-lg hover:from-gray-300 hover:to-gray-400 dark:hover:from-slate-600 dark:hover:to-slate-500 transition-all duration-300 transform hover:scale-105 hover:shadow-xl animate-bounce-in btn-press hover-glow"
+                    className="bg-gradient-to-r from-gray-200 to-gray-300 dark:from-slate-700 dark:to-slate-600 text-blue-900 dark:text-white px-6 py-2 rounded-xl shadow-lg hover:from-gray-300 hover:to-gray-400 dark:hover:from-slate-600 dark:hover:to-slate-500 transition-all duration-300 transform hover:scale-105 hover:shadow-xl animate-bounce-in btn-press hover-glow min-w-[100px]"
                     onClick={clearPendingFilters}
                     type="button"
                   >
                     {t('common.reset')}
                   </button>
                   <button
-                    className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-xl shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 hover:shadow-xl animate-bounce-in btn-press hover-glow"
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-2 rounded-xl shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 hover:shadow-xl animate-bounce-in btn-press hover-glow min-w-[100px]"
                     onClick={applyPendingFilters}
                     type="button"
                   >
@@ -1391,11 +1391,11 @@ const AdminDashboard = () => {
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.3s' }}>
                   <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('leave.leaveType')}</label>
                   <select
-                    className="border border-blue-200 rounded-xl px-3 py-2 min-w-[140px] dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
+                    className="border border-blue-200 rounded-xl px-3 py-2 min-w-[160px] dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
                     value={pendingHistoryFilterLeaveType}
                     onChange={e => setPendingHistoryFilterLeaveType(e.target.value)}
                   >
-                    <option value="">{t('leave.allTypes')}</option>
+                    <option value="">{t('leave.allTypes', 'All Types')}</option>
                     {pendingLeaveTypes.map(lt => (
                       <option key={lt.id} value={lt.id}>{i18n.language.startsWith('th') ? lt.leave_type_th : lt.leave_type_en}</option>
                     ))}
@@ -1439,11 +1439,11 @@ const AdminDashboard = () => {
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.5s' }}>
                   <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.month', 'เดือน')}</label>
                   <select
-                    className="border border-blue-200 rounded-xl px-3 py-2 w-28 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
+                    className="border border-blue-200 rounded-xl px-3 py-2 w-32 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
                     value={pendingFilterMonth}
                     onChange={e => setPendingFilterMonth(e.target.value ? Number(e.target.value) : '')}
                   >
-                    <option value="">{t('months.all', 'ทั้งหมด')}</option>
+                    <option value="">{t('months.all', 'All Months')}</option>
                     {monthNames.map((name, idx) => (
                       <option key={idx + 1} value={idx + 1}>{name}</option>
                     ))}
@@ -1456,7 +1456,7 @@ const AdminDashboard = () => {
                     type="number"
                     min={2000}
                     max={2100}
-                    className="border border-blue-200 rounded-xl px-3 py-2 w-24 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
+                    className="border border-blue-200 rounded-xl px-3 py-2 w-28 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
                     value={pendingFilterYear}
                     onChange={e => setPendingFilterYear(e.target.value ? Number(e.target.value) : '')}
                     placeholder="YYYY"
@@ -1466,11 +1466,11 @@ const AdminDashboard = () => {
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.7s' }}>
                   <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('leave.backdatedFilter')}</label>
                   <select
-                    className="border border-blue-200 rounded-xl px-3 py-2 min-w-[120px] dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
+                    className="border border-blue-200 rounded-xl px-3 py-2 min-w-[140px] dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
                     value={pendingHistoryBackdatedFilter}
                     onChange={e => setPendingHistoryBackdatedFilter(e.target.value)}
                   >
-                    <option value="all">{t('leave.allBackdated')}</option>
+                    <option value="all">{t('leave.allBackdated', 'All Types')}</option>
                     <option value="backdated">{t('leave.backdatedOnly')}</option>
                     <option value="normal">{t('leave.notBackdatedOnly')}</option>
                   </select>
@@ -1491,14 +1491,14 @@ const AdminDashboard = () => {
                 {/* Buttons */}
                 <div className="flex gap-3 mt-2 animate-slide-in-left" style={{ animationDelay: '0.9s' }}>
                   <button
-                    className="bg-gradient-to-r from-gray-200 to-gray-300 dark:from-slate-700 dark:to-slate-600 text-blue-900 dark:text-white px-4 py-2 rounded-xl shadow-lg hover:from-gray-300 hover:to-gray-400 dark:hover:from-slate-600 dark:hover:to-slate-500 transition-all duration-300 transform hover:scale-105 hover:shadow-xl animate-bounce-in btn-press hover-glow"
+                    className="bg-gradient-to-r from-gray-200 to-gray-300 dark:from-slate-700 dark:to-slate-600 text-blue-900 dark:text-white px-6 py-2 rounded-xl shadow-lg hover:from-gray-300 hover:to-gray-400 dark:hover:from-slate-600 dark:hover:to-slate-500 transition-all duration-300 transform hover:scale-105 hover:shadow-xl animate-bounce-in btn-press hover-glow min-w-[100px]"
                     onClick={clearHistoryFilters}
                     type="button"
                   >
                     {t('common.reset')}
                   </button>
                   <button
-                    className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-xl shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 hover:shadow-xl animate-bounce-in btn-press hover-glow"
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-2 rounded-xl shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 hover:shadow-xl animate-bounce-in btn-press hover-glow min-w-[100px]"
                     onClick={applyHistoryFilters}
                     type="button"
                   >

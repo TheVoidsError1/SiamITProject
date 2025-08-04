@@ -206,6 +206,7 @@
     "pleaseSelectAtLeastOne": "Please select at least one option",
     "noHistoryForPeriod": "No leave history for this period.",
     "allTypes": "All Leave Types",
+    "allBackdated": "All",
     "invalidPhone": "Please enter a valid phone number, e.g. 0912456147",
     "invalidEmail": "Please enter a valid email address, e.g. example@email.com",
     "durationType": "Duration Type",
@@ -234,7 +235,7 @@
     "timeRangeError": "Time must be between 09:00 AM and 06:00 PM",
     "contactMethod": "Contact Method",
     "backdatedFilter": "Backdated/Non-backdated",
-    "allBackdated": "All",
+    "allBackdated": "All Leave Types",
     "notBackdated": "Non-backdated",
     "backdatedLabel": "Backdated",
     "backdatedAll": "All",
@@ -275,7 +276,7 @@
     "maternity": "Maternity Leave"
   },
   "months": {
-    "all": "All",
+    "all": "All Months",
     "month": "Month",
     "year": "Year",
     "1": "January",
