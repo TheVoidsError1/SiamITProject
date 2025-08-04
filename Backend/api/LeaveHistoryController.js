@@ -105,13 +105,42 @@ module.exports = (AppDataSource) => {
 
       // --- ดึง leave request ทั้งหมดของ user เพื่อคำนวณ summary (ไม่สนใจ filter) ---
       const allLeavesForSummary = await leaveRepo.find({ where: { Repid: userId } });
-      // คำนวณ summary จากข้อมูลทั้งหมดของ user
-      const totalLeaveDays = allLeavesForSummary.reduce((sum, leave) => {
-        if (leave.startDate && leave.endDate) {
-          return sum + (Math.floor((new Date(leave.endDate) - new Date(leave.startDate)) / (1000*60*60*24)) + 1);
-        }
-        return sum + 1;
-      }, 0);
+      
+              // คำนวณ summary จากข้อมูลทั้งหมดของ user
+        let totalLeaveDays = 0;
+        let totalLeaveHours = 0;
+        let totalHoursFromHourlyLeaves = 0; // รวมชั่วโมงทั้งหมดจากการลาเป็นชั่วโมง
+        
+        allLeavesForSummary.forEach(leave => {
+          if (leave.startTime && leave.endTime) {
+            // ลาชั่วโมง
+            const [sh, sm] = leave.startTime.split(":").map(Number);
+            const [eh, em] = leave.endTime.split(":").map(Number);
+            let start = sh + (sm || 0) / 60;
+            let end = eh + (em || 0) / 60;
+            let diff = end - start;
+            if (diff < 0) diff += 24;
+            
+            const hours = Math.floor(diff);
+            totalHoursFromHourlyLeaves += hours; // รวมชั่วโมงทั้งหมด
+          } else if (leave.startDate && leave.endDate) {
+            // ลาวัน
+            const start = new Date(leave.startDate);
+            const end = new Date(leave.endDate);
+            const days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+            if (days > 0 && !isNaN(days)) {
+              totalLeaveDays += days;
+            }
+          }
+        });
+        
+        // คำนวณวันจากชั่วโมงรวมทั้งหมด (9 ชั่วโมง = 1 วัน)
+        const totalDaysFromHours = Math.floor(totalHoursFromHourlyLeaves / 9);
+        const totalRemainingHours = totalHoursFromHourlyLeaves % 9;
+        
+        totalLeaveDays += totalDaysFromHours;
+        totalLeaveHours = totalRemainingHours;
+      
       const approvedCount = allLeavesForSummary.filter(l => l.status === 'approved').length;
       const pendingCount = allLeavesForSummary.filter(l => l.status === 'pending').length;
       const rejectedCount = allLeavesForSummary.filter(l => l.status === 'rejected').length;
@@ -123,6 +152,38 @@ module.exports = (AppDataSource) => {
       console.log('Debug - Total leaves for user:', allLeavesForSummary.length);
       console.log('Debug - Backdated leaves:', retroactiveCount);
       console.log('Debug - Sample backdated values:', allLeavesForSummary.slice(0, 5).map(l => ({ id: l.id, backdated: l.backdated, type: typeof l.backdated })));
+      console.log('Debug - Summary calculation:', {
+        totalHoursFromHourlyLeaves: `${totalHoursFromHourlyLeaves} hours (รวมชั่วโมงทั้งหมด)`,
+        totalDaysFromHours: `${totalDaysFromHours} days (แปลงจากชั่วโมงรวม)`,
+        totalRemainingHours: `${totalRemainingHours} hours (ชั่วโมงที่เหลือ)`,
+        totalLeaveDays: `${totalLeaveDays} days (รวมจากวันปกติ + วันจากชั่วโมงรวม)`,
+        totalLeaveHours: `${totalLeaveHours} hours (ชั่วโมงที่เหลือจากชั่วโมงรวม)`,
+        approvedCount,
+        pendingCount,
+        rejectedCount,
+        retroactiveCount
+      });
+      
+      // Debug log สำหรับตรวจสอบการคำนวณชั่วโมง
+      console.log('Debug - Hour calculation examples:');
+      let totalHours = 0;
+      allLeavesForSummary.slice(0, 3).forEach(leave => {
+        if (leave.startTime && leave.endTime) {
+          const [sh, sm] = leave.startTime.split(":").map(Number);
+          const [eh, em] = leave.endTime.split(":").map(Number);
+          let start = sh + (sm || 0) / 60;
+          let end = eh + (em || 0) / 60;
+          let diff = end - start;
+          if (diff < 0) diff += 24;
+          const hours = Math.floor(diff);
+          totalHours += hours;
+          console.log(`  Leave ID ${leave.id}: ${hours} hours (รวม: ${totalHours} ชั่วโมง)`);
+        }
+      });
+      
+      console.log(`  รวมชั่วโมงทั้งหมด: ${totalHours} ชั่วโมง`);
+      console.log(`  แปลงเป็นวัน: ${Math.floor(totalHours / 9)} วัน`);
+      console.log(`  ชั่วโมงที่เหลือ: ${totalHours % 9} ชั่วโมง`);
 
       // join leaveType, admin (approver/rejector)
       const result = await Promise.all(leaves.map(async (leave) => {
@@ -149,6 +210,8 @@ module.exports = (AppDataSource) => {
         let days = 0;
         let durationHours = 0;
         let durationType = 'day';
+        let daysFromHours = 0; // เพิ่มตัวแปรสำหรับคำนวณวันจากชั่วโมง
+        let remainingHours = 0; // ชั่วโมงที่เหลือ (ไม่ครบ 9 ชั่วโมง)
         
         if (leave.startTime && leave.endTime) {
           // ลาชั่วโมง
@@ -161,6 +224,11 @@ module.exports = (AppDataSource) => {
           durationType = 'hour';
           durationHours = Math.floor(diff);
           days = 0;
+          
+          // คำนวณวันจากชั่วโมง (9 ชั่วโมง = 1 วัน)
+          // ถ้าครบ 9 ชั่วโมงให้นับเป็น 1 วัน และแสดงชั่วโมงที่เหลือ
+          daysFromHours = Math.floor(durationHours / 9);
+          remainingHours = durationHours % 9; // ชั่วโมงที่เหลือ
         } else if (leave.startDate && leave.endDate) {
           // ลาวัน
           const start = new Date(leave.startDate);
@@ -169,6 +237,8 @@ module.exports = (AppDataSource) => {
           if (days < 0 || isNaN(days)) days = 0;
           durationType = 'day';
           durationHours = 0;
+          daysFromHours = 0;
+          remainingHours = 0;
         }
         
         return {
@@ -183,6 +253,8 @@ module.exports = (AppDataSource) => {
           endTime: leave.endTime,
           days,
           durationHours,
+          daysFromHours, // เพิ่มวันที่คำนวณจากชั่วโมง
+          remainingHours, // ชั่วโมงที่เหลือ (ไม่ครบ 9 ชั่วโมง)
           durationType,
           reason: leave.reason,
           status: leave.status,
@@ -219,6 +291,7 @@ module.exports = (AppDataSource) => {
         totalPages: Math.ceil(total / limit),
         summary: {
           totalLeaveDays,
+          totalLeaveHours,
           approvedCount,
           pendingCount,
           rejectedCount,
