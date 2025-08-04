@@ -282,11 +282,39 @@
 
          // Emit Socket.io event for real-time notification
          if (global.io) {
+           // Get user information for the notification
+           let userName = 'Unknown User';
+           let leaveTypeName = leaveType;
+           
+           try {
+             // Get user name based on role
+             if (role === 'admin') {
+               const adminRepo = AppDataSource.getRepository('Admin');
+               const admin = await adminRepo.findOneBy({ id: userId });
+               userName = admin ? admin.name : 'Unknown User';
+             } else if (role === 'superadmin') {
+               const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+               const superadmin = await superadminRepo.findOneBy({ id: userId });
+               userName = superadmin ? superadmin.name : 'Unknown User';
+             } else {
+               const userRepo = AppDataSource.getRepository('User');
+               const user = await userRepo.findOneBy({ id: userId });
+               userName = user ? user.name : 'Unknown User';
+             }
+             
+             // Get leave type name
+             if (leaveTypeEntity) {
+               leaveTypeName = leaveTypeEntity.leave_type_th || leaveTypeEntity.leave_type_en || leaveType;
+             }
+           } catch (error) {
+             console.error('Error getting user/leave type info for socket emit:', error);
+           }
+           
            // Emit to admin room for new leave request notification
            global.io.to('admin_room').emit('newLeaveRequest', {
              requestId: savedLeave.id,
-             userName: user.name,
-             leaveType: leaveType.leave_type_th,
+             userName: userName,
+             leaveType: leaveTypeName,
              startDate: savedLeave.startDate,
              endDate: savedLeave.endDate,
              reason: savedLeave.reason,
