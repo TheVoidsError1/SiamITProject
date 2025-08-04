@@ -7,10 +7,14 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { getAllThaiHolidays } from '@/constants/getThaiHolidays';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSocket } from '@/contexts/SocketContext';
+import { useToast } from '@/hooks/use-toast';
 
 const CalendarPage = () => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
+  const { socket, isConnected } = useSocket();
+  const { toast } = useToast();
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
@@ -141,6 +145,62 @@ const CalendarPage = () => {
       durationType: string;
     };
   }
+
+  // Socket.io event listeners for real-time calendar updates
+  useEffect(() => {
+    if (socket && isConnected) {
+      // Listen for new leave requests
+      socket.on('newLeaveRequest', (data) => {
+        console.log('Received new leave request:', data);
+        
+        // Show toast notification
+        toast({
+          title: t('notifications.newLeaveRequest'),
+          description: `${data.userName} - ${data.leaveType}`,
+          variant: 'default'
+        });
+        
+        // Refresh calendar data by triggering the fetchData effect
+        setYear(prevYear => prevYear);
+      });
+
+      // Listen for leave request status changes
+      socket.on('leaveRequestStatusChanged', (data) => {
+        console.log('Received leave request status change:', data);
+        
+        // Show toast notification
+        toast({
+          title: t('notifications.leaveStatusChanged'),
+          description: `${t('notifications.request')} ${data.requestId} ${t('notifications.hasBeen')} ${data.status === 'approved' ? t('notifications.approved') : t('notifications.rejected')}`,
+          variant: data.status === 'approved' ? 'default' : 'destructive'
+        });
+        
+        // Refresh calendar data by triggering the fetchData effect
+        setYear(prevYear => prevYear);
+      });
+
+      // Listen for new company events
+      socket.on('newCompanyEvent', (data) => {
+        console.log('Received new company event:', data);
+        
+        // Show toast notification
+        toast({
+          title: t('notifications.newCompanyEvent'),
+          description: data.title,
+          variant: 'default'
+        });
+        
+        // Refresh calendar data by triggering the fetchData effect
+        setYear(prevYear => prevYear);
+      });
+
+      return () => {
+        socket.off('newLeaveRequest');
+        socket.off('leaveRequestStatusChanged');
+        socket.off('newCompanyEvent');
+      };
+    }
+  }, [socket, isConnected, toast, t]);
 
   // Fetch company events, Thai holidays, and employee leaves
   useEffect(() => {

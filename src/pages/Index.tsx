@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { getThaiHolidaysByMonth, getUpcomingThaiHolidays } from "@/constants/getThaiHolidays";
 import { useAuth } from '@/contexts/AuthContext';
+import { useSocket } from '@/contexts/SocketContext';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { Bell, Calendar, Clock, TrendingUp, Users } from 'lucide-react';
@@ -14,6 +15,7 @@ import { Link, useNavigate } from 'react-router-dom';
 const Index = () => {
   const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
+  const { socket, isConnected } = useSocket();
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -367,6 +369,68 @@ const Index = () => {
 
     fetchCompanyHolidays();
   }, [API_BASE_URL, selectedYear, selectedMonth, showSessionExpiredDialog]);
+
+  // Socket.io event listeners for real-time dashboard updates
+  useEffect(() => {
+    if (socket && isConnected) {
+      // Listen for leave request status changes
+      socket.on('leaveRequestStatusChanged', (data) => {
+        console.log('Received leave request status change:', data);
+        
+        // Show toast notification
+        toast({
+          title: t('notifications.statusChanged'),
+          description: `${t('notifications.request')} ${data.requestId} ${t('notifications.hasBeen')} ${data.status === 'approved' ? t('notifications.approved') : t('notifications.rejected')}`,
+          variant: data.status === 'approved' ? 'default' : 'destructive'
+        });
+        
+        // Refresh dashboard stats
+        fetchDashboardStats();
+        fetchRecentLeaveStats();
+        fetchRecentLeaves();
+      });
+
+      // Listen for new announcements
+      socket.on('newAnnouncement', (data) => {
+        console.log('Received new announcement:', data);
+        
+        // Show toast notification
+        toast({
+          title: t('notifications.newAnnouncement'),
+          description: data.subject,
+          variant: 'default'
+        });
+        
+        // Refresh announcements
+        fetchAnnouncements();
+      });
+
+      // Listen for new leave requests (for admin users)
+      if (user?.role === 'admin' || user?.role === 'superadmin') {
+        socket.on('newLeaveRequest', (data) => {
+          console.log('Received new leave request:', data);
+          
+          // Show toast notification
+          toast({
+            title: t('notifications.newLeaveRequest'),
+            description: `${data.userName} - ${data.leaveType}`,
+            variant: 'default'
+          });
+          
+          // Refresh dashboard stats
+          fetchDashboardStats();
+          fetchRecentLeaveStats();
+          fetchRecentLeaves();
+        });
+      }
+
+      return () => {
+        socket.off('leaveRequestStatusChanged');
+        socket.off('newAnnouncement');
+        socket.off('newLeaveRequest');
+      };
+    }
+  }, [socket, isConnected, toast, t, user?.role]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-100 to-purple-100 dark:from-gray-900 dark:via-gray-950 dark:to-indigo-900 transition-colors relative overflow-x-hidden">

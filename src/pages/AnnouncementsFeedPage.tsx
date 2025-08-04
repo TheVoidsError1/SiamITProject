@@ -13,9 +13,12 @@ import { th, enUS } from 'date-fns/locale';
 import axios from 'axios';
 import { Newspaper, User, Calendar, Image as ImageIcon, Settings, Plus, Upload, Image, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useSocket } from '@/contexts/SocketContext';
+import { useToast } from '@/hooks/use-toast';
 import { getImageUrl, handleImageError } from '@/lib/utils';
 
 interface Announcement {
+  id: string;
   subject: string;
   detail: string;
   createdAt: string;
@@ -27,6 +30,8 @@ interface Announcement {
 const AnnouncementsFeedPage = () => {
   const { t, i18n } = useTranslation();
   const { user, showSessionExpiredDialog } = useAuth();
+  const { socket, isConnected } = useSocket();
+  const { toast } = useToast();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,6 +48,68 @@ const AnnouncementsFeedPage = () => {
   const [previewImageUrl, setPreviewImageUrl] = useState<string>('');
   const [previewImageName, setPreviewImageName] = useState<string>('');
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+  // Socket.io event listeners for real-time announcements
+  useEffect(() => {
+    if (socket && isConnected) {
+      // Listen for new announcements
+      socket.on('newAnnouncement', (data) => {
+        console.log('Received new announcement:', data);
+        
+        // Show toast notification
+        toast({
+          title: t('notifications.newAnnouncement'),
+          description: data.subject,
+          variant: 'default'
+        });
+        
+        // Add new announcement to the list
+        setAnnouncements(prev => [data, ...prev]);
+      });
+
+      // Listen for announcement updates
+      socket.on('announcementUpdated', (data) => {
+        console.log('Received announcement update:', data);
+        
+        // Show toast notification
+        toast({
+          title: t('notifications.announcementUpdated'),
+          description: data.subject,
+          variant: 'default'
+        });
+        
+        // Update announcement in the list
+        setAnnouncements(prev => 
+          prev.map(announcement => 
+            announcement.id === data.id ? data : announcement
+          )
+        );
+      });
+
+      // Listen for announcement deletions
+      socket.on('announcementDeleted', (data) => {
+        console.log('Received announcement deletion:', data);
+        
+        // Show toast notification
+        toast({
+          title: t('notifications.announcementDeleted'),
+          description: data.subject,
+          variant: 'destructive'
+        });
+        
+        // Remove announcement from the list
+        setAnnouncements(prev => 
+          prev.filter(announcement => announcement.id !== data.id)
+        );
+      });
+
+      return () => {
+        socket.off('newAnnouncement');
+        socket.off('announcementUpdated');
+        socket.off('announcementDeleted');
+      };
+    }
+  }, [socket, isConnected, toast, t]);
 
   useEffect(() => {
     const fetchAnnouncements = async () => {

@@ -278,9 +278,23 @@
 
          // เพิ่มข้อมูลลงฐานข้อมูล
          const leave = leaveRepo.create(leaveData);
-         await leaveRepo.save(leave);
+         const savedLeave = await leaveRepo.save(leave);
 
-         res.status(201).json({ status: 'success', data: leave, message: 'Leave request created' });
+         // Emit Socket.io event for real-time notification
+         if (global.io) {
+           // Emit to admin room for new leave request notification
+           global.io.to('admin_room').emit('newLeaveRequest', {
+             requestId: savedLeave.id,
+             userName: user.name,
+             leaveType: leaveType.leave_type_th,
+             startDate: savedLeave.startDate,
+             endDate: savedLeave.endDate,
+             reason: savedLeave.reason,
+             employeeId: savedLeave.Repid
+           });
+         }
+
+         res.status(201).json({ status: 'success', data: savedLeave, message: 'Leave request created' });
        } catch (err) {
          res.status(500).json({ status: 'error', message: err.message });
        }

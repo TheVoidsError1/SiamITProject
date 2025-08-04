@@ -667,7 +667,15 @@
     "request": "คำขอ",
     "hasBeen": "ได้รับการ",
     "approved": "อนุมัติ",
-    "rejected": "ปฏิเสธ"
+    "rejected": "ปฏิเสธ",
+    "newAnnouncement": "ประกาศใหม่",
+    "announcementUpdated": "ประกาศอัปเดต",
+    "announcementDeleted": "ประกาศถูกลบ",
+    "newLeaveRequest": "คำขอลาใหม่",
+    "leaveStatusChanged": "สถานะคำขอลาเปลี่ยนแปลง",
+    "newCompanyEvent": "วันหยุดบริษัทใหม่",
+    "companyEventUpdated": "วันหยุดบริษัทอัปเดต",
+    "companyEventDeleted": "วันหยุดบริษัทถูกลบ"
   },
   "usedLeaveDaysText": "วันลาที่ใช้ไปแล้ว:",
   "status": {

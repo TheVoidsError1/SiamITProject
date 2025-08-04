@@ -633,6 +633,21 @@
     "approved": "approved",
     "rejected": "rejected"
   },
+  "notifications": {
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "statusChanged": "Status Changed",
+    "request": "Request",
+    "hasBeen": "has been",
+    "newAnnouncement": "New Announcement",
+    "announcementUpdated": "Announcement Updated",
+    "announcementDeleted": "Announcement Deleted",
+    "newLeaveRequest": "New Leave Request",
+    "leaveStatusChanged": "Leave Status Changed",
+    "newCompanyEvent": "New Company Event",
+    "companyEventUpdated": "Company Event Updated",
+    "companyEventDeleted": "Company Event Deleted"
+  },
   "usedLeaveDaysText": "Used leave days:",
   "status": {
     "all": "All",
