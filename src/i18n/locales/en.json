@@ -660,7 +660,10 @@
     "newsType": "News type",
     "companyNews": "Company News",
     "newsTypeDesc": "Important company news and announcements",
-    "noDetailProvided": "No details provided"
+    "noDetailProvided": "No details provided",
+    "editNews": "Edit News",
+    "saveChanges": "Save Changes",
+    "editNewsError": "Failed to edit news"
   },
   "announcementsFeed": {
     "title": "Announcements Feed",

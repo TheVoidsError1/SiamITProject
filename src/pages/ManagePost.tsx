@@ -237,10 +237,10 @@ export default function ManagePost() {
         setImagePreview(null);
         fetchNews();
       } else {
-        setError(data.message || 'แก้ไขข่าวสารไม่สำเร็จ');
+        setError(data.message || t('companyNews.editNewsError'));
       }
     } catch (err) {
-      setError('แก้ไขข่าวสารไม่สำเร็จ');
+      setError(t('companyNews.editNewsError'));
     } finally {
       setLoading(false);
     }
@@ -418,7 +418,7 @@ export default function ManagePost() {
                 <DialogHeader>
                   <DialogTitle className="text-2xl font-bold text-blue-900 mb-2 flex items-center gap-2">
                     <Edit className="w-6 h-6 text-blue-600" />
-                    แก้ไขข่าวสาร
+                    {t('companyNews.editNews')}
                   </DialogTitle>
                 </DialogHeader>
                 <form className="space-y-4 mt-2" onSubmit={handleUpdateNews}>
@@ -504,7 +504,7 @@ export default function ManagePost() {
                       className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold"
                       disabled={loading}
                     >
-                      {loading ? 'กำลังบันทึก...' : 'บันทึกการแก้ไข'}
+                      {loading ? t('companyNews.saving') : t('companyNews.saveChanges')}
                     </button>
                   </div>
                   {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
@@ -926,4 +926,4 @@ export default function ManagePost() {
       </Dialog>
     </div>
   );
-} 
+}                                    

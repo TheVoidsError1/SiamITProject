@@ -696,7 +696,10 @@
     "newsType": "ประเภทข่าวสาร",
     "companyNews": "ข่าวสารบริษัท",
     "newsTypeDesc": "ข่าวสารและประกาศสำคัญของบริษัท",
-    "noDetailProvided": "ไม่มีรายละเอียด"
+    "noDetailProvided": "ไม่มีรายละเอียด",
+    "editNews": "แก้ไขข่าวสาร",
+    "saveChanges": "บันทึกการแก้ไข",
+    "editNewsError": "แก้ไขข่าวสารไม่สำเร็จ"
   },
   "announcementsFeed": {
     "title": "ฟีดข่าวสาร",
