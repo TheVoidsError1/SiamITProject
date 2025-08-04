@@ -88,6 +88,7 @@
     "disabled": "Disabled",
     "user": "User",
     "back": "Back",
+    "goBack": "Go Back",
     "actions": "Actions",
     "viewDetails": "See Details",
     "hours": "hours",
@@ -553,7 +554,9 @@
     "superadmin": "Superadmin",
     "notSpecified": "Not specified",
     "noEmployeesFound": "No employees found",
-    "noEmployeesFoundDesc": "No employees match the selected filter criteria. Please try changing the criteria or reset the filter"
+    "noEmployeesFoundDesc": "No employees match the selected filter criteria. Please try changing the criteria or reset the filter",
+    "confirmDelete": "Confirm Delete",
+    "confirmDeleteNewsDesc": "Are you sure you want to delete this news?"
   },
   "error": {
     "apiConnectionError": "API Connection Error",
@@ -656,7 +659,8 @@
     "publishedOn": "Published on",
     "newsType": "News type",
     "companyNews": "Company News",
-    "newsTypeDesc": "Important company news and announcements"
+    "newsTypeDesc": "Important company news and announcements",
+    "noDetailProvided": "No details provided"
   },
   "announcementsFeed": {
     "title": "Announcements Feed",
