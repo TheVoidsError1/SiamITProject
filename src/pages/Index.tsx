@@ -6,10 +6,11 @@ import { getThaiHolidaysByMonth, getUpcomingThaiHolidays } from "@/constants/get
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { Bell, Calendar, Clock, TrendingUp, Users } from 'lucide-react';
+import { Bell, Calendar, Clock, TrendingUp, Users, MessageCircle, Smartphone } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
+
 
 const Index = () => {
   const { t, i18n } = useTranslation();
@@ -89,6 +90,10 @@ const Index = () => {
     };
   } | null>(null);
   const [loadingUserProfile, setLoadingUserProfile] = useState(true);
+  
+  // LINE linking states
+  const [lineLinkStatus, setLineLinkStatus] = useState<'checking' | 'linked' | 'unlinked' | 'error'>('checking');
+  const [lineLinkingLoading, setLineLinkingLoading] = useState(false);
 
   // Helper for month options
   const monthOptions = [
@@ -111,6 +116,151 @@ const Index = () => {
 
   const { showSessionExpiredDialog } = useAuth();
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
+  // LINE linking functions
+  const checkLineLinkStatus = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${API_BASE_URL}/api/line/link-status`, {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : undefined,
+        },
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setLineLinkStatus(data.linked ? 'linked' : 'unlinked');
+      } else {
+        setLineLinkStatus('error');
+      }
+    } catch (error) {
+      console.error('Error checking LINE link status:', error);
+      setLineLinkStatus('error');
+    }
+  };
+
+  const handleLineLogin = async () => {
+    setLineLinkingLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${API_BASE_URL}/api/line/login-url`, {
+        headers: {
+          Authorization: token ? `Bearer ${token}` : undefined,
+        },
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        // Open LINE Login in a popup window
+        const popup = window.open(data.loginUrl, 'lineLogin', 'width=500,height=600,scrollbars=yes,resizable=yes');
+        
+        // Listen for messages from the popup
+        const messageListener = (event) => {
+          // Check if the message is from our LINE callback
+          if (event.origin !== window.location.origin) return;
+          
+          if (event.data && event.data.type === 'LINE_LINK_SUCCESS') {
+            // Close the popup
+            if (popup) {
+              popup.close();
+            }
+            
+            // Remove the message listener
+            window.removeEventListener('message', messageListener);
+            
+            // Show success toast
+            toast({
+              title: t('common.success'),
+              description: t('line.linkSuccess', 'LINE Account Linked Successfully!'),
+              variant: 'default'
+            });
+            
+            // Update the link status
+            setLineLinkStatus('linked');
+          } else if (event.data && event.data.type === 'LINE_LINK_ERROR') {
+            // Close the popup
+            if (popup) {
+              popup.close();
+            }
+            
+            // Remove the message listener
+            window.removeEventListener('message', messageListener);
+            
+            // Show error toast
+            toast({
+              title: t('common.error'),
+              description: event.data.message || t('line.linkError', 'Failed to link LINE account'),
+              variant: 'destructive'
+            });
+          }
+        };
+        
+        window.addEventListener('message', messageListener);
+        
+        // Fallback: check status after a delay in case popup is blocked
+        setTimeout(() => {
+          checkLineLinkStatus();
+        }, 5000);
+      } else {
+        toast({
+          title: t('common.error'),
+          description: t('line.loginError', 'Failed to start LINE login'),
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
+      console.error('Error starting LINE login:', error);
+      toast({
+        title: t('common.error'),
+        description: t('line.loginError', 'Failed to start LINE login'),
+        variant: 'destructive'
+      });
+    } finally {
+      setLineLinkingLoading(false);
+    }
+  };
+
+  const handleLineUnlink = async () => {
+    setLineLinkingLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const response = await fetch(`${API_BASE_URL}/api/line/unlink`, {
+        method: 'POST',
+        headers: {
+          Authorization: token ? `Bearer ${token}` : undefined,
+        },
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        toast({
+          title: t('common.success'),
+          description: t('line.unlinkSuccess', 'LINE account unlinked successfully'),
+          variant: 'default'
+        });
+        // Update the link status
+        setLineLinkStatus('unlinked');
+      } else {
+        toast({
+          title: t('common.error'),
+          description: t('line.unlinkError', 'Failed to unlink LINE account'),
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
+      console.error('Error unlinking LINE account:', error);
+      toast({
+        title: t('common.error'),
+        description: t('line.unlinkError', 'Failed to unlink LINE account'),
+        variant: 'destructive'
+      });
+    } finally {
+      setLineLinkingLoading(false);
+    }
+  };
 
   // เพิ่มฟังก์ชันสำหรับเรียก API พร้อม month/year
   const fetchDashboardStats = (month?: number, year?: number) => {
@@ -263,7 +413,10 @@ const Index = () => {
     };
 
     fetchUserProfile();
+    checkLineLinkStatus();
   }, [API_BASE_URL, showSessionExpiredDialog]);
+
+
 
   // Fetch announcements
   useEffect(() => {
@@ -417,15 +570,37 @@ const Index = () => {
             <p className="mb-3 text-base font-medium animate-slide-in-left delay-100" style={{ color: '#6366f1' }}>
               {t('main.today')} {new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
             </p>
-            <Link to="/leave-request">
+            <div className="flex gap-3">
+              <Link to="/leave-request">
+                <Button 
+                  size="default" 
+                  variant="secondary"
+                  className="bg-white text-blue-600 hover:bg-blue-100 font-bold shadow-lg border-0 px-6 py-2 text-base rounded-lg animate-bounce-in"
+                >
+                  {t('main.newLeaveRequest')}
+                </Button>
+              </Link>
+              
               <Button 
                 size="default" 
                 variant="secondary"
-                className="bg-white text-blue-600 hover:bg-blue-100 font-bold shadow-lg border-0 px-6 py-2 text-base rounded-lg animate-bounce-in"
+                onClick={lineLinkStatus === 'linked' ? handleLineUnlink : handleLineLogin}
+                disabled={lineLinkingLoading}
+                className={`font-bold shadow-lg border-0 px-6 py-2 text-base rounded-lg animate-bounce-in flex items-center gap-2 ${
+                  lineLinkStatus === 'linked' 
+                    ? 'bg-red-500 text-white hover:bg-red-600' 
+                    : 'bg-green-500 text-white hover:bg-green-600'
+                }`}
               >
-                {t('main.newLeaveRequest')}
+                <span className="text-[8px] font-bold text-white hidden">LINE</span>
+                {lineLinkingLoading 
+                  ? (lineLinkStatus === 'linked' ? t('line.unlinking', 'Unlinking...') : t('line.linking', 'Linking...'))
+                  : lineLinkStatus === 'linked' 
+                    ? t('line.unlinkAccount') 
+                    : t('line.linkAccount')
+                }
               </Button>
-            </Link>
+            </div>
           </div>
           <div className="absolute top-0 right-0 w-40 h-40 rounded-full" style={{ background: 'linear-gradient(90deg, #fffbe6 0%, #ffe082 100%)', opacity: 0.18, transform: 'translateY(-50%) translateX(50%)' }}></div>
           <div className="flex-1 flex items-center justify-center animate-float">
@@ -789,6 +964,8 @@ const Index = () => {
           @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         `}</style>
       </div>
+      
+
     </div>
   );
 };

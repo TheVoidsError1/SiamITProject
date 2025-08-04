@@ -1,3 +1,4 @@
+require('dotenv').config();
 require('reflect-metadata');
 const { DataSource } = require('typeorm');
 const express = require('express');
@@ -63,7 +64,42 @@ const allowedOrigins = [
 ];
 
 app.use(cors({
-  origin: 'http://localhost:8081', // or use '*' for all origins (not recommended for production)
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      'http://localhost:8081',
+      'http://192.168.50.64:8081',
+      'http://192.168.50.125:8081',
+      'http://192.168.50.90:8081',
+      'http://192.168.50.54:8081',
+      'http://localhost:3000',
+      'http://localhost:3001',
+      'http://localhost:8080',
+      'http://localhost:8001',
+      // Allow all ngrok domains
+      /^https:\/\/.*\.ngrok-free\.app$/,
+      /^https:\/\/.*\.ngrok\.io$/,
+      /^https:\/\/.*\.loca\.lt$/
+    ];
+    
+    // Check if the origin is allowed
+    const isAllowed = allowedOrigins.some(allowedOrigin => {
+      if (typeof allowedOrigin === 'string') {
+        return origin === allowedOrigin;
+      } else if (allowedOrigin instanceof RegExp) {
+        return allowedOrigin.test(origin);
+      }
+      return false;
+    });
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true // if you need to send cookies/auth headers
 }));
 
@@ -231,6 +267,28 @@ app.use('/api', announcementsController);
 
 const customHolidayController = require('./api/CustomHolidayController')(AppDataSource);
 app.use('/api', customHolidayController);
+
+// Make AppDataSource globally available
+global.AppDataSource = AppDataSource;
+
+// LINE Bot routes
+const LineController = require('./api/LineController');
+app.post('/api/line/webhook', LineController.webhook);
+
+// Send notification endpoint
+app.post('/api/line/send-notification', async (req, res) => {
+  const { userId, message } = req.body;
+  const result = await LineController.sendNotification(userId, message);
+  res.json(result);
+});
+
+// LINE Login routes
+const LineLoginController = require('./api/LineLoginController');
+const authMiddleware = require('./middleware/authMiddleware');
+app.get('/api/line/login-url', authMiddleware, LineLoginController.getLoginUrl);
+app.get('/api/line/callback', LineLoginController.handleCallback);
+app.get('/api/line/link-status', authMiddleware, LineLoginController.checkLinkStatus);
+app.post('/api/line/unlink', authMiddleware, LineLoginController.unlinkAccount);
 
 app.listen(port, '0.0.0.0', () => {
   console.log(`Server is running on http://localhost:${port}`);
