@@ -277,6 +277,7 @@ module.exports = (AppDataSource) => {
           if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
           // แสดงเป็นจำนวนเต็มเท่านั้น (ปัดเศษทิ้ง)
           duration = `${Math.floor(durationHours)} hour`;
+          
         } else if (lr.startDate && lr.endDate) {
           // Day-based
           const start = new Date(lr.startDate);
