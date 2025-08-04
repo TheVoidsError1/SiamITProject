@@ -1,23 +1,21 @@
-import LanguageSwitcher from '@/components/LanguageSwitcher';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+import { useToast } from '@/hooks/use-toast';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-import { useToast } from '@/hooks/use-toast';
 
 // Mock data for demonstration
 // Remove mockDepartments
@@ -485,6 +483,22 @@ const ManageAll: React.FC = () => {
     }
   };
 
+  // ฟังก์ชันช่วยเลือกชื่อ position ตามภาษา
+  const getPositionDisplayName = (position: any, lang: string) => {
+    if (!position) return '';
+    return lang === 'th' ? position.position_name_th : position.position_name_en;
+  };
+  // ฟังก์ชันช่วยเลือกชื่อ department ตามภาษา
+  const getDepartmentDisplayName = (department: any, lang: string) => {
+    if (!department) return '';
+    return lang === 'th' ? department.department_name_th : department.department_name_en;
+  };
+  // ฟังก์ชันช่วยเลือกชื่อ leave type ตามภาษา
+  const getLeaveTypeDisplayName = (leaveType: any, lang: string) => {
+    if (!leaveType) return '';
+    return lang === 'th' ? leaveType.leave_type_th : leaveType.leave_type_en;
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-100 via-indigo-50 to-white flex flex-col">
       {/* Hero Section */}
@@ -695,7 +709,7 @@ const ManageAll: React.FC = () => {
                           className="accent-blue-600 h-5 w-5 rounded border-gray-300 focus:ring-2 focus:ring-blue-400 transition-all"
                           id="require-attachment-checkbox"
                         />
-                        <label htmlFor="require-attachment-checkbox" className="text-base font-medium select-none cursor-pointer">
+                        <label htmlFor="require-attachment-checkbox" className="text-base font-medium select-none cursor-pointer whitespace-nowrap">
                           {t('leave.requiresAttachment', 'Require Attachment')}
                         </label>
                       </div>
@@ -844,7 +858,9 @@ const ManageAll: React.FC = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>{t('common.confirmDelete', 'ยืนยันการลบ')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('common.confirmDeletePosition', 'คุณต้องการลบตำแหน่ง')} "{deletePositionDialog.position?.position_name_th || deletePositionDialog.position?.position_name_en}" {t('common.confirmDeleteQuestion', 'หรือไม่?')}
+              {t('common.confirmDeletePosition', 'คุณต้องการลบตำแหน่ง')} "
+              {getPositionDisplayName(deletePositionDialog.position, lang)}"
+              {t('common.confirmDeleteQuestion', 'หรือไม่?')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -862,7 +878,9 @@ const ManageAll: React.FC = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>{t('common.confirmDelete', 'ยืนยันการลบ')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('common.confirmDeleteDepartment', 'คุณต้องการลบแผนก')} "{deleteDepartmentDialog.department?.department_name_th || deleteDepartmentDialog.department?.department_name_en}" {t('common.confirmDeleteQuestion', 'หรือไม่?')}
+              {t('common.confirmDeleteDepartment', 'คุณต้องการลบแผนก')} "
+              {getDepartmentDisplayName(deleteDepartmentDialog.department, lang)}"
+              {t('common.confirmDeleteQuestion', 'หรือไม่?')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -880,7 +898,9 @@ const ManageAll: React.FC = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>{t('common.confirmDelete', 'ยืนยันการลบ')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('common.confirmDeleteLeaveType', 'คุณต้องการลบประเภทการลา')} "{deleteLeaveTypeDialog.leaveType?.leave_type_th || deleteLeaveTypeDialog.leaveType?.leave_type_en}" {t('common.confirmDeleteQuestion', 'หรือไม่?')}
+              {t('common.confirmDeleteLeaveType', 'คุณต้องการลบประเภทการลา')} "
+              {getLeaveTypeDisplayName(deleteLeaveTypeDialog.leaveType, lang)}"
+              {t('common.confirmDeleteQuestion', 'หรือไม่?')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
