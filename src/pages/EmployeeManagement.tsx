@@ -449,14 +449,14 @@ const EmployeeManagement = () => {
                                   </AlertDialogTrigger>
                                   <AlertDialogContent>
                                     <AlertDialogHeader>
-                                      <AlertDialogTitle>{t('system.confirmDelete', 'ยืนยันการลบ')}</AlertDialogTitle>
-                                      <AlertDialogDescription>{t('system.confirmDeleteDesc', 'คุณแน่ใจหรือไม่ว่าต้องการลบผู้ใช้งานนี้?')}</AlertDialogDescription>
+                                      <AlertDialogTitle>{t('system.confirmDelete')}</AlertDialogTitle>
+                                      <AlertDialogDescription>{t('system.confirmDeleteDesc')}</AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
-                                      <AlertDialogCancel>{t('common.cancel', 'ยกเลิก')}</AlertDialogCancel>
+                                      <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
                                       {/* ปุ่มยืนยันการลบใน Dialog */}
                                       <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-gradient-to-r from-red-500 to-pink-400 text-white">
-                                        {deleting ? t('common.loading', 'กำลังลบ...') : t('common.delete', 'ลบ')}
+                                        {deleting ? t('common.loading') : t('common.delete')}
                                       </AlertDialogAction>
                                     </AlertDialogFooter>
                                   </AlertDialogContent>
