@@ -18,6 +18,7 @@ module.exports = new EntitySchema({
         },
         Image: {
             type: 'varchar',
+            nullable: true,
         },
         createdBy: {
             type: 'varchar',

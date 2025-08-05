@@ -132,7 +132,6 @@ export default function ManagePost() {
       formData.append('subject', form.subject);
       formData.append('detail', form.detail);
       formData.append('createdBy', user?.full_name || '');
-      formData.append('createdAt', new Date().toISOString());
       
       if (selectedFile) {
         formData.append('Image', selectedFile);

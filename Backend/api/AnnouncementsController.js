@@ -293,15 +293,14 @@ module.exports = (AppDataSource) => {
   // Create announcement
   router.post('/announcements', upload.single('Image'), async (req, res) => {
     try {
-      const { subject, detail } = req.body;
-      const createdBy = req.user?.userId || 'system';
+      const { subject, detail, createdBy } = req.body;
       
       const announcementRepo = AppDataSource.getRepository('Announcements');
       const newAnnouncement = announcementRepo.create({
         subject,
         detail,
         Image: req.file ? req.file.filename : null,
-        createdBy
+        createdBy: createdBy || 'system'
       });
       
       const savedAnnouncement = await announcementRepo.save(newAnnouncement);
@@ -385,7 +384,7 @@ module.exports = (AppDataSource) => {
   router.put('/announcements/:id', upload.single('Image'), async (req, res) => {
     try {
       const { id } = req.params;
-      const { subject, detail } = req.body;
+      const { subject, detail, createdBy } = req.body;
       
       const announcementRepo = AppDataSource.getRepository('Announcements');
       const announcement = await announcementRepo.findOneBy({ id });
@@ -397,6 +396,9 @@ module.exports = (AppDataSource) => {
       // Update fields
       announcement.subject = subject || announcement.subject;
       announcement.detail = detail || announcement.detail;
+      if (createdBy) {
+        announcement.createdBy = createdBy;
+      }
       
       if (req.file) {
         // Delete old image if exists
