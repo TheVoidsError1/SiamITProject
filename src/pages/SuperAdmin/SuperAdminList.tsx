@@ -389,11 +389,13 @@ const SuperAdminList: React.FC = () => {
                   <Input
                     id="full_name"
                     name="full_name"
+                    type="text"
                     placeholder={t('admin.enterFullName')}
                     value={form.full_name}
                     onChange={handleChange}
                     className={`pl-6 py-4 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm`}
                     required
+                    autoComplete="name"
                   />
                   {form.full_name && (
                     <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-green-500" />
@@ -418,6 +420,7 @@ const SuperAdminList: React.FC = () => {
                     onChange={handleChange}
                     className={`pl-6 py-4 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm`}
                     required
+                    autoComplete="email"
                   />
                   {form.email && (
                     <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-green-500" />
@@ -433,7 +436,7 @@ const SuperAdminList: React.FC = () => {
                   <span className="text-red-500">*</span>
                 </Label>
                 <Select value={form.position} onValueChange={value => setForm(f => ({ ...f, position: value }))}>
-                  <SelectTrigger className={`rounded-xl shadow-sm text-lg transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm py-4`}>
+                  <SelectTrigger id="position" className={`rounded-xl shadow-sm text-lg transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm py-4`}>
                     <SelectValue placeholder={t('admin.selectPosition')} />
                   </SelectTrigger>
                   <SelectContent className="bg-white/95 backdrop-blur-md border-2 border-gray-200 rounded-xl">
@@ -454,7 +457,7 @@ const SuperAdminList: React.FC = () => {
                   <span className="text-red-500">*</span>
                 </Label>
                 <Select value={form.department} onValueChange={value => setForm(f => ({ ...f, department: value }))}>
-                  <SelectTrigger className={`rounded-xl shadow-sm text-lg transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm py-4`}>
+                  <SelectTrigger id="department" className={`rounded-xl shadow-sm text-lg transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm py-4`}>
                     <SelectValue placeholder={t('admin.selectDepartment')} />
                   </SelectTrigger>
                   <SelectContent className="bg-white/95 backdrop-blur-md border-2 border-gray-200 rounded-xl">
@@ -487,6 +490,7 @@ const SuperAdminList: React.FC = () => {
                     onChange={handleChange}
                     className={`pl-6 pr-12 py-4 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm`}
                     required
+                    autoComplete="new-password"
                   />
                   <button
                     type="button"
@@ -539,6 +543,7 @@ const SuperAdminList: React.FC = () => {
                     onChange={handleChange}
                     className={`pl-6 pr-12 py-4 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm`}
                     required
+                    autoComplete="new-password"
                   />
                   <button
                     type="button"

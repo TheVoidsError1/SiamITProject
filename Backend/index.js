@@ -338,7 +338,7 @@ app.get('/api/line/callback', LineLoginController.handleCallback);
 app.get('/api/line/link-status', authMiddleware, LineLoginController.checkLinkStatus);
 app.post('/api/line/unlink', authMiddleware, LineLoginController.unlinkAccount);
 
-app.listen(port, '0.0.0.0', () => {
+server.listen(port, '0.0.0.0', () => {
   console.log(`Server is running on http://localhost:${port}`);
   console.log('Socket.io server is ready');
 }); 
