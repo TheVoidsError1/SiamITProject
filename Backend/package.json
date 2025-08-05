@@ -5,11 +5,13 @@
   "dependencies": {
     "@line/bot-sdk": "^10.0.0",
     "aws-ssl-profiles": "^1.1.2",
+    "axios": "^1.11.0",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
     "denque": "^2.1.0",
+    "dotenv": "^17.2.1",
     "generate-function": "^2.3.1",
     "iconv-lite": "^0.6.3",
     "is-property": "^1.0.2",

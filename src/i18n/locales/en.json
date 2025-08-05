@@ -100,6 +100,7 @@
     "year": "Year",
     "me": "Me",
     "close": "Close",
+    "gotIt": "Got it!",
     "add": "Add",
     "update": "Update",
     "allMonths": "All Months",
@@ -112,6 +113,19 @@
     "deleteSuccess": "Deleted successfully",
     "deleteError": "Failed to delete"
   },
+          "line": {
+          "linkAccount": "Link LINE Account",
+          "linked": "LINE Linked ✓",
+          "linking": "Linking...",
+          "loginError": "Failed to start LINE login",
+          "unlinkAccount": "Unlink LINE Account",
+          "unlinking": "Unlinking...",
+          "unlinkError": "Failed to unlink LINE account",
+          "unlinkSuccess": "LINE account unlinked successfully",
+          "linkSuccess": "LINE Account Linked Successfully!",
+          "linkSuccessDesc": "Your LINE account has been successfully linked to your profile.",
+          "linkSuccessMessage": "Account linked successfully! You can now use LINE bot features."
+        },
   "approved": "Approved",
   "rejected": "Rejected",
   "markAllAsRead": "Mark All as Read",

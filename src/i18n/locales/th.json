@@ -96,6 +96,7 @@
     "month": "เดือน",
     "year": "ปี",
     "close": "ปิด",
+    "gotIt": "เข้าใจแล้ว!",
     "add": "เพิ่ม",
     "update": "อัปเดต",
     "me": "ฉัน",
@@ -124,6 +125,19 @@
     "deleteSuccess": "ลบสำเร็จ",
     "deleteError": "ลบไม่สำเร็จ"
   },
+          "line": {
+          "linkAccount": "เชื่อมต่อบัญชี LINE",
+          "linked": "เชื่อมต่อ LINE แล้ว ✓",
+          "linking": "กำลังเชื่อมต่อ...",
+          "loginError": "ไม่สามารถเริ่มการเชื่อมต่อ LINE ได้",
+          "unlinkAccount": "ยกเลิกการเชื่อมต่อ LINE",
+          "unlinking": "กำลังยกเลิกการเชื่อมต่อ...",
+          "unlinkError": "ไม่สามารถยกเลิกการเชื่อมต่อ LINE ได้",
+          "unlinkSuccess": "ยกเลิกการเชื่อมต่อ LINE สำเร็จ",
+          "linkSuccess": "เชื่อมต่อบัญชี LINE สำเร็จ!",
+          "linkSuccessDesc": "บัญชี LINE ของคุณได้ถูกเชื่อมต่อกับโปรไฟล์เรียบร้อยแล้ว",
+          "linkSuccessMessage": "เชื่อมต่อบัญชีสำเร็จ! คุณสามารถใช้ฟีเจอร์ LINE bot ได้แล้ว"
+        },
   "approved": "อนุมัติแล้ว",
   "rejected": "ปฏิเสธแล้ว",
   "markAllAsRead": "อ่านทั้งหมด",

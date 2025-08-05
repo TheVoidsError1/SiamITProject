@@ -27,6 +27,7 @@ import ManagePost from './pages/ManagePost';
 import CalendarPage from './pages/CalendarPage';
 import CompanyMonthDetailPage from './pages/CompanyMonthDetailPage';
 import AnnouncementsFeedPage from './pages/AnnouncementsFeedPage';
+
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 
 const queryClient = new QueryClient();
@@ -91,6 +92,7 @@ const AppContent = () => {
             <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
             <Route path="/calendar/:year/:month" element={<ProtectedRoute><CompanyMonthDetailPage /></ProtectedRoute>} />
             <Route path="/announcements" element={<ProtectedRoute><AnnouncementsFeedPage /></ProtectedRoute>} />
+
             <Route path="/admin" element={
               <ProtectedRoute adminOnly>
                 <AdminDashboard />
