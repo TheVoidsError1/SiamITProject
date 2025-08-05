@@ -546,7 +546,8 @@
     "pleaseSelectDepartment": "Please select department",
     "pleaseSelectPosition": "Please select position",
     "passwordMinLength": "Password must be at least 6 characters",
-    "chooseUserType": "Select user type to create"
+    "chooseUserType": "Select user type to create",
+    "pleaseSelectRole": "Please select a role for the user"
   },
   "system": {
     "onlineLeaveSystem": "Online Leave System",
@@ -576,6 +577,7 @@
     "allPositions": "All Positions",
     "allDepartments": "All Departments",
     "allRoles": "All Roles",
+    "allStatus": "All Status",
     "admin": "Admin",
     "superadmin": "Superadmin",
     "notSpecified": "Not specified",

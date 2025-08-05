@@ -562,7 +562,8 @@
     "pleaseSelectDepartment": "กรุณาเลือกแผนก",
     "pleaseSelectPosition": "กรุณาเลือกตำแหน่ง",
     "passwordMinLength": "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร",
-    "chooseUserType": "เลือกประเภทผู้ใช้ที่ต้องการสร้าง"
+    "chooseUserType": "เลือกประเภทผู้ใช้ที่ต้องการสร้าง",
+    "pleaseSelectRole": "กรุณาเลือกบทบาทของผู้ใช้"
   },
   "system": {
     "onlineLeaveSystem": "ระบบลาออนไลน์",
@@ -592,6 +593,7 @@
     "allPositions": "ทุกตำแหน่ง",
     "allDepartments": "ทุกแผนก",
     "allRoles": "ทุกบทบาท",
+    "allStatus": "ทุกสถานะ",
     "admin": "ผู้ดูแลระบบ",
     "superadmin": "ซูเปอร์แอดมิน",
     "notSpecified": "ไม่ระบุ",
