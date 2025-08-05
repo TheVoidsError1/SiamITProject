@@ -692,7 +692,7 @@ const Index = () => {
               </div>
               <div className="text-3xl font-extrabold text-blue-800 mb-1">
                 {loadingDashboard ? '-' : `${daysUsed} ${t('common.days')}`}
-                {loadingDashboard ? '' : ` ${hoursUsed} ${t('common.hour')}`}
+                {loadingDashboard ? '' : (hoursUsed > 0 ? ` ${hoursUsed} ${t('common.hours')}` : '')}
               </div>
               <div className="text-base font-bold text-blue-600 mt-1 text-center opacity-90 animate-pop-in delay-200">{t('main.daysUsed', 'Days Used')}</div>
             </div>

@@ -236,57 +236,36 @@
                leaveTypeName === leaveTypeEntity.leave_type_th ||
                leaveTypeName === leaveTypeEntity.leave_type_en
              ) {
-               // Personal leave: อาจเป็นชั่วโมงหรือวัน
-               if (leaveTypeEntity.leave_type_en === 'Personal' || leaveTypeEntity.leave_type_th === 'ลากิจ') {
-                 if (lr.startTime && lr.endTime) {
-                   const startMinutes = parseTimeToMinutes(lr.startTime);
-                   const endMinutes = parseTimeToMinutes(lr.endTime);
-                   let durationHours = (endMinutes - startMinutes) / 60;
-                   if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
-                   usedHours += durationHours;
-                 } else if (lr.startDate && lr.endDate) {
-                   const start = new Date(lr.startDate);
-                   const end = new Date(lr.endDate);
-                   let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-                   if (days < 0 || isNaN(days)) days = 0;
-                   usedHours += days * 9;
-                 }
-               } else {
-                 // อื่น ๆ: วันเท่านั้น
-                 if (lr.startDate && lr.endDate) {
-                   const start = new Date(lr.startDate);
-                   const end = new Date(lr.endDate);
-                   let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-                   if (days < 0 || isNaN(days)) days = 0;
-                   usedHours += days * 9;
-                 }
+               // ทุกประเภทการลา: สามารถเป็นชั่วโมงหรือวันได้ (9 ชม. = 1 วัน)
+               if (lr.startTime && lr.endTime) {
+                 const startMinutes = parseTimeToMinutes(lr.startTime);
+                 const endMinutes = parseTimeToMinutes(lr.endTime);
+                 let durationHours = (endMinutes - startMinutes) / 60;
+                 if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
+                 usedHours += durationHours;
+               } else if (lr.startDate && lr.endDate) {
+                 const start = new Date(lr.startDate);
+                 const end = new Date(lr.endDate);
+                 let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                 if (days < 0 || isNaN(days)) days = 0;
+                 usedHours += days * 9;
                }
              }
            }
            // 4. คำนวณ leave ที่ขอใหม่ (ชั่วโมง)
            let requestHours = 0;
-           if (leaveTypeEntity.leave_type_en === 'Personal' || leaveTypeEntity.leave_type_th === 'ลากิจ') {
-             if (startTime && endTime) {
-               const startMinutes = parseTimeToMinutes(startTime);
-               const endMinutes = parseTimeToMinutes(endTime);
-               let durationHours = (endMinutes - startMinutes) / 60;
-               if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
-               requestHours += durationHours;
-             } else if (startDate && endDate) {
-               const start = parseLocalDate(startDate);
-               const end = parseLocalDate(endDate);
-               let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-               if (days < 0 || isNaN(days)) days = 0;
-               requestHours += days * 9;
-             }
-           } else {
-             if (startDate && endDate) {
-               const start = parseLocalDate(startDate);
-               const end = parseLocalDate(endDate);
-               let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-               if (days < 0 || isNaN(days)) days = 0;
-               requestHours += days * 9;
-             }
+           if (startTime && endTime) {
+             const startMinutes = parseTimeToMinutes(startTime);
+             const endMinutes = parseTimeToMinutes(endTime);
+             let durationHours = (endMinutes - startMinutes) / 60;
+             if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
+             requestHours += durationHours;
+           } else if (startDate && endDate) {
+             const start = parseLocalDate(startDate);
+             const end = parseLocalDate(endDate);
+             let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+             if (days < 0 || isNaN(days)) days = 0;
+             requestHours += days * 9;
            }
            // 5. quota (ชั่วโมง)
            const totalQuotaHours = quota * 9;

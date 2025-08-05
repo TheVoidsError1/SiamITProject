@@ -733,32 +733,23 @@ module.exports = (AppDataSource) => {
             leaveTypeName === leaveType.leave_type_th ||
             leaveTypeName === leaveType.id
           ) {
-            // Personal leave: may be by hour or day
-            if (leaveType.leave_type_en?.toLowerCase() === 'personal' || leaveType.leave_type_th === 'ลากิจ') {
-              if (lr.startTime && lr.endTime) {
-                const [sh, sm] = lr.startTime.split(":").map(Number);
-                const [eh, em] = lr.endTime.split(":").map(Number);
-                let start = sh + (sm || 0) / 60;
-                let end = eh + (em || 0) / 60;
-                let diff = end - start;
-                if (diff < 0) diff += 24;
-                used += diff / 9; // 1 day = 9 hours
-              } else if (lr.startDate && lr.endDate) {
-                const start = new Date(lr.startDate);
-                const end = new Date(lr.endDate);
-                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-                if (days < 0 || isNaN(days)) days = 0;
-                used += days;
-              }
-            } else {
-              // Other types: by day
-              if (lr.startDate && lr.endDate) {
-                const start = new Date(lr.startDate);
-                const end = new Date(lr.endDate);
-                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-                if (days < 0 || isNaN(days)) days = 0;
-                used += days;
-              }
+            // All leave types: can be by hour or day (9 hours = 1 day)
+            if (lr.startTime && lr.endTime) {
+              // Hour-based
+              const [sh, sm] = lr.startTime.split(":").map(Number);
+              const [eh, em] = lr.endTime.split(":").map(Number);
+              let start = sh + (sm || 0) / 60;
+              let end = eh + (em || 0) / 60;
+              let diff = end - start;
+              if (diff < 0) diff += 24;
+              used += diff / 9; // 1 day = 9 hours
+            } else if (lr.startDate && lr.endDate) {
+              // Day-based
+              const start = new Date(lr.startDate);
+              const end = new Date(lr.endDate);
+              let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+              if (days < 0 || isNaN(days)) days = 0;
+              used += days;
             }
           }
         }

@@ -145,36 +145,24 @@ module.exports = (AppDataSource) => {
                 leaveTypeName = leaveTypeEntity.leave_type_th;
               }
             }
-            // เฉพาะประเภท sick, vacation, personal (ทั้งภาษาไทยและอังกฤษ)
+            // ทุกประเภทการลา: สามารถเป็นชั่วโมงหรือวันได้ (9 ชม. = 1 วัน)
             if (["sick", "ลาป่วย", "vacation", "ลาพักผ่อน", "personal", "ลากิจ"].includes(leaveTypeName)) {
-              if (leaveTypeName === "personal" || leaveTypeName === "ลากิจ") {
-                // personal: อาจเป็นชั่วโมงหรือวัน
-                if (lr.startTime && lr.endTime) {
-                  // ชั่วโมง
-                  const [sh, sm] = lr.startTime.split(":").map(Number);
-                  const [eh, em] = lr.endTime.split(":").map(Number);
-                  let start = sh + (sm || 0) / 60;
-                  let end = eh + (em || 0) / 60;
-                  let diff = end - start;
-                  if (diff < 0) diff += 24;
-                  usedLeaveDays += diff / 9; // 1 วัน = 9 ชม.
-                } else if (lr.startDate && lr.endDate) {
-                  // วัน
-                  const start = new Date(lr.startDate);
-                  const end = new Date(lr.endDate);
-                  let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-                  if (days < 0 || isNaN(days)) days = 0;
-                  usedLeaveDays += days;
-                }
-              } else {
-                // sick, vacation: วันเท่านั้น
-                if (lr.startDate && lr.endDate) {
-                  const start = new Date(lr.startDate);
-                  const end = new Date(lr.endDate);
-                  let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-                  if (days < 0 || isNaN(days)) days = 0;
-                  usedLeaveDays += days;
-                }
+              if (lr.startTime && lr.endTime) {
+                // ชั่วโมง
+                const [sh, sm] = lr.startTime.split(":").map(Number);
+                const [eh, em] = lr.endTime.split(":").map(Number);
+                let start = sh + (sm || 0) / 60;
+                let end = eh + (em || 0) / 60;
+                let diff = end - start;
+                if (diff < 0) diff += 24;
+                usedLeaveDays += diff / 9; // 1 วัน = 9 ชม.
+              } else if (lr.startDate && lr.endDate) {
+                // วัน
+                const start = new Date(lr.startDate);
+                const end = new Date(lr.endDate);
+                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                if (days < 0 || isNaN(days)) days = 0;
+                usedLeaveDays += days;
               }
             }
           }
@@ -289,34 +277,23 @@ module.exports = (AppDataSource) => {
           }
           // เฉพาะประเภท sick, vacation, personal
           if (["sick", "ลาป่วย", "vacation", "ลาพักผ่อน", "personal", "ลากิจ"].includes(leaveTypeName)) {
-            if (leaveTypeName === "personal" || leaveTypeName === "ลากิจ") {
-              // personal: อาจเป็นชั่วโมงหรือวัน
-              if (lr.startTime && lr.endTime) {
-                // ชั่วโมง
-                const [sh, sm] = lr.startTime.split(":").map(Number);
-                const [eh, em] = lr.endTime.split(":").map(Number);
-                let start = sh + (sm || 0) / 60;
-                let end = eh + (em || 0) / 60;
-                let diff = end - start;
-                if (diff < 0) diff += 24;
-                usedLeaveDays += diff / 9; // 1 วัน = 9 ชม.
-              } else if (lr.startDate && lr.endDate) {
-                // วัน
-                const start = new Date(lr.startDate);
-                const end = new Date(lr.endDate);
-                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-                if (days < 0 || isNaN(days)) days = 0;
-                usedLeaveDays += days;
-              }
-            } else {
-              // sick, vacation: วันเท่านั้น
-              if (lr.startDate && lr.endDate) {
-                const start = new Date(lr.startDate);
-                const end = new Date(lr.endDate);
-                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-                if (days < 0 || isNaN(days)) days = 0;
-                usedLeaveDays += days;
-              }
+            // ทุกประเภทการลา: สามารถเป็นชั่วโมงหรือวันได้ (9 ชม. = 1 วัน)
+            if (lr.startTime && lr.endTime) {
+              // ชั่วโมง
+              const [sh, sm] = lr.startTime.split(":").map(Number);
+              const [eh, em] = lr.endTime.split(":").map(Number);
+              let start = sh + (sm || 0) / 60;
+              let end = eh + (em || 0) / 60;
+              let diff = end - start;
+              if (diff < 0) diff += 24;
+              usedLeaveDays += diff / 9; // 1 วัน = 9 ชม.
+            } else if (lr.startDate && lr.endDate) {
+              // วัน
+              const start = new Date(lr.startDate);
+              const end = new Date(lr.endDate);
+              let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+              if (days < 0 || isNaN(days)) days = 0;
+              usedLeaveDays += days;
             }
           }
         }

@@ -637,6 +637,7 @@ const Profile = () => {
                       <span className="text-base font-medium text-blue-900">{stat.label}</span>
                       <span className="text-base text-gray-500">
                         {stat.used.days}/{stat.quota} {t('common.days')}
+                        {stat.used.hours > 0 && ` ${stat.used.hours} ${t('common.hours')}`}
                       </span>
                     </div>
                     <div className="w-full bg-blue-100 rounded-full h-2">
@@ -647,6 +648,7 @@ const Profile = () => {
                     </div>
                     <div className="text-xs text-blue-500">
                       {t('common.remaining')} {Number(stat.quota) - Number(stat.used.days)} {t('common.days')}
+                      {stat.remaining.hours > 0 && ` ${stat.remaining.hours} ${t('common.hours')}`}
                     </div>
                   </div>
                 ))}

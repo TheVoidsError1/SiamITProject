@@ -26,7 +26,7 @@ function formatLeaveDays(days: number, t: (key: string) => string): string {
   const fullDays = Math.floor(days);
   const hours = Math.round((days - fullDays) * 9);
   if (hours > 0) {
-    return `${fullDays} ${t('common.days')} ${hours} ${t('common.hour')}`;
+    return `${fullDays} ${t('common.days')} ${hours} ${t('common.hours')}`;
   }
   return `${fullDays} ${t('common.days')}`;
 }

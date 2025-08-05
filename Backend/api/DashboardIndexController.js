@@ -31,9 +31,8 @@ module.exports = (AppDataSource) => {
         };
       }
       const leaveHistory = await leaveRepo.find({ where });
-      // Calculate days used - ปรับการคำนวณให้ถูกต้องตามประเภทการลา
-      let daysUsed = 0;
-      let hoursUsed = 0;
+      // Calculate days used - ปรับการคำนวณให้รวมเวลาด้วย (9 ชม. = 1 วัน)
+      let totalHoursUsed = 0;
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
 
       // Helper to normalize type
@@ -69,31 +68,38 @@ module.exports = (AppDataSource) => {
             const endMinutes = parseTimeToMinutes(lr.endTime);
             let durationHours = (endMinutes - startMinutes) / 60;
             if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
-            hoursUsed += durationHours;
+            totalHoursUsed += durationHours;
           } else if (lr.startDate && lr.endDate) {
             // Day-based, convert days to hours (1 day = 9 hours)
             const start = new Date(lr.startDate);
             const end = new Date(lr.endDate);
             let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
             if (days < 0 || isNaN(days)) days = 0;
-            hoursUsed += days * 9;
+            totalHoursUsed += days * 9;
           }
         } else if (leaveType === "sick" || leaveType === "vacation") {
-          // Sick/Vacation: only day-based
-          if (lr.startDate && lr.endDate) {
+          // Sick/Vacation: can be hour-based or day-based
+          if (lr.startTime && lr.endTime) {
+            // Hour-based
+            const startMinutes = parseTimeToMinutes(lr.startTime);
+            const endMinutes = parseTimeToMinutes(lr.endTime);
+            let durationHours = (endMinutes - startMinutes) / 60;
+            if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
+            totalHoursUsed += durationHours;
+          } else if (lr.startDate && lr.endDate) {
+            // Day-based, convert days to hours (1 day = 9 hours)
             const start = new Date(lr.startDate);
             const end = new Date(lr.endDate);
             let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
             if (days < 0 || isNaN(days)) days = 0;
-            daysUsed += days;
+            totalHoursUsed += days * 9;
           }
         }
       }
 
-      // Convert hours to days if >= 9 hours
-      const additionalDays = Math.floor(hoursUsed / 9);
-      const remainingHours = Math.round(hoursUsed % 9);
-      daysUsed += additionalDays;
+      // Convert total hours to days and remaining hours (9 hours = 1 day)
+      const daysUsed = Math.floor(totalHoursUsed / 9);
+      const remainingHours = Math.round(totalHoursUsed % 9);
 
       // Only use approved leaves for stats
       const approvedLeaves = leaveHistory.filter(lr => lr.status === 'approved');
@@ -138,7 +144,7 @@ module.exports = (AppDataSource) => {
     }
   });
 
-  // New API: /day-used - total leave duration for current user (days/hours)
+        // New API: /day-used - total leave duration for current user (days/hours)
   router.get('/day-used', authMiddleware, async (req, res) => {
     try {
       const userId = req.user.userId;
@@ -188,7 +194,7 @@ module.exports = (AppDataSource) => {
           if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
           totalHours += durationHours;
         } else if (lr.startDate && lr.endDate) {
-          // Day-based
+          // Day-based, convert days to hours (1 day = 9 hours)
           const start = new Date(lr.startDate);
           const end = new Date(lr.endDate);
           let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
@@ -196,7 +202,7 @@ module.exports = (AppDataSource) => {
           totalHours += days * 9;
         }
       }
-      // Convert to days and hours
+      // Convert to days and hours (9 hours = 1 day)
       const days = Math.floor(totalHours / 9);
       const hours = Math.round(totalHours % 9);
       res.json({ status: 'success', data: { days, hours } });
