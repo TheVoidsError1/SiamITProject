@@ -18,7 +18,7 @@ const SuperAdminList: React.FC = () => {
     confirmPassword: '',
     department: '',
     position: '',
-    role: '',
+    role: 'employee', // ตั้งค่าเริ่มต้นให้ตรงกับ activeTab
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -173,11 +173,28 @@ const SuperAdminList: React.FC = () => {
       return;
     }
     
+    if (!form.role) {
+      toast({
+        title: t('admin.errorOccurred'),
+        description: t('admin.pleaseSelectRole'),
+        variant: 'destructive',
+      });
+      return;
+    }
+    
     setLoading(true);
     try {
       const url = `${API_BASE_URL}/api/create-user-with-role`;
+      
+      // Map frontend role to backend role
+      const roleMapping: { [key: string]: string } = {
+        'employee': 'user',
+        'admin': 'admin',
+        'superadmin': 'superadmin'
+      };
+      
       const payload = {
-        role: form.role,
+        role: roleMapping[form.role] || form.role,
         name: form.full_name,
         department: form.department,
         position: form.position,

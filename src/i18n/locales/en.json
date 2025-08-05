@@ -530,7 +530,8 @@
     "pleaseSelectDepartment": "Please select department",
     "pleaseSelectPosition": "Please select position",
     "passwordMinLength": "Password must be at least 6 characters",
-    "chooseUserType": "Select user type to create"
+    "chooseUserType": "Select user type to create",
+    "pleaseSelectRole": "Please select a role for the user"
   },
   "system": {
     "onlineLeaveSystem": "Online Leave System",
