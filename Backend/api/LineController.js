@@ -1,5 +1,6 @@
 const line = require('@line/bot-sdk');
 const axios = require('axios');
+const { Between } = require('typeorm');
 
 // LINE Bot configuration using environment variables
 const config = {
@@ -37,10 +38,22 @@ class LineController {
 
   // Handle incoming LINE events
   static async handleEvent(event) {
-    if (event.type !== 'message' || event.message.type !== 'text') {
-      return Promise.resolve(null);
+    // Handle different event types
+    switch (event.type) {
+      case 'message':
+        if (event.message.type === 'text') {
+          return await this.handleTextMessage(event);
+        }
+        break;
+      case 'follow':
+        return await this.handleFollow(event);
+      default:
+        return Promise.resolve(null);
     }
+  }
 
+  // Handle text messages
+  static async handleTextMessage(event) {
     const text = event.message.text;
     const userId = event.source.userId;
     const replyToken = event.replyToken;
@@ -57,6 +70,30 @@ class LineController {
     }
   }
 
+  // Handle follow events (when user adds the bot)
+  static async handleFollow(event) {
+    const userId = event.source.userId;
+    const replyToken = event.replyToken;
+
+    try {
+      // Send welcome message
+      const welcomeMessage = {
+        type: 'text',
+        text: `🎉 Welcome to SiamIT Leave Management Bot!
+
+I'm here to help you manage your leave requests and check your status.
+
+Use the menu below to get started!
+
+To link your account for full access, please visit the web application and use LINE Login.`
+      };
+      
+      await client.replyMessage(replyToken, welcomeMessage);
+    } catch (error) {
+      console.error('Error handling follow event:', error);
+    }
+  }
+
   // Get AppDataSource (we'll need to pass this from the main app)
   static getAppDataSource() {
     // This will be set from the main app
@@ -68,17 +105,18 @@ class LineController {
     const command = message.toLowerCase().trim();
 
     // Commands that don't need user linking
-    const publicCommands = ['help', 'announcements', 'request'];
+    const publicCommands = ['help', 'announcements', 'request', 'recent announcements', 'leave management web site', 'company holidays', 'annual holidays'];
     
+    let user = null;
     if (!publicCommands.includes(command)) {
       // Check if user is linked
       const processRepo = global.AppDataSource.getRepository('ProcessCheck');
-      const user = await processRepo.findOneBy({ lineUserId: userId });
+      user = await processRepo.findOneBy({ lineUserId: userId });
       
       if (!user) {
         return {
           type: 'text',
-          text: `🔗 Please link your LINE account first!\n\nTo link your account, go to the web application and use the LINE Login feature.\n\nCommands that work without linking:\n- help\n- announcements\n- request`
+          text: `🔗 Please link your LINE account first!\n\nTo link your account, go to the web application and use the LINE Login feature.\n\nCommands that work without linking:\n- help\n- announcements\n- request\n- recent announcements\n- leave management web site\n- company holidays\n- annual holidays`
         };
       }
     }
@@ -88,9 +126,11 @@ class LineController {
         return this.getHelpMessage();
 
       case 'status':
+      case 'recent leave':
         return await this.getLeaveStatus(user);
 
       case 'balance':
+      case 'leave entitlements':
         return await this.getLeaveBalance(user);
 
       case 'history':
@@ -100,10 +140,20 @@ class LineController {
         return await this.getUserProfile(user);
 
       case 'announcements':
+      case 'recent announcements':
         return await this.getAnnouncements();
 
       case 'request':
         return this.getRequestInstructions();
+
+      case 'leave management web site':
+        return this.getLeaveWebsiteMessage();
+
+      case 'company holidays':
+        return await this.getCompanyHolidays();
+
+      case 'annual holidays':
+        return await this.getAnnualHolidays();
 
       default:
         return this.getHelpMessage();
@@ -113,59 +163,244 @@ class LineController {
   // Get leave status from API and format for LINE
   static async getLeaveStatus(user) {
     try {
-      const response = await axios.get(`${getApiBaseUrl()}/api/leave-history/${user.Repid}`);
+      // Get recent leave requests directly from database like /recent-leave-requests endpoint
+      const leaveRepo = global.AppDataSource.getRepository('LeaveRequest');
+      const leaveTypeRepo = global.AppDataSource.getRepository('LeaveType');
       
-      if (response.data.success) {
-        const leaves = response.data.data;
-        
-        let message = '📋 Your Leave Status:\n\n';
-        
-        if (leaves.length === 0) {
-          message += 'No leave requests found.';
-        } else {
-          leaves.slice(0, 5).forEach(leave => {
-            const status = leave.status === 'approved' ? '✅' : 
-                          leave.status === 'pending' ? '⏳' : '❌';
-            message += `${status} ${leave.leaveType.name}\n`;
-            message += `   📅 ${leave.startDate} to ${leave.endDate}\n`;
-            message += `   📝 Status: ${leave.status.toUpperCase()}\n\n`;
-          });
-        }
-        
-        return { type: 'text', text: message };
-      } else {
-        return { type: 'text', text: '❌ Unable to fetch leave status.' };
+      // Find 3 most recent leave requests for the user
+      const leaveRequests = await leaveRepo.find({ 
+        where: { Repid: user.Repid }, 
+        order: { createdAt: 'DESC' }, 
+        take: 3 
+      });
+
+      // Helper to calculate duration
+      function parseTimeToMinutes(t) {
+        if (!t) return 0;
+        const [h, m] = t.split(':').map(Number);
+        return h * 60 + (m || 0);
       }
+
+      // Helper to get status in both languages
+      function getStatusDisplay(status) {
+        switch (status.toLowerCase()) {
+          case 'approved':
+            return 'อนุมัติ (Approved)';
+          case 'pending':
+            return 'รอการอนุมัติ (Pending)';
+          case 'rejected':
+            return 'ไม่อนุมัติ (Rejected)';
+          default:
+            return status;
+        }
+      }
+
+      let message = '📋 Recent Leave:\n\n';
+      
+      if (leaveRequests.length === 0) {
+        message += 'No recent leave requests found.';
+      } else {
+        for (const lr of leaveRequests) {
+          // Get leave type names
+          let leaveTypeNameTh = lr.leaveType;
+          let leaveTypeNameEn = lr.leaveType;
+          
+          if (lr.leaveType && lr.leaveType.length > 20) {
+            // ID-based leave type
+            const leaveType = await leaveTypeRepo.findOneBy({ id: lr.leaveType });
+            leaveTypeNameTh = leaveType ? leaveType.leave_type_th : lr.leaveType;
+            leaveTypeNameEn = leaveType ? leaveType.leave_type_en : lr.leaveType;
+          } else {
+            // String-based leave type
+            const leaveType = await leaveTypeRepo.findOne({
+              where: [
+                { leave_type_th: lr.leaveType },
+                { leave_type_en: lr.leaveType }
+              ]
+            });
+            if (leaveType) {
+              leaveTypeNameTh = leaveType.leave_type_th;
+              leaveTypeNameEn = leaveType.leave_type_en;
+            }
+          }
+
+          // Calculate duration
+          let duration = '';
+          if (lr.startTime && lr.endTime) {
+            // Hour-based
+            const startMinutes = parseTimeToMinutes(lr.startTime);
+            const endMinutes = parseTimeToMinutes(lr.endTime);
+            let durationHours = (endMinutes - startMinutes) / 60;
+            if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
+            duration = `${Math.floor(durationHours)} hour`;
+          } else if (lr.startDate && lr.endDate) {
+            // Day-based
+            const start = new Date(lr.startDate);
+            const end = new Date(lr.endDate);
+            let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+            if (days < 0 || isNaN(days)) days = 0;
+            duration = `${days} day`;
+          }
+
+          // Format status with emoji and bilingual display
+          const status = lr.status === 'approved' ? '✅' : 
+                        lr.status === 'pending' ? '⏳' : '❌';
+          const statusDisplay = getStatusDisplay(lr.status);
+
+          // Format date
+          const startDate = new Date(lr.startDate).toLocaleDateString('en-GB');
+          const endDate = new Date(lr.endDate).toLocaleDateString('en-GB');
+
+          // Display leave type in both languages
+          const leaveTypeDisplay = leaveTypeNameEn && leaveTypeNameEn !== leaveTypeNameTh 
+            ? `${leaveTypeNameTh} (${leaveTypeNameEn})`
+            : leaveTypeNameTh;
+
+          message += `${status} ${leaveTypeDisplay}\n`;
+          message += `   📅 ${startDate} to ${endDate}\n`;
+          message += `   ⏱️ Duration: ${duration}\n`;
+          message += `   📝 Status: ${statusDisplay}\n\n`;
+        }
+      }
+      
+      return { type: 'text', text: message };
     } catch (error) {
-      console.error('API call error:', error);
-      return { type: 'text', text: '❌ Error fetching leave status.' };
+      console.error('Error fetching recent leave:', error);
+      return { type: 'text', text: '❌ Error fetching recent leave.' };
     }
   }
 
   // Get leave balance from API and format for LINE
   static async getLeaveBalance(user) {
     try {
-      const response = await axios.get(`${getApiBaseUrl()}/api/leave-quota/${user.Repid}`);
-      
-      if (response.data.success) {
-        const quotas = response.data.data;
-        
-        let message = '💰 Your Leave Balance:\n\n';
-        
-        quotas.forEach(quota => {
-          message += `${quota.leaveType.name}:\n`;
-          message += `   📊 Used: ${quota.usedDays} days\n`;
-          message += `   ✅ Remaining: ${quota.remainingDays} days\n`;
-          message += `   📋 Total: ${quota.totalDays} days\n\n`;
-        });
-        
-        return { type: 'text', text: message };
+      // Get leave entitlements directly from database like /api/leave-quota/me endpoint
+      const leaveQuotaRepo = global.AppDataSource.getRepository('LeaveQuota');
+      const leaveTypeRepo = global.AppDataSource.getRepository('LeaveType');
+      const leaveRequestRepo = global.AppDataSource.getRepository('LeaveRequest');
+      const userRepo = global.AppDataSource.getRepository('User');
+      const adminRepo = global.AppDataSource.getRepository('Admin');
+      const superadminRepo = global.AppDataSource.getRepository('SuperAdmin');
+
+      // Get user's position ID
+      let positionId = null;
+      let userEntity = await userRepo.findOne({ where: { id: user.Repid } });
+      if (userEntity) {
+        positionId = userEntity.position;
       } else {
-        return { type: 'text', text: '❌ Unable to fetch leave balance.' };
+        let adminEntity = await adminRepo.findOne({ where: { id: user.Repid } });
+        if (adminEntity) {
+          positionId = adminEntity.position;
+        } else {
+          let superadminEntity = await superadminRepo.findOne({ where: { id: user.Repid } });
+          if (superadminEntity) {
+            positionId = superadminEntity.position;
+          }
+        }
       }
+
+      if (!positionId) {
+        return { type: 'text', text: '❌ Position not found for user.' };
+      }
+
+      // Get quotas, leave types, and approved leave requests
+      const quotas = await leaveQuotaRepo.find({ where: { positionId } });
+      const leaveTypes = await leaveTypeRepo.find();
+      const leaveRequests = await leaveRequestRepo.find({ where: { Repid: user.Repid, status: 'approved' } });
+
+      // Helper: Convert decimal days to days/hours (1 day = 9 hours)
+      function toDayHour(val) {
+        const day = Math.floor(val);
+        const hour = Math.round((val - day) * 9);
+        return { day, hour };
+      }
+
+      // Helper: Format duration display
+      function formatDuration(day, hour) {
+        if (day > 0 && hour > 0) {
+          return `${day} days ${hour} hours`;
+        } else if (day > 0) {
+          return `${day} days`;
+        } else if (hour > 0) {
+          return `${hour} hours`;
+        } else {
+          return '0 days';
+        }
+      }
+
+      let message = '💰 Leave Entitlements:\n\n';
+      
+      // Calculate for each leave type
+      for (const leaveType of leaveTypes) {
+        // Find quota for this leave type
+        const quotaRow = quotas.find(q => q.leaveTypeId === leaveType.id);
+        const quota = quotaRow ? quotaRow.quota : 0;
+        
+        // Calculate used leave for this type
+        let used = 0;
+        for (const lr of leaveRequests) {
+          let leaveTypeName = lr.leaveType;
+          if (leaveTypeName && leaveTypeName.length > 20) {
+            const leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
+            if (leaveTypeEntity && leaveTypeEntity.leave_type_en) {
+              leaveTypeName = leaveTypeEntity.leave_type_en;
+            }
+          }
+          
+          if (
+            leaveTypeName === leaveType.leave_type_en ||
+            leaveTypeName === leaveType.leave_type_th ||
+            leaveTypeName === leaveType.id
+          ) {
+            // Personal leave: may be by hour or day
+            if (leaveType.leave_type_en?.toLowerCase() === 'personal' || leaveType.leave_type_th === 'ลากิจ') {
+              if (lr.startTime && lr.endTime) {
+                const [sh, sm] = lr.startTime.split(":").map(Number);
+                const [eh, em] = lr.endTime.split(":").map(Number);
+                let start = sh + (sm || 0) / 60;
+                let end = eh + (em || 0) / 60;
+                let diff = end - start;
+                if (diff < 0) diff += 24;
+                used += diff / 9; // 1 day = 9 hours
+              } else if (lr.startDate && lr.endDate) {
+                const start = new Date(lr.startDate);
+                const end = new Date(lr.endDate);
+                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                if (days < 0 || isNaN(days)) days = 0;
+                used += days;
+              }
+            } else {
+              // Other types: by day
+              if (lr.startDate && lr.endDate) {
+                const start = new Date(lr.startDate);
+                const end = new Date(lr.endDate);
+                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                if (days < 0 || isNaN(days)) days = 0;
+                used += days;
+              }
+            }
+          }
+        }
+        
+        const remaining = Math.max(0, quota - used);
+        const usedObj = toDayHour(used);
+        const remainingObj = toDayHour(remaining);
+        const quotaObj = toDayHour(quota);
+
+        // Display leave type in both languages
+        const leaveTypeDisplay = leaveType.leave_type_en && leaveType.leave_type_en !== leaveType.leave_type_th 
+          ? `${leaveType.leave_type_th} (${leaveType.leave_type_en})`
+          : leaveType.leave_type_th;
+
+        message += `${leaveTypeDisplay}:\n`;
+        message += `   📊 Total: ${formatDuration(quotaObj.day, quotaObj.hour)}\n`;
+        message += `   📤 Used: ${formatDuration(usedObj.day, usedObj.hour)}\n`;
+        message += `   ✅ Remaining: ${formatDuration(remainingObj.day, remainingObj.hour)}\n\n`;
+      }
+      
+      return { type: 'text', text: message };
     } catch (error) {
-      console.error('API call error:', error);
-      return { type: 'text', text: '❌ Error fetching leave balance.' };
+      console.error('Error fetching leave entitlements:', error);
+      return { type: 'text', text: '❌ Error fetching leave entitlements.' };
     }
   }
 
@@ -237,7 +472,7 @@ class LineController {
       if (response.data.status === 'success' || response.data.success) {
         const announcements = response.data.data;
         
-        let message = '📢 Latest Announcements:\n\n';
+        let message = '📢 Recent Announcements:\n\n';
         
         if (!announcements || announcements.length === 0) {
           message += 'No announcements at the moment.';
@@ -259,11 +494,11 @@ class LineController {
         
         return { type: 'text', text: message };
       } else {
-        return { type: 'text', text: '❌ Unable to fetch announcements.' };
+        return { type: 'text', text: '❌ Unable to fetch recent announcements.' };
       }
     } catch (error) {
       console.error('API call error:', error);
-      return { type: 'text', text: '❌ Error fetching announcements.' };
+      return { type: 'text', text: '❌ Error fetching recent announcements.' };
     }
   }
 
@@ -356,6 +591,177 @@ You'll receive LINE notifications when your request is approved/rejected!`
       
       return { success: false, error: error.message };
     }
+  }
+
+  // Helper method to get user by LINE ID
+  static async getUserByLineId(lineUserId) {
+    try {
+      const processRepo = global.AppDataSource.getRepository('ProcessCheck');
+      return await processRepo.findOneBy({ lineUserId: lineUserId });
+    } catch (error) {
+      console.error('Error getting user by LINE ID:', error);
+      return null;
+    }
+  }
+
+  // Functions for your Rich Menu buttons
+  static getLeaveWebsiteMessage() {
+    return {
+      type: 'text',
+      text: `🌐 SiamIT Leave Management Website
+
+To access the full leave management system:
+
+📱 Web App: [Your Web App URL]
+💻 Desktop: [Your Web App URL]
+
+Features available on the website:
+• Submit leave requests
+• Upload documents
+• View detailed history
+• Manage profile settings
+• Advanced reporting
+
+You'll receive LINE notifications for approvals and updates!`
+    };
+  }
+
+  static async getCompanyHolidays() {
+    try {
+      // Get company holidays directly from database like /api/custom-holidays endpoint
+      const customHolidayRepo = global.AppDataSource.getRepository('CustomHoliday');
+      
+      // Get current year and month
+      const currentDate = new Date();
+      const currentYear = currentDate.getFullYear();
+      const currentMonth = currentDate.getMonth(); // 0-11
+      
+      // Get holidays for current month only
+      const holidays = await customHolidayRepo.find({
+        where: {
+          date: Between(
+            new Date(currentYear, currentMonth, 1), // Start of current month
+            new Date(currentYear, currentMonth + 1, 0) // End of current month
+          )
+        },
+        order: {
+          date: 'ASC'
+        }
+      });
+
+      let message = '🏢 Company Holidays (Current Month):\n\n';
+      
+      if (!holidays || holidays.length === 0) {
+        message += 'No company holidays scheduled for this month.';
+      } else {
+        holidays.forEach(holiday => {
+          // Format date
+          const date = new Date(holiday.date);
+          const formattedDate = date.toLocaleDateString('en-GB', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+
+          // Display title in both languages if available
+          let titleDisplay = holiday.title;
+          if (holiday.title && holiday.title.includes('(') && holiday.title.includes(')')) {
+            // Already in bilingual format
+            titleDisplay = holiday.title;
+          } else {
+            // Try to make it bilingual (you can customize this based on your data)
+            titleDisplay = holiday.title;
+          }
+
+          message += `📅 ${formattedDate}\n`;
+          message += `   🏷️ ${titleDisplay}\n`;
+          if (holiday.description) {
+            message += `   📝 ${holiday.description}\n`;
+          }
+          message += '\n';
+        });
+      }
+      
+      return { type: 'text', text: message };
+    } catch (error) {
+      console.error('Error fetching company holidays:', error);
+      return { type: 'text', text: '❌ Error fetching company holidays.' };
+    }
+  }
+
+  static async getAnnualHolidays() {
+    try {
+      // Get current year and month
+      const currentDate = new Date();
+      const currentYear = currentDate.getFullYear();
+      const currentMonth = currentDate.getMonth(); // 0-11
+      
+      // Thai holidays for current month (similar to getThaiHolidaysByMonth)
+      const holidays = this.getThaiHolidaysForMonth(currentYear, currentMonth);
+      
+      let message = '📅 Annual Holidays (Current Month):\n\n';
+      
+      if (!holidays || holidays.length === 0) {
+        message += 'No annual holidays scheduled for this month.';
+      } else {
+        holidays.forEach(holiday => {
+          // Format date
+          const date = new Date(holiday.date);
+          const formattedDate = date.toLocaleDateString('en-GB', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+
+          // Display name in both languages
+          const nameDisplay = holiday.name;
+
+          message += `📅 ${formattedDate}\n`;
+          message += `   🏷️ ${nameDisplay}\n\n`;
+        });
+      }
+      
+      return { type: 'text', text: message };
+    } catch (error) {
+      console.error('Error getting annual holidays:', error);
+      return { type: 'text', text: '❌ Error fetching annual holidays.' };
+    }
+  }
+
+  // Helper function to get Thai holidays for a specific month
+  static getThaiHolidaysForMonth(year, month) {
+    const holidays = [];
+    
+    // Define Thai holidays with bilingual names
+    const thaiHolidays = [
+      { date: `${year}-01-01`, name: 'วันขึ้นปีใหม่ (New Year\'s Day)' },
+      { date: `${year}-01-02`, name: 'วันหยุดชดเชยวันขึ้นปีใหม่ (New Year\'s Day Holiday)' },
+      { date: `${year}-02-14`, name: 'วันวาเลนไทน์ (Valentine\'s Day)' },
+      { date: `${year}-04-06`, name: 'วันจักรี (Chakri Memorial Day)' },
+      { date: `${year}-04-13`, name: 'วันสงกรานต์ (Songkran Festival)' },
+      { date: `${year}-04-14`, name: 'วันสงกรานต์ (Songkran Festival)' },
+      { date: `${year}-04-15`, name: 'วันสงกรานต์ (Songkran Festival)' },
+      { date: `${year}-04-16`, name: 'วันสงกรานต์ (Songkran Festival)' },
+      { date: `${year}-05-01`, name: 'วันแรงงานแห่งชาติ (Labour Day)' },
+      { date: `${year}-05-05`, name: 'วันฉัตรมงคล (Coronation Day)' },
+      { date: `${year}-06-03`, name: 'วันเฉลิมพระชนมพรรษาสมเด็จพระนางเจ้าสุทิดา พัชรสุธาพิมลลักษณ พระบรมราชินี (Queen Suthida\'s Birthday)' },
+      { date: `${year}-07-28`, name: 'วันเฉลิมพระชนมพรรษาพระบาทสมเด็จพระเจ้าอยู่หัว (King\'s Birthday)' },
+      { date: `${year}-08-12`, name: 'วันเฉลิมพระชนมพรรษาสมเด็จพระนางเจ้าสิริกิติ์ พระบรมราชินีนาถ พระบรมราชชนนีพันปีหลวง (The Queen Mother\'s Birthday)' },
+      { date: `${year}-10-13`, name: 'วันคล้ายวันสวรรคตพระบาทสมเด็จพระบรมชนกาธิเบศร มหาภูมิพลอดุลยเดชมหาราช บรมนาถบพิตร (King Bhumibol Adulyadej Memorial Day)' },
+      { date: `${year}-10-23`, name: 'วันปิยมหาราช (King Chulalongkorn Day)' },
+      { date: `${year}-12-05`, name: 'วันคล้ายวันเฉลิมพระชนมพรรษาพระบาทสมเด็จพระบรมชนกาธิเบศร มหาภูมิพลอดุลยเดชมหาราช บรมนาถบพิตร (King Bhumibol Adulyadej\'s Birthday)' },
+      { date: `${year}-12-10`, name: 'วันรัฐธรรมนูญ (Constitution Day)' },
+      { date: `${year}-12-25`, name: 'วันคริสต์มาส (Christmas Day)' },
+      { date: `${year}-12-31`, name: 'วันสิ้นปี (New Year\'s Eve)' }
+    ];
+    
+    // Filter holidays for the specified month
+    return thaiHolidays.filter(holiday => {
+      const holidayDate = new Date(holiday.date);
+      return holidayDate.getMonth() === month;
+    });
   }
 }
 
