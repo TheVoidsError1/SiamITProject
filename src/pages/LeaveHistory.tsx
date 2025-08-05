@@ -6,6 +6,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { LeaveForm } from "@/components/leave/LeaveForm";
 import { useAuth } from '@/contexts/AuthContext';
 import { format } from "date-fns";
 import { th } from "date-fns/locale";
@@ -42,6 +43,11 @@ const LeaveHistory = () => {
   // --- เพิ่ม state สำหรับ items per page ---
   const [limit, setLimit] = useState(5);
   const [filterLeaveType, setFilterLeaveType] = useState('');
+  // --- เพิ่ม state สำหรับ edit/delete ---
+  const [editingLeave, setEditingLeave] = useState<any | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingLeaveId, setDeletingLeaveId] = useState<string | null>(null);
   // --- เพิ่ม state สำหรับ leave types dropdown ---
   const [leaveTypes, setLeaveTypes] = useState<{ id: string; leave_type: string; leave_type_th: string; leave_type_en: string }[]>([]);
   const [leaveTypesLoading, setLeaveTypesLoading] = useState(false);
@@ -245,6 +251,73 @@ const LeaveHistory = () => {
   const isRetroactiveLeave = (leave: any) => {
     // ใช้ข้อมูล backdated จาก backend
     return leave.backdated === true;
+  };
+
+  // ฟังก์ชันตรวจสอบว่าสามารถแก้ไขหรือลบใบลาได้หรือไม่
+  const canEditOrDelete = (leave: any) => {
+    if (!leave.startDate) return false;
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const leaveStart = new Date(leave.startDate);
+    leaveStart.setHours(0, 0, 0, 0);
+    return leaveStart > now;
+  };
+
+  // ฟังก์ชันลบใบลา
+  const handleDeleteLeave = async (leaveId: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        showSessionExpiredDialog();
+        return;
+      }
+
+      const res = await fetch(`/api/leave-request/${leaveId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (res.status === 401) {
+        showSessionExpiredDialog();
+        return;
+      }
+
+      const data = await res.json();
+      if (data.success) {
+        toast({
+          title: t('common.success'),
+          description: t('history.leaveDeleted', 'ลบใบลาสำเร็จ'),
+          variant: 'default',
+        });
+        setShowDeleteConfirm(false);
+        setDeletingLeaveId(null);
+        fetchLeaveHistory(); // รีเฟรชข้อมูล
+      } else {
+        toast({
+          title: t('common.error'),
+          description: data.message || t('common.deleteFailed'),
+          variant: 'destructive',
+        });
+      }
+    } catch (err: any) {
+      toast({
+        title: t('common.error'),
+        description: err.message || t('common.deleteFailed'),
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // ฟังก์ชันแก้ไขใบลา
+  const handleEditLeave = (leave: any) => {
+    setEditingLeave(leave);
+    setShowEditDialog(true);
+  };
+
+  // ฟังก์ชันยืนยันการลบ
+  const handleConfirmDelete = (leaveId: string) => {
+    setDeletingLeaveId(leaveId);
+    setShowDeleteConfirm(true);
   };
 
   const getStatusBadge = (status: string) => {
@@ -927,7 +1000,7 @@ const LeaveHistory = () => {
                             )}
                           </div>
                         )}
-                        <div className="flex justify-end mt-6">
+                        <div className="flex justify-end mt-6 gap-2">
                           <Button 
                             size="sm" 
                             variant="outline" 
@@ -936,6 +1009,26 @@ const LeaveHistory = () => {
                           >
                             {t('common.viewDetails')}
                           </Button>
+                          {canEditOrDelete(leave) && (
+                            <>
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                onClick={() => handleEditLeave(leave)}
+                                className="transition-all duration-300 transform hover:scale-105 hover:shadow-md hover:bg-green-50 hover:border-green-300 btn-press hover-glow text-sm px-4 py-2 text-green-700 border-green-200"
+                              >
+                                {t('common.edit')}
+                              </Button>
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                onClick={() => handleConfirmDelete(leave.id)}
+                                className="transition-all duration-300 transform hover:scale-105 hover:shadow-md hover:bg-red-50 hover:border-red-300 btn-press hover-glow text-sm px-4 py-2 text-red-700 border-red-200"
+                              >
+                                {t('common.delete')}
+                              </Button>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1428,6 +1521,81 @@ const LeaveHistory = () => {
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.style.display = 'none';
+                }}
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <XCircle className="w-5 h-5" />
+              {t('history.confirmDelete', 'ยืนยันการลบ')}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <p className="text-gray-700 mb-4">
+              {t('history.deleteConfirmMessage', 'คุณต้องการลบใบลานี้หรือไม่? การดำเนินการนี้ไม่สามารถยกเลิกได้')}
+            </p>
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="text-sm text-red-700">
+                <strong>{t('history.deleteWarning', 'คำเตือน:')}</strong> {t('history.deleteWarningMessage', 'ใบลาที่ลบแล้วจะไม่สามารถกู้คืนได้')}
+              </p>
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowDeleteConfirm(false);
+                setDeletingLeaveId(null);
+              }}
+              className="border-gray-300 text-gray-700 hover:bg-gray-50"
+            >
+              {t('common.cancel')}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (deletingLeaveId) {
+                  handleDeleteLeave(deletingLeaveId);
+                }
+              }}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {t('common.delete')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Leave Dialog */}
+      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-green-600">
+              <FileText className="w-5 h-5" />
+              {t('history.editLeave', 'แก้ไขใบลา')}
+            </DialogTitle>
+          </DialogHeader>
+          {editingLeave && (
+            <div className="py-4">
+              <LeaveForm 
+                mode="edit" 
+                initialData={editingLeave}
+                onSubmit={() => {
+                  setShowEditDialog(false);
+                  setEditingLeave(null);
+                  fetchLeaveHistory(); // รีเฟรชข้อมูล
+                  toast({
+                    title: t('common.success'),
+                    description: t('history.leaveUpdated', 'แก้ไขใบลาสำเร็จ'),
+                    variant: 'default',
+                  });
                 }}
               />
             </div>

@@ -102,6 +102,7 @@
     "close": "Close",
     "gotIt": "Got it!",
     "add": "Add",
+    "deleteFailed": "Delete failed",
     "update": "Update",
     "allMonths": "All Months",
     "all": "All",
@@ -471,7 +472,14 @@
     "noLeaveHistoryDesc": "No leave history available in the system",
     "pageInfo": "Page {{page}} of {{totalPages}}",
     "leaveTime": "Leave Time",
-    "days": "Days"
+    "days": "Days",
+    "confirmDelete": "Confirm Delete",
+    "deleteConfirmMessage": "Do you want to delete this leave request? This action cannot be undone.",
+    "deleteWarning": "Warning:",
+    "deleteWarningMessage": "Deleted leave requests cannot be recovered.",
+    "leaveDeleted": "Leave request deleted successfully",
+    "leaveUpdated": "Leave request updated successfully",
+    "editLeave": "Edit Leave Request"
   },
   "admin": {
     "pendingRequests": "Pending Requests",
