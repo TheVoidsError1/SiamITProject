@@ -220,14 +220,14 @@ const NotificationBell = () => {
                   onClick={handleMarkAllAsRead}
                   className="text-white hover:bg-white/20 text-xs px-2 py-1"
                 >
-                  {t('markAllAsRead')}
+                  {t('notification.markAllAsRead')}
                 </Button>
               )}
             </div>
           </CardHeader>
           <CardContent className="space-y-3 max-h-80 overflow-y-auto p-4 bg-transparent">
             {notifications.length === 0 ? (
-              <p className="text-center text-gray-500 py-4">{t('noNotifications')}</p>
+              <p className="text-center text-gray-500 py-4">{t('notification.noNotifications')}</p>
             ) : (
               notifications.map((notification, idx) => (
                 <div
@@ -253,7 +253,7 @@ const NotificationBell = () => {
                     <h4 className={`font-semibold text-base mb-0.5 ${
                       notification.status === 'approved' ? 'text-green-700' : 'text-red-700'
                     }`}>
-                      {notification.status === 'approved' ? t('approved') : t('rejected')}
+                      {notification.status === 'approved' ? t('notification.approved') : t('notification.rejected')}
                     </h4>
                     <p className="text-xs text-gray-600 mb-1">
                       {new Date(notification.startDate).toLocaleDateString('th-TH')} - {new Date(notification.endDate).toLocaleDateString('th-TH')}

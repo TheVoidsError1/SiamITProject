@@ -622,16 +622,14 @@
     "noNotifications": "No notifications",
     "read": "Mark as Read",
     "title": "Notifications",
-    "notifications": "Notifications",
     "empty": "No notifications",
-    "noNotifications": "No notifications",
     "approved": "Request Approved",
     "rejected": "Request Rejected",
     "leaveDate": "Leave Date",
     "approvedDesc": "Your request has been approved.",
     "rejectedDesc": "Your request was rejected.",
     "markAsRead": "Mark as Read",
-    "markAllAsRead": "Mark All as Read",
+
     "unread": "Unread",
     "read": "Read",
     "notificationsDisabled": "Notifications are disabled",
@@ -649,9 +647,7 @@
     "tooltipUnreadCount": "unread messages",
     "statusChanged": "Request Status Changed",
     "request": "Request",
-    "hasBeen": "has been",
-    "approved": "approved",
-    "rejected": "rejected"
+    "hasBeen": "has been"
   },
   "notifications": {
     "approved": "Approved",
