@@ -98,7 +98,6 @@
     "close": "ปิด",
     "gotIt": "เข้าใจแล้ว!",
     "add": "เพิ่ม",
-    "deleteFailed": "ลบไม่สำเร็จ",
     "update": "อัปเดต",
     "me": "ฉัน",
     "year": "ปี",
@@ -489,14 +488,7 @@
     "noLeaveHistoryDesc": "ยังไม่มีประวัติการลาในระบบ",
     "pageInfo": "หน้า {{page}} จาก {{totalPages}}",
     "leaveTime": "เวลาการลา",
-    "days": "วัน",
-    "confirmDelete": "ยืนยันการลบ",
-    "deleteConfirmMessage": "คุณต้องการลบใบลานี้หรือไม่? การดำเนินการนี้ไม่สามารถยกเลิกได้",
-    "deleteWarning": "คำเตือน:",
-    "deleteWarningMessage": "ใบลาที่ลบแล้วจะไม่สามารถกู้คืนได้",
-    "leaveDeleted": "ลบใบลาสำเร็จ",
-    "leaveUpdated": "แก้ไขใบลาสำเร็จ",
-    "editLeave": "แก้ไขใบลา"
+    "days": "วัน"
   },
   "admin": {
     "pendingRequests": "คำขอรออนุมัติ",

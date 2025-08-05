@@ -171,17 +171,9 @@
            }
          }
          const {
-           leaveType, personalLeaveType, startDate, endDate,
-           startTime, endTime, reason, supervisor, contact, durationType, leaveDate
+           /* employeeType, */ leaveType, personalLeaveType, startDate, endDate,
+           startTime, endTime, reason, supervisor, contact
          } = req.body;
-
-         // ถ้าเป็นลารายชั่วโมง ให้ใช้ leaveDate เป็น startDate/endDate
-         let actualStartDate = startDate;
-         let actualEndDate = endDate;
-         if (durationType === 'hour' && leaveDate) {
-           actualStartDate = leaveDate;
-           actualEndDate = leaveDate;
-         }
 
          // --- Validation: quota ---
          // 1. ดึง quota ของ user
@@ -341,8 +333,8 @@
            Repid: userId, // ใส่ user_id จาก JWT
            employeeType, // ดึงจาก user.position
            leaveType,
-           startDate: actualStartDate,
-           endDate: actualEndDate,
+           startDate,
+           endDate,
            startTime,
            endTime,
            reason,
@@ -1067,7 +1059,7 @@
          // อัปเดตฟิลด์ที่ส่งมา
          const {
            leaveType, personalLeaveType, startDate, endDate,
-           startTime, endTime, reason, supervisor, contact, durationType, leaveDate
+           startTime, endTime, reason, supervisor, contact
          } = req.body;
          if (leaveType !== undefined) leave.leaveType = leaveType;
          if (personalLeaveType !== undefined) leave.personalLeaveType = personalLeaveType;
