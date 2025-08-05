@@ -174,6 +174,8 @@
     "specifyTime": "กรุณาระบุเวลา",
     "specifyTimeDesc": "กรุณาระบุเวลาเริ่มและเวลาสิ้นสุด",
     "leaveDate": "วันที่ลา",
+    "selectLeaveDate": "เลือกวันที่ลา",
+    "leaveDateDescription": "เลือกวันที่ที่ต้องการลาเป็นชั่วโมง",
     "supervisor": "ผู้บังคับบัญชา",
     "supervisorPlaceholder": "กรอกชื่อผู้บังคับบัญชา",
     "reasonPlaceholder": "กรอกเหตุผลในการลา",

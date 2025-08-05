@@ -156,6 +156,8 @@
     "specifyTime": "Please specify time",
     "specifyTimeDesc": "Please specify start and end time",
     "leaveDate": "Leave Date",
+    "selectLeaveDate": "Select Leave Date",
+    "leaveDateDescription": "Select the date for hourly leave",
     "supervisor": "Supervisor",
     "supervisorPlaceholder": "Enter supervisor name",
     "reasonPlaceholder": "Enter reason for leave",
