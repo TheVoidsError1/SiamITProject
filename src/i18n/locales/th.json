@@ -334,13 +334,13 @@
     "departments": "แผนก"
   },
   "positions": {
-    "positions": "ตำแหน่ง",
+    "positions": "ตำแหน่งทั้งหมด",
     "position": "ตำแหน่ง",
     "employee": "พนักงาน",
     "intern": "นักศึกษาฝึกงาน",
-    "notSpecified": "ไม่ต้องการระบุ",
-    "selectPosition": "เลือกตำแหน่ง",
-    "noPosition": "ไม่มีตำแหน่ง"
+    "notSpecified": "ไม่ระบุ",
+    "noPosition": "ไม่มีตำแหน่ง",
+    "selectPosition": "เลือกตำแหน่ง"
   },
   "employeeTypes": {
     "employee": "พนักงาน",
@@ -649,7 +649,16 @@
     "save": "บันทึก",
     "cancel": "ยกเลิก",
     "adminCannotEditSuperadmin": "ผู้ดูแลระบบไม่สามารถแก้ไขซูเปอร์แอดมิน",
-    "noEmployeesFound": "ไม่พบข้อมูลพนักงานตามเงื่อนไขที่เลือก"
+    "noEmployeesFound": "ไม่พบข้อมูลพนักงานตามเงื่อนไขที่เลือก",
+    "contactInfo": "ข้อมูลการติดต่อ",
+    "internStartDate": "วันที่เริ่มฝึกงาน",
+    "internEndDate": "วันที่สิ้นสุดฝึกงาน",
+    "birthdate": "วันเกิด",
+    "gender": "เพศ",
+    "startWorkDate": "วันที่เริ่มงาน",
+    "selectGender": "เลือกเพศ",
+    "male": "ชาย",
+    "female": "หญิง"
   },
   "notification": {
     "notifications": "การแจ้งเตือน",
