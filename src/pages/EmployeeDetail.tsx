@@ -704,7 +704,7 @@ const EmployeeDetail = () => {
                 <div className="flex justify-end items-center gap-3">
                   <Calendar className="w-6 h-6 text-gray-600" />
                   <span className="text-base font-semibold text-gray-800">
-                    {t('leave.usedLeaveDays', 'จำนวนวันลาที่ใช้ไป')}: {leaveSummary.days || 0} {t('leave.days', 'วัน')} {leaveSummary.hours > 0 ? `${leaveSummary.hours} ${t('leave.hours', 'ชั่วโมง')}` : ''}
+                    {t('leave.usedLeaveDays')}: {leaveSummary.days || 0} {t('leave.days', 'วัน')} {leaveSummary.hours > 0 ? `${leaveSummary.hours} ${t('leave.hours', 'ชั่วโมง')}` : ''}
                   </span>
                 </div>
               </div>

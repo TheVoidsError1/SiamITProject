@@ -265,6 +265,7 @@
     "allBackdated": "ทุกประเภทการลา",
     "notBackdated": "ลาไม่ย้อนหลัง",
     "backdatedLabel": "ย้อนหลัง",
+    "usedLeaveDays": "จำนวนวันที่ใช้",
     "backdatedAll": "ทั้งหมด",
     "backdatedOnly": "เฉพาะย้อนหลัง",
     "notBackdatedOnly": "เฉพาะไม่ย้อนหลัง",
