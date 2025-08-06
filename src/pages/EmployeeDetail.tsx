@@ -359,6 +359,7 @@ const EmployeeDetail = () => {
       : found.position_name_en || found.position_name;
   };
 
+  
   const getDepartmentLabel = (departmentIdOrName: string) => {
     if (!departmentIdOrName || departmentIdOrName === "not_specified") {
       return t("departments.noDepartment");
