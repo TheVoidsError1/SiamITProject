@@ -214,7 +214,9 @@ const CalendarPage = () => {
         const thaiHolidaysData = getAllThaiHolidays(year, t);
         setThaiHolidays(thaiHolidaysData);
         // Fetch employee leaves
-        const leaveResult = await apiService.get(apiEndpoints.leave.calendarWithMonth(year));
+        let leaveResult;
+        // ดึง leave ทั้งปีสำหรับทุก role (API จะคืนของ user เองถ้าไม่ใช่ admin/superadmin)
+        leaveResult = await apiService.get(apiEndpoints.leave.calendar(year));
         setEmployeeLeaves(leaveResult.data || []);
       } catch (error) {
         setCompanyEvents([]);
@@ -225,7 +227,7 @@ const CalendarPage = () => {
       }
     };
     fetchData();
-  }, [year, t]);
+  }, [year, t, isAdmin]);
 
   // Get all events (company + Thai holidays + employee leaves) for a specific month
   const getEventsByMonth = (year: number, month: number): CalendarEvent[] => {
@@ -264,8 +266,13 @@ const CalendarPage = () => {
     
     // Add employee leaves if enabled
     if (showEmployeeLeaves && Array.isArray(employeeLeaves)) {
+      // กรอง leave เฉพาะ user ที่ล็อกอิน ถ้าไม่ใช่ admin/superadmin
+      const filteredLeaves = isAdmin
+        ? employeeLeaves
+        : employeeLeaves.filter(leave => leave.userId === user?.id);
+
       // For all users, show their own leaves (API already filters for users)
-      const monthEmployeeLeaves = employeeLeaves.filter(leave => {
+      const monthEmployeeLeaves = filteredLeaves.filter(leave => {
         const startDate = new Date(leave.startDate);
         const endDate = new Date(leave.endDate);
         return (startDate.getFullYear() === year && startDate.getMonth() === month) ||
