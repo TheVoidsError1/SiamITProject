@@ -24,7 +24,7 @@ import { ArrowLeft, Calendar, Edit, Eye, Mail, Trash2, User } from "lucide-react
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { apiService, apiEndpoints } from '../lib/api';
+import { apiService, apiEndpoints, API_BASE_URL } from '../lib/api';
 
 const EmployeeDetail = () => {
   const { id } = useParams();
@@ -111,10 +111,10 @@ const EmployeeDetail = () => {
     // เพิ่ม debug log
     console.log('🔍 Fetching leave history with params:', params);
     console.log('🔍 filterBackdated value:', filterBackdated);
-    console.log('🔍 Full URL:', `${apiEndpoints.apiBaseUrl}/api/employee/${id}/leave-history${query}`);
+    console.log('🔍 Full URL:', `${API_BASE_URL}/api/employee/${id}/leave-history${query}`);
     
     try {
-      const data = await apiService.get(`${apiEndpoints.apiBaseUrl}/api/employee/${id}/leave-history${query}`);
+      const data = await apiService.get(`${API_BASE_URL}/api/employee/${id}/leave-history${query}`);
       if (data.success) {
         setLeaveHistory(data.data);
         setLeaveTotalPages(data.totalPages || 1);
@@ -246,7 +246,7 @@ const EmployeeDetail = () => {
         email: editData.email,
       };
       if (editData.password && editData.password.trim() !== '') payload.password = editData.password;
-      const data = await apiService.put(`${apiEndpoints.apiBaseUrl}/api/employee/${id}`, payload);
+      const data = await apiService.put(`${API_BASE_URL}/api/employee/${id}`, payload);
       if (data.success) {
         toast({
           title: t('employee.saveSuccess'),
@@ -254,7 +254,7 @@ const EmployeeDetail = () => {
         });
         setIsEditing(false);
         // Refresh profile data
-        const empData = await apiService.get(`${apiEndpoints.apiBaseUrl}/api/employee/${id}`);
+        const empData = await apiService.get(`${API_BASE_URL}/api/employee/${id}`);
         if (empData.success) setEmployee(empData.data);
       } else {
         toast({ title: t('error.title'), description: data.message || t('employee.saveError') });
@@ -303,7 +303,7 @@ const EmployeeDetail = () => {
     if (!deleteLeaveId) return;
     setDeleting(true);
     try {
-      const res = await apiService.delete(`${apiEndpoints.apiBaseUrl}/api/leave-request/${deleteLeaveId}`);
+      const res = await apiService.delete(`${API_BASE_URL}/api/leave-request/${deleteLeaveId}`);
       const data = res.data;
       if (data.success) {
         setDeleteLeaveId(null);
@@ -328,7 +328,7 @@ const EmployeeDetail = () => {
     if (!id) return;
     setLoading(true);
     setError(null);
-    apiService.get(`${apiEndpoints.apiBaseUrl}/api/employee/${id}`)
+    apiService.get(`${API_BASE_URL}/api/employee/${id}`)
       .then(data => {
         if (data.success) {
           setEmployee(data.data);
@@ -418,7 +418,7 @@ const EmployeeDetail = () => {
                 <div className="relative w-24 h-24">
                   {employee.avatar ? (
                     <img
-                      src={`${apiEndpoints.apiBaseUrl}${employee.avatar}`}
+                      src={`${API_BASE_URL}${employee.avatar}`}
                       alt={employee.name}
                       className="w-full h-full rounded-full object-cover shadow-xl"
                       onError={(e) => {
