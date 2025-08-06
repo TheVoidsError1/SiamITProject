@@ -44,7 +44,9 @@ const EmployeeDetail = () => {
     gender: '',
     birthdate: '',
     phone: '',
-    startWorkDate: ''
+    startWorkDate: '',
+    internStartDate: '',
+    internEndDate: ''
   });
 
   // เพิ่ม state สำหรับข้อมูลจริง
@@ -239,7 +241,9 @@ const EmployeeDetail = () => {
       gender: employee?.gender || '',
       birthdate: employee?.birthdate || '',
       phone: employee?.phone || '',
-      startWorkDate: employee?.startWorkDate || ''
+      startWorkDate: employee?.startWorkDate || '',
+      internStartDate: employee?.internStartDate || '',
+      internEndDate: employee?.internEndDate || ''
     });
     setIsEditing(true);
   };
@@ -287,7 +291,9 @@ const EmployeeDetail = () => {
       gender: '',
       birthdate: '',
       phone: '',
-      startWorkDate: ''
+      startWorkDate: '',
+      internStartDate: '',
+      internEndDate: ''
     });
   };
 
@@ -428,259 +434,248 @@ const EmployeeDetail = () => {
                 {t('employee.personalInfoDesc')}
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-6">
-              <div className="flex flex-col lg:flex-row gap-8">
-                {/* Left Column - Personal Information */}
-                <div className="flex-1 space-y-6">
-                  <h3 className="text-lg font-semibold text-blue-900 flex items-center gap-2">
-                    <User className="w-5 h-5" />
-                    {t('employee.personalInfo')}
-                  </h3>
-                  
-                  {/* Full Name */}
-                  <div>
-                    <Label className="text-sm font-medium text-blue-700">{t('employee.fullName')}</Label>
-                    {isEditing ? (
-                      <input
-                        className="mt-1 px-3 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        value={editData.full_name}
-                        onChange={e => setEditData({ ...editData, full_name: e.target.value })}
-                        placeholder={t('employee.fullName')}
-                      />
-                    ) : (
-                      <p className="text-lg text-blue-900 mt-1 font-medium">{employee.name}</p>
-                    )}
+            <CardContent className="p-0">
+              <div className="flex flex-col items-center p-8">
+                {/* Profile Picture - Centered with enhanced styling */}
+                <div className="relative w-36 h-36 mb-10">
+                  {employee.avatar ? (
+                    <img
+                      src={`${API_BASE_URL}${employee.avatar}`}
+                      alt={employee.name}
+                      className="w-full h-full rounded-full object-cover shadow-2xl border-4 border-white"
+                      onError={(e) => {
+                        // ถ้าโหลดรูปไม่สำเร็จ ให้แสดง fallback
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                        target.nextElementSibling?.classList.remove('hidden');
+                      }}
+                    />
+                  ) : null}
+                  <div className={`w-full h-full rounded-full bg-gradient-to-br from-blue-200 via-indigo-200 to-purple-200 flex items-center justify-center text-blue-900 font-bold text-5xl shadow-2xl border-4 border-white ${employee.avatar ? 'hidden' : ''}`}>
+                    {employee.name ? employee.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : '?'}
                   </div>
-
-                  {/* Position */}
-                  <div>
-                    <Label className="text-sm font-medium text-blue-700">{t('employee.position')}</Label>
-                    {isEditing ? (
-                      <select
-                        className="mt-1 px-3 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        value={editData.position}
-                        onChange={e => setEditData({ ...editData, position: e.target.value })}
-                      >
-                        <option value="not_specified">{t('positions.noPosition')}</option>
-                        {positions.map(pos => (
-                          <option key={pos.id} value={pos.id}>
-                            {i18n.language.startsWith('th') ? pos.position_name_th : pos.position_name_en}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <p className="text-lg text-blue-700 mt-1">{getPositionLabel(employee.position_id || employee.position)}</p>
-                    )}
-                  </div>
-
-                  {/* Department */}
-                  <div>
-                    <Label className="text-sm font-medium text-blue-700">{t('employee.department')}</Label>
-                    {isEditing ? (
-                      <select
-                        className="mt-1 px-3 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        value={editData.department}
-                        onChange={e => setEditData({ ...editData, department: e.target.value })}
-                      >
-                        <option value="not_specified">{t('departments.noDepartment')}</option>
-                        {departments.map(dept => (
-                          <option key={dept.id} value={dept.id}>
-                            {i18n.language.startsWith('th') ? dept.department_name_th : dept.department_name_en}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <p className="text-lg text-blue-700 mt-1">{getDepartmentLabel(employee.department_id || employee.department)}</p>
-                    )}
-                  </div>
-
-                  {/* Gender */}
-                  <div>
-                    <Label className="text-sm font-medium text-blue-700">{t('employee.gender', 'employee.gender')}</Label>
-                    {isEditing ? (
-                      <select
-                        className="mt-1 px-3 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        value={editData.gender}
-                        onChange={e => setEditData({ ...editData, gender: e.target.value })}
-                      >
-                        <option value="">{t('employee.selectGender', 'employee.selectGender')}</option>
-                        <option value="male">{t('employee.male', 'ชาย')}</option>
-                        <option value="female">{t('employee.female', 'หญิง')}</option>
-                        <option value="other">{t('employee.other', 'อื่นๆ')}</option>
-                      </select>
-                    ) : (
-                      <p className="text-lg text-blue-700 mt-1">
-                        {employee.gender === 'male' ? t('employee.male', 'ชาย') : 
-                         employee.gender === 'female' ? t('employee.female', 'หญิง') : 
-                         employee.gender === 'other' ? t('employee.other', 'อื่นๆ') : 
-                         t('employee.selectGender', 'employee.selectGender')}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Birthdate */}
-                  <div>
-                    <Label className="text-sm font-medium text-blue-700">{t('employee.birthdate', 'employee.birthdate')}</Label>
-                    {isEditing ? (
-                      <div className="relative mt-1">
+                </div>
+                
+                {/* Information Grid - Enhanced 2 columns for better usability */}
+                <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl">
+                  {/* Column 1: Personal Info */}
+                  <div className="space-y-6 bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-2xl border border-blue-100">
+                    <h3 className="text-lg font-bold text-blue-800 mb-6 flex items-center gap-2">
+                      <User className="w-5 h-5" />
+                      {t('employee.personalInfo')}
+                    </h3>
+                    {/* Full Name */}
+                    <div>
+                      <Label className="text-sm font-semibold text-blue-700 mb-2 block">{t('employee.fullName')}</Label>
+                      {isEditing ? (
+                        <input
+                          className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white"
+                          value={editData.full_name}
+                          onChange={e => setEditData({ ...editData, full_name: e.target.value })}
+                          placeholder={t('employee.fullName')}
+                        />
+                      ) : (
+                        <p className="text-xl font-bold text-blue-900">{employee.name}</p>
+                      )}
+                    </div>
+                    {/* Position */}
+                    <div>
+                      <Label className="text-sm font-semibold text-blue-700 mb-2 block">{t('employee.position')}</Label>
+                      {isEditing ? (
+                        <select
+                          className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white"
+                          value={editData.position}
+                          onChange={e => setEditData({ ...editData, position: e.target.value })}
+                        >
+                          <option value="not_specified">{t('positions.noPosition')}</option>
+                          {positions
+                            .filter(pos => pos.id !== 'not_specified')
+                            .map(pos => (
+                              <option key={pos.id} value={pos.id}>
+                                {i18n.language.startsWith('th') ? pos.position_name_th : pos.position_name_en}
+                              </option>
+                            ))}
+                        </select>
+                      ) : (
+                        <p className="text-lg text-blue-700">{getPositionLabel(employee.position_id || employee.position)}</p>
+                      )}
+                    </div>
+                    {/* Department */}
+                    <div>
+                      <Label className="text-sm font-semibold text-blue-700 mb-2 block">{t('employee.department')}</Label>
+                      {isEditing ? (
+                        <select
+                          className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white"
+                          value={editData.department}
+                          onChange={e => setEditData({ ...editData, department: e.target.value })}
+                        >
+                          <option value="not_specified">{t('departments.noDepartment')}</option>
+                          {departments
+                            .filter(dept => dept.id !== 'not_specified')
+                            .map(dept => (
+                              <option key={dept.id} value={dept.id}>
+                                {i18n.language.startsWith('th') ? dept.department_name_th : dept.department_name_en}
+                              </option>
+                            ))}
+                        </select>
+                      ) : (
+                        <p className="text-lg text-blue-700">{getDepartmentLabel(employee.department_id || employee.department)}</p>
+                      )}
+                    </div>
+                    {/* Gender */}
+                    <div>
+                      <Label className="text-sm font-semibold text-blue-700 mb-2 block">{t('employee.gender')}</Label>
+                      {isEditing ? (
+                        <select
+                          className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white"
+                          value={editData.gender}
+                          onChange={e => setEditData({ ...editData, gender: e.target.value })}
+                        >
+                          <option value="">{t('employee.selectGender')}</option>
+                          <option value="male">{t('employee.male')}</option>
+                          <option value="female">{t('employee.female')}</option>
+                        </select>
+                      ) : (
+                        <p className="text-lg text-blue-700">
+                          {employee.gender === 'male' ? t('employee.male') : employee.gender === 'female' ? t('employee.female') : '-'}
+                        </p>
+                      )}
+                    </div>
+                    {/* Birthdate */}
+                    <div>
+                      <Label className="text-sm font-semibold text-blue-700 mb-2 block">{t('employee.birthdate')}</Label>
+                      {isEditing ? (
                         <input
                           type="date"
-                          className="px-3 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
+                          className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white"
                           value={editData.birthdate}
                           onChange={e => setEditData({ ...editData, birthdate: e.target.value })}
                         />
-                        <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 mt-1">
-                        <Calendar className="w-5 h-5 text-blue-400" />
-                        <p className="text-lg text-blue-700">
-                          {employee.birthdate ? new Date(employee.birthdate).toLocaleDateString('th-TH') : 'วว/ดด/ปปปป'}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Center Column - Profile Picture */}
-                <div className="flex flex-col items-center justify-center space-y-4">
-                  <div className="relative w-32 h-32">
-                    {employee.avatar ? (
-                      <img
-                        src={`${API_BASE_URL}${employee.avatar}`}
-                        alt={employee.name}
-                        className="w-full h-full rounded-full object-cover shadow-xl border-4 border-white"
-                        onError={(e) => {
-                          // ถ้าโหลดรูปไม่สำเร็จ ให้แสดง fallback
-                          const target = e.target as HTMLImageElement;
-                          target.style.display = 'none';
-                          target.nextElementSibling?.classList.remove('hidden');
-                        }}
-                      />
-                    ) : null}
-                    <div className={`w-full h-full rounded-full bg-gradient-to-br from-blue-200 via-indigo-200 to-purple-200 flex items-center justify-center text-blue-900 font-bold text-4xl shadow-xl border-4 border-white ${employee.avatar ? 'hidden' : ''}`}>
-                      {employee.name ? employee.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : '?'}
+                      ) : (
+                        <p className="text-lg text-blue-700">{employee.birthdate ? format(new Date(employee.birthdate), 'dd/MM/yyyy') : '-'}</p>
+                      )}
                     </div>
                   </div>
-                  <div className="text-center">
-                    <p className="text-lg font-semibold text-blue-900">{employee.name}</p>
-                    <p className="text-sm text-blue-600">{getPositionLabel(employee.position_id || employee.position)}</p>
+                  
+                  {/* Column 2: Contact & Actions */}
+                  <div className="space-y-6 bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-2xl border border-indigo-100">
+                    <h3 className="text-lg font-bold text-indigo-800 mb-6 flex items-center gap-2">
+                      <Mail className="w-5 h-5" />
+                      {t('employee.contactInfo')}
+                    </h3>
+                    {/* Email */}
+                    <div>
+                      <Label className="text-sm font-semibold text-indigo-700 mb-2 block">{t('employee.email')}</Label>
+                      {isEditing ? (
+                        <input
+                          className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-white"
+                          type="email"
+                          value={editData.email}
+                          onChange={e => setEditData({ ...editData, email: e.target.value })}
+                          placeholder={t('employee.email')}
+                        />
+                      ) : (
+                        <div className="flex items-center gap-3">
+                          <Mail className="w-5 h-5 text-indigo-400" />
+                          <p className="text-lg text-indigo-700">{employee.email}</p>
+                        </div>
+                      )}
+                    </div>
+                    {/* Password */}
+                    <div>
+                      <Label className="text-sm font-semibold text-indigo-700 mb-2 block">{t('employee.password')}</Label>
+                      {isEditing ? (
+                        <input
+                          className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-white"
+                          type="password"
+                          value={editData.password}
+                          onChange={e => setEditData({ ...editData, password: e.target.value })}
+                          placeholder={t('employee.password')}
+                        />
+                      ) : (
+                        <p className="text-lg text-indigo-700">********</p>
+                      )}
+                    </div>
+                    {/* Phone */}
+                    <div>
+                      <Label className="text-sm font-semibold text-indigo-700 mb-2 block">{t('employee.phone')}</Label>
+                      {isEditing ? (
+                        <input
+                          type="tel"
+                          className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-white"
+                          value={editData.phone}
+                          onChange={e => setEditData({ ...editData, phone: e.target.value })}
+                        />
+                      ) : (
+                        <p className="text-lg text-indigo-700">{employee.phone || '-'}</p>
+                      )}
+                    </div>
+                    {/* Start Work Date (เฉพาะ role ไม่ใช่ intern) */}
+                    {!(employee.role === 'intern' || editData.role === 'intern' || employee.position?.includes('intern') || employee.position?.includes('ฝึกงาน') || employee.position?.includes('นักศึกษาฝึกงาน')) && (
+                      <div>
+                        <Label className="text-sm font-semibold text-indigo-700 mb-2 block">{t('employee.startWorkDate')}</Label>
+                        {isEditing ? (
+                          <input
+                            type="date"
+                            className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-white"
+                            value={editData.startWorkDate}
+                            onChange={e => setEditData({ ...editData, startWorkDate: e.target.value })}
+                          />
+                        ) : (
+                          <p className="text-lg text-indigo-700">{employee.startWorkDate ? format(new Date(employee.startWorkDate), 'dd/MM/yyyy') : '-'}</p>
+                        )}
+                      </div>
+                    )}
+                    {/* Intern Dates (เฉพาะ role intern) */}
+                    {(employee.role === 'intern' || editData.role === 'intern' || employee.position?.includes('intern') || employee.position?.includes('ฝึกงาน') || employee.position?.includes('นักศึกษาฝึกงาน')) && (
+                      <div className="space-y-4">
+                        <div>
+                          <Label className="text-sm font-semibold text-indigo-700 mb-2 block">{t('employee.internStartDate')}</Label>
+                          {isEditing ? (
+                            <input
+                              type="date"
+                              className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-white"
+                              value={editData.internStartDate}
+                              onChange={e => setEditData({ ...editData, internStartDate: e.target.value })}
+                            />
+                          ) : (
+                            <p className="text-lg text-indigo-700">{employee.internStartDate ? format(new Date(employee.internStartDate), 'dd/MM/yyyy') : '-'}</p>
+                          )}
+                        </div>
+                        <div>
+                          <Label className="text-sm font-semibold text-indigo-700 mb-2 block">{t('employee.internEndDate')}</Label>
+                          {isEditing ? (
+                            <input
+                              type="date"
+                              className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-white"
+                              value={editData.internEndDate}
+                              onChange={e => setEditData({ ...editData, internEndDate: e.target.value })}
+                            />
+                          ) : (
+                            <p className="text-lg text-indigo-700">{employee.internEndDate ? format(new Date(employee.internEndDate), 'dd/MM/yyyy') : '-'}</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-
-                                {/* Right Column - Contact Information */}
-                <div className="flex-1 space-y-6">
-                  <h3 className="text-lg font-semibold text-blue-900 flex items-center gap-2">
-                    <Mail className="w-5 h-5" />
-                    {t('employee.contactInfo', 'employee.contactInfo')}
-                  </h3>
-
-                  {/* Email */}
-                  <div>
-                    <Label className="text-sm font-medium text-blue-700">{t('employee.email')}</Label>
-                    {isEditing ? (
-                      <input
-                        className="mt-1 px-3 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        type="email"
-                        value={editData.email}
-                        onChange={e => setEditData({ ...editData, email: e.target.value })}
-                        placeholder={t('employee.email')}
-                      />
-                    ) : (
-                      <div className="flex items-center gap-2 mt-1">
-                        <Mail className="w-5 h-5 text-blue-400" />
-                        <p className="text-lg text-blue-700">{employee.email}</p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Password */}
-                  <div>
-                    <Label className="text-sm font-medium text-blue-700">{t('employee.password') || 'Password'}</Label>
-                    {isEditing ? (
-                      <input
-                        className="mt-1 px-3 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        type="password"
-                        value={editData.password}
-                        onChange={e => setEditData({ ...editData, password: e.target.value })}
-                        placeholder={t('employee.password') || 'Password'}
-                      />
-                    ) : (
-                      <p className="text-lg text-blue-700 mt-1">••••••••</p>
-                    )}
-                  </div>
-
-                  {/* Phone Number */}
-                  <div>
-                    <Label className="text-sm font-medium text-blue-700">{t('employee.phone', 'เบอร์โทรศัพท์')}</Label>
-                    {isEditing ? (
-                      <input
-                        className="mt-1 px-3 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        type="tel"
-                        value={editData.phone}
-                        onChange={e => setEditData({ ...editData, phone: e.target.value })}
-                        placeholder={t('employee.phone', 'เบอร์โทรศัพท์')}
-                      />
-                    ) : (
-                      <p className="text-lg text-blue-700 mt-1">{employee.phone || '-'}</p>
-                    )}
-                  </div>
-
-                  {/* Start Work Date */}
-                  <div>
-                    <Label className="text-sm font-medium text-blue-700">{t('employee.startWorkDate', 'employee.startWorkDate')}</Label>
-                    {isEditing ? (
-                      <div className="relative mt-1">
-                        <input
-                          type="date"
-                          className="px-3 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
-                          value={editData.startWorkDate}
-                          onChange={e => setEditData({ ...editData, startWorkDate: e.target.value })}
-                        />
-                        <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 mt-1">
-                        <Calendar className="w-5 h-5 text-blue-400" />
-                        <p className="text-lg text-blue-700">
-                          {employee.startWorkDate ? new Date(employee.startWorkDate).toLocaleDateString('th-TH') : 'วว/ดด/ปปปป'}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="flex gap-3 pt-4">
-                    {isEditing ? (
-                      <>
-                        <Button 
-                          onClick={handleSave} 
-                          size="sm" 
-                          className="bg-green-600 hover:bg-green-700 text-white rounded-lg px-6 py-2 font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
-                        >
-                          {t('common.save')}
-                        </Button>
-                        <Button 
-                          onClick={handleCancel} 
-                          size="sm" 
-                          variant="outline" 
-                          className="rounded-lg px-6 py-2 font-semibold border-blue-300 text-blue-700 hover:bg-blue-50 shadow-lg transition-all duration-200"
-                        >
-                          {t('common.cancel')}
-                        </Button>
-                      </>
-                    ) : (
-                      <Button 
-                        onClick={handleEdit} 
-                        size="sm" 
-                        variant="outline" 
-                        className="rounded-lg px-6 py-2 font-semibold border-blue-300 text-blue-700 hover:bg-blue-50 shadow-lg transition-all duration-200"
-                      >
-                        <Edit className="w-4 h-4 mr-2" />
-                        {t('common.edit')}
+                
+                {/* Action Buttons - Moved to bottom center */}
+                <div className="flex justify-center gap-3 mt-8">
+                  {isEditing ? (
+                    <>
+                      <Button onClick={handleSave} size="lg" className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl px-8 py-3 font-bold shadow-lg hover:shadow-xl transition-all duration-200">
+                        {t('common.save')}
                       </Button>
-                    )}
-                  </div>
+                      <Button onClick={handleCancel} size="lg" variant="outline" className="rounded-xl px-8 py-3 font-bold border-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50 shadow transition-all duration-200">
+                        {t('common.cancel')}
+                      </Button>
+                    </>
+                  ) : (
+                    <Button onClick={handleEdit} size="lg" variant="outline" className="rounded-xl px-8 py-3 font-bold border-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50 shadow transition-all duration-200">
+                      <Edit className="w-5 h-5 mr-2" />{t('common.edit')}
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardContent>

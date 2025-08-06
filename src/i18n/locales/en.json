@@ -326,9 +326,9 @@
     "position": "Position",
     "employee": "Employee",
     "intern": "Intern",
-    "notSpecified": "Prefer not to specify",
-    "selectPosition": "Select Position",
-    "noPosition": "No Position"
+    "notSpecified": "Not specified",
+    "noPosition": "No Position",
+    "selectPosition": "Select Position"
   },
   "employeeTypes": {
     "employee": "Employee",
@@ -615,7 +615,16 @@
     "save": "Save",
     "cancel": "Cancel",
     "adminCannotEditSuperadmin": "Admin cannot edit superadmin",
-    "noEmployeesFound": "No employees found"
+    "noEmployeesFound": "No employees found",
+    "contactInfo": "Contact Information",
+    "internStartDate": "Intern Start Date",
+    "internEndDate": "Intern End Date",
+    "birthdate": "Birthdate",
+    "gender": "Gender",
+    "phone": "Phone Number",
+    "selectGender": "Select Gender",
+    "male": "Male",
+    "female": "Female"
   },
   "notification": {
     "notifications": "Notifications",
