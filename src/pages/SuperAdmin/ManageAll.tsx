@@ -11,18 +11,20 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useToast } from '@/hooks/use-toast';
+
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { apiService, apiEndpoints } from '@/lib/api';
+import { showToastMessage } from '@/lib/toast';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 
 // Mock data for demonstration
 // Remove mockDepartments
 
 const ManageAll: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const { toast } = useToast();
+
   const lang = i18n.language.startsWith('th') ? 'th' : 'en';
   // Position state
   const [positions, setPositions] = useState<any[]>([]);
@@ -63,37 +65,40 @@ const ManageAll: React.FC = () => {
     setDepartmentForm({ ...departmentForm, [e.target.name]: e.target.value });
   };
   // Helper to fetch departments
-  const fetchDepartments = () => {
-    fetch(`${API_BASE_URL}/api/departments`)
-      .then(res => res.json())
-      .then(data => {
-        if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
-          // รองรับทั้งกรณีที่ backend ส่ง array ของ string หรือ object
-          setDepartments(data.data.map((d: any) =>
-            typeof d === 'string'
-              ? { department_name_th: d, department_name_en: d, id: d }
-              : d
-          ));
-        }
-      });
+  const fetchDepartments = async () => {
+    try {
+      const data = await apiService.get(apiEndpoints.departments);
+      if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
+        // รองรับทั้งกรณีที่ backend ส่ง array ของ string หรือ object
+        setDepartments(data.data.map((d: any) =>
+          typeof d === 'string'
+            ? { department_name_th: d, department_name_en: d, id: d }
+            : d
+        ));
+      }
+    } catch (error) {
+      console.error('Error fetching departments:', error);
+      setDepartments([]);
+    }
   };
   const handleDepartmentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingDepartmentId) {
-      // TODO: Implement update logic
-      setEditingDepartmentId(null);
-    } else {
-      await fetch(`${API_BASE_URL}/api/departments`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+    try {
+      if (editingDepartmentId) {
+        // TODO: Implement update logic
+        setEditingDepartmentId(null);
+      } else {
+        await apiService.post(apiEndpoints.departments, {
           department_name_en: departmentForm.name_en,
           department_name_th: departmentForm.name_th
-        })
-      });
-      fetchDepartments();
+        });
+        await fetchDepartments();
+        showToastMessage.crud.createSuccess('department');
+      }
+      setDepartmentForm({ name_en: '', name_th: '' });
+    } catch (error) {
+      showToastMessage.crud.createError('department');
     }
-    setDepartmentForm({ name_en: '', name_th: '' });
   };
   const handleEditDepartment = (id: string) => {
     const dep = departments.find(dep => dep.id === id);
@@ -113,14 +118,12 @@ const ManageAll: React.FC = () => {
     if (!deleteDepartmentDialog.department) return;
     
     try {
-      await fetch(`${API_BASE_URL}/api/departments/${deleteDepartmentDialog.department.id}`, {
-        method: 'DELETE',
-      });
-      fetchDepartments();
+      await apiService.delete(`${apiEndpoints.departments}/${deleteDepartmentDialog.department.id}`);
+      await fetchDepartments();
       setDeleteDepartmentDialog({ open: false, department: null });
-      toast({ title: t('common.success', 'Success'), description: t('common.deleteSuccess', 'Deleted successfully'), variant: 'default' });
+      showToastMessage.crud.deleteSuccess('department');
     } catch (error) {
-      toast({ title: t('common.error', 'Error'), description: t('common.deleteError', 'Failed to delete'), variant: 'destructive' });
+      showToastMessage.crud.deleteError('department');
     }
   };
 
@@ -150,65 +153,51 @@ const ManageAll: React.FC = () => {
     if (!deleteLeaveTypeDialog.leaveType) return;
     
     try {
-      await fetch(`${API_BASE_URL}/api/leave-types/${deleteLeaveTypeDialog.leaveType.id}`, {
-        method: 'DELETE',
-      });
+      await apiService.delete(`${apiEndpoints.leaveTypes}/${deleteLeaveTypeDialog.leaveType.id}`);
       // Refresh leave types
-      fetch(`${API_BASE_URL}/api/leave-types`)
-        .then(res => res.json())
-        .then(data => {
-          if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
-            setLeaveTypes(data.data);
-          }
-        });
+      const data = await apiService.get(apiEndpoints.leaveTypes);
+      if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
+        setLeaveTypes(data.data);
+      }
       setDeleteLeaveTypeDialog({ open: false, leaveType: null });
-      toast({ title: t('common.success', 'Success'), description: t('common.deleteSuccess', 'Deleted successfully'), variant: 'default' });
+      showToastMessage.crud.deleteSuccess('leaveType');
     } catch (error) {
-      toast({ title: t('common.error', 'Error'), description: t('common.deleteError', 'Failed to delete'), variant: 'destructive' });
+      showToastMessage.crud.deleteError('leaveType');
     }
   };
   const handleLeaveTypeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingLeaveTypeId) {
-      // Update leave type
-      await fetch(`${API_BASE_URL}/api/leave-types/${editingLeaveTypeId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+    try {
+      if (editingLeaveTypeId) {
+        // Update leave type
+        await apiService.put(`${apiEndpoints.leaveTypes}/${editingLeaveTypeId}`, {
           leave_type_en: leaveTypeForm.name_en,
           leave_type_th: leaveTypeForm.name_th,
           require_attachment: leaveTypeForm.require_attachment
-        })
-      });
-      setEditingLeaveTypeId(null);
-      // Refresh leave types
-      fetch(`${API_BASE_URL}/api/leave-types`)
-        .then(res => res.json())
-        .then(data => {
-          if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
-            setLeaveTypes(data.data);
-          }
         });
-    } else {
-      await fetch(`${API_BASE_URL}/api/leave-types`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        setEditingLeaveTypeId(null);
+        showToastMessage.crud.updateSuccess('leaveType');
+      } else {
+        await apiService.post(apiEndpoints.leaveTypes, {
           leave_type_en: leaveTypeForm.name_en,
           leave_type_th: leaveTypeForm.name_th,
           require_attachment: leaveTypeForm.require_attachment
-        })
-      });
-      // Refresh leave types
-      fetch(`${API_BASE_URL}/api/leave-types`)
-        .then(res => res.json())
-        .then(data => {
-          if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
-            setLeaveTypes(data.data);
-          }
         });
+        showToastMessage.crud.createSuccess('leaveType');
+      }
+      // Refresh leave types
+      const data = await apiService.get(apiEndpoints.leaveTypes);
+      if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
+        setLeaveTypes(data.data);
+      }
+      setLeaveTypeForm({ name_en: '', name_th: '', require_attachment: false });
+    } catch (error) {
+      if (editingLeaveTypeId) {
+        showToastMessage.crud.updateError('leaveType');
+      } else {
+        showToastMessage.crud.createError('leaveType');
+      }
     }
-    setLeaveTypeForm({ name_en: '', name_th: '', require_attachment: false });
   };
 
   const startInlineEdit = (pos: any) => {
@@ -234,37 +223,35 @@ const ManageAll: React.FC = () => {
   const saveInlineEdit = async () => {
     if (!inlineEdit) return;
     setInlineEditError(null);
-    // Map quotas to backend format
-    const quotasForBackend: Record<string, number> = {};
-    filteredLeaveTypes.forEach(lt => {
-      if (inlineEdit.quotas[lt.id] !== undefined) {
-        quotasForBackend[lt.id] = inlineEdit.quotas[lt.id];
-      }
-    });
-    console.log('Submitting quotasForBackend:', quotasForBackend);
-    const res = await fetch(`${API_BASE_URL}/api/positions-with-quotas/${inlineEdit.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    try {
+      // Map quotas to backend format
+      const quotasForBackend: Record<string, number> = {};
+      filteredLeaveTypes.forEach(lt => {
+        if (inlineEdit.quotas[lt.id] !== undefined) {
+          quotasForBackend[lt.id] = inlineEdit.quotas[lt.id];
+        }
+      });
+      console.log('Submitting quotasForBackend:', quotasForBackend);
+      const data = await apiService.put(`/api/positions-with-quotas/${inlineEdit.id}`, {
         position_name_en: inlineEdit.name_en,
         position_name_th: inlineEdit.name_th,
         quotas: quotasForBackend
-      })
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setInlineEditError(data.message || 'Unknown error');
-      return;
-    }
-    // Refresh positions
-    fetch(`${API_BASE_URL}/api/positions-with-quotas`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.success && Array.isArray(data.data)) {
-          setPositions(data.data);
-        }
       });
-    setInlineEdit(null);
+      if (!data || !data.success) {
+        setInlineEditError(data?.message || 'Unknown error');
+        return;
+      }
+      // Refresh positions
+      const positionsData = await apiService.get('/api/positions-with-quotas');
+      if (positionsData.success && Array.isArray(positionsData.data)) {
+        setPositions(positionsData.data);
+      }
+      setInlineEdit(null);
+      showToastMessage.crud.updateSuccess('position');
+    } catch (error) {
+      setInlineEditError('Failed to update position');
+      showToastMessage.crud.updateError('position');
+    }
   };
 
   const startInlineDepartmentEdit = (dep: any) => {
@@ -278,21 +265,22 @@ const ManageAll: React.FC = () => {
   const saveInlineDepartmentEdit = async () => {
     if (!inlineDepartmentEdit) return;
     setInlineDepartmentError(null);
-    const res = await fetch(`${API_BASE_URL}/api/departments/${inlineDepartmentEdit.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    try {
+      const data = await apiService.put(`${apiEndpoints.departments}/${inlineDepartmentEdit.id}`, {
         department_name_en: inlineDepartmentEdit.name_en,
         department_name_th: inlineDepartmentEdit.name_th
-      })
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setInlineDepartmentError(data.message || 'Unknown error');
-      return;
+      });
+      if (!data || !data.success) {
+        setInlineDepartmentError(data?.message || 'Unknown error');
+        return;
+      }
+      await fetchDepartments();
+      setInlineDepartmentEdit(null);
+      showToastMessage.crud.updateSuccess('department');
+    } catch (error) {
+      setInlineDepartmentError('Failed to update department');
+      showToastMessage.crud.updateError('department');
     }
-    fetchDepartments();
-    setInlineDepartmentEdit(null);
   };
 
   // Add state for inline editing leave type
@@ -310,50 +298,51 @@ const ManageAll: React.FC = () => {
   const saveInlineLeaveTypeEdit = async () => {
     if (!inlineLeaveTypeEdit) return;
     setInlineLeaveTypeError(null);
-    const res = await fetch(`${API_BASE_URL}/api/leave-types/${inlineLeaveTypeEdit.id}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    try {
+      const data = await apiService.put(`${apiEndpoints.leaveTypes}/${inlineLeaveTypeEdit.id}`, {
         leave_type_en: inlineLeaveTypeEdit.name_en,
         leave_type_th: inlineLeaveTypeEdit.name_th,
         require_attachment: inlineLeaveTypeEdit.require_attachment
-      })
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      setInlineLeaveTypeError(data.message || 'Unknown error');
-      return;
-    }
-    // Refresh leave types
-    fetch(`${API_BASE_URL}/api/leave-types`)
-      .then(res => res.json())
-      .then(data => {
-        if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
-          setLeaveTypes(data.data);
-        }
       });
-    setInlineLeaveTypeEdit(null);
+      if (!data || !data.success) {
+        setInlineLeaveTypeError(data?.message || 'Unknown error');
+        return;
+      }
+      // Refresh leave types
+      const leaveTypesData = await apiService.get(apiEndpoints.leaveTypes);
+      if ((leaveTypesData.success || leaveTypesData.status === 'success') && Array.isArray(leaveTypesData.data)) {
+        setLeaveTypes(leaveTypesData.data);
+      }
+      setInlineLeaveTypeEdit(null);
+      showToastMessage.crud.updateSuccess('leaveType');
+    } catch (error) {
+      setInlineLeaveTypeError('Failed to update leave type');
+      showToastMessage.crud.updateError('leaveType');
+    }
   };
 
   // Fetch positions with quotas on mount
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/positions-with-quotas`)
-      .then(res => res.json())
-      .then(data => {
+    const fetchPositions = async () => {
+      try {
+        const data = await apiService.get('/api/positions-with-quotas');
         if (data.success && Array.isArray(data.data)) {
           setPositions(data.data);
-          // Remove code that sets leaveTypes here
-          // LeaveTypes should only be set from /api/leave-types
         }
-      });
+      } catch (error) {
+        console.error('Error fetching positions:', error);
+        setPositions([]);
+      }
+    };
+    fetchPositions();
   }, []);
 
   // Fetch departments and leave types with new structure
   useEffect(() => {
-    fetchDepartments();
-    fetch(`${API_BASE_URL}/api/leave-types`)
-      .then(res => res.json())
-      .then(data => {
+    const fetchData = async () => {
+      try {
+        await fetchDepartments();
+        const data = await apiService.get(apiEndpoints.leaveTypes);
         if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
           setLeaveTypes(data.data.map((lt: any) => ({
             ...lt,
@@ -361,7 +350,12 @@ const ManageAll: React.FC = () => {
             leave_type_th: lt.leave_type_th || lt.leave_type
           })));
         }
-      });
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setLeaveTypes([]);
+      }
+    };
+    fetchData();
   }, []);
 
   // Position handlers
@@ -382,11 +376,11 @@ const ManageAll: React.FC = () => {
   const handlePositionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setPositionError(null);
-    if (editingPositionId) {
-      // TODO: Implement update logic
-      setEditingPositionId(null);
-    } else {
-      try {
+    try {
+      if (editingPositionId) {
+        // TODO: Implement update logic
+        setEditingPositionId(null);
+      } else {
         // Map leaveTypeId to value for backend
         const quotasForBackend: Record<string, number> = {};
         filteredLeaveTypes.forEach(lt => {
@@ -394,32 +388,26 @@ const ManageAll: React.FC = () => {
             quotasForBackend[lt.id] = positionForm.quotas[lt.id];
           }
         });
-        const res = await fetch(`${API_BASE_URL}/api/positions-with-quotas`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            position_name_en: positionForm.name_en,
-            position_name_th: positionForm.name_th,
-            quotas: quotasForBackend
-          })
+        const data = await apiService.post('/api/positions-with-quotas', {
+          position_name_en: positionForm.name_en,
+          position_name_th: positionForm.name_th,
+          quotas: quotasForBackend
         });
-        const data = await res.json();
-        if (!res.ok) {
-          setPositionError(data.message || 'Unknown error');
+        if (!data || !data.success) {
+          setPositionError(data?.message || 'Unknown error');
           return;
         }
         // Refresh positions
-        fetch(`${API_BASE_URL}/api/positions-with-quotas`)
-          .then(res => res.json())
-          .then(data => {
-            if (data.success && Array.isArray(data.data)) {
-              setPositions(data.data);
-            }
-          });
+        const positionsData = await apiService.get('/api/positions-with-quotas');
+        if (positionsData.success && Array.isArray(positionsData.data)) {
+          setPositions(positionsData.data);
+        }
         setPositionForm({ name_en: '', name_th: '', quotas: {} });
-      } catch (err: any) {
-        setPositionError(err.message || 'Unknown error');
+        showToastMessage.crud.createSuccess('position');
       }
+    } catch (err: any) {
+      setPositionError(err.message || 'Unknown error');
+      showToastMessage.crud.createError('position');
     }
   };
   const handleEditPosition = (id: string) => {
@@ -444,21 +432,16 @@ const ManageAll: React.FC = () => {
     if (!deletePositionDialog.position) return;
     
     try {
-      await fetch(`${API_BASE_URL}/api/positions-with-quotas/${deletePositionDialog.position.id}`, {
-        method: 'DELETE',
-      });
+      await apiService.delete(`/api/positions-with-quotas/${deletePositionDialog.position.id}`);
       // Refresh positions
-      fetch(`${API_BASE_URL}/api/positions-with-quotas`)
-        .then(res => res.json())
-        .then(data => {
-          if (data.success && Array.isArray(data.data)) {
-            setPositions(data.data);
-          }
-        });
+      const data = await apiService.get('/api/positions-with-quotas');
+      if (data.success && Array.isArray(data.data)) {
+        setPositions(data.data);
+      }
       setDeletePositionDialog({ open: false, position: null });
-      toast({ title: t('common.success', 'Success'), description: t('common.deleteSuccess', 'Deleted successfully'), variant: 'default' });
+      showToastMessage.crud.deleteSuccess('position');
     } catch (error) {
-      toast({ title: t('common.error', 'Error'), description: t('common.deleteError', 'Failed to delete'), variant: 'destructive' });
+      showToastMessage.crud.deleteError('position');
     }
   };
 
@@ -466,20 +449,16 @@ const ManageAll: React.FC = () => {
   const handleToggleRequireAttachment = async (lt: any) => {
     const newValue = !lt.require_attachment;
     try {
-      const res = await fetch(`${API_BASE_URL}/api/leave-types/${lt.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          leave_type_en: lt.leave_type_en,
-          leave_type_th: lt.leave_type_th,
-          require_attachment: newValue
-        })
+      const data = await apiService.put(`${apiEndpoints.leaveTypes}/${lt.id}`, {
+        leave_type_en: lt.leave_type_en,
+        leave_type_th: lt.leave_type_th,
+        require_attachment: newValue
       });
-      if (!res.ok) throw new Error('Failed to update');
+      if (!data || !data.success) throw new Error('Failed to update');
       setLeaveTypes(prev => prev.map(l => l.id === lt.id ? { ...l, require_attachment: newValue } : l));
-      toast({ title: 'Updated', description: 'Require Attachment updated', variant: 'default' });
+      showToastMessage.crud.updateSuccess('leaveType');
     } catch (err: any) {
-      toast({ title: 'Error', description: err.message || 'Failed to update', variant: 'destructive' });
+      showToastMessage.crud.updateError('leaveType', err.message);
     }
   };
 

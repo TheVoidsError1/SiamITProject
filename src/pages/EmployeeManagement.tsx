@@ -7,6 +7,8 @@ import { Eye, User, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import { apiService, apiEndpoints } from '../lib/api';
+import { getImageUrl } from '../lib/utils';
 
 // เพิ่ม type สำหรับข้อมูลพนักงาน
 interface Employee {
@@ -51,50 +53,48 @@ const EmployeeManagement = () => {
   const [departmentFilter, setDepartmentFilter] = useState<string>("");
   const [roleFilter, setRoleFilter] = useState<string>("");
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/employees`)
-      .then((res) => res.json())
-      .then((data) => {
+    const fetchEmployees = async () => {
+      try {
+        const data = await apiService.get(apiEndpoints.employees.list);
         if (data.success && Array.isArray(data.data)) {
           const employees = data.data.map((item) => ({
             id: item.id,
             full_name: item.name || '',
             email: item.email || '',
-            position: item.position || '', // เก็บ id
-            department: item.department || '', // เก็บ id
+            position: item.position || '',
+            department: item.department || '',
             role: item.role || '',
             usedLeaveDays: item.usedLeaveDays ?? 0,
             totalLeaveDays: item.totalLeaveDays ?? 0,
-            avatar: item.avatar || undefined, // เพิ่ม avatar จากข้อมูล
+            avatar: item.avatar || undefined,
           }));
-
           setEmployees(employees);
         } else {
           setEmployees([]);
         }
         setLoading(false);
-      })
-      .catch(() => setLoading(false));
+      } catch {
+        setLoading(false);
+      }
+    };
+    fetchEmployees();
   }, [user]);
 
-  // ดึงตำแหน่ง
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/positions`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.status === 'success' && Array.isArray(data.data)) {
-          setPositions(data.data);
+    const fetchPositionsAndDepartments = async () => {
+      try {
+        const posData = await apiService.get(apiEndpoints.positions);
+        if (posData.status === 'success' && Array.isArray(posData.data)) {
+          setPositions(posData.data);
         }
-      });
-    fetch(`${API_BASE_URL}/api/departments`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.status === 'success' && Array.isArray(data.data)) {
-          setDepartments(data.data);
+        const deptData = await apiService.get(apiEndpoints.departments);
+        if (deptData.status === 'success' && Array.isArray(deptData.data)) {
+          setDepartments(deptData.data);
         }
-      });
+      } catch {}
+    };
+    fetchPositionsAndDepartments();
   }, []);
 
   // ฟังก์ชันแปลง id เป็นชื่อ
@@ -161,32 +161,26 @@ const EmployeeManagement = () => {
   const handleDelete = async () => {
     if (!deleteTarget || !user) return;
     setDeleting(true);
-    let url = "";
-    // กำหนด URL ตามบทบาทของพนักงานที่จะลบ
-    if (deleteTarget.role === "superadmin") {
-      url = `${API_BASE_URL}/api/superadmin/${deleteTarget.id}`;
-    } else if (deleteTarget.role === "admin") {
-      url = `${API_BASE_URL}/api/admins/${deleteTarget.id}`;
+    let url = '';
+    if (deleteTarget.role === 'superadmin') {
+      url = `/api/superadmin/${deleteTarget.id}`;
+    } else if (deleteTarget.role === 'admin') {
+      url = `/api/admins/${deleteTarget.id}`;
     } else {
-      url = `${API_BASE_URL}/api/users/${deleteTarget.id}`;
+      url = `/api/users/${deleteTarget.id}`;
     }
     try {
-      const res = await fetch(url, { method: "DELETE" });
-      const data = await res.json();
+      const data = await apiService.delete(url);
       if (data.success) {
-        // ลบพนักงานออกจากรายการและแสดงข้อความสำเร็จ
         setEmployees((prev) => prev.filter((e) => e.id !== deleteTarget.id));
         setDeleteTarget(null);
-        toast({
-          title: t('system.deleteSuccess', 'ลบสำเร็จ'),
-          description: t('system.deleteUserSuccessDesc', 'ลบผู้ใช้งานสำเร็จ'),
-          className: 'border-green-500 bg-green-50 text-green-900',
-        });
+        // Use showToastMessage or toast as appropriate
+        // toast({ title: t('system.deleteSuccess', 'ลบสำเร็จ'), description: t('system.deleteUserSuccessDesc', 'ลบผู้ใช้งานสำเร็จ'), className: 'border-green-500 bg-green-50 text-green-900' });
       } else {
-        alert(data.message || t("system.deleteFailed", "Delete failed"));
+        alert(data.message || t('system.deleteFailed', 'Delete failed'));
       }
     } catch (e) {
-      alert(t("system.deleteFailed", "Delete failed"));
+      alert(t('system.deleteFailed', 'Delete failed'));
     } finally {
       setDeleting(false);
     }
@@ -380,11 +374,10 @@ const EmployeeManagement = () => {
                                 {/* Avatar with image or initials */}
                                 {employee.avatar ? (
                                   <img
-                                    src={`${API_BASE_URL}${employee.avatar}`}
+                                    src={getImageUrl(employee.avatar, import.meta.env.VITE_API_BASE_URL)}
                                     alt={employee.full_name}
                                     className="w-8 h-8 rounded-full object-cover shadow-md border border-blue-200"
                                     onError={(e) => {
-                                      // ถ้าโหลดรูปไม่สำเร็จ ให้แสดง fallback
                                       const target = e.target as HTMLImageElement;
                                       target.style.display = 'none';
                                       target.nextElementSibling?.classList.remove('hidden');

@@ -98,18 +98,28 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 export function AppSidebar() {
   const { t, i18n } = useTranslation();
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, logout, loading } = useAuth();
   const { toast } = useToast();
   // Use avatar URL from user context if available, otherwise fetch it
   const avatarUrl = user?.avatar_url ? `${API_BASE_URL}${user.avatar_url}` : null;
 
   const [positions, setPositions] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/positions`)
-      .then(res => res.json())
-      .then(data => {
+    const fetchPositions = async () => {
+      try {
+        const response = await fetch(`${API_BASE_URL}/api/positions`);
+        const data = await response.json();
         setPositions(data.data || []);
-      });
+      } catch (error) {
+        console.error('Error fetching positions:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPositions();
   }, []);
 
   const handleLogout = async () => {
@@ -127,6 +137,23 @@ export function AppSidebar() {
       });
     }
   };
+
+  // Don't render if user is not loaded yet
+  if (!user || loading) {
+    return (
+      <div className="border-r border-border/50 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl shadow-2xl animate-slide-in-left transition-all duration-300 w-64">
+        <div className="p-6">
+          <div className="animate-pulse">
+            <div className="h-12 bg-gray-200 rounded mb-4"></div>
+            <div className="space-y-2">
+              <div className="h-4 bg-gray-200 rounded"></div>
+              <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const allItems = user?.role === 'superadmin'
     ? [...items, ...adminItems, ...superadminExtraItems]
@@ -209,6 +236,9 @@ export function AppSidebar() {
                 </p>
                 <p className="text-xs text-sidebar-foreground/70 truncate">
                   {(() => {
+                    if (isLoading) {
+                      return t('common.loading');
+                    }
                     // Try to match by ID
                     let pos = positions.find(p => String(p.id) === String(user?.position));
                     // If not found, try to match by English or Thai name
@@ -224,6 +254,14 @@ export function AppSidebar() {
                         ? pos.position_name_th || pos.position_name_en
                         : pos.position_name_en || pos.position_name_th;
                     }
+                    // If user.position is an object, show name_th or name_en
+                    if (user?.position && typeof user.position === 'object') {
+                      const { name_th, name_en } = user.position as { name_th?: string; name_en?: string };
+                      return i18n.language.startsWith('th')
+                        ? name_th || t('main.employee')
+                        : name_en || t('main.employee');
+                    }
+                    // Otherwise, show as string
                     return user?.position || t('main.employee');
                   })()}
                 </p>

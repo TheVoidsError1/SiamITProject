@@ -4,11 +4,8 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Switch } from '@/components/ui/switch';
 import { getAllThaiHolidays } from '@/constants/getThaiHolidays';
-
-const monthNames = [
-  'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
-  'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
-];
+import { monthNames } from '@/constants/common';
+import { apiService, apiEndpoints } from '@/lib/api';
 
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
@@ -60,20 +57,9 @@ const CompanyCalendarPage = () => {
       try {
         setLoading(true);
         
-        // Fetch company events
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/custom-holidays/year/${year}`, {
-          headers: {
-            'Authorization': token ? `Bearer ${token}` : undefined,
-          }
-        });
-        if (response.ok) {
-          const result = await response.json();
-          setCompanyEvents(result.data || []);
-        } else {
-          console.error('Failed to fetch company events');
-          setCompanyEvents([]);
-        }
+                 // Fetch company events
+         const result = await apiService.get(apiEndpoints.customHolidaysByYear(year));
+         setCompanyEvents(result.data || []);
         
         // Get Thai holidays for the year
         const thaiHolidaysData = getAllThaiHolidays(year, t);
@@ -222,7 +208,7 @@ const CompanyCalendarPage = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full max-w-6xl">
-            {monthNames.map((month, mIdx) => {
+            {monthNames.th.map((month, mIdx) => {
               const days = getDaysInMonth(year, mIdx);
               const firstDay = new Date(year, mIdx, 1).getDay();
               // Sunday = 0, Monday = 1, ...

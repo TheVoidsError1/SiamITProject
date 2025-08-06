@@ -11,6 +11,9 @@ import { Bell, Calendar, Clock, TrendingUp, Users, MessageCircle, Smartphone } f
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
+import { apiService, apiEndpoints } from '../lib/api';
+import { showToastMessage } from '../lib/toast';
+import { getImageUrl } from '../lib/utils';
 
 
 const Index = () => {
@@ -92,6 +95,7 @@ const Index = () => {
     };
   } | null>(null);
   const [loadingUserProfile, setLoadingUserProfile] = useState(true);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   
   // LINE linking states
   const [lineLinkStatus, setLineLinkStatus] = useState<'checking' | 'linked' | 'unlinked' | 'error'>('checking');
@@ -117,27 +121,13 @@ const Index = () => {
   const yearOptions = [filterYear - 1, filterYear, filterYear + 1];
 
   const { showSessionExpiredDialog } = useAuth();
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   // LINE linking functions
   const checkLineLinkStatus = async () => {
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${API_BASE_URL}/api/line/link-status`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : undefined,
-        },
-        credentials: 'include'
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        setLineLinkStatus(data.linked ? 'linked' : 'unlinked');
-      } else {
-        setLineLinkStatus('error');
-      }
+      const data = await apiService.get(apiEndpoints.line.linkStatus, undefined, showSessionExpiredDialog);
+      setLineLinkStatus(data.linked ? 'linked' : 'unlinked');
     } catch (error) {
-      console.error('Error checking LINE link status:', error);
       setLineLinkStatus('error');
     }
   };
@@ -145,80 +135,25 @@ const Index = () => {
   const handleLineLogin = async () => {
     setLineLinkingLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${API_BASE_URL}/api/line/login-url`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : undefined,
-        },
-        credentials: 'include'
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        // Open LINE Login in a popup window
-        const popup = window.open(data.loginUrl, 'lineLogin', 'width=500,height=600,scrollbars=yes,resizable=yes');
-        
-        // Listen for messages from the popup
-        const messageListener = (event) => {
-          // Check if the message is from our LINE callback
-          if (event.origin !== window.location.origin) return;
-          
-          if (event.data && event.data.type === 'LINE_LINK_SUCCESS') {
-            // Close the popup
-            if (popup) {
-              popup.close();
-            }
-            
-            // Remove the message listener
-            window.removeEventListener('message', messageListener);
-            
-            // Show success toast
-            toast({
-              title: t('common.success'),
-              description: t('line.linkSuccess', 'LINE Account Linked Successfully!'),
-              variant: 'default'
-            });
-            
-            // Update the link status
-            setLineLinkStatus('linked');
-          } else if (event.data && event.data.type === 'LINE_LINK_ERROR') {
-            // Close the popup
-            if (popup) {
-              popup.close();
-            }
-            
-            // Remove the message listener
-            window.removeEventListener('message', messageListener);
-            
-            // Show error toast
-            toast({
-              title: t('common.error'),
-              description: event.data.message || t('line.linkError', 'Failed to link LINE account'),
-              variant: 'destructive'
-            });
-          }
-        };
-        
-        window.addEventListener('message', messageListener);
-        
-        // Fallback: check status after a delay in case popup is blocked
-        setTimeout(() => {
-          checkLineLinkStatus();
-        }, 5000);
-      } else {
-        toast({
-          title: t('common.error'),
-          description: t('line.loginError', 'Failed to start LINE login'),
-          variant: 'destructive'
-        });
-      }
+      const data = await apiService.get(apiEndpoints.line.loginUrl, undefined, showSessionExpiredDialog);
+      const popup = window.open(data.loginUrl, 'lineLogin', 'width=500,height=600,scrollbars=yes,resizable=yes');
+      const messageListener = (event: any) => {
+        if (event.origin !== window.location.origin) return;
+        if (event.data && event.data.type === 'LINE_LINK_SUCCESS') {
+          if (popup) popup.close();
+          window.removeEventListener('message', messageListener);
+          showToastMessage.auth.loginSuccess();
+          setLineLinkStatus('linked');
+        } else if (event.data && event.data.type === 'LINE_LINK_ERROR') {
+          if (popup) popup.close();
+          window.removeEventListener('message', messageListener);
+          showToastMessage.auth.loginError(event.data.message);
+        }
+      };
+      window.addEventListener('message', messageListener);
+      setTimeout(() => { checkLineLinkStatus(); }, 5000);
     } catch (error) {
-      console.error('Error starting LINE login:', error);
-      toast({
-        title: t('common.error'),
-        description: t('line.loginError', 'Failed to start LINE login'),
-        variant: 'destructive'
-      });
+      showToastMessage.auth.loginError();
     } finally {
       setLineLinkingLoading(false);
     }
@@ -227,79 +162,46 @@ const Index = () => {
   const handleLineUnlink = async () => {
     setLineLinkingLoading(true);
     try {
-      const token = localStorage.getItem("token");
-      const response = await fetch(`${API_BASE_URL}/api/line/unlink`, {
-        method: 'POST',
-        headers: {
-          Authorization: token ? `Bearer ${token}` : undefined,
-        },
-        credentials: 'include'
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        toast({
-          title: t('common.success'),
-          description: t('line.unlinkSuccess', 'LINE account unlinked successfully'),
-          variant: 'default'
-        });
-        // Update the link status
-        setLineLinkStatus('unlinked');
-      } else {
-        toast({
-          title: t('common.error'),
-          description: t('line.unlinkError', 'Failed to unlink LINE account'),
-          variant: 'destructive'
-        });
-      }
+      await apiService.post(apiEndpoints.line.unlink, {}, showSessionExpiredDialog);
+      showToastMessage.auth.logoutSuccess();
+      setLineLinkStatus('unlinked');
     } catch (error) {
-      console.error('Error unlinking LINE account:', error);
-      toast({
-        title: t('common.error'),
-        description: t('line.unlinkError', 'Failed to unlink LINE account'),
-        variant: 'destructive'
-      });
+      showToastMessage.auth.loginError();
     } finally {
       setLineLinkingLoading(false);
     }
   };
 
-  // เพิ่มฟังก์ชันสำหรับเรียก API พร้อม month/year
-  const fetchDashboardStats = (month?: number, year?: number) => {
+  const fetchDashboardStats = async (month?: number, year?: number) => {
     setLoadingStats(true);
-    const token = localStorage.getItem("token");
-    let url = "/api/dashboard-stats";
+    let url = '/api/dashboard-stats';
     if (month && year) url += `?month=${month}&year=${year}`;
     else if (year) url += `?year=${year}`;
-    fetch(url, {
-      headers: {
-        Authorization: token ? `Bearer ${token}` : undefined,
-      },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && data.status === "success" && data.data) {
-          setStats([
-            { title: t('main.daysRemaining'), value: data.data.remainingDays, unit: t('common.days'), icon: Calendar, color: "text-blue-600", bgColor: "bg-blue-50" },
-            { title: t('main.daysUsed'), value: data.data.daysUsed, unit: t('common.days'), icon: Clock, color: "text-green-600", bgColor: "bg-green-50" },
-            { title: t('main.pendingRequests'), value: data.data.pendingRequests, unit: t('main.requests'), icon: Users, color: "text-orange-600", bgColor: "bg-orange-50" },
-            { title: t('main.approvalRate'), value: data.data.approvalRate, unit: "%", icon: TrendingUp, color: "text-purple-600", bgColor: "bg-purple-50" },
-          ]);
-          // อัปเดต filteredDaysUsed และ filteredHoursUsed สำหรับ Days Used card
-          setFilteredDaysUsed(data.data.daysUsed || 0);
-          setFilteredHoursUsed(data.data.hoursUsed || 0);
-          const stats = data.data.leaveTypeStats || {};
-          setLeaveStats({
-            sick: stats["ลาป่วย"] || stats["sick"] || 0,
-            vacation: stats["ลาพักผ่อน"] || stats["vacation"] || 0,
-            business: stats["ลากิจ"] || stats["personal"] || 0,
-          });
-        } else {
-          setErrorStats(t('error.cannotLoadStats'));
-        }
-      })
-      .catch(() => setErrorStats(t('error.apiConnectionError')))
-      .finally(() => setLoadingStats(false));
+    try {
+      const data = await apiService.get(url, undefined, showSessionExpiredDialog);
+      if (data && data.status === "success" && data.data) {
+        setStats([
+          { title: t('main.daysRemaining'), value: data.data.remainingDays, unit: t('common.days'), icon: Calendar, color: "text-blue-600", bgColor: "bg-blue-50" },
+          { title: t('main.daysUsed'), value: data.data.daysUsed, unit: t('common.days'), icon: Clock, color: "text-green-600", bgColor: "bg-green-50" },
+          { title: t('main.pendingRequests'), value: data.data.pendingRequests, unit: t('main.requests'), icon: Users, color: "text-orange-600", bgColor: "bg-orange-50" },
+          { title: t('main.approvalRate'), value: data.data.approvalRate, unit: "%", icon: TrendingUp, color: "text-purple-600", bgColor: "bg-purple-50" },
+        ]);
+        setFilteredDaysUsed(data.data.daysUsed || 0);
+        setFilteredHoursUsed(data.data.hoursUsed || 0);
+        const stats = data.data.leaveTypeStats || {};
+        setLeaveStats({
+          sick: stats["ลาป่วย"] || stats["sick"] || 0,
+          vacation: stats["ลาพักผ่อน"] || stats["vacation"] || 0,
+          business: stats["ลากิจ"] || stats["personal"] || 0,
+        });
+      } else {
+        setErrorStats(t('error.cannotLoadStats'));
+      }
+    } catch (error) {
+      setErrorStats(t('error.cannotLoadStats'));
+    } finally {
+      setLoadingStats(false);
+    }
   };
 
   // Fetch recent leave requests and generate statistics
@@ -363,8 +265,8 @@ const Index = () => {
     const statsUrl = `/api/dashboard-stats?year=${filterYear}` + (filterMonth && filterMonth !== 0 ? `&month=${filterMonth}` : '');
     const backdatedUrl = `/api/my-backdated?year=${filterYear}` + (filterMonth && filterMonth !== 0 ? `&month=${filterMonth}` : '');
     Promise.all([
-      fetch(statsUrl, { headers: { Authorization: token ? `Bearer ${token}` : undefined } }).then(res => res.json()),
-      fetch(backdatedUrl, { headers: { Authorization: token ? `Bearer ${token}` : undefined } }).then(res => res.json())
+      apiService.get(statsUrl, undefined, showSessionExpiredDialog),
+      apiService.get(backdatedUrl, undefined, showSessionExpiredDialog)
     ]).then(([statsRes, backdatedRes]) => {
       if (statsRes && statsRes.status === 'success' && statsRes.data) {
         setDaysUsed(statsRes.data.daysUsed || 0);
@@ -389,23 +291,22 @@ const Index = () => {
           return;
         }
 
-        const response = await fetch(`${API_BASE_URL}/api/user-profile`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await apiService.get(apiEndpoints.auth.profile, undefined, showSessionExpiredDialog);
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data.status === 'success' && data.data) {
-            setUserProfile(data.data);
-          } else {
-            console.error('Failed to fetch user profile:', data.message);
-          }
-        } else if (response.status === 401) {
-          showSessionExpiredDialog();
+        if (response && (response.success || response.status === 'success') && response.data) {
+          setUserProfile(response.data);
         } else {
-          console.error('Failed to fetch user profile:', response.statusText);
+          console.error('Failed to fetch user profile:', response?.message);
+        }
+
+        // Fetch avatar separately
+        try {
+          const avatarResponse = await apiService.get(apiEndpoints.auth.avatar, undefined, showSessionExpiredDialog);
+          if (avatarResponse && (avatarResponse.success || avatarResponse.status === 'success') && avatarResponse.avatar_url) {
+            setAvatarUrl(avatarResponse.avatar_url);
+          }
+        } catch (avatarError) {
+          console.error('Error fetching avatar:', avatarError);
         }
       } catch (error) {
         console.error('Error fetching user profile:', error);
@@ -416,40 +317,30 @@ const Index = () => {
 
     fetchUserProfile();
     checkLineLinkStatus();
-  }, [API_BASE_URL, showSessionExpiredDialog]);
+  }, [showSessionExpiredDialog]);
 
-
+  // Move fetchAnnouncements to the top-level of the component, before useEffect for socket event handlers
+  const fetchAnnouncements = async () => {
+    setLoadingAnnouncements(true);
+    try {
+      const response = await apiService.get(apiEndpoints.announcements, undefined, showSessionExpiredDialog);
+      if (response && response.status === 'success' && Array.isArray(response.data)) {
+        const sortedAnnouncements = response.data
+          .sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+          .slice(0, 3);
+        setAnnouncements(sortedAnnouncements);
+      }
+    } catch (e) {
+      setErrorAnnouncements(t('error.cannotLoadStats'));
+    } finally {
+      setLoadingAnnouncements(false);
+    }
+  };
 
   // Fetch announcements
   useEffect(() => {
-    const fetchAnnouncements = async () => {
-      setLoadingAnnouncements(true);
-      try {
-        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-        const response = await fetch(`${API_BASE_URL}/api/announcements`);
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.status === 'success' && Array.isArray(data.data)) {
-            // Sort by creation date (latest first) and take only the latest 3
-            const sortedAnnouncements = data.data
-              .sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
-              .slice(0, 3);
-            setAnnouncements(sortedAnnouncements);
-          }
-        } else {
-          setErrorAnnouncements(t('error.cannotLoadStats'));
-        }
-      } catch (error) {
-        console.error('Error fetching announcements:', error);
-        setErrorAnnouncements(t('error.apiConnectionError'));
-      } finally {
-        setLoadingAnnouncements(false);
-      }
-    };
-
     fetchAnnouncements();
-  }, [t]);
+  }, [t, showSessionExpiredDialog]);
 
   // Upcoming holidays (Thai calendar, 3 next)
   const upcomingHolidays = getUpcomingThaiHolidays(3, t);
@@ -492,24 +383,12 @@ const Index = () => {
           return;
         }
 
-        const response = await fetch(`${API_BASE_URL}/api/custom-holidays/year/${selectedYear}/month/${selectedMonth + 1}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const response = await apiService.get(apiEndpoints.customHolidaysByYearMonth(selectedYear, selectedMonth + 1), undefined, showSessionExpiredDialog);
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data.status === 'success' && Array.isArray(data.data)) {
-            setCompanyHolidaysOfMonth(data.data);
-          } else {
-            console.error('Failed to fetch company holidays:', data.message);
-            setCompanyHolidaysOfMonth([]);
-          }
-        } else if (response.status === 401) {
-          showSessionExpiredDialog();
+        if (response && response.status === 'success' && Array.isArray(response.data)) {
+          setCompanyHolidaysOfMonth(response.data);
         } else {
-          console.error('Failed to fetch company holidays:', response.statusText);
+          console.error('Failed to fetch company holidays:', response?.message);
           setCompanyHolidaysOfMonth([]);
         }
       } catch (error) {
@@ -521,7 +400,7 @@ const Index = () => {
     };
 
     fetchCompanyHolidays();
-  }, [API_BASE_URL, selectedYear, selectedMonth, showSessionExpiredDialog]);
+  }, [selectedYear, selectedMonth, showSessionExpiredDialog]);
 
   // Socket.io event listeners for real-time dashboard updates
   useEffect(() => {
@@ -539,8 +418,8 @@ const Index = () => {
         
         // Refresh dashboard stats
         fetchDashboardStats();
-        fetchRecentLeaveStats();
-        fetchRecentLeaves();
+        // fetchRecentLeaveStats(); // This function is not defined in the original file
+        // fetchRecentLeaves(); // This function is not defined in the original file
       });
 
       // Listen for new announcements
@@ -572,8 +451,8 @@ const Index = () => {
           
           // Refresh dashboard stats
           fetchDashboardStats();
-          fetchRecentLeaveStats();
-          fetchRecentLeaves();
+          // fetchRecentLeaveStats(); // This function is not defined in the original file
+          // fetchRecentLeaves(); // This function is not defined in the original file
         });
       }
 
@@ -724,8 +603,19 @@ const Index = () => {
           {/* User Summary */}
           <Card className="glass shadow-xl border-0 flex flex-col items-center justify-center p-5 animate-fade-in-up">
             <Avatar className="w-16 h-16 mb-2">
-              {userProfile?.avatar ? (
-                <AvatarImage src={`${API_BASE_URL}${userProfile.avatar}`} alt={userProfile.name || '-'} />
+              {avatarUrl ? (
+                <AvatarImage
+                  src={
+                    avatarUrl.startsWith('/')
+                      ? `${import.meta.env.VITE_API_BASE_URL}${avatarUrl}`
+                      : `${import.meta.env.VITE_API_BASE_URL}/uploads/avatars/${avatarUrl}`
+                  }
+                  alt={userProfile?.name || '-'}
+                  onError={e => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = '/placeholder.svg';
+                  }}
+                />
               ) : null}
               <AvatarFallback>
                 {loadingUserProfile ? '...' : (userProfile?.name ? userProfile.name.split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase() : '--')}

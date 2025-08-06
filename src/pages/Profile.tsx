@@ -9,7 +9,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePushNotification } from '@/contexts/PushNotificationContext';
 import { useToast } from '@/hooks/use-toast';
-import axios from 'axios';
+import { apiService, apiEndpoints } from '@/lib/api';
+import { showToastMessage } from '@/lib/toast';
 import { Bell, Building, Camera, Crown, Lock, Mail, Save, Shield } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -73,7 +74,7 @@ const Profile = () => {
     return value;
   };
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 
   // Fetch profile from backend on mount
   useEffect(() => {
@@ -83,15 +84,8 @@ const Profile = () => {
       setLoading(true);
       setError('');
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          showSessionExpiredDialog();
-          return;
-        }
-        const res = await axios.get(`${API_BASE_URL}/api/profile`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        const data = res.data.data;
+        const res = await apiService.get(apiEndpoints.auth.profile);
+        const data = res.data;
         
         console.log('Backend profile data:', data);
         console.log('Backend position_id:', data.position_id);
@@ -135,21 +129,11 @@ const Profile = () => {
   useEffect(() => {
     const fetchAvatar = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          showSessionExpiredDialog();
-          return;
-        }
-        
-        const res = await axios.get(`${API_BASE_URL}/api/avatar`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        if (res.data.success && res.data.avatar_url) {
-          setAvatarUrl(`${API_BASE_URL}${res.data.avatar_url}`);
-          // Only update user context if avatar_url is not already set
+        const res = await apiService.get(apiEndpoints.auth.avatar);
+        if (res.success && res.avatar_url) {
+          setAvatarUrl(`${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}`);
           if (!user?.avatar_url) {
-            updateUser({ avatar_url: res.data.avatar_url });
+            updateUser({ avatar_url: res.avatar_url });
           }
         } else {
           setAvatarUrl(null);
@@ -158,60 +142,53 @@ const Profile = () => {
         setAvatarUrl(null);
       }
     };
-    
     fetchAvatar();
-  }, []); // Remove updateUser from dependencies
+  }, []);
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/positions`)
-      .then(res => res.json())
-      .then(data => {
-        const pos = data.data.map((p: any) => ({
+    const fetchPositionsAndDepartments = async () => {
+      try {
+        const posData = await apiService.get(apiEndpoints.positions);
+        const pos = posData.data.map((p: any) => ({
           id: p.id,
           position_name_en: p.position_name_en,
           position_name_th: p.position_name_th
         }));
         setPositions(pos);
         setPositionsLoaded(true);
-      })
-      .catch(() => setPositionsLoaded(true));
-
-    fetch(`${API_BASE_URL}/api/departments`)
-      .then(res => res.json())
-      .then(data => {
-        const depts = data.data.map((d: any) => ({
+      } catch {
+        setPositionsLoaded(true);
+      }
+      try {
+        const deptData = await apiService.get(apiEndpoints.departments);
+        const depts = deptData.data.map((d: any) => ({
           id: d.id,
           department_name_en: d.department_name_en,
           department_name_th: d.department_name_th
         }));
         setDepartments(depts);
         setDepartmentsLoaded(true);
-      })
-      .catch(() => setDepartmentsLoaded(true));
+      } catch {
+        setDepartmentsLoaded(true);
+      }
+    };
+    fetchPositionsAndDepartments();
   }, []);
 
   useEffect(() => {
     const fetchLeaveQuota = async () => {
       setLeaveLoading(true);
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          showSessionExpiredDialog();
-          return;
+        const res = await apiService.get('/api/leave-quota/me');
+        if (res.debug) {
+          console.log('LEAVE QUOTA DEBUG:', res.debug);
         }
-        const res = await axios.get(`${API_BASE_URL}/api/leave-quota/me`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        // Log backend debug info to browser console
-        if (res.data.debug) {
-          console.log('LEAVE QUOTA DEBUG:', res.data.debug);
-        }
-        if (res.data.success) {
-          setLeaveQuota(res.data.data);
+        if (res.success) {
+          setLeaveQuota(res.data);
         } else {
           setLeaveQuota([]);
         }
-      } catch (err: any) {
+      } catch (err) {
         setLeaveQuota([]);
       } finally {
         setLeaveLoading(false);
@@ -221,12 +198,11 @@ const Profile = () => {
   }, []);
 
   useEffect(() => {
-    // Fetch all leave types for display (not just those with quota)
     const fetchAllLeaveTypes = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/api/leave-types`);
-        const data = res.data.data;
-        if (res.data.success) {
+        const res = await apiService.get(apiEndpoints.leaveTypes);
+        const data = res.data;
+        if (res.success) {
           setAllLeaveTypes(data);
         } else {
           setAllLeaveTypes([]);
@@ -291,38 +267,19 @@ const Profile = () => {
     const file = e.target.files[0];
     const formData = new FormData();
     formData.append('avatar', file);
-    
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        showSessionExpiredDialog();
-        toast({ title: t('error.title'), description: 'No token found', variant: 'destructive' });
-        return;
-      }
-
-      const response = await axios.post(`${API_BASE_URL}/api/avatar`, formData, {
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data' 
-        },
-      });
-
-      if (response.data.success) {
-        setAvatarUrl(`${API_BASE_URL}${response.data.avatar_url}`);
-        // Update user context with new avatar URL
-        updateUser({ avatar_url: response.data.avatar_url });
-      toast({ title: t('profile.uploadSuccess') });
+      const res = await apiService.post(apiEndpoints.auth.avatar, formData);
+      if (res.success) {
+        setAvatarUrl(`${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}`);
+        updateUser({ avatar_url: res.avatar_url });
+        toast({ title: t('profile.uploadSuccess') });
       } else {
-        throw new Error(response.data.message || t('profile.uploadError'));
+        throw new Error(res.message || t('profile.uploadError'));
       }
     } catch (err: any) {
-      if (err.response?.status === 401) {
-        showSessionExpiredDialog();
-        return;
-      }
       toast({ 
         title: t('profile.uploadError'), 
-        description: err.response?.data?.message || err.message,
+        description: err?.message,
         variant: 'destructive' 
       });
     }
@@ -331,49 +288,25 @@ const Profile = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        showSessionExpiredDialog();
-        toast({
-          title: t('error.title'),
-          description: 'No token found. Please log in.',
-          variant: "destructive",
-        });
-        return;
-      }
-
       const requestData = {
         name: formData.full_name,
         email: formData.email,
-        position_id: formData.position || null,      // <-- use null for empty values
-        department_id: formData.department || null,  // <-- use null for empty values
+        position_id: formData.position || null,
+        department_id: formData.department || null,
       };
-
-      const response = await axios.put(`${API_BASE_URL}/api/profile`, requestData, {
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.data.success) {
+      const res = await apiService.put(apiEndpoints.auth.profile, requestData);
+      if (res.success) {
         toast({
           title: t('profile.saveSuccess'),
           description: t('profile.saveSuccessDesc'),
         });
-        
-        // Update form data with the response data to ensure consistency
-        const updatedData = response.data.data;
-        console.log('Updated position:', updatedData.position);
-        console.log('Updated department:', updatedData.department);
+        const updatedData = res.data;
         setFormData({
           full_name: updatedData.name || formData.full_name,
           email: updatedData.email || formData.email,
           department: updatedData.department_id ? String(updatedData.department_id) : '',
           position: updatedData.position_id ? String(updatedData.position_id) : '',
         });
-        
-        // Update user context with new data
         updateUser({
           full_name: updatedData.name || formData.full_name,
           position: updatedData.position_name || '',
@@ -381,17 +314,13 @@ const Profile = () => {
           email: updatedData.email || formData.email,
         });
       } else {
-        throw new Error(response.data.message || t('profile.saveError'));
+        throw new Error(res.message || t('profile.saveError'));
       }
     } catch (error: any) {
-      if (error.response?.status === 401) {
-        showSessionExpiredDialog();
-        return;
-      }
       toast({
         title: t('error.title'),
-        description: error.response?.data?.message || t('profile.saveError'),
-        variant: "destructive",
+        description: error?.message || t('profile.saveError'),
+        variant: 'destructive',
       });
     } finally {
       setSaving(false);

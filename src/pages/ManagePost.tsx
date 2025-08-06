@@ -7,32 +7,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useAuth } from '@/contexts/AuthContext';
-import { getImageUrl, handleImageError } from '@/lib/utils';
+import { formatDate, handleFileSelect, getImageUrl, handleImageError } from '../lib/utils';
+import { apiService, apiEndpoints } from '../lib/api';
+import { showToastMessage } from '../lib/toast';
 import { ArrowLeft, Calendar, Clock, Edit, Eye, FileText, Image, Newspaper, Plus, Trash2, User, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
 // ฟังก์ชันสำหรับจัดการวันที่ให้รองรับ i18n
-const formatDate = (date: Date, locale: string, format: 'short' | 'long' = 'short') => {
-  const options: Intl.DateTimeFormatOptions = {
-    year: 'numeric',
-    day: 'numeric',
-    month: format === 'short' ? 'short' : 'long'
-  };
-  
-  return date.toLocaleDateString(locale, options);
-};
-
 const formatTime = (date: Date, locale: string) => {
   return date.toLocaleTimeString(locale, {
     hour: '2-digit',
     minute: '2-digit'
   });
 };
-
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default function ManagePost() {
   const { t, i18n } = useTranslation();
@@ -73,11 +62,7 @@ export default function ManagePost() {
     setLoading(true);
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_BASE_URL}/api/announcements`, {
-        headers: { Authorization: token ? `Bearer ${token}` : undefined },
-      });
-      const data = await res.json();
+      const data = await apiService.get(apiEndpoints.announcements);
       console.log('=== Fetch News Response ===');
       console.log('API Response:', data);
       if (data.data && data.data.length > 0) {
@@ -102,24 +87,11 @@ export default function ManagePost() {
 
   useEffect(() => {
     console.log('=== ManagePost Component Loaded ===');
-    console.log('API_BASE_URL:', API_BASE_URL);
     console.log('Current user:', user);
     console.log('===============================');
     fetchNews();
     // eslint-disable-next-line
   }, []);
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   // เพิ่มข่าวสารใหม่
   const handleAddNews = async (e: React.FormEvent) => {
@@ -127,7 +99,6 @@ export default function ManagePost() {
     setLoading(true);
     setError('');
     try {
-      const token = localStorage.getItem('token');
       const formData = new FormData();
       formData.append('subject', form.subject);
       formData.append('detail', form.detail);
@@ -137,15 +108,9 @@ export default function ManagePost() {
         formData.append('Image', selectedFile);
       }
 
-      const res = await fetch(`${API_BASE_URL}/api/announcements`, {
-        method: 'POST',
-        headers: {
-          Authorization: token ? `Bearer ${token}` : undefined,
-        },
-        body: formData,
-      });
-      const data = await res.json();
+      const data = await apiService.post(apiEndpoints.announcements, formData);
       if (data.status === 'success') {
+        showToastMessage.crud.createSuccess('ข่าวสาร');
         setAddOpen(false);
         setForm({ subject: '', detail: '', Image: '' });
         setSelectedFile(null);
@@ -167,18 +132,12 @@ export default function ManagePost() {
     setDeleting(true);
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_BASE_URL}/api/announcements/${deleteTarget.id}`, {
-        method: 'DELETE',
-        headers: { Authorization: token ? `Bearer ${token}` : undefined },
-      });
-      const data = await res.json();
+      const data = await apiService.delete(apiEndpoints.announcement(deleteTarget.id));
       if (data.status === 'success') {
         // ลบข่าวสารออกจากรายการและแสดงข้อความสำเร็จ
         setNewsList(prev => prev.filter(news => news.id !== deleteTarget.id));
         setDeleteTarget(null);
-        // แสดง toast หรือข้อความสำเร็จ
-        console.log('ลบข่าวสารสำเร็จ');
+        showToastMessage.crud.deleteSuccess('ข่าวสาร');
       } else {
         setError(data.message || 'ลบข่าวสารไม่สำเร็จ');
       }
@@ -198,7 +157,7 @@ export default function ManagePost() {
       Image: news.Image || '',
     });
     setSelectedFile(null);
-    setImagePreview(news.Image ? getImageUrl(news.Image, API_BASE_URL) : null);
+    setImagePreview(news.Image ? getImageUrl(news.Image, import.meta.env.VITE_API_BASE_URL) : null);
     setEditOpen(true);
   };
 
@@ -210,7 +169,6 @@ export default function ManagePost() {
     setLoading(true);
     setError('');
     try {
-      const token = localStorage.getItem('token');
       const formData = new FormData();
       formData.append('subject', form.subject);
       formData.append('detail', form.detail);
@@ -220,14 +178,7 @@ export default function ManagePost() {
         formData.append('Image', selectedFile);
       }
 
-      const res = await fetch(`${API_BASE_URL}/api/announcements/${editingNews.id}`, {
-        method: 'PUT',
-        headers: {
-          Authorization: token ? `Bearer ${token}` : undefined,
-        },
-        body: formData,
-      });
-      const data = await res.json();
+      const data = await apiService.put(apiEndpoints.announcement(editingNews.id), formData);
       if (data.status === 'success') {
         setEditOpen(false);
         setEditingNews(null);
@@ -249,7 +200,7 @@ export default function ManagePost() {
 
   // ฟังก์ชันสำหรับเปิด Image Preview Dialog
   const openImagePreview = (imageName: string) => {
-    const imageUrl = getImageUrl(imageName, API_BASE_URL);
+    const imageUrl = getImageUrl(imageName, import.meta.env.VITE_API_BASE_URL);
     setPreviewImageUrl(imageUrl);
     setPreviewImageName(imageName);
     setPreviewImageOpen(true);
@@ -358,7 +309,7 @@ export default function ManagePost() {
                             <input
                               type="file"
                               accept="image/*"
-                              onChange={handleFileSelect}
+                              onChange={e => handleFileSelect(e, setSelectedFile, setImagePreview)}
                               className="hidden"
                             />
                           </label>
@@ -459,7 +410,7 @@ export default function ManagePost() {
                           <input
                             type="file"
                             accept="image/*"
-                            onChange={handleFileSelect}
+                            onChange={e => handleFileSelect(e, setSelectedFile, setImagePreview)}
                             className="hidden"
                           />
                         </label>
@@ -622,7 +573,7 @@ export default function ManagePost() {
                                     <div className="text-right">
                                       <div className="text-sm text-gray-500">{t('companyNews.publishedOn')}</div>
                                       <div className="text-lg font-semibold text-blue-600">
-                                        {formatDate(new Date(news.createdAt), i18n.language, 'short')}
+                                        {formatDate(news.createdAt, i18n.language)}
                                       </div>
                                     </div>
                                   </div>
@@ -669,7 +620,7 @@ export default function ManagePost() {
                                       <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
                                         <Calendar className="w-4 h-4 text-green-500" />
                                         <span className="font-medium text-green-900">
-                                          {formatDate(new Date(news.createdAt), i18n.language, 'long')}
+                                          {formatDate(news.createdAt, i18n.language)}
                                         </span>
                                       </div>
                                     </div>
@@ -723,10 +674,10 @@ export default function ManagePost() {
                                           <div className="space-y-3">
                                             <div className="relative group cursor-pointer" onClick={() => openImagePreview(news.Image)}>
                                               <img
-                                                src={getImageUrl(news.Image, API_BASE_URL)}
+                                                src={getImageUrl(news.Image, import.meta.env.VITE_API_BASE_URL)}
                                                 alt="News Image"
                                                 className="w-full h-32 object-contain rounded-lg border transition-all duration-300 group-hover:scale-105 bg-gray-50"
-                                                onError={(e) => handleImageError(e, news.Image, API_BASE_URL)}
+                                                onError={(e) => handleImageError(e, news.Image, import.meta.env.VITE_API_BASE_URL)}
                                               />
                                               <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 rounded-lg flex items-center justify-center">
                                                 <div className="opacity-0 group-hover:opacity-100 transition-all duration-300">
@@ -752,7 +703,7 @@ export default function ManagePost() {
                                                   size="sm" 
                                                   variant="outline"
                                                   onClick={() => {
-                                                    const imageUrl = getImageUrl(news.Image, API_BASE_URL);
+                                                    const imageUrl = getImageUrl(news.Image, import.meta.env.VITE_API_BASE_URL);
                                                     const link = document.createElement('a');
                                                     link.href = imageUrl;
                                                     link.download = news.Image.split('/').pop() || news.Image;
@@ -782,10 +733,10 @@ export default function ManagePost() {
                                                   <div className="space-y-3">
                                                     <div className="relative group cursor-pointer" onClick={() => openImagePreview(fileName)}>
                                                       <img 
-                                                        src={getImageUrl(fileName, API_BASE_URL)} 
+                                                        src={getImageUrl(fileName, import.meta.env.VITE_API_BASE_URL)} 
                                                         alt={fileName}
                                                         className="w-full h-32 object-contain rounded-lg border transition-all duration-300 group-hover:scale-105 bg-gray-50"
-                                                        onError={(e) => handleImageError(e, fileName, API_BASE_URL)}
+                                                        onError={(e) => handleImageError(e, fileName, import.meta.env.VITE_API_BASE_URL)}
                                                       />
                                                       <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 rounded-lg flex items-center justify-center">
                                                         <div className="opacity-0 group-hover:opacity-100 transition-all duration-300">
@@ -808,7 +759,7 @@ export default function ManagePost() {
                                                           size="sm" 
                                                           variant="outline"
                                                           onClick={() => {
-                                                            const fileUrl = getImageUrl(fileName, API_BASE_URL);
+                                                            const fileUrl = getImageUrl(fileName, import.meta.env.VITE_API_BASE_URL);
                                                             const link = document.createElement('a');
                                                             link.href = fileUrl;
                                                             link.download = fileName;
@@ -833,7 +784,7 @@ export default function ManagePost() {
                                                           size="sm" 
                                                           variant="outline"
                                                           onClick={() => {
-                                                            const fileUrl = getImageUrl(fileName, API_BASE_URL);
+                                                            const fileUrl = getImageUrl(fileName, import.meta.env.VITE_API_BASE_URL);
                                                             window.open(fileUrl, '_blank');
                                                           }}
                                                           className="text-xs px-2 py-1"
@@ -844,7 +795,7 @@ export default function ManagePost() {
                                                           size="sm" 
                                                           variant="outline"
                                                           onClick={() => {
-                                                            const fileUrl = getImageUrl(fileName, API_BASE_URL);
+                                                            const fileUrl = getImageUrl(fileName, import.meta.env.VITE_API_BASE_URL);
                                                             const link = document.createElement('a');
                                                             link.href = fileUrl;
                                                             link.download = fileName;

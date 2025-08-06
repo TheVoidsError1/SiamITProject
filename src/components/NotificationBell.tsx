@@ -33,9 +33,12 @@ const NotificationBell = () => {
   const { socket, isConnected } = useSocket();
   const { toast } = useToast();
 
+
+
   // Get leave type name
-  const getLeaveTypeName = (leaveType: { name_th: string; name_en: string } | undefined) => {
+  const getLeaveTypeName = (leaveType: { name_th: string; name_en: string } | string | undefined) => {
     if (!leaveType) return '';
+    if (typeof leaveType === 'string') return leaveType;
     return i18n.language.startsWith('th') ? leaveType.name_th : leaveType.name_en;
   };
 
@@ -284,18 +287,7 @@ const NotificationBell = () => {
         </Card>
       </PopoverContent>
       
-      <style>{`
-        @keyframes fadeInUp {
-          from {
-            opacity: 0;
-            transform: translateY(10px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
+
     </Popover>
   );
 };

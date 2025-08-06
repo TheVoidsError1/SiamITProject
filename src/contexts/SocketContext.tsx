@@ -79,7 +79,12 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 export const useSocket = () => {
   const context = useContext(SocketContext);
   if (!context) {
-    throw new Error('useSocket must be used within a SocketProvider');
+    console.warn('useSocket must be used within a SocketProvider');
+    // Return a default context to prevent crashes
+    return {
+      socket: null,
+      isConnected: false,
+    };
   }
   return context;
 }; 

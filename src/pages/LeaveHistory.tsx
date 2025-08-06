@@ -15,6 +15,9 @@ import { useTranslation } from "react-i18next";
 
 import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
+import { formatDateLocalized } from '../lib/utils';
+import { monthNames } from '../constants/common';
+import { apiService, apiEndpoints } from '../lib/api';
 
 
 const LeaveHistory = () => {
@@ -58,20 +61,21 @@ const LeaveHistory = () => {
 
   const { showSessionExpiredDialog } = useAuth();
 
-
+  // Calculate summary statistics from summary data (all pages)
+  const totalLeaveDays = summary ? summary.totalLeaveDays : 0;
+  const totalLeaveHours = summary ? summary.totalLeaveHours : 0;
+  const approvedCount = summary ? summary.approvedCount : 0;
+  const pendingCount = summary ? summary.pendingCount : 0;
+  const rejectedCount = summary && typeof summary.rejectedCount === 'number' ? summary.rejectedCount : 0;
+  const retroactiveCount = summary?.retroactiveCount || 0;
+  // รายชื่อเดือนรองรับ i18n
+  const currentMonthNames = monthNames[i18n.language === 'th' ? 'th' : 'en'];
 
   const fetchLeaveHistory = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        showSessionExpiredDialog();
-        return;
-      }
       let url = `/api/leave-history?page=${page}&limit=${limit}`;
-      
-      // เพิ่ม filter parameters
       if (filterLeaveType && filterLeaveType !== 'all') {
         url += `&leaveType=${filterLeaveType}`;
       }
@@ -90,32 +94,14 @@ const LeaveHistory = () => {
       if (singleDate) {
         url += `&date=${format(singleDate, 'yyyy-MM-dd')}`;
       }
-      
-      console.log('Debug - Fetching URL:', url);
-      
-      const res = await fetch(url, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (res.status === 401) {
-        showSessionExpiredDialog();
-        return;
-      }
-      const data = await res.json();
-      if (data.status === "success") {
+      // Use apiService.get
+      const data = await apiService.get(url, undefined, showSessionExpiredDialog);
+      if (data && data.status === "success") {
         setLeaveHistory(data.data);
         setTotalPages(data.totalPages || 1);
         setSummary(data.summary || null);
-        
-        // Debug log
-        console.log('Debug - API Response:', {
-          totalPages: data.totalPages,
-          total: data.total,
-          limit: limit,
-          page: page,
-          dataLength: data.data.length
-        });
       } else {
-        setError(data.message || "Unknown error");
+        setError(data?.message || "Unknown error");
       }
     } catch (err: any) {
       setError(err.message || "Unknown error");
@@ -132,47 +118,23 @@ const LeaveHistory = () => {
 
   // เพิ่มฟังก์ชันใหม่สำหรับดึงรายละเอียดใบลาจาก backend
   const handleViewDetails = async (leaveId: string) => {
-    // หาข้อมูลจากรายการหลักที่มีอยู่แล้ว
     const leaveData = leaveHistory.find(leave => leave.id === leaveId);
     if (leaveData) {
       setSelectedLeave(leaveData);
       setShowDetailDialog(true);
-      
-      // Debug log
-      console.log('Debug - Leave data from list:', {
-        id: leaveData.id,
-        attachments: leaveData.attachments,
-        attachmentsType: typeof leaveData.attachments,
-        isArray: Array.isArray(leaveData.attachments)
-      });
       return;
     }
-    
-    // ถ้าไม่พบในรายการหลัก ให้เรียก API
     setSelectedLeave(null);
     setShowDetailDialog(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`/api/leave-request/detail/${leaveId}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (data.success) {
-        // map ให้แน่ใจว่ามี startDate และ submittedDate ที่ frontend ใช้
+      const data = await apiService.get(`/api/leave-request/detail/${leaveId}`, undefined, showSessionExpiredDialog);
+      if (data && data.success) {
         const leaveDetail = {
           ...data.data,
           startDate: data.data.startDate || data.data.leaveDate || '-',
           submittedDate: data.data.createdAt || data.data.submittedDate || '-',
         };
         setSelectedLeave(leaveDetail);
-        
-        // Debug log
-        console.log('Debug - Leave data from API:', {
-          id: leaveDetail.id,
-          attachments: leaveDetail.attachments,
-          attachmentsType: typeof leaveDetail.attachments,
-          isArray: Array.isArray(leaveDetail.attachments)
-        });
       }
     } catch (e) {
       console.error('Error fetching leave detail:', e);
@@ -185,35 +147,15 @@ const LeaveHistory = () => {
       setLeaveTypesLoading(true);
       setLeaveTypesError(null);
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          showSessionExpiredDialog();
-          return;
-        }
-        const res = await fetch('/api/leave-history/filters', {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.status === 401) {
-          showSessionExpiredDialog();
-          return;
-        }
-        const data = await res.json();
-        if (data.status === 'success') {
+        const data = await apiService.get('/api/leave-history/filters', undefined, showSessionExpiredDialog);
+        if (data && data.status === 'success') {
           setLeaveTypes(data.leaveTypes || []);
           setStatusOptions(data.statuses || []);
           setYearOptions(data.years || []);
           setMonthOptions(data.months || []);
-          
-          // Debug log
-          console.log('Debug - Filter data loaded:', {
-            leaveTypes: data.leaveTypes?.length || 0,
-            statuses: data.statuses?.length || 0,
-            years: data.years?.length || 0,
-            months: data.months?.length || 0
-          });
         } else {
           setLeaveTypes([]);
-          setLeaveTypesError(data.message || 'Failed to fetch filter data');
+          setLeaveTypesError(data?.message || 'Failed to fetch filter data');
         }
       } catch (err: any) {
         setLeaveTypes([]);
@@ -370,35 +312,6 @@ const LeaveHistory = () => {
   };
   // กำหนดหน่วยชั่วโมงตามภาษา
   const hourUnit = i18n.language === 'th' ? 'ชม' : 'Hours';
-
-  // เพิ่มฟังก์ชันแปลงวันที่ตามภาษา
-  const formatDateLocalized = (dateStr: string) => {
-    if (!dateStr) return '-';
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return '-';
-    if (i18n.language === 'th') {
-      // แปลงปีเป็น พ.ศ.
-      const buddhistYear = date.getFullYear() + 543;
-      return `${date.getDate().toString().padStart(2, '0')} ${format(date, 'MMM', { locale: th })} ${buddhistYear}`;
-    }
-    // อังกฤษ: ใช้ year ปกติ
-    return format(date, 'dd MMM yyyy');
-  };
-
-  // Calculate summary statistics from summary data (all pages)
-  const totalLeaveDays = summary ? summary.totalLeaveDays : 0;
-  const totalLeaveHours = summary ? summary.totalLeaveHours : 0;
-  const approvedCount = summary ? summary.approvedCount : 0;
-  const pendingCount = summary ? summary.pendingCount : 0;
-  const rejectedCount = summary && typeof summary.rejectedCount === 'number' ? summary.rejectedCount : 0;
-  
-  // คำนวณจำนวนการลาย้อนหลังจากข้อมูลทั้งหมด (ไม่ใช่แค่หน้าปัจจุบัน)
-  const retroactiveCount = summary?.retroactiveCount || 0;
-
-  // รายชื่อเดือนรองรับ i18n
-  const monthNames = i18n.language === 'th'
-    ? ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม']
-    : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
   // สร้างตัวเลือกเดือนและปีทั้งหมด
   const allMonths = Array.from({ length: 12 }, (_, i) => i + 1);
@@ -710,7 +623,7 @@ const LeaveHistory = () => {
                         <SelectContent className="border-0 shadow-xl rounded-xl">
                           <SelectItem value="all" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{t('history.allMonths', 'ทุกเดือน')}</SelectItem>
                           {allMonths.map(m => (
-                            <SelectItem key={m} value={m.toString()} className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{monthNames[m-1]}</SelectItem>
+                            <SelectItem key={m} value={m.toString()} className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{currentMonthNames[m-1]}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
@@ -843,7 +756,7 @@ const LeaveHistory = () => {
                       </div>
                     </div>
                     <div className="text-sm text-blue-400 font-medium md:text-right">
-                      {formatDateLocalized(leave.submittedDate)}
+                      {formatDateLocalized(leave.submittedDate, i18n.language)}
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0 pb-4">
@@ -852,12 +765,12 @@ const LeaveHistory = () => {
                         <div className="flex items-center gap-3 text-base text-blue-900">
                           <Calendar className="w-5 h-5 text-blue-400" />
                           <span className="font-medium">{t('leave.startDate')}:</span>
-                          <span>{formatDateLocalized(leave.startDate)}</span>
+                          <span>{formatDateLocalized(leave.startDate, i18n.language)}</span>
                         </div>
                         <div className="flex items-center gap-3 text-base text-blue-900">
                           <Calendar className="w-5 h-5 text-blue-400" />
                           <span className="font-medium">{t('leave.endDate')}:</span>
-                          <span>{formatDateLocalized(leave.endDate)}</span>
+                          <span>{formatDateLocalized(leave.endDate, i18n.language)}</span>
                         </div>
                         {/* แสดงระยะเวลาตามประเภทการลา */}
                         {leave.startTime && leave.endTime ? (
@@ -1103,7 +1016,7 @@ const LeaveHistory = () => {
                     <div className="text-right">
                       <div className="text-sm text-gray-500">{t('history.submittedOn')}</div>
                       <div className="text-lg font-semibold text-blue-600">
-                        {formatDateLocalized(selectedLeave.submittedDate || selectedLeave.createdAt)}
+                        {formatDateLocalized(selectedLeave.submittedDate || selectedLeave.createdAt, i18n.language)}
                       </div>
                     </div>
                   </div>
@@ -1127,7 +1040,7 @@ const LeaveHistory = () => {
                         <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
                           <Calendar className="w-4 h-4 text-blue-500" />
                           <span className="font-medium text-blue-900">
-                            {formatDateLocalized(selectedLeave.startDate)}
+                            {formatDateLocalized(selectedLeave.startDate, i18n.language)}
                           </span>
                         </div>
                       </div>
@@ -1136,7 +1049,7 @@ const LeaveHistory = () => {
                         <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
                           <Calendar className="w-4 h-4 text-blue-500" />
                           <span className="font-medium text-blue-900">
-                            {formatDateLocalized(selectedLeave.endDate)}
+                            {formatDateLocalized(selectedLeave.endDate, i18n.language)}
                           </span>
                         </div>
                       </div>

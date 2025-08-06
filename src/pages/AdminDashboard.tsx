@@ -16,6 +16,10 @@ import { enUS, th } from "date-fns/locale";
 import { AlertCircle, Calendar, CalendarIcon, CheckCircle, ChevronLeft, ChevronRight, Clock, Eye, FileText, History, User, Users, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { formatDateLocalized, formatDateOnly } from '../lib/utils';
+import { apiService, apiEndpoints } from '../lib/api';
+import { showToastMessage } from '../lib/toast';
+import { monthNames } from '../constants/common';
 
 type LeaveRequest = {
   id: number;
@@ -31,8 +35,6 @@ type LeaveRequest = {
 
 // --- เพิ่ม helper สำหรับ clamp ข้อความ ---
 const clampLines = 3;
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 const AdminDashboard = () => {
   const { t, i18n } = useTranslation();
@@ -90,9 +92,7 @@ const AdminDashboard = () => {
   // --- state สำหรับ filter สถานะ ---
   const [historyStatusFilter, setHistoryStatusFilter] = useState('all'); // default เป็น all (All status)
   // รายชื่อเดือนรองรับ i18n
-  const monthNames = i18n.language === 'th'
-    ? ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม']
-    : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const currentMonthNames = monthNames[i18n.language === 'th' ? 'th' : 'en'];
 
   // --- เพิ่ม state สำหรับ show more/less ของแต่ละ request ---
   const [expandedRejection, setExpandedRejection] = useState<{ [id: string]: boolean }>({});
@@ -184,28 +184,7 @@ const AdminDashboard = () => {
     ).toFixed(1)
     : 0;
 
-  // --- เพิ่มฟังก์ชันแปลงวันที่ตามภาษา ---
-  const formatDateLocalized = (dateStr: string) => {
-    const date = new Date(dateStr);
-    // แปลงเป็นเวลาท้องถิ่นไทย
-    if (i18n.language === 'th') {
-      const buddhistYear = date.getFullYear() + 543;
-      const time = date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false });
-      return `${date.getDate().toString().padStart(2, '0')} ${format(date, 'MMM', { locale: th })} ${buddhistYear}, ${time}`;
-    }
-    // ภาษาอื่น
-    return format(date, 'dd MMM yyyy, HH:mm');
-  };
 
-  // --- เพิ่มฟังก์ชันแปลงวันที่แบบไม่มีเวลา ---
-  const formatDateOnly = (dateStr: string) => {
-    const date = new Date(dateStr);
-    if (i18n.language === 'th') {
-      const buddhistYear = date.getFullYear() + 543;
-      return `${date.getDate().toString().padStart(2, '0')} ${format(date, 'MMM', { locale: th })} ${buddhistYear}`;
-    }
-    return format(date, 'dd MMM yyyy');
-  };
 
   // --- เพิ่มฟังก์ชันคำนวณชั่วโมง ---
   const calcHours = (start: string, end: string) => {
@@ -229,30 +208,24 @@ const AdminDashboard = () => {
 
   const confirmApprove = () => {
     if (!approvingRequest) return;
-    const token = localStorage.getItem('token');
-    if (!token) {
-      toast({ title: "ไม่พบ token", description: "กรุณาเข้าสู่ระบบใหม่", variant: "destructive" });
-      return;
-    }
     const approverName = localStorage.getItem('user_name');
-    fetch(`${API_BASE_URL}/api/leave-request/${approvingRequest.id}/status`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ status: 'approved', statusby: approverName }),
-    })
-      .then(res => res.json())
+    
+    apiService.put(apiEndpoints.leave.status(approvingRequest.id), { 
+      status: 'approved', 
+      statusby: approverName 
+    }, undefined, showSessionExpiredDialog)
       .then(data => {
         if (data.success) {
-          toast({ title: t('admin.approveSuccess'), description: `${t('admin.approveSuccessDesc')} ${approvingRequest.employeeName}` });
+          showToastMessage.leave.requestApproved(approvingRequest.employeeName);
           setPendingRequests(prev => prev.filter(r => r.id !== approvingRequest.id));
           fetchHistoryRequests();
           refreshLeaveRequests();
         } else {
-          toast({ title: t('admin.rejectError'), description: data.message, variant: "destructive" });
+          showToastMessage.leave.requestError('อนุมัติ', data.message);
         }
+      })
+      .catch(() => {
+        showToastMessage.leave.requestError('อนุมัติ');
       })
       .finally(() => {
         setShowApproveDialog(false);
@@ -268,29 +241,23 @@ const AdminDashboard = () => {
 
   const confirmReject = () => {
     if (!rejectingRequest) return;
-    const token = localStorage.getItem('token');
-    if (!token) {
-      toast({ title: "ไม่พบ token", description: "กรุณาเข้าสู่ระบบใหม่", variant: "destructive" });
-      return;
-    }
-    fetch(`${API_BASE_URL}/api/leave-request/${rejectingRequest.id}/status`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ status: 'rejected', rejectedReason: rejectReason }),
-    })
-      .then(res => res.json())
+    
+    apiService.put(apiEndpoints.leave.status(rejectingRequest.id), { 
+      status: 'rejected', 
+      rejectedReason: rejectReason 
+    }, undefined, showSessionExpiredDialog)
       .then(data => {
         if (data.success) {
-          toast({ title: t('admin.rejectSuccess'), description: `${t('admin.rejectSuccessDesc')} ${rejectingRequest.employeeName}`, variant: "destructive" });
+          showToastMessage.leave.requestRejected(rejectingRequest.employeeName);
           setPendingRequests(prev => prev.filter(r => r.id !== rejectingRequest.id));
           fetchHistoryRequests();
-          refreshLeaveRequests(); // <-- เพิ่มบรรทัดนี้
+          refreshLeaveRequests();
         } else {
-          toast({ title: t('admin.rejectError'), description: data.message, variant: "destructive" });
+          showToastMessage.leave.requestError('ปฏิเสธ', data.message);
         }
+      })
+      .catch(() => {
+        showToastMessage.leave.requestError('ปฏิเสธ');
       })
       .finally(() => {
         setShowRejectDialog(false);
@@ -307,15 +274,7 @@ const AdminDashboard = () => {
   // เพิ่มฟังก์ชันสำหรับรีเฟรชข้อมูล
   const refreshLeaveRequests = () => {
     setLoading(true);
-    const token = localStorage.getItem('token');
-    if (!token) {
-      showSessionExpiredDialog();
-      return;
-    }
-    fetch(`${API_BASE_URL}/api/leave-request/pending`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then((res) => res.json())
+    apiService.get(apiEndpoints.leave.pending, undefined, showSessionExpiredDialog)
       .then((data) => {
         if (data.status === "success") {
           setPendingRequests(data.data);
@@ -335,12 +294,7 @@ const AdminDashboard = () => {
   // ปรับ fetchHistoryRequests
   const fetchHistoryRequests = () => {
     setLoading(true);
-    const token = localStorage.getItem('token');
-    if (!token) {
-      showSessionExpiredDialog();
-      return;
-    }
-    let url = `${API_BASE_URL}/api/leave-request/history?page=${historyPage}&limit=${historyLimit}`;
+    let url = `/api/leave-request/history?page=${historyPage}&limit=${historyLimit}`;
     if (filterMonth) url += `&month=${filterMonth}`;
     if (filterYear) url += `&year=${filterYear}`;
     // ในการสร้าง url ให้ส่ง status=approved,rejected ถ้าเลือก all
@@ -358,16 +312,8 @@ const AdminDashboard = () => {
       if (dateRange.to) url += `&endDate=${format(dateRange.to, 'yyyy-MM-dd')}`;
     }
     if (historyFilterLeaveType) url += `&leaveType=${historyFilterLeaveType}`;
-    fetch(url, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => {
-        if (res.status === 401) {
-          showSessionExpiredDialog();
-          return;
-        }
-        return res.json();
-      })
+    
+    apiService.get(url, undefined, showSessionExpiredDialog)
       .then(data => {
         if (data.status === "success") {
           let filtered = data.data;
@@ -402,12 +348,7 @@ const AdminDashboard = () => {
     const fetchPending = async () => {
       setLoading(true);
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          showSessionExpiredDialog();
-          return;
-        }
-        let url = `${API_BASE_URL}/api/leave-request/pending?page=${pendingPage}&limit=${pendingLimit}`;
+        let url = `/api/leave-request/pending?page=${pendingPage}&limit=${pendingLimit}`;
         if (pendingFilterLeaveType) url += `&leaveType=${pendingFilterLeaveType}`;
         if (pendingBackdatedFilter === 'backdated') url += `&backdated=1`;
         else if (pendingBackdatedFilter === 'normal') url += `&backdated=0`;
@@ -420,14 +361,7 @@ const AdminDashboard = () => {
         // ใช้ filterMonth และ filterYear สำหรับ filter เดือน/ปี
         if (filterMonth) url += `&month=${filterMonth}`;
         if (filterYear) url += `&year=${filterYear}`;
-        const res = await fetch(url, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.status === 401) {
-          showSessionExpiredDialog();
-          return;
-        }
-        const data = await res.json();
+        const data = await apiService.get(url, undefined, showSessionExpiredDialog);
         if (data.status === "success") {
           let filtered = data.data;
           // กรองย้อนหลังฝั่ง frontend ถ้า API ไม่กรองให้
@@ -488,13 +422,12 @@ const AdminDashboard = () => {
   }, [t, historyPage, filterMonth, filterYear, historyLimit, historyStatusFilter, dateRange, recentSingleDate, historyBackdatedFilter, historyFilterLeaveType]);
 
   useEffect(() => {
-    let url = `${API_BASE_URL}/api/leave-request/dashboard-stats`;
+    let url = `/api/leave-request/dashboard-stats`;
     const params = [];
     if (filterMonth) params.push(`month=${filterMonth}`);
     if (filterYear) params.push(`year=${filterYear}`);
     if (params.length > 0) url += `?${params.join("&")}`;
-    fetch(url)
-      .then(res => res.json())
+    apiService.get(url)
       .then(data => {
         if (data.status === "success") {
           setDashboardStats(data.data);
@@ -511,14 +444,7 @@ const AdminDashboard = () => {
           showSessionExpiredDialog();
           return;
         }
-        const res = await fetch(`${API_BASE_URL}/api/departments`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.status === 401) {
-          showSessionExpiredDialog();
-          return;
-        }
-        const data = await res.json();
+        const data = await apiService.get(apiEndpoints.departments, undefined, showSessionExpiredDialog);
         if (data.status === 'success' && Array.isArray(data.data)) {
           setDepartments(data.data);
         }
@@ -527,19 +453,7 @@ const AdminDashboard = () => {
     // ดึง position
     const fetchPositions = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          showSessionExpiredDialog();
-          return;
-        }
-        const res = await fetch(`${API_BASE_URL}/api/positions`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.status === 401) {
-          showSessionExpiredDialog();
-          return;
-        }
-        const data = await res.json();
+        const data = await apiService.get(apiEndpoints.positions, undefined, showSessionExpiredDialog);
         if (data.status === 'success' && Array.isArray(data.data)) {
           setPositions(data.data);
         }
@@ -557,8 +471,7 @@ const AdminDashboard = () => {
       setPendingLeaveTypesLoading(true);
       setPendingLeaveTypesError(null);
       try {
-        const res = await fetch('/api/leave-types');
-        const data = await res.json();
+        const data = await apiService.get(apiEndpoints.leaveTypes);
         if (data.success) {
           setPendingLeaveTypes(data.data);
         } else {
@@ -686,10 +599,7 @@ const AdminDashboard = () => {
         showSessionExpiredDialog();
         return;
       }
-      const res = await fetch(`${API_BASE_URL}/api/leave-request/detail/${request.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
+      const data = await apiService.get(apiEndpoints.leave.detail(request.id), undefined, showSessionExpiredDialog);
       if (data.success) {
         setSelectedRequest({ ...data.data, ...request });
       } else {
@@ -712,28 +622,19 @@ const AdminDashboard = () => {
 
   const confirmDelete = async () => {
     if (!deletingRequest) return;
-    const token = localStorage.getItem('token');
-    if (!token) {
-      showSessionExpiredDialog();
-      return;
-    }
     try {
-      const res = await fetch(`${API_BASE_URL}/api/leave-request/${deletingRequest.id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
+      const data = await apiService.delete(apiEndpoints.leave.delete(deletingRequest.id), undefined, showSessionExpiredDialog);
       if (data.success || data.status === 'success') {
-        toast({ title: t('system.deleteSuccess', 'ลบสำเร็จ'), description: t('system.deleteSuccessDesc', 'ลบใบลาสำเร็จ') });
+        showToastMessage.crud.deleteSuccess('ใบลา');
         setShowDeleteDialog(false);
         setDeletingRequest(null);
         refreshLeaveRequests();
         fetchHistoryRequests();
       } else {
-        toast({ title: t('common.error'), description: data.message || t('system.deleteError', 'ลบไม่สำเร็จ'), variant: 'destructive' });
+        showToastMessage.crud.deleteError('ใบลา', data.message);
       }
     } catch (e) {
-      toast({ title: t('common.error'), description: t('system.deleteError', 'ลบไม่สำเร็จ'), variant: 'destructive' });
+      showToastMessage.crud.deleteError('ใบลา');
     }
   };
 
@@ -1125,7 +1026,7 @@ const AdminDashboard = () => {
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
                         {pendingPendingSingleDate ? (
-                          format(pendingPendingSingleDate, "dd MMMM yyyy", { locale: i18n.language === 'th' ? th : enUS })
+                          formatDateLocalized(pendingPendingSingleDate.toISOString(), i18n.language, true)
                         ) : (
                           <span>{t('leave.selectDate')}</span>
                         )}
@@ -1162,7 +1063,7 @@ const AdminDashboard = () => {
                     disabled={!!pendingPendingSingleDate}
                   >
                     <option value="">{t('months.all', 'All Months')}</option>
-                    {monthNames.map((name, idx) => (
+                    {currentMonthNames.map((name, idx) => (
                       <option key={idx + 1} value={idx + 1}>{name}</option>
                     ))}
                   </select>
@@ -1437,7 +1338,7 @@ const AdminDashboard = () => {
                     onChange={e => setPendingFilterMonth(e.target.value ? Number(e.target.value) : '')}
                   >
                     <option value="">{t('months.all', 'All Months')}</option>
-                    {monthNames.map((name, idx) => (
+                    {currentMonthNames.map((name, idx) => (
                       <option key={idx + 1} value={idx + 1}>{name}</option>
                     ))}
                   </select>
@@ -1781,7 +1682,7 @@ const AdminDashboard = () => {
                         <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
                           <Calendar className="w-4 h-4 text-blue-500" />
                           <span className="font-medium text-blue-900">
-                            {formatDateOnly(selectedRequest.startDate)}
+                            {formatDateOnly(selectedRequest.startDate, i18n.language)}
                           </span>
                         </div>
                       </div>
@@ -1790,7 +1691,7 @@ const AdminDashboard = () => {
                         <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
                           <Calendar className="w-4 h-4 text-blue-500" />
                           <span className="font-medium text-blue-900">
-                            {formatDateOnly(selectedRequest.endDate)}
+                            {formatDateOnly(selectedRequest.endDate, i18n.language)}
                           </span>
                         </div>
                       </div>

@@ -199,6 +199,20 @@ module.exports = (AppDataSource) => {
       profile.position_name = position ? (lang === 'th' ? position.position_name_th : position.position_name_en) : '';
       profile.position_name_th = position ? position.position_name_th : '';
       profile.position_name_en = position ? position.position_name_en : '';
+      
+      // Add nested objects for frontend compatibility
+      profile.position = position ? {
+        id: position.id,
+        name_th: position.position_name_th,
+        name_en: position.position_name_en
+      } : null;
+      
+      profile.department = department ? {
+        id: department.id,
+        name_th: department.department_name_th,
+        name_en: department.department_name_en
+      } : null;
+      
       return res.json({ success: true, data: profile });
     } catch (err) {
       console.error('Profile error:', err);

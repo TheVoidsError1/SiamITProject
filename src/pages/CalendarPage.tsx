@@ -9,6 +9,7 @@ import { getAllThaiHolidays } from '@/constants/getThaiHolidays';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSocket } from '@/contexts/SocketContext';
 import { useToast } from '@/hooks/use-toast';
+import { apiService, apiEndpoints } from '../lib/api';
 
 const CalendarPage = () => {
   const { t, i18n } = useTranslation();
@@ -39,7 +40,6 @@ const CalendarPage = () => {
     employees: []
   });
   const navigate = useNavigate();
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   // Month names based on current language
   const monthNames = [
@@ -207,42 +207,16 @@ const CalendarPage = () => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
         // Fetch company events
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/custom-holidays/year/${year}`, {
-          headers: {
-            'Authorization': token ? `Bearer ${token}` : undefined,
-          }
-        });
-        if (response.ok) {
-          const result = await response.json();
-          setCompanyEvents(result.data || []);
-        } else {
-          console.error('Failed to fetch company events');
-          setCompanyEvents([]);
-        }
-        
+        const result = await apiService.get(apiEndpoints.customHolidaysByYear(year));
+        setCompanyEvents(result.data || []);
         // Get Thai holidays for the year
         const thaiHolidaysData = getAllThaiHolidays(year, t);
         setThaiHolidays(thaiHolidaysData);
-        
         // Fetch employee leaves
-        const leaveResponse = await fetch(`${API_BASE_URL}/api/leave-request/calendar/${year}`, {
-          headers: {
-            'Authorization': token ? `Bearer ${token}` : undefined,
-          }
-        });
-        if (leaveResponse.ok) {
-          const leaveResult = await leaveResponse.json();
-          setEmployeeLeaves(leaveResult.data || []);
-        } else {
-          console.error('Failed to fetch employee leaves');
-          setEmployeeLeaves([]);
-        }
-        
+        const leaveResult = await apiService.get(apiEndpoints.leave.calendarWithMonth(year));
+        setEmployeeLeaves(leaveResult.data || []);
       } catch (error) {
-        console.error('Error fetching data:', error);
         setCompanyEvents([]);
         setThaiHolidays([]);
         setEmployeeLeaves([]);
@@ -250,7 +224,6 @@ const CalendarPage = () => {
         setLoading(false);
       }
     };
-
     fetchData();
   }, [year, t]);
 

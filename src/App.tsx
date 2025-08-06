@@ -29,6 +29,7 @@ import CompanyMonthDetailPage from './pages/CompanyMonthDetailPage';
 import AnnouncementsFeedPage from './pages/AnnouncementsFeedPage';
 
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const queryClient = new QueryClient();
 
@@ -54,7 +55,7 @@ const AppContent = () => {
   }
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={true}>
       <div className="min-h-screen flex w-full relative">
         {/* Global Language Switcher */}
         <div className="fixed top-4 right-4 z-50">
@@ -127,23 +128,25 @@ const AppContent = () => {
 };
 
 const App = () => (
-  <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AuthProvider>
-            <PushNotificationProvider>
-              <SocketProvider>
-                <AppContent />
-              </SocketProvider>
-            </PushNotificationProvider>
-          </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </ThemeProvider>
+  <ErrorBoundary>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AuthProvider>
+              <PushNotificationProvider>
+                <SocketProvider>
+                  <AppContent />
+                </SocketProvider>
+              </PushNotificationProvider>
+            </AuthProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
+  </ErrorBoundary>
 );
 
 export default App;

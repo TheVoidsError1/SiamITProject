@@ -24,8 +24,7 @@ import { ArrowLeft, Calendar, Edit, Eye, Mail, Trash2, User } from "lucide-react
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useParams } from 'react-router-dom';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { apiService, apiEndpoints } from '../lib/api';
 
 const EmployeeDetail = () => {
   const { id } = useParams();
@@ -93,7 +92,7 @@ const EmployeeDetail = () => {
   // ลบ useMemo เดิมออก ไม่ต้อง filter ฝั่ง frontend แล้ว
 
   // --- Move fetch leave history logic to a function ---
-  const fetchLeaveHistory = () => {
+  const fetchLeaveHistory = async () => {
     if (!id) return;
     let params = [];
     if (filterType && filterType !== "all") params.push(`leaveType=${encodeURIComponent(filterType)}`);
@@ -112,32 +111,24 @@ const EmployeeDetail = () => {
     // เพิ่ม debug log
     console.log('🔍 Fetching leave history with params:', params);
     console.log('🔍 filterBackdated value:', filterBackdated);
-    console.log('🔍 Full URL:', `${API_BASE_URL}/api/employee/${id}/leave-history${query}`);
+    console.log('🔍 Full URL:', `${apiEndpoints.apiBaseUrl}/api/employee/${id}/leave-history${query}`);
     
-    fetch(`${API_BASE_URL}/api/employee/${id}/leave-history${query}`)
-      .then(res => res.json())
-      .then(data => {
-        // เพิ่ม debug log
-        console.log('📥 Response from backend:', data);
-        console.log('📥 leaveHistory data length:', data.data?.length);
-        console.log('📥 Each leave backdated value:', data.data?.map(l => ({ id: l.id, backdated: l.backdated, leaveType: l.leaveType })));
-        
-        if (data.success) {
-          setLeaveHistory(data.data);
-          setLeaveTotalPages(data.totalPages || 1);
-          setLeaveSummary(data.summary || null); // <--- เก็บ summary
-        } else {
-          setLeaveHistory([]);
-          setLeaveTotalPages(1);
-          setLeaveSummary(null); // <--- reset summary
-        }
-      })
-      .catch((error) => {
-        console.error('❌ Error fetching leave history:', error);
+    try {
+      const data = await apiService.get(`${apiEndpoints.apiBaseUrl}/api/employee/${id}/leave-history${query}`);
+      if (data.success) {
+        setLeaveHistory(data.data);
+        setLeaveTotalPages(data.totalPages || 1);
+        setLeaveSummary(data.summary || null); // <--- เก็บ summary
+      } else {
         setLeaveHistory([]);
         setLeaveTotalPages(1);
         setLeaveSummary(null); // <--- reset summary
-      });
+      }
+    } catch (error) {
+      setLeaveHistory([]);
+      setLeaveTotalPages(1);
+      setLeaveSummary(null); // <--- reset summary
+    }
   };
 
   // useEffect สำหรับ fetch leaveHistory เฉพาะเมื่อ filter จริง (active) เปลี่ยน
@@ -174,31 +165,18 @@ const EmployeeDetail = () => {
   };
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/departments`)
-      .then(res => {
-        if (res.status === 401) {
-          showSessionExpiredDialog();
-          return Promise.reject(new Error('Session expired'));
-        }
-        return res.json();
-      })
-      .then(data => {
-        setDepartments(Array.isArray(data.data) ? data.data : []);
-      })
-      .catch(() => setDepartments([]));
-
-    fetch(`${API_BASE_URL}/api/positions`)
-      .then(res => {
-        if (res.status === 401) {
-          showSessionExpiredDialog();
-          return Promise.reject(new Error('Session expired'));
-        }
-        return res.json();
-      })
-      .then(data => {
-        setPositions(Array.isArray(data.data) ? data.data : []);
-      })
-      .catch(() => setPositions([]));
+    const fetchDeps = async () => {
+      try {
+        const deptData = await apiService.get(apiEndpoints.departments, undefined, showSessionExpiredDialog);
+        setDepartments(Array.isArray(deptData.data) ? deptData.data : []);
+        const posData = await apiService.get(apiEndpoints.positions, undefined, showSessionExpiredDialog);
+        setPositions(Array.isArray(posData.data) ? posData.data : []);
+      } catch {
+        setDepartments([]);
+        setPositions([]);
+      }
+    };
+    fetchDeps();
   }, []);
 
   // --- เพิ่ม state สำหรับ leave types dropdown ---
@@ -212,8 +190,7 @@ const EmployeeDetail = () => {
       setLeaveTypesLoading(true);
       setLeaveTypesError(null);
       try {
-        const res = await fetch(`${API_BASE_URL}/api/leave-types`);
-        const data = await res.json();
+        const data = await apiService.get(apiEndpoints.leaveTypes);
         if (data.success) {
           setLeaveTypes(data.data);
         } else {
@@ -269,12 +246,7 @@ const EmployeeDetail = () => {
         email: editData.email,
       };
       if (editData.password && editData.password.trim() !== '') payload.password = editData.password;
-      const response = await fetch(`${API_BASE_URL}/api/employee/${id}` , {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const data = await response.json();
+      const data = await apiService.put(`${apiEndpoints.apiBaseUrl}/api/employee/${id}`, payload);
       if (data.success) {
         toast({
           title: t('employee.saveSuccess'),
@@ -282,8 +254,7 @@ const EmployeeDetail = () => {
         });
         setIsEditing(false);
         // Refresh profile data
-        const res = await fetch(`${API_BASE_URL}/api/employee/${id}`);
-        const empData = await res.json();
+        const empData = await apiService.get(`${apiEndpoints.apiBaseUrl}/api/employee/${id}`);
         if (empData.success) setEmployee(empData.data);
       } else {
         toast({ title: t('error.title'), description: data.message || t('employee.saveError') });
@@ -332,8 +303,8 @@ const EmployeeDetail = () => {
     if (!deleteLeaveId) return;
     setDeleting(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/leave-request/${deleteLeaveId}`, { method: "DELETE" });
-      const data = await res.json();
+      const res = await apiService.delete(`${apiEndpoints.apiBaseUrl}/api/leave-request/${deleteLeaveId}`);
+      const data = res.data;
       if (data.success) {
         setDeleteLeaveId(null);
         toast({
@@ -357,8 +328,7 @@ const EmployeeDetail = () => {
     if (!id) return;
     setLoading(true);
     setError(null);
-    fetch(`${API_BASE_URL}/api/employee/${id}`)
-      .then(res => res.json())
+    apiService.get(`${apiEndpoints.apiBaseUrl}/api/employee/${id}`)
       .then(data => {
         if (data.success) {
           setEmployee(data.data);
@@ -448,7 +418,7 @@ const EmployeeDetail = () => {
                 <div className="relative w-24 h-24">
                   {employee.avatar ? (
                     <img
-                      src={`${API_BASE_URL}${employee.avatar}`}
+                      src={`${apiEndpoints.apiBaseUrl}${employee.avatar}`}
                       alt={employee.name}
                       className="w-full h-full rounded-full object-cover shadow-xl"
                       onError={(e) => {

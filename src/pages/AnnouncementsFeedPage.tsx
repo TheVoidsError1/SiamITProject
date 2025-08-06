@@ -15,7 +15,8 @@ import { Newspaper, User, Calendar, Image as ImageIcon, Settings, Plus, Upload, 
 import { useAuth } from '@/contexts/AuthContext';
 import { useSocket } from '@/contexts/SocketContext';
 import { useToast } from '@/hooks/use-toast';
-import { getImageUrl, handleImageError } from '@/lib/utils';
+import { handleFileSelect, getImageUrl, handleImageError, formatDate } from '../lib/utils';
+import { apiService, apiEndpoints } from '../lib/api';
 
 interface Announcement {
   id: string;
@@ -47,7 +48,6 @@ const AnnouncementsFeedPage = () => {
   const [previewImageOpen, setPreviewImageOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string>('');
   const [previewImageName, setPreviewImageName] = useState<string>('');
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   // Socket.io event listeners for real-time announcements
   useEffect(() => {
@@ -116,61 +116,23 @@ const AnnouncementsFeedPage = () => {
       setLoading(true);
       setError(null);
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          showSessionExpiredDialog();
-          return;
-        }
-
-        const response = await axios.get<{ status: string; data: Announcement[]; message?: string }>(
-          `${API_BASE_URL}/api/announcements/feed`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        
-        if (response.data.status === 'success') {
-          setAnnouncements(response.data.data);
+        const data = await apiService.get(apiEndpoints.announcements + '/feed', undefined, showSessionExpiredDialog);
+        if (data.status === 'success') {
+          setAnnouncements(data.data);
         } else {
-          setError(response.data.message || t('common.error'));
+          setError(data.message || t('common.error'));
         }
       } catch (err: any) {
-        console.error('Error fetching announcements:', err);
-        if (err.response?.status === 401) {
-          showSessionExpiredDialog();
-        } else {
-          setError(t('common.error'));
-        }
+        setError(t('common.error'));
       } finally {
         setLoading(false);
       }
     };
-
     fetchAnnouncements();
-  }, [t, API_BASE_URL, showSessionExpiredDialog]);
+  }, [t, showSessionExpiredDialog]);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const locale = i18n.language.startsWith('th') ? th : enUS;
-    return format(date, 'PPP p', { locale });
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-  const handleImageClick = (imageName: string) => {
-    const imageUrl = getImageUrl(imageName, API_BASE_URL);
+  const handleAnnouncementImageClick = (imageName: string) => {
+    const imageUrl = getImageUrl(imageName, import.meta.env.VITE_API_BASE_URL);
     setPreviewImageUrl(imageUrl);
     setPreviewImageName(imageName);
     setPreviewImageOpen(true);
@@ -180,36 +142,17 @@ const AnnouncementsFeedPage = () => {
     e.preventDefault();
     setCreateLoading(true);
     setError(null);
-    
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        showSessionExpiredDialog();
-        return;
-      }
-
       const formData = new FormData();
       formData.append('subject', createForm.subject);
       formData.append('detail', createForm.detail);
       formData.append('createdBy', user?.full_name || '');
       formData.append('createdAt', new Date().toISOString());
-      
       if (selectedFile) {
         formData.append('Image', selectedFile);
       }
-
-      const response = await axios.post(
-        `${API_BASE_URL}/api/announcements`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.data.status === 'success') {
+      const data = await apiService.post(apiEndpoints.announcements, formData, showSessionExpiredDialog);
+      if (data.status === 'success') {
         setCreateDialogOpen(false);
         setCreateForm({ subject: '', detail: '', Image: '' });
         setSelectedFile(null);
@@ -217,17 +160,14 @@ const AnnouncementsFeedPage = () => {
         // Refresh the announcements list
         const fetchAnnouncements = async () => {
           try {
-            const response = await axios.get<{ status: string; data: Announcement[]; message?: string }>(
-              `${API_BASE_URL}/api/announcements/feed`,
-              {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-              }
+            const response = await apiService.get(
+              apiEndpoints.announcements + '/feed',
+              undefined,
+              showSessionExpiredDialog
             );
             
-            if (response.data.status === 'success') {
-              setAnnouncements(response.data.data);
+            if (response.status === 'success') {
+              setAnnouncements(response.data);
             }
           } catch (err) {
             console.error('Error refreshing announcements:', err);
@@ -235,15 +175,10 @@ const AnnouncementsFeedPage = () => {
         };
         fetchAnnouncements();
       } else {
-        setError(response.data.message || t('common.error'));
+        setError(data.message || t('common.error'));
       }
     } catch (err: any) {
-      console.error('Error creating announcement:', err);
-      if (err.response?.status === 401) {
-        showSessionExpiredDialog();
-      } else {
-        setError(t('common.error'));
-      }
+      setError(t('common.error'));
     } finally {
       setCreateLoading(false);
     }
@@ -348,7 +283,7 @@ const AnnouncementsFeedPage = () => {
                             <input
                               type="file"
                               accept="image/*"
-                              onChange={handleFileSelect}
+                              onChange={(e) => handleFileSelect(e, setSelectedFile, setImagePreview)}
                               className="hidden"
                             />
                           </label>
@@ -436,7 +371,7 @@ const AnnouncementsFeedPage = () => {
                     <div className="flex items-start gap-4">
                       <Avatar className="h-16 w-16 border-3 border-blue-200 shadow-lg">
                         <AvatarImage 
-                                                     src={announcement.avatar ? getImageUrl(announcement.avatar, API_BASE_URL) : '/placeholder-avatar.png'} 
+                                                     src={announcement.avatar ? getImageUrl(announcement.avatar, import.meta.env.VITE_API_BASE_URL) : '/placeholder-avatar.png'} 
                           alt={announcement.createdBy}
                           className="object-cover"
                           onError={(e) => {
@@ -457,7 +392,7 @@ const AnnouncementsFeedPage = () => {
                         </CardTitle>
                         <div className="flex items-center gap-1 text-sm text-gray-500">
                           <Calendar className="w-4 h-4" />
-                          <span className="truncate">{formatDate(announcement.createdAt)}</span>
+                          <span className="truncate">{formatDate(announcement.createdAt, i18n.language)}</span>
                         </div>
                       </div>
                     </div>
@@ -475,11 +410,11 @@ const AnnouncementsFeedPage = () => {
                                             {announcement.Image && (
                         <div className="relative">
                           <img
-                            src={getImageUrl(announcement.Image, API_BASE_URL)}
+                            src={getImageUrl(announcement.Image, import.meta.env.VITE_API_BASE_URL)}
                             alt={announcement.subject}
                             className="w-full h-auto rounded-lg object-contain max-h-[500px] shadow-md bg-gray-50 cursor-pointer hover:opacity-90 transition-opacity"
-                            onError={(e) => handleImageError(e, announcement.Image, API_BASE_URL)}
-                            onClick={() => handleImageClick(announcement.Image)}
+                            onError={(e) => handleImageError(e, announcement.Image, import.meta.env.VITE_API_BASE_URL)}
+                            onClick={() => handleAnnouncementImageClick(announcement.Image)}
                           />
                         </div>
                       )}

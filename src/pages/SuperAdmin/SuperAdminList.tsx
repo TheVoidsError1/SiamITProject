@@ -2,14 +2,16 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
+
 import { AlertCircle, Building, CheckCircle, Crown, Eye, EyeOff, Info, Lock, Mail, Plus, Shield, User, Users } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { apiService, apiEndpoints } from '@/lib/api';
+import { showToastMessage } from '@/lib/toast';
 
 const SuperAdminList: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const { toast } = useToast();
+
   const [activeTab, setActiveTab] = useState<'employee' | 'admin' | 'superadmin'>('employee');
   const [form, setForm] = useState({
     full_name: '',
@@ -29,14 +31,14 @@ const SuperAdminList: React.FC = () => {
   const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong'>('weak');
 
   const lang = i18n.language.startsWith('th') ? 'th' : 'en';
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/departments`)
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.data && Array.isArray(data.data)) {
-          const depts = data.data.map((d: any) => ({ id: d.id, department_name_th: d.department_name_th, department_name_en: d.department_name_en }));
+    const fetchData = async () => {
+      try {
+        // Fetch departments
+        const deptData = await apiService.get(apiEndpoints.departments);
+        if (deptData && deptData.data && Array.isArray(deptData.data)) {
+          const depts = deptData.data.map((d: any) => ({ id: d.id, department_name_th: d.department_name_th, department_name_en: d.department_name_en }));
           const noDepartmentItem = depts.find(d => d.department_name_en === 'No Department');
           const otherDepts = depts.filter(d => d.department_name_en !== 'No Department');
           otherDepts.sort((a, b) => {
@@ -50,13 +52,10 @@ const SuperAdminList: React.FC = () => {
           }
           setDepartments(sortedDepts);
         }
-      })
-      .catch(() => setDepartments([]));
-    fetch(`${API_BASE_URL}/api/positions`)
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.data && Array.isArray(data.data)) {
-          const pos = data.data.map((p: any) => ({ id: p.id, position_name_th: p.position_name_th, position_name_en: p.position_name_en }));
+        // Fetch positions
+        const posData = await apiService.get(apiEndpoints.positions);
+        if (posData && posData.data && Array.isArray(posData.data)) {
+          const pos = posData.data.map((p: any) => ({ id: p.id, position_name_th: p.position_name_th, position_name_en: p.position_name_en }));
           const noPositionItem = pos.find(p => p.position_name_en === 'No Position');
           const otherPos = pos.filter(p => p.position_name_en !== 'No Position');
           otherPos.sort((a, b) => {
@@ -70,8 +69,12 @@ const SuperAdminList: React.FC = () => {
           }
           setPositions(sortedPositions);
         }
-      })
-      .catch(() => setPositions([]));
+      } catch {
+        setDepartments([]);
+        setPositions([]);
+      }
+    };
+    fetchData();
   }, [lang]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -125,67 +128,42 @@ const SuperAdminList: React.FC = () => {
     
     // Validation
     if (!form.full_name.trim()) {
-      toast({
-        title: t('admin.pleaseFillFullName'),
-        variant: 'destructive',
-      });
+      showToastMessage.validation.requiredField('fullName');
       return;
     }
     
     if (!form.email.trim()) {
-      toast({
-        title: t('admin.pleaseFillEmail'),
-        variant: 'destructive',
-      });
+      showToastMessage.validation.requiredField('email');
       return;
     }
     
     if (!form.department) {
-      toast({
-        title: t('admin.pleaseSelectDepartment'),
-        variant: 'destructive',
-      });
+      showToastMessage.validation.requiredField('department');
       return;
     }
     
     if (!form.position) {
-      toast({
-        title: t('admin.pleaseSelectPosition'),
-        variant: 'destructive',
-      });
+      showToastMessage.validation.requiredField('position');
       return;
     }
     
     if (form.password.length < 6) {
-      toast({
-        title: t('admin.passwordMinLength'),
-        variant: 'destructive',
-      });
+      showToastMessage.validation.passwordTooShort();
       return;
     }
     
     if (form.password !== form.confirmPassword) {
-      toast({
-        title: t('auth.passwordMismatch'),
-        description: t('auth.checkPasswordMatch'),
-        variant: 'destructive',
-      });
+      showToastMessage.validation.passwordMismatch();
       return;
     }
     
     if (!form.role) {
-      toast({
-        title: t('admin.errorOccurred'),
-        description: t('admin.pleaseSelectRole'),
-        variant: 'destructive',
-      });
+      showToastMessage.validation.requiredField('role');
       return;
     }
     
     setLoading(true);
     try {
-      const url = `${API_BASE_URL}/api/create-user-with-role`;
-      
       // Map frontend role to backend role
       const roleMapping: { [key: string]: string } = {
         'employee': 'user',
@@ -201,17 +179,10 @@ const SuperAdminList: React.FC = () => {
         email: form.email,
         password: form.password,
       };
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (res.ok && (data.success || data.token)) {
-        toast({
-          title: t('admin.userCreatedSuccess'),
-          description: `สร้าง${getTabConfig(activeTab).title}ใหม่เรียบร้อยแล้ว`,
-        });
+      
+      const data = await apiService.post('/api/create-user-with-role', payload);
+      if (data && (data.success || data.token)) {
+        showToastMessage.crud.createSuccess('user');
         setForm({
           full_name: '',
           email: '',
@@ -223,18 +194,10 @@ const SuperAdminList: React.FC = () => {
         });
         setPasswordStrength('weak');
       } else {
-        toast({
-          title: t('admin.errorOccurred'),
-          description: data.message || t('admin.cannotCreateUser'),
-          variant: 'destructive',
-        });
+        showToastMessage.crud.createError('user', data?.message);
       }
     } catch (err: any) {
-      toast({
-        title: t('admin.errorOccurred'),
-        description: t('admin.cannotConnectToServer'),
-        variant: 'destructive',
-      });
+      showToastMessage.network.connectionError();
     } finally {
       setLoading(false);
     }

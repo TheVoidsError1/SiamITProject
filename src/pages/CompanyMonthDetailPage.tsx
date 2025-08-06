@@ -10,11 +10,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getThaiHolidaysByMonth } from '@/constants/getThaiHolidays';
-
-const monthNames = [
-  'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
-  'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
-];
+import { monthNames } from '@/constants/common';
+import { apiService, apiEndpoints } from '@/lib/api';
+import { showToastMessage } from '@/lib/toast';
 
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
@@ -82,7 +80,7 @@ const CompanyMonthDetailPage = () => {
   const { year, month } = useParams();
   const currentYear = parseInt(year || new Date().getFullYear().toString());
   const currentMonth = parseInt(month || (new Date().getMonth() + 1).toString()) - 1;
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+  const currentMonthNames = monthNames[i18n.language === 'th' ? 'th' : 'en'];
   
   const [companyEvents, setCompanyEvents] = useState<CompanyEvent[]>([]);
   const [thaiHolidays, setThaiHolidays] = useState<ThaiHoliday[]>([]);
@@ -106,44 +104,23 @@ const CompanyMonthDetailPage = () => {
       try {
         setLoading(true);
         
-        // Fetch company events
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/custom-holidays/year/${currentYear}`, {
-          headers: {
-            'Authorization': token ? `Bearer ${token}` : undefined,
-          }
-        });
-        if (response.ok) {
-          const result = await response.json();
-          const allEvents = result.data || [];
-          // Filter events for the current month
-          const monthEvents = allEvents.filter((event: CompanyEvent) => {
-            const eventDate = new Date(event.date);
-            return eventDate.getFullYear() === currentYear && eventDate.getMonth() === currentMonth;
-          });
-          setCompanyEvents(monthEvents);
-        } else {
-          console.error('Failed to fetch company events');
-          setCompanyEvents([]);
-        }
+                 // Fetch company events
+         const result = await apiService.get(apiEndpoints.customHolidaysByYear(currentYear));
+         const allEvents = result.data || [];
+         // Filter events for the current month
+         const monthEvents = allEvents.filter((event: CompanyEvent) => {
+           const eventDate = new Date(event.date);
+           return eventDate.getFullYear() === currentYear && eventDate.getMonth() === currentMonth;
+         });
+         setCompanyEvents(monthEvents);
         
         // Get Thai holidays for the current month
         const thaiHolidaysData = getThaiHolidaysByMonth(currentYear, currentMonth, t);
         setThaiHolidays(thaiHolidaysData);
         
-        // Fetch employee leaves
-        const leaveResponse = await fetch(`${API_BASE_URL}/api/leave-request/calendar/${currentYear}?month=${currentMonth + 1}`, {
-          headers: {
-            'Authorization': token ? `Bearer ${token}` : undefined,
-          }
-        });
-        if (leaveResponse.ok) {
-          const leaveResult = await leaveResponse.json();
-          setEmployeeLeaves(leaveResult.data || []);
-        } else {
-          console.error('Failed to fetch employee leaves');
-          setEmployeeLeaves([]);
-        }
+                 // Fetch employee leaves
+         const leaveResult = await apiService.get(apiEndpoints.leave.calendarWithMonth(currentYear, currentMonth + 1));
+         setEmployeeLeaves(leaveResult.data || []);
         
       } catch (error) {
         console.error('Error fetching data:', error);
@@ -155,8 +132,8 @@ const CompanyMonthDetailPage = () => {
       }
     };
 
-    fetchData();
-  }, [currentYear, currentMonth, t, API_BASE_URL]);
+         fetchData();
+   }, [currentYear, currentMonth, t]);
 
   // Create calendar grid
   const days = getDaysInMonth(currentYear, currentMonth);
@@ -290,35 +267,24 @@ const CompanyMonthDetailPage = () => {
   const handleAdd = async () => {
     if (!newEvent.title || !newEvent.date) return;
     
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/custom-holidays`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : undefined,
-        },
-        body: JSON.stringify({
-          title: newEvent.title,
-          description: newEvent.description,
-          date: newEvent.date,
-          type: 'company'
-        })
-      });
+         try {
+       const result = await apiService.post(apiEndpoints.customHolidays, {
+         title: newEvent.title,
+         description: newEvent.description,
+         date: newEvent.date,
+         type: 'company'
+       });
 
-      if (response.ok) {
-        const result = await response.json();
-        // Handle the API response structure: { status: 'success', data: {...} }
-        const createdEvent = result.data || result;
-        setCompanyEvents([...companyEvents, createdEvent]);
-        setShowAdd(false);
-        setNewEvent({ title: '', description: '', date: '' });
-      } else {
-        console.error('Failed to create company event');
-      }
-    } catch (error) {
-      console.error('Error creating company event:', error);
-    }
+       // Handle the API response structure: { status: 'success', data: {...} }
+       const createdEvent = result.data || result;
+       setCompanyEvents([...companyEvents, createdEvent]);
+       setShowAdd(false);
+       setNewEvent({ title: '', description: '', date: '' });
+       showToastMessage.crud.createSuccess('กิจกรรมของบริษัท');
+     } catch (error) {
+       console.error('Error creating company event:', error);
+       showToastMessage.crud.createError('กิจกรรมของบริษัท');
+     }
   };
 
   const handleEdit = (event: CompanyEvent) => {
@@ -329,58 +295,38 @@ const CompanyMonthDetailPage = () => {
   const handleEditSave = async () => {
     if (!editingEvent) return;
     
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/custom-holidays/${editingEvent.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : undefined,
-        },
-        body: JSON.stringify({
-          title: editingEvent.title,
-          description: editingEvent.description,
-          date: editingEvent.date
-        })
-      });
+         try {
+       const result = await apiService.put(apiEndpoints.customHoliday(editingEvent.id), {
+         title: editingEvent.title,
+         description: editingEvent.description,
+         date: editingEvent.date
+       });
 
-      if (response.ok) {
-        const result = await response.json();
-        // Handle the API response structure: { status: 'success', data: {...} }
-        const updatedEvent = result.data || result;
-        setCompanyEvents(companyEvents.map(event => 
-          event.id === editingEvent.id ? updatedEvent : event
-        ));
-        setShowEdit(false);
-        setEditingEvent(null);
-      } else {
-        console.error('Failed to update company event');
-      }
-    } catch (error) {
-      console.error('Error updating company event:', error);
-    }
+       // Handle the API response structure: { status: 'success', data: {...} }
+       const updatedEvent = result.data || result;
+       setCompanyEvents(companyEvents.map(event => 
+         event.id === editingEvent.id ? updatedEvent : event
+       ));
+       setShowEdit(false);
+       setEditingEvent(null);
+       showToastMessage.crud.updateSuccess('กิจกรรมของบริษัท');
+     } catch (error) {
+       console.error('Error updating company event:', error);
+       showToastMessage.crud.updateError('กิจกรรมของบริษัท');
+     }
   };
 
   const handleDelete = async (eventId: string) => {
     if (!confirm('Are you sure you want to delete this event?')) return;
     
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/custom-holidays/${eventId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': token ? `Bearer ${token}` : undefined,
-        }
-      });
-
-      if (response.ok) {
-        setCompanyEvents(companyEvents.filter(event => event.id !== eventId));
-      } else {
-        console.error('Failed to delete company event');
-      }
-    } catch (error) {
-      console.error('Error deleting company event:', error);
-    }
+         try {
+       await apiService.delete(apiEndpoints.customHoliday(eventId));
+       setCompanyEvents(companyEvents.filter(event => event.id !== eventId));
+       showToastMessage.crud.deleteSuccess('กิจกรรมของบริษัท');
+     } catch (error) {
+       console.error('Error deleting company event:', error);
+       showToastMessage.crud.deleteError('กิจกรรมของบริษัท');
+     }
   };
 
   // Add Event Dialog: open with default date for current month
@@ -411,7 +357,7 @@ const CompanyMonthDetailPage = () => {
           </button>
           <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-24 h-24 rounded-full bg-white/80 shadow-2xl border-4 border-white mb-4" />
           <h1 className="text-4xl md:text-5xl font-extrabold text-indigo-900 drop-shadow mb-2 flex items-center gap-3">
-            {monthNames[currentMonth]} {currentYear + 543}
+            {currentMonthNames[currentMonth]} {currentYear + 543}
           </h1>
           <p className="text-lg md:text-xl text-blue-900/70 mb-2 font-medium text-center max-w-2xl">
             จัดการกิจกรรมและวันสำคัญของบริษัท
@@ -471,7 +417,7 @@ const CompanyMonthDetailPage = () => {
         <div className="bg-white/80 rounded-2xl shadow-xl p-4 flex flex-col items-center w-full max-w-lg mb-8">
           <div className="flex items-center gap-2 mb-2">
             <Building2 className="w-5 h-5 text-indigo-400" />
-            <span className="text-lg font-bold text-blue-900">{monthNames[currentMonth]}</span>
+                            <span className="text-lg font-bold text-blue-900">{currentMonthNames[currentMonth]}</span>
             {user?.role === 'superadmin' && (
               <Button size="sm" className="ml-2" onClick={handleOpenAdd}>
                 <Plus className="w-4 h-4 mr-1" /> เพิ่มกิจกรรม

@@ -8,6 +8,7 @@ import { th } from 'date-fns/locale';
 import { Calendar, CheckCircle, Clock, FileText, History, User, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { formatDateLocalized } from '../../lib/utils';
 
 interface LeaveRequest {
   id: string;
@@ -135,17 +136,6 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
     return typeColors[type?.toLowerCase()] || 'text-blue-600';
   };
 
-  const formatDateLocalized = (dateStr: string) => {
-    if (!dateStr) return '-';
-    try {
-      const date = new Date(dateStr);
-      const locale = i18n.language.startsWith('th') ? th : undefined;
-      return format(date, 'dd MMM yyyy', { locale });
-    } catch {
-      return dateStr;
-    }
-  };
-
   const calcHours = (start: string, end: string) => {
     if (!start || !end) return 0;
     try {
@@ -250,7 +240,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                   <div className="text-right">
                     <div className="text-sm text-gray-500">{t('history.submittedOn', 'Submitted on')}</div>
                     <div className="text-lg font-semibold text-blue-600">
-                      {formatDateLocalized(leaveDetail.submittedDate || leaveDetail.createdAt || '')}
+                      {formatDateLocalized(leaveDetail.submittedDate || leaveDetail.createdAt || '', i18n.language)}
                     </div>
                   </div>
                 </div>
@@ -274,7 +264,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                       <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
                         <Calendar className="w-4 h-4 text-blue-500" />
                         <span className="font-medium text-blue-900">
-                          {formatDateLocalized(leaveDetail.startDate || leaveDetail.leaveDate)}
+                          {formatDateLocalized(leaveDetail.startDate || leaveDetail.leaveDate, i18n.language)}
                         </span>
                       </div>
                     </div>
@@ -283,7 +273,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                       <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
                         <Calendar className="w-4 h-4 text-blue-500" />
                         <span className="font-medium text-blue-900">
-                          {formatDateLocalized(leaveDetail.endDate || leaveDetail.startDate)}
+                          {formatDateLocalized(leaveDetail.endDate || leaveDetail.startDate, i18n.language)}
                         </span>
                       </div>
                     </div>
