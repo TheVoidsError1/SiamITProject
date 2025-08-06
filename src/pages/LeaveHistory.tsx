@@ -18,6 +18,8 @@ import { useNavigate } from 'react-router-dom';
 import { formatDateLocalized } from '../lib/utils';
 import { monthNames } from '../constants/common';
 import { apiService, apiEndpoints } from '../lib/api';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Trash2 } from 'lucide-react';
 
 
 const LeaveHistory = () => {
@@ -58,6 +60,11 @@ const LeaveHistory = () => {
   const [yearOptions, setYearOptions] = useState<number[]>([]);
   const [monthOptions, setMonthOptions] = useState<number[]>([]);
   const [singleDate, setSingleDate] = useState<Date | undefined>(undefined);
+
+  // --- เพิ่ม state สำหรับการลบ ---
+  const [deleteLeaveId, setDeleteLeaveId] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const { showSessionExpiredDialog } = useAuth();
 
@@ -330,6 +337,45 @@ const LeaveHistory = () => {
     
     // fallback: ใช้ translateLeaveType function
     return translateLeaveType(typeId);
+  };
+
+  // เพิ่มฟังก์ชันการลบใบลา
+  const handleDeleteLeave = (leaveId: string) => {
+    setDeleteLeaveId(leaveId);
+    setShowDeleteDialog(true);
+  };
+
+  const confirmDeleteLeave = async () => {
+    if (!deleteLeaveId) return;
+    setDeleting(true);
+    try {
+      const data = await apiService.delete(apiEndpoints.leave.delete(deleteLeaveId), undefined, showSessionExpiredDialog);
+      if (data && (data.success || data.status === 'success')) {
+        toast({
+          title: t('system.deleteSuccess', 'ลบสำเร็จ'),
+          description: t('system.deleteSuccessDesc', 'ลบใบลาสำเร็จ'),
+          className: 'border-green-500 bg-green-50 text-green-900',
+        });
+        setDeleteLeaveId(null);
+        setShowDeleteDialog(false);
+        // Refresh ข้อมูลหลังจากลบสำเร็จ
+        fetchLeaveHistory();
+      } else {
+        toast({
+          title: t('system.deleteFailed', 'ลบไม่สำเร็จ'),
+          description: data?.message || t('system.deleteFailedDesc', 'ไม่สามารถลบใบลาได้'),
+          variant: 'destructive',
+        });
+      }
+    } catch (e) {
+      toast({
+        title: t('system.deleteFailed', 'ลบไม่สำเร็จ'),
+        description: t('system.deleteFailedDesc', 'ไม่สามารถลบใบลาได้'),
+        variant: 'destructive',
+      });
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -840,7 +886,7 @@ const LeaveHistory = () => {
                             )}
                           </div>
                         )}
-                        <div className="flex justify-end mt-6">
+                        <div className="flex justify-end mt-6 gap-2">
                           <Button 
                             size="sm" 
                             variant="outline" 
@@ -849,6 +895,37 @@ const LeaveHistory = () => {
                           >
                             {t('common.viewDetails')}
                           </Button>
+                          <AlertDialog open={showDeleteDialog && deleteLeaveId === leave.id} onOpenChange={setShowDeleteDialog}>
+                            <AlertDialogTrigger asChild>
+                              <Button 
+                                size="sm" 
+                                variant="destructive" 
+                                onClick={() => handleDeleteLeave(leave.id)}
+                                className="transition-all duration-300 transform hover:scale-105 hover:shadow-md btn-press hover-glow text-sm px-4 py-2"
+                              >
+                                <Trash2 className="w-4 h-4 mr-1" />
+                                {t('common.delete')}
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>{t('common.confirmDelete')}</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  {t('leave.deleteConfirmMessage', 'คุณต้องการลบใบลานี้หรือไม่? การดำเนินการนี้ไม่สามารถยกเลิกได้')}
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  onClick={confirmDeleteLeave}
+                                  disabled={deleting}
+                                  className="bg-red-600 hover:bg-red-700"
+                                >
+                                  {deleting ? t('common.deleting', 'กำลังลบ...') : t('common.delete')}
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
                         </div>
                       </div>
                     </div>

@@ -324,9 +324,8 @@ const EmployeeDetail = () => {
     if (!deleteLeaveId) return;
     setDeleting(true);
     try {
-      const res = await apiService.delete(`${API_BASE_URL}/api/leave-request/${deleteLeaveId}`);
-      const data = res.data;
-      if (data.success) {
+      const data = await apiService.delete(`${API_BASE_URL}/api/leave-request/${deleteLeaveId}`, undefined, showSessionExpiredDialog);
+      if (data && (data.success || data.status === 'success')) {
         setDeleteLeaveId(null);
         toast({
           title: t('system.deleteSuccess', 'ลบสำเร็จ'),
@@ -335,10 +334,18 @@ const EmployeeDetail = () => {
         });
         fetchLeaveHistory(); // fetch leave history again
       } else {
-        alert(data.message || t("system.deleteFailed", "Delete failed"));
+        toast({
+          title: t('system.deleteFailed', 'ลบไม่สำเร็จ'),
+          description: data?.message || t('system.deleteFailedDesc', 'ไม่สามารถลบใบลาได้'),
+          variant: 'destructive',
+        });
       }
     } catch (e) {
-      alert(t("system.deleteFailed", "Delete failed"));
+      toast({
+        title: t('system.deleteFailed', 'ลบไม่สำเร็จ'),
+        description: t('system.deleteFailedDesc', 'ไม่สามารถลบใบลาได้'),
+        variant: 'destructive',
+      });
     } finally {
       setDeleting(false);
     }
