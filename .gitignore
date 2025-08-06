@@ -27,3 +27,4 @@ Backend/uploads/*
 README.md
 .env
 public
+Backend/.env

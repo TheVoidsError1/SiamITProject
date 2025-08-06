@@ -71,12 +71,12 @@ module.exports = (AppDataSource) => {
             if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
             hoursUsed += durationHours;
           } else if (lr.startDate && lr.endDate) {
-            // Day-based, convert days to hours (1 day = 9 hours)
+            // Day-based, convert days to hours (configurable working hours per day)
             const start = new Date(lr.startDate);
             const end = new Date(lr.endDate);
             let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
             if (days < 0 || isNaN(days)) days = 0;
-            hoursUsed += days * 9;
+            hoursUsed += days * config.business.workingHoursPerDay;
           }
         } else if (leaveType === "sick" || leaveType === "vacation") {
           // Sick/Vacation: only day-based
@@ -90,9 +90,9 @@ module.exports = (AppDataSource) => {
         }
       }
 
-      // Convert hours to days if >= 9 hours
-      const additionalDays = Math.floor(hoursUsed / 9);
-      const remainingHours = Math.round(hoursUsed % 9);
+               // Convert hours to days if >= working hours per day
+         const additionalDays = Math.floor(hoursUsed / config.business.workingHoursPerDay);
+         const remainingHours = Math.round(hoursUsed % config.business.workingHoursPerDay);
       daysUsed += additionalDays;
 
       // Only use approved leaves for stats
@@ -118,8 +118,8 @@ module.exports = (AppDataSource) => {
       // Approval rate
       const totalRequests = leaveHistory.length;
       const approvalRate = totalRequests > 0 ? Math.round((approvedRequests / totalRequests) * 100) : 0;
-      // Remaining days (limit 20)
-      const remainingDays = Math.max(0, 20 - daysUsed);
+      // Remaining days (configurable limit)
+      const remainingDays = Math.max(0, config.business.maxLeaveDays - daysUsed);
       res.json({
         status: 'success',
         data: {
@@ -193,12 +193,12 @@ module.exports = (AppDataSource) => {
           const end = new Date(lr.endDate);
           let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
           if (days < 0 || isNaN(days)) days = 0;
-          totalHours += days * 9;
+          totalHours += days * config.business.workingHoursPerDay;
         }
       }
       // Convert to days and hours
-      const days = Math.floor(totalHours / 9);
-      const hours = Math.round(totalHours % 9);
+      const days = Math.floor(totalHours / config.business.workingHoursPerDay);
+      const hours = Math.round(totalHours % config.business.workingHoursPerDay);
       res.json({ status: 'success', data: { days, hours } });
     } catch (err) {
       res.status(500).json({ status: 'error', message: err.message });

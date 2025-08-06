@@ -78,6 +78,7 @@
 const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const config = require('../config');
 
 module.exports = (AppDataSource) => {
   const router = require('express').Router();
@@ -149,8 +150,8 @@ module.exports = (AppDataSource) => {
       // Create JWT Token
       const token = jwt.sign(
         { userId: superadmin.id, email: email },
-        'your_secret_key',
-        { expiresIn: '1h' }
+        config.server.jwtSecret,
+        { expiresIn: config.server.jwtExpiresIn }
       );
 
       // Create process_check with Token and Repid
@@ -314,8 +315,8 @@ module.exports = (AppDataSource) => {
       // Create JWT Token
       const token = jwt.sign(
         { userId: user.id, email: email },
-        'your_secret_key',
-        { expiresIn: '1h' }
+        config.server.jwtSecret,
+        { expiresIn: config.server.jwtExpiresIn }
       );
       
       // Create process_check with Token and Repid

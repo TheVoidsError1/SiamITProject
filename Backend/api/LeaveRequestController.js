@@ -4,13 +4,13 @@
    const path = require('path');
    const fs = require('fs');
    const jwt = require('jsonwebtoken');
-   const SECRET = process.env.JWT_SECRET || 'your-secret-key';
+   const config = require('../config');
    const LineController = require('./LineController');
 
    // ตั้งค่าที่เก็บไฟล์
    const storage = multer.diskStorage({
      destination: function (req, file, cb) {
-       const uploadPath = path.join(__dirname, '../../public/leave-uploads');
+       const uploadPath = config.getLeaveUploadsPath();
        if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
        cb(null, uploadPath);
      },
@@ -65,7 +65,11 @@
       // Get the leave type name from the database
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
       const leaveTypeData = await leaveTypeRepo.findOneBy({ id: leave.leaveType });
-      const leaveTypeName = leaveTypeData ? leaveTypeData.leave_type_th : 'ไม่ระบุประเภท';
+      const leaveTypeNameTh = leaveTypeData ? leaveTypeData.leave_type_th : 'ไม่ระบุประเภท';
+      const leaveTypeNameEn = leaveTypeData ? leaveTypeData.leave_type_en : 'Unknown Type';
+      const leaveTypeNameBilingual = leaveTypeNameEn && leaveTypeNameEn !== leaveTypeNameTh 
+        ? `${leaveTypeNameTh} (${leaveTypeNameEn})` 
+        : leaveTypeNameTh;
 
       // Format the notification message (Thai and English)
       let message = '';
@@ -75,21 +79,21 @@
        
        if (status === 'approved') {
          message = `✅ คำขอการลาของคุณได้รับการอนุมัติแล้ว!\n\n` +
-                   `📋 ประเภทการลา: ${leaveTypeName}\n` +
+                   `📋 ประเภทการลา: ${leaveTypeNameBilingual}\n` +
                    `📅 วันที่: ${startDate} - ${endDate}\n` +
                    `👤 ผู้อนุมัติ: ${approverName}\n` +
                    `⏰ เวลาที่อนุมัติ: ${currentTime}\n\n` +
                    `ขอบคุณที่ใช้ระบบจัดการการลาของเรา!\n\n` +
                    `---\n` +
                    `✅ Your leave request has been approved!\n\n` +
-                   `📋 Leave Type: ${leaveTypeName}\n` +
+                   `📋 Leave Type: ${leaveTypeNameBilingual}\n` +
                    `📅 Date: ${startDate} - ${endDate}\n` +
                    `👤 Approved by: ${approverName}\n` +
                    `⏰ Approved at: ${currentTime}\n\n` +
                    `Thank you for using our leave management system!`;
        } else if (status === 'rejected') {
          message = `❌ คำขอการลาของคุณไม่ได้รับการอนุมัติ\n\n` +
-                   `📋 ประเภทการลา: ${leaveTypeName}\n` +
+                   `📋 ประเภทการลา: ${leaveTypeNameBilingual}\n` +
                    `📅 วันที่: ${startDate} - ${endDate}\n` +
                    `👤 ผู้อนุมัติ: ${approverName}\n` +
                    `⏰ เวลาที่ปฏิเสธ: ${currentTime}`;
@@ -101,7 +105,7 @@
          message += `\n\nหากมีข้อสงสัย กรุณาติดต่อผู้ดูแลระบบ\n\n` +
                    `---\n` +
                    `❌ Your leave request has been rejected\n\n` +
-                   `📋 Leave Type: ${leaveTypeName}\n` +
+                   `📋 Leave Type: ${leaveTypeNameBilingual}\n` +
                    `📅 Date: ${startDate} - ${endDate}\n` +
                    `👤 Rejected by: ${approverName}\n` +
                    `⏰ Rejected at: ${currentTime}`;
@@ -144,7 +148,7 @@
          if (authHeader && authHeader.startsWith('Bearer ')) {
            const token = authHeader.split(' ')[1];
            try {
-             const decoded = jwt.verify(token, SECRET);
+             const decoded = jwt.verify(token, config.server.jwtSecret);
              userId = decoded.userId;
              role = decoded.role;
            } catch (err) {
@@ -249,7 +253,7 @@
                    const end = new Date(lr.endDate);
                    let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
                    if (days < 0 || isNaN(days)) days = 0;
-                   usedHours += days * 9;
+                   usedHours += days * config.business.workingHoursPerDay;
                  }
                } else {
                  // อื่น ๆ: วันเท่านั้น
@@ -258,7 +262,7 @@
                    const end = new Date(lr.endDate);
                    let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
                    if (days < 0 || isNaN(days)) days = 0;
-                   usedHours += days * 9;
+                   usedHours += days * config.business.workingHoursPerDay;
                  }
                }
              }
@@ -277,7 +281,7 @@
                const end = parseLocalDate(endDate);
                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
                if (days < 0 || isNaN(days)) days = 0;
-               requestHours += days * 9;
+               requestHours += days * config.business.workingHoursPerDay;
              }
            } else {
              if (startDate && endDate) {
@@ -285,11 +289,11 @@
                const end = parseLocalDate(endDate);
                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
                if (days < 0 || isNaN(days)) days = 0;
-               requestHours += days * 9;
+               requestHours += days * config.business.workingHoursPerDay;
              }
            }
            // 5. quota (ชั่วโมง)
-           const totalQuotaHours = quota * 9;
+           const totalQuotaHours = quota * config.business.workingHoursPerDay;
            // 6. ถ้า used + request > quota => reject
            if (usedHours + requestHours > totalQuotaHours) {
              return res.status(400).json({
@@ -317,7 +321,7 @@
            if (!/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(timeStr)) return false;
            const [h, m] = timeStr.split(':').map(Number);
            const minutes = h * 60 + m;
-           return minutes >= 9 * 60 && minutes <= 18 * 60;
+           return minutes >= config.business.workingStartHour * 60 && minutes <= config.business.workingEndHour * 60;
          }
          // ตรวจสอบเฉพาะกรณีมี startTime/endTime
          if (startTime && endTime) {
@@ -331,8 +335,8 @@
              return res.status(400).json({
                status: 'error',
                message: lang === 'en'
-                 ? 'You can request leave only during working hours: 09:00 to 18:00.'
-                 : 'สามารถลาได้เฉพาะช่วงเวลาทำงาน 09:00 ถึง 18:00 เท่านั้น'
+                 ? `You can request leave only during working hours: ${config.business.workingStartHour}:00 to ${config.business.workingEndHour}:00.`
+                 : `สามารถลาได้เฉพาะช่วงเวลาทำงาน ${config.business.workingStartHour}:00 ถึง ${config.business.workingEndHour}:00 เท่านั้น`
              });
            }
          }
@@ -430,7 +434,7 @@
          const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
          // --- เพิ่ม paging ---
          const page = parseInt(req.query.page) || 1;
-         const limit = parseInt(req.query.limit) || 4;
+         const limit = parseInt(req.query.limit) || config.pagination.defaultLimit;
          const skip = (page - 1) * limit;
          // --- เพิ่ม filter leaveType, startDate, endDate, month, year ---
          const leaveType = req.query.leaveType || null;
@@ -576,9 +580,9 @@
              if (startDate && endDate) {
                where = where.map(w => ({ ...w, startDate: Between(startDate, endDate) }));
              } else if (startDate) {
-               where = where.map(w => ({ ...w, startDate: Between(startDate, new Date(3000, 0, 1)) }));
+               where = where.map(w => ({ ...w, startDate: Between(startDate, new Date(config.business.maxDate)) }));
              } else if (endDate) {
-               where = where.map(w => ({ ...w, startDate: Between(new Date(2000, 0, 1), endDate) }));
+               where = where.map(w => ({ ...w, startDate: Between(new Date(config.business.minDate), endDate) }));
              }
            } else {
              // เดิม: status เดียว
@@ -599,9 +603,9 @@
              if (startDate && endDate) {
                where = where.map(w => ({ ...w, startDate: Between(startDate, endDate) }));
              } else if (startDate) {
-               where = where.map(w => ({ ...w, startDate: Between(startDate, new Date(3000, 0, 1)) }));
+               where = where.map(w => ({ ...w, startDate: Between(startDate, new Date(config.business.maxDate)) }));
              } else if (endDate) {
-               where = where.map(w => ({ ...w, startDate: Between(new Date(2000, 0, 1), endDate) }));
+               where = where.map(w => ({ ...w, startDate: Between(new Date(config.business.minDate), endDate) }));
              }
            }
          } else {
@@ -649,9 +653,9 @@
            if (startDate && endDate) {
              where = where.map(w => ({ ...w, startDate: Between(startDate, endDate) }));
            } else if (startDate) {
-             where = where.map(w => ({ ...w, startDate: Between(startDate, new Date(3000, 0, 1)) }));
+             where = where.map(w => ({ ...w, startDate: Between(startDate, new Date(config.business.maxDate)) }));
            } else if (endDate) {
-             where = where.map(w => ({ ...w, startDate: Between(new Date(2000, 0, 1), endDate) }));
+             where = where.map(w => ({ ...w, startDate: Between(new Date(config.business.minDate), endDate) }));
            }
          }
          // --- ใน /history ---
@@ -685,7 +689,7 @@
          }
          // --- เพิ่ม paging ---
          const page = parseInt(req.query.page) || 1;
-         const limit = parseInt(req.query.limit) || 5;
+         const limit = parseInt(req.query.limit) || config.pagination.defaultLimit;
          const skip = (page - 1) * limit;
          // ดึงใบคำขอที่ status เป็น approved หรือ rejected (และ filter ตาม userId/เดือน/ปี/ช่วงวัน ถ้ามี) (paging)
          const [processedLeaves, total] = await Promise.all([
@@ -864,7 +868,7 @@
            return res.status(401).json({ status: 'error', message: 'No token provided' });
          }
          const token = authHeader.split(' ')[1];
-         const decoded = jwt.verify(token, SECRET);
+         const decoded = jwt.verify(token, config.server.jwtSecret);
          const userId = decoded.userId;
 
          const leaveRepo = AppDataSource.getRepository('LeaveRequest');
@@ -925,7 +929,7 @@
          const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
          // --- เพิ่ม paging ---
          const page = parseInt(req.query.page) || 1;
-         const limit = parseInt(req.query.limit) || 6;
+         const limit = parseInt(req.query.limit) || config.pagination.defaultLimit;
          const skip = (page - 1) * limit;
          // ดึง leave requests ของ user ตาม id (paging)
          const [leaves, total] = await Promise.all([
@@ -1255,7 +1259,7 @@
          if (!approverName && authHeader && authHeader.startsWith('Bearer ')) {
            const token = authHeader.split(' ')[1];
            try {
-             const decoded = jwt.verify(token, SECRET);
+             const decoded = jwt.verify(token, config.server.jwtSecret);
              let user = await userRepo.findOneBy({ id: decoded.userId });
              if (user) {
                approverName = user.User_name;
@@ -1361,7 +1365,7 @@
          if (authHeader && authHeader.startsWith('Bearer ')) {
            const token = authHeader.split(' ')[1];
            try {
-             const decoded = jwt.verify(token, SECRET);
+             const decoded = jwt.verify(token, config.server.jwtSecret);
              currentUserId = decoded.userId;
              currentUserRole = decoded.role;
            } catch (err) {

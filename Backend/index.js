@@ -13,10 +13,11 @@ const leaveQuota = require('./EnityTable/leaveQuota.js');
 const fs = require('fs');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
+const config = require('./config');
 
 
 const app = express();
-const port = 3001;
+const port = config.server.port;
 
 // Create HTTP server for Socket.io
 const server = createServer(app);
@@ -24,17 +25,7 @@ const server = createServer(app);
 // Initialize Socket.io
 const io = new Server(server, {
   cors: {
-    origin: [
-      'http://localhost:8081',
-      'http://192.168.50.64:8081',
-      'http://192.168.50.125:8081',
-      'http://192.168.50.90:8081',
-      'http://192.168.50.54:8081',
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://localhost:8080',
-      'http://localhost:8001'
-    ],
+    origin: config.cors.origins,
     methods: ["GET", "POST"],
     credentials: true
   }
@@ -66,12 +57,12 @@ global.io = io;
 
 // TypeORM DataSource config
 const AppDataSource = new DataSource({
-  type: 'mysql',
-  host: 'localhost',
-  port: 3306,
-  username: 'root',
-  password: 'password', // ใส่รหัสผ่านของคุณ
-  database: 'siamitleave',
+  type: config.database.type,
+  host: config.database.host,
+  port: config.database.port,
+  username: config.database.username,
+  password: config.database.password,
+  database: config.database.database,
   synchronize: true, // dev only! จะสร้าง/อัปเดต table อัตโนมัติ
   logging: false,
   entities: [
@@ -99,33 +90,13 @@ AppDataSource.initialize()
 
 app.use(bodyParser.json());
 
-const allowedOrigins = [
-  'http://localhost:8081',
-  'http://192.168.50.64:8081',//test
-  'http://192.168.50.125:8081',//test
-  'http://192.168.50.90:8081',//yorch
-  'http://192.168.50.54:8081',//kot
-  'http://localhost:3000',
-  'http://localhost:3001',
-  'http://localhost:8080',
-  'http://localhost:8001',
-];
-
 app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);
     
     const allowedOrigins = [
-      'http://localhost:8081',
-      'http://192.168.50.64:8081',
-      'http://192.168.50.125:8081',
-      'http://192.168.50.90:8081',
-      'http://192.168.50.54:8081',
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://localhost:8080',
-      'http://localhost:8001',
+      ...config.cors.origins,
       // Allow all ngrok domains
       /^https:\/\/.*\.ngrok-free\.app$/,
       /^https:\/\/.*\.ngrok\.io$/,
@@ -152,8 +123,8 @@ app.use(cors({
 }));
 
 // Ensure uploads directories exist
-const uploadsDir = path.join(__dirname, 'uploads');
-const announcementsDir = path.join(uploadsDir, 'announcements');
+const uploadsDir = config.getUploadsPath();
+const announcementsDir = config.getAnnouncementsUploadPath();
 
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -163,7 +134,7 @@ if (!fs.existsSync(announcementsDir)) {
 }
 
 // Serve static files for uploaded images
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(uploadsDir));
 
 app.get('/', (req, res) => {
   res.send('Hello from Express + TypeORM!');
@@ -205,7 +176,7 @@ app.post('/register', async (req, res) => {
     await userRepo.save(user);
 
     // สร้าง JWT
-            const token = jwt.sign({ userId: user.id, email: Email }, 'your_secret_key', { expiresIn: '1h' });
+            const token = jwt.sign({ userId: user.id, email: Email }, config.server.jwtSecret, { expiresIn: config.server.jwtExpiresIn });
 
     // อัปเดต token ใน ProcessCheck (optional)
     processCheck.Token = token;
@@ -222,8 +193,8 @@ const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'SiamITLeave API',
-      version: '1.0.0',
+      title: config.app.title,
+      version: config.app.version,
     },
     tags: [ 
       {
@@ -265,80 +236,15 @@ const swaggerOptions = {
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// Register PositionController and DepartmentController
-const positionController = require('./api/PositionController')(AppDataSource);
-app.use('/api', positionController);
-
-const departmentController = require('./api/DepartmentController')(AppDataSource);
-app.use('/api', departmentController);
-
-const typeLeaveController = require('./api/TpyeLeaveController')(AppDataSource);
-app.use('/api', typeLeaveController);
-
-// เชื่อมต่อ MidController เท่านั้น
-const midController = require('./api/MidController')(AppDataSource);
-app.use('/api', midController);
-
-const registerController = require('./api/RegisterController')(AppDataSource);
-app.use('/api', registerController);
-
-const loginController = require('./api/LoginController')(AppDataSource);
-app.use('/api', loginController);
-
-const profileController = require('./api/ProfileController')(AppDataSource);
-app.use('/api', profileController);
-
-const employeeController = require('./api/EmployeeController')(AppDataSource);
-app.use('/api', employeeController);
-
-const leaveRequestController = require('./api/LeaveRequestController')(AppDataSource);
-app.use('/api/leave-request', leaveRequestController);
-
-const leaveHistoryController = require('./api/LeaveHistoryController')(AppDataSource);
-app.use('/api/leave-history', leaveHistoryController);
-
-const dashboardIndexController = require('./api/DashboardIndexController')(AppDataSource);
-app.use('/api', dashboardIndexController);
-
-const notificationBellController = require('./api/NotificationBellController')(AppDataSource);
-app.use('/api', notificationBellController);
-
-const leaveQuotaController = require('./api/LeaveQuotaController')(AppDataSource);
-app.use('/api/leave-quota', leaveQuotaController);
-console.log('LeaveQuotaController registered');
-
-const superAdminController = require('./api/SuperAdminController')(AppDataSource);
-app.use('/api', superAdminController);
-
-const announcementsController = require('./api/AnnouncementsController')(AppDataSource);
-app.use('/api', announcementsController);
-
-const customHolidayController = require('./api/CustomHolidayController')(AppDataSource);
-app.use('/api', customHolidayController);
+// Initialize centralized routes
+const initializeRoutes = require('./routes');
+const routes = initializeRoutes(AppDataSource);
+app.use('/api', routes);
 
 // Make AppDataSource globally available
 global.AppDataSource = AppDataSource;
 
-// LINE Bot routes
-const LineController = require('./api/LineController');
-app.post('/api/line/webhook', LineController.webhook);
-
-// Send notification endpoint
-app.post('/api/line/send-notification', async (req, res) => {
-  const { userId, message } = req.body;
-  const result = await LineController.sendNotification(userId, message);
-  res.json(result);
-});
-
-// LINE Login routes
-const LineLoginController = require('./api/LineLoginController');
-const authMiddleware = require('./middleware/authMiddleware');
-app.get('/api/line/login-url', authMiddleware, LineLoginController.getLoginUrl);
-app.get('/api/line/callback', LineLoginController.handleCallback);
-app.get('/api/line/link-status', authMiddleware, LineLoginController.checkLinkStatus);
-app.post('/api/line/unlink', authMiddleware, LineLoginController.unlinkAccount);
-
 server.listen(port, '0.0.0.0', () => {
-  console.log(`Server is running on http://localhost:${port}`);
+  console.log(`Server is running on ${config.server.apiBaseUrl}`);
   console.log('Socket.io server is ready');
 }); 

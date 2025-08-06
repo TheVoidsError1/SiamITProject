@@ -4,6 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
+const config = require('../config');
 
 console.log('ProfileController is being loaded...');
 
@@ -14,7 +15,7 @@ module.exports = (AppDataSource) => {
   // Configure multer for file uploads
   const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-      const uploadDir = path.join(__dirname, '../uploads/avatars');
+      const uploadDir = config.getAvatarsUploadPath();
       // Create directory if it doesn't exist
       if (!fs.existsSync(uploadDir)) {
         fs.mkdirSync(uploadDir, { recursive: true });
@@ -31,7 +32,7 @@ module.exports = (AppDataSource) => {
   const upload = multer({
     storage: storage,
     limits: {
-      fileSize: 5 * 1024 * 1024 // 5MB limit
+      fileSize: config.uploads.maxFileSize
     },
     fileFilter: function (req, file, cb) {
       // Check file type
@@ -146,7 +147,7 @@ module.exports = (AppDataSource) => {
       // 2. Decode token to get payload
       let payload;
       try {
-        payload = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+        payload = jwt.verify(token, config.server.jwtSecret);
       } catch (err) {
         return res.status(403).json({ success: false, message: 'Invalid token' });
       }
@@ -263,7 +264,7 @@ module.exports = (AppDataSource) => {
       }
       let payload;
       try {
-        payload = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+        payload = jwt.verify(token, config.server.jwtSecret);
       } catch (err) {
         return res.status(403).json({ success: false, message: 'Invalid token' });
       }
@@ -411,7 +412,7 @@ module.exports = (AppDataSource) => {
       // 2. Decode token to get payload
       let payload;
       try {
-        payload = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+        payload = jwt.verify(token, config.server.jwtSecret);
       } catch (err) {
         return res.status(403).json({ success: false, message: 'Invalid token' });
       }
@@ -511,7 +512,7 @@ module.exports = (AppDataSource) => {
       // 2. Decode token to get payload
       let payload;
       try {
-        payload = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+        payload = jwt.verify(token, config.server.jwtSecret);
       } catch (err) {
         return res.status(403).json({ success: false, message: 'Invalid token' });
       }
@@ -578,7 +579,7 @@ module.exports = (AppDataSource) => {
       // 2. Decode token to get payload
       let payload;
       try {
-        payload = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+        payload = jwt.verify(token, config.server.jwtSecret);
       } catch (err) {
         return res.status(403).json({ success: false, message: 'Invalid token' });
       }
@@ -592,7 +593,7 @@ module.exports = (AppDataSource) => {
 
       // 4. Delete the file if it exists
       if (processCheck.avatar_url) {
-        const filePath = path.join(__dirname, '..', processCheck.avatar_url);
+        const filePath = path.join(config.getAvatarsUploadPath(), path.basename(processCheck.avatar_url));
         if (fs.existsSync(filePath)) {
           fs.unlinkSync(filePath);
         }
@@ -663,7 +664,7 @@ module.exports = (AppDataSource) => {
       // 2. Decode token to get payload
       let payload;
       try {
-        payload = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+        payload = jwt.verify(token, config.server.jwtSecret);
       } catch (err) {
         return res.status(403).json({ success: false, message: 'Invalid token' });
       }
@@ -705,10 +706,10 @@ module.exports = (AppDataSource) => {
       const leaveTypes = await leaveTypeRepo.find();
       const leaveRequests = await leaveRequestRepo.find({ where: { Repid: repid, status: 'approved' } });
 
-      // Helper: แปลงค่าทศนิยมวันเป็นวัน/ชั่วโมง (1 วัน = 9 ชม.)
+      // Helper: แปลงค่าทศนิยมวันเป็นวัน/ชั่วโมง (configurable working hours per day)
       function toDayHour(val) {
         const day = Math.floor(val);
-        const hour = Math.round((val - day) * 9);
+        const hour = Math.round((val - day) * config.business.workingHoursPerDay);
         return { day, hour };
       }
 
@@ -742,7 +743,7 @@ module.exports = (AppDataSource) => {
                 let end = eh + (em || 0) / 60;
                 let diff = end - start;
                 if (diff < 0) diff += 24;
-                used += diff / 9; // 1 day = 9 hours
+                used += diff / config.business.workingHoursPerDay; // configurable working hours per day
               } else if (lr.startDate && lr.endDate) {
                 const start = new Date(lr.startDate);
                 const end = new Date(lr.endDate);

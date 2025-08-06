@@ -2,12 +2,13 @@ const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+const config = require('../config');
 
 module.exports = (AppDataSource) => {
   const router = express.Router();
 
   // Ensure uploads directory exists
-  const uploadsDir = path.join(__dirname, '../uploads/announcements');
+  const uploadsDir = config.getAnnouncementsUploadPath();
   if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
   }
@@ -34,7 +35,7 @@ module.exports = (AppDataSource) => {
       }
     },
     limits: {
-      fileSize: 5 * 1024 * 1024 // 5MB limit
+      fileSize: config.uploads.maxFileSize
     }
   });
 

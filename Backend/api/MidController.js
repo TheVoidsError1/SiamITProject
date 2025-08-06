@@ -249,6 +249,7 @@ module.exports = (AppDataSource) => {
   const { v4: uuidv4 } = require('uuid');
   const bcrypt = require('bcryptjs');
   const jwt = require('jsonwebtoken');
+  const config = require('../config');
 
   router.post('/admins/register', async (req, res) => {
     try {
@@ -277,8 +278,8 @@ module.exports = (AppDataSource) => {
       // สร้าง JWT Token
       const token = jwt.sign(
         { adminId: admin.id, email: email },
-        'your_secret_key',
-        { expiresIn: '1h' }
+        config.server.jwtSecret,
+        { expiresIn: config.server.jwtExpiresIn }
       );
 
       // สร้าง process_check พร้อม Token, Repid, role=admin

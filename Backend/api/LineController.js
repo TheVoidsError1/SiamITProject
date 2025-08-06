@@ -17,7 +17,7 @@ console.log('Channel Secret length:', process.env.LINE_BOT_CHANNEL_SECRET ? proc
 
 // Helper function to get API base URL
 const getApiBaseUrl = () => {
-  return process.env.VITE_API_BASE_URL || 'http://localhost:3001';
+  return process.env.VITE_API_BASE_URL || config.server.apiBaseUrl;
 };
 
 const client = new line.Client(config);
@@ -307,12 +307,12 @@ To link your account for full access, please visit the web application and use L
       const leaveTypes = await leaveTypeRepo.find();
       const leaveRequests = await leaveRequestRepo.find({ where: { Repid: user.Repid, status: 'approved' } });
 
-      // Helper: Convert decimal days to days/hours (1 day = 9 hours)
-      function toDayHour(val) {
-        const day = Math.floor(val);
-        const hour = Math.round((val - day) * 9);
-        return { day, hour };
-      }
+             // Helper: Convert decimal days to days/hours (configurable working hours per day)
+       function toDayHour(val) {
+         const day = Math.floor(val);
+         const hour = Math.round((val - day) * config.business.workingHoursPerDay);
+         return { day, hour };
+       }
 
       // Helper: Format duration display
       function formatDuration(day, hour) {
@@ -356,11 +356,11 @@ To link your account for full access, please visit the web application and use L
               if (lr.startTime && lr.endTime) {
                 const [sh, sm] = lr.startTime.split(":").map(Number);
                 const [eh, em] = lr.endTime.split(":").map(Number);
-                let start = sh + (sm || 0) / 60;
-                let end = eh + (em || 0) / 60;
-                let diff = end - start;
-                if (diff < 0) diff += 24;
-                used += diff / 9; // 1 day = 9 hours
+                               let start = sh + (sm || 0) / 60;
+               let end = eh + (em || 0) / 60;
+               let diff = end - start;
+               if (diff < 0) diff += 24;
+               used += diff / config.business.workingHoursPerDay; // configurable working hours per day
               } else if (lr.startDate && lr.endDate) {
                 const start = new Date(lr.startDate);
                 const end = new Date(lr.endDate);

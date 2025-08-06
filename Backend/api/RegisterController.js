@@ -1,6 +1,7 @@
 const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const config = require('../config');
 
 module.exports = (AppDataSource) => {
   const router = require('express').Router();
@@ -60,8 +61,8 @@ module.exports = (AppDataSource) => {
       // สร้าง JWT Token
       const token = jwt.sign(
         { userId: user.id, email: email },
-        'your_secret_key', // เปลี่ยนเป็น secret จริงใน production
-        { expiresIn: '1h' }
+        config.server.jwtSecret,
+        { expiresIn: config.server.jwtExpiresIn }
       );
 
       // สร้าง process_check พร้อม Token และ Repid

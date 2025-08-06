@@ -1,5 +1,6 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
+const config = require('../config');
 
 /**
  * @swagger
@@ -157,7 +158,7 @@ module.exports = (AppDataSource) => {
                   let end = eh + (em || 0) / 60;
                   let diff = end - start;
                   if (diff < 0) diff += 24;
-                  usedLeaveDays += diff / 9; // 1 วัน = 9 ชม.
+                  usedLeaveDays += diff / config.business.workingHoursPerDay; // configurable working hours per day
                 } else if (lr.startDate && lr.endDate) {
                   // วัน
                   const start = new Date(lr.startDate);
@@ -299,7 +300,7 @@ module.exports = (AppDataSource) => {
                 let end = eh + (em || 0) / 60;
                 let diff = end - start;
                 if (diff < 0) diff += 24;
-                usedLeaveDays += diff / 9; // 1 วัน = 9 ชม.
+                usedLeaveDays += diff / config.business.workingHoursPerDay; // configurable working hours per day
               } else if (lr.startDate && lr.endDate) {
                 // วัน
                 const start = new Date(lr.startDate);
@@ -443,7 +444,7 @@ module.exports = (AppDataSource) => {
   router.get('/employee/:id/leave-history', async (req, res) => {
     try {
       const { id } = req.params;
-      const { leaveType, month, year, status, page = 1, limit = 6, backdated } = req.query;
+      const { leaveType, month, year, status, page = 1, limit = config.pagination.defaultLimit, backdated } = req.query;
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
       const userRepo = AppDataSource.getRepository('User');
@@ -525,8 +526,8 @@ module.exports = (AppDataSource) => {
         }
       });
       // รวมชั่วโมงเป็นวัน (1 วัน = 9 ชั่วโมง)
-      const summaryDays = totalLeaveDays + Math.floor(totalLeaveHours / 9);
-      const summaryHours = totalLeaveHours % 9;
+               const summaryDays = totalLeaveDays + Math.floor(totalLeaveHours / config.business.workingHoursPerDay);
+               const summaryHours = totalLeaveHours % config.business.workingHoursPerDay;
       // ===== จบส่วนที่เพิ่ม =====
 
       // Apply paging
@@ -617,7 +618,7 @@ module.exports = (AppDataSource) => {
         }
       });
       // รวมชั่วโมงเป็นวัน (1 วัน = 9 ชั่วโมง)
-      const totalLeaveDaysFinal = totalLeaveDaysAllApproved + (totalLeaveHoursAllApproved / 9);
+               const totalLeaveDaysFinal = totalLeaveDaysAllApproved + (totalLeaveHoursAllApproved / config.business.workingHoursPerDay);
       // ===== จบส่วนเพิ่ม =====
 
       res.json({ 
@@ -629,7 +630,7 @@ module.exports = (AppDataSource) => {
         summary: {
           days: summaryDays,
           hours: summaryHours,
-          totalLeaveDays: summaryDays + summaryHours / 9, // สำหรับ compat เดิม
+                     totalLeaveDays: summaryDays + summaryHours / config.business.workingHoursPerDay, // สำหรับ compat เดิม
         }
       });
     } catch (err) {
