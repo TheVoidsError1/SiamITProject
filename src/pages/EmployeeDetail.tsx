@@ -948,8 +948,14 @@ const EmployeeDetail = () => {
                         </TableCell>
                           <TableCell className="text-blue-700 px-4 py-3">
                             <div className="pr-2">
-                              <div className="break-words text-sm leading-relaxed" title={leave.reason}>
-                                {leave.reason || <span className="text-gray-400">-</span>}
+                              <div
+                                className="truncate text-sm leading-relaxed max-w-[180px]"
+                                title={leave.reason}
+                                style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                              >
+                                {leave.reason && leave.reason.length > 50
+                                  ? leave.reason.slice(0, 50) + '...'
+                                  : (leave.reason || <span className="text-gray-400">-</span>)}
                               </div>
                             </div>
                           </TableCell>
