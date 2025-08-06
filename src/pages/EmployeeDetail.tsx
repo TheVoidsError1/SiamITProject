@@ -1,5 +1,4 @@
 import { LeaveDetailDialog } from "@/components/dialogs/LeaveDetailDialog";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,7 +23,7 @@ import { ArrowLeft, Calendar, Edit, Eye, Mail, Trash2, User } from "lucide-react
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useParams } from 'react-router-dom';
-import { apiService, apiEndpoints, API_BASE_URL } from '../lib/api';
+import { API_BASE_URL, apiEndpoints, apiService } from '../lib/api';
 
 const EmployeeDetail = () => {
   const { id } = useParams();
@@ -41,7 +40,11 @@ const EmployeeDetail = () => {
     password: '',
     department: '',
     position: '',
-    role: ''
+    role: '',
+    gender: '',
+    birthdate: '',
+    phone: '',
+    startWorkDate: ''
   });
 
   // เพิ่ม state สำหรับข้อมูลจริง
@@ -232,7 +235,11 @@ const EmployeeDetail = () => {
       password: '', // Always blank when editing
       department: (employee?.department_id || employee?.department?.id || '') + '',
       position: (employee?.position_id || employee?.position?.id || '') + '',
-      role: employee?.role || ''
+      role: employee?.role || '',
+      gender: employee?.gender || '',
+      birthdate: employee?.birthdate || '',
+      phone: employee?.phone || '',
+      startWorkDate: employee?.startWorkDate || ''
     });
     setIsEditing(true);
   };
@@ -244,6 +251,10 @@ const EmployeeDetail = () => {
         position_id: editData.position, // id
         department_id: editData.department, // id
         email: editData.email,
+        gender: editData.gender,
+        birthdate: editData.birthdate,
+        phone: editData.phone,
+        startWorkDate: editData.startWorkDate,
       };
       if (editData.password && editData.password.trim() !== '') payload.password = editData.password;
       const data = await apiService.put(`${API_BASE_URL}/api/employee/${id}`, payload);
@@ -272,7 +283,11 @@ const EmployeeDetail = () => {
       password: '',
       department: '',
       position: '',
-      role: ''
+      role: '',
+      gender: '',
+      birthdate: '',
+      phone: '',
+      startWorkDate: ''
     });
   };
 
@@ -413,136 +428,258 @@ const EmployeeDetail = () => {
                 {t('employee.personalInfoDesc')}
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-0">
-              <div className="flex flex-col md:flex-row gap-8 p-6 items-center md:items-start">
-                <div className="relative w-24 h-24">
-                  {employee.avatar ? (
-                    <img
-                      src={`${API_BASE_URL}${employee.avatar}`}
-                      alt={employee.name}
-                      className="w-full h-full rounded-full object-cover shadow-xl"
-                      onError={(e) => {
-                        // ถ้าโหลดรูปไม่สำเร็จ ให้แสดง fallback
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
-                        target.nextElementSibling?.classList.remove('hidden');
-                      }}
-                    />
-                  ) : null}
-                  <div className={`w-full h-full rounded-full bg-gradient-to-br from-blue-200 via-indigo-200 to-purple-200 flex items-center justify-center text-blue-900 font-bold text-3xl shadow-xl ${employee.avatar ? 'hidden' : ''}`}>
-                    {employee.name ? employee.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : '?'}
+            <CardContent className="p-6">
+              <div className="flex flex-col lg:flex-row gap-8">
+                {/* Left Column - Personal Information */}
+                <div className="flex-1 space-y-6">
+                  <h3 className="text-lg font-semibold text-blue-900 flex items-center gap-2">
+                    <User className="w-5 h-5" />
+                    {t('employee.personalInfo')}
+                  </h3>
+                  
+                  {/* Full Name */}
+                  <div>
+                    <Label className="text-sm font-medium text-blue-700">{t('employee.fullName')}</Label>
+                    {isEditing ? (
+                      <input
+                        className="mt-1 px-3 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        value={editData.full_name}
+                        onChange={e => setEditData({ ...editData, full_name: e.target.value })}
+                        placeholder={t('employee.fullName')}
+                      />
+                    ) : (
+                      <p className="text-lg text-blue-900 mt-1 font-medium">{employee.name}</p>
+                    )}
+                  </div>
+
+                  {/* Position */}
+                  <div>
+                    <Label className="text-sm font-medium text-blue-700">{t('employee.position')}</Label>
+                    {isEditing ? (
+                      <select
+                        className="mt-1 px-3 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        value={editData.position}
+                        onChange={e => setEditData({ ...editData, position: e.target.value })}
+                      >
+                        <option value="not_specified">{t('positions.noPosition')}</option>
+                        {positions.map(pos => (
+                          <option key={pos.id} value={pos.id}>
+                            {i18n.language.startsWith('th') ? pos.position_name_th : pos.position_name_en}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <p className="text-lg text-blue-700 mt-1">{getPositionLabel(employee.position_id || employee.position)}</p>
+                    )}
+                  </div>
+
+                  {/* Department */}
+                  <div>
+                    <Label className="text-sm font-medium text-blue-700">{t('employee.department')}</Label>
+                    {isEditing ? (
+                      <select
+                        className="mt-1 px-3 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        value={editData.department}
+                        onChange={e => setEditData({ ...editData, department: e.target.value })}
+                      >
+                        <option value="not_specified">{t('departments.noDepartment')}</option>
+                        {departments.map(dept => (
+                          <option key={dept.id} value={dept.id}>
+                            {i18n.language.startsWith('th') ? dept.department_name_th : dept.department_name_en}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <p className="text-lg text-blue-700 mt-1">{getDepartmentLabel(employee.department_id || employee.department)}</p>
+                    )}
+                  </div>
+
+                  {/* Gender */}
+                  <div>
+                    <Label className="text-sm font-medium text-blue-700">{t('employee.gender', 'employee.gender')}</Label>
+                    {isEditing ? (
+                      <select
+                        className="mt-1 px-3 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        value={editData.gender}
+                        onChange={e => setEditData({ ...editData, gender: e.target.value })}
+                      >
+                        <option value="">{t('employee.selectGender', 'employee.selectGender')}</option>
+                        <option value="male">{t('employee.male', 'ชาย')}</option>
+                        <option value="female">{t('employee.female', 'หญิง')}</option>
+                        <option value="other">{t('employee.other', 'อื่นๆ')}</option>
+                      </select>
+                    ) : (
+                      <p className="text-lg text-blue-700 mt-1">
+                        {employee.gender === 'male' ? t('employee.male', 'ชาย') : 
+                         employee.gender === 'female' ? t('employee.female', 'หญิง') : 
+                         employee.gender === 'other' ? t('employee.other', 'อื่นๆ') : 
+                         t('employee.selectGender', 'employee.selectGender')}
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Birthdate */}
+                  <div>
+                    <Label className="text-sm font-medium text-blue-700">{t('employee.birthdate', 'employee.birthdate')}</Label>
+                    {isEditing ? (
+                      <div className="relative mt-1">
+                        <input
+                          type="date"
+                          className="px-3 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
+                          value={editData.birthdate}
+                          onChange={e => setEditData({ ...editData, birthdate: e.target.value })}
+                        />
+                        <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 mt-1">
+                        <Calendar className="w-5 h-5 text-blue-400" />
+                        <p className="text-lg text-blue-700">
+                          {employee.birthdate ? new Date(employee.birthdate).toLocaleDateString('th-TH') : 'วว/ดด/ปปปป'}
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {/* ซ้าย: Full Name, Position, Department */}
-                  <div className="space-y-8">
-                    {/* Full Name */}
-                    <div>
-                      <Label className="text-sm font-medium text-blue-700">{t('employee.fullName')}</Label>
-                      {isEditing ? (
-                        <input
-                          className="mt-1 px-3 py-2 border rounded w-full"
-                          value={editData.full_name}
-                          onChange={e => setEditData({ ...editData, full_name: e.target.value })}
-                          placeholder={t('employee.fullName')}
-                        />
-                      ) : (
-                        <p className="text-xl font-bold text-blue-900 mt-1">{employee.name}</p>
-                      )}
-                    </div>
-                    {/* Position */}
-                    <div>
-                      <Label className="text-sm font-medium text-blue-700">{t('employee.position')}</Label>
-                      {isEditing ? (
-                        <select
-                          className="mt-1 px-3 py-2 border rounded w-full"
-                          value={editData.position}
-                          onChange={e => setEditData({ ...editData, position: e.target.value })}
-                        >
-                          <option value="not_specified">{t('positions.noPosition')}</option>
-                          {positions.map(pos => (
-                            <option key={pos.id} value={pos.id}>
-                              {i18n.language.startsWith('th') ? pos.position_name_th : pos.position_name_en}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <p className="text-lg text-blue-700 mt-1">{getPositionLabel(employee.position_id || employee.position)}</p>
-                      )}
-                    </div>
-                    {/* Department */}
-                    <div>
-                      <Label className="text-sm font-medium text-blue-700">{t('employee.department')}</Label>
-                      {isEditing ? (
-                        <select
-                          className="mt-1 px-3 py-2 border rounded w-full"
-                          value={editData.department}
-                          onChange={e => setEditData({ ...editData, department: e.target.value })}
-                        >
-                          <option value="not_specified">{t('departments.noDepartment')}</option>
-                          {departments.map(dept => (
-                            <option key={dept.id} value={dept.id}>
-                              {i18n.language.startsWith('th') ? dept.department_name_th : dept.department_name_en}
-                            </option>
-                          ))}
-                        </select>
-                      ) : (
-                        <p className="text-lg text-blue-700 mt-1">{getDepartmentLabel(employee.department_id || employee.department)}</p>
-                      )}
+
+                {/* Center Column - Profile Picture */}
+                <div className="flex flex-col items-center justify-center space-y-4">
+                  <div className="relative w-32 h-32">
+                    {employee.avatar ? (
+                      <img
+                        src={`${API_BASE_URL}${employee.avatar}`}
+                        alt={employee.name}
+                        className="w-full h-full rounded-full object-cover shadow-xl border-4 border-white"
+                        onError={(e) => {
+                          // ถ้าโหลดรูปไม่สำเร็จ ให้แสดง fallback
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                          target.nextElementSibling?.classList.remove('hidden');
+                        }}
+                      />
+                    ) : null}
+                    <div className={`w-full h-full rounded-full bg-gradient-to-br from-blue-200 via-indigo-200 to-purple-200 flex items-center justify-center text-blue-900 font-bold text-4xl shadow-xl border-4 border-white ${employee.avatar ? 'hidden' : ''}`}>
+                      {employee.name ? employee.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : '?'}
                     </div>
                   </div>
-                  {/* ขวา: Email, Password, Edit/Save/Cancel */}
-                  <div className="space-y-8">
-                    {/* Email */}
-                    <div>
-                      <Label className="text-sm font-medium text-blue-700">{t('employee.email')}</Label>
-                      {isEditing ? (
+                  <div className="text-center">
+                    <p className="text-lg font-semibold text-blue-900">{employee.name}</p>
+                    <p className="text-sm text-blue-600">{getPositionLabel(employee.position_id || employee.position)}</p>
+                  </div>
+                </div>
+
+                                {/* Right Column - Contact Information */}
+                <div className="flex-1 space-y-6">
+                  <h3 className="text-lg font-semibold text-blue-900 flex items-center gap-2">
+                    <Mail className="w-5 h-5" />
+                    {t('employee.contactInfo', 'employee.contactInfo')}
+                  </h3>
+
+                  {/* Email */}
+                  <div>
+                    <Label className="text-sm font-medium text-blue-700">{t('employee.email')}</Label>
+                    {isEditing ? (
+                      <input
+                        className="mt-1 px-3 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        type="email"
+                        value={editData.email}
+                        onChange={e => setEditData({ ...editData, email: e.target.value })}
+                        placeholder={t('employee.email')}
+                      />
+                    ) : (
+                      <div className="flex items-center gap-2 mt-1">
+                        <Mail className="w-5 h-5 text-blue-400" />
+                        <p className="text-lg text-blue-700">{employee.email}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Password */}
+                  <div>
+                    <Label className="text-sm font-medium text-blue-700">{t('employee.password') || 'Password'}</Label>
+                    {isEditing ? (
+                      <input
+                        className="mt-1 px-3 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        type="password"
+                        value={editData.password}
+                        onChange={e => setEditData({ ...editData, password: e.target.value })}
+                        placeholder={t('employee.password') || 'Password'}
+                      />
+                    ) : (
+                      <p className="text-lg text-blue-700 mt-1">••••••••</p>
+                    )}
+                  </div>
+
+                  {/* Phone Number */}
+                  <div>
+                    <Label className="text-sm font-medium text-blue-700">{t('employee.phone', 'เบอร์โทรศัพท์')}</Label>
+                    {isEditing ? (
+                      <input
+                        className="mt-1 px-3 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        type="tel"
+                        value={editData.phone}
+                        onChange={e => setEditData({ ...editData, phone: e.target.value })}
+                        placeholder={t('employee.phone', 'เบอร์โทรศัพท์')}
+                      />
+                    ) : (
+                      <p className="text-lg text-blue-700 mt-1">{employee.phone || '-'}</p>
+                    )}
+                  </div>
+
+                  {/* Start Work Date */}
+                  <div>
+                    <Label className="text-sm font-medium text-blue-700">{t('employee.startWorkDate', 'employee.startWorkDate')}</Label>
+                    {isEditing ? (
+                      <div className="relative mt-1">
                         <input
-                          className="mt-1 px-3 py-2 border rounded w-full"
-                          type="email"
-                          value={editData.email}
-                          onChange={e => setEditData({ ...editData, email: e.target.value })}
-                          placeholder={t('employee.email')}
+                          type="date"
+                          className="px-3 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-10"
+                          value={editData.startWorkDate}
+                          onChange={e => setEditData({ ...editData, startWorkDate: e.target.value })}
                         />
-                      ) : (
-                        <div className="flex items-center gap-2 mt-1">
-                          <Mail className="w-5 h-5 text-blue-400" />
-                          <p className="text-lg text-blue-700">{employee.email}</p>
-                        </div>
-                      )}
-                    </div>
-                    {/* Password */}
-                    <div>
-                      <Label className="text-sm font-medium text-blue-700">{t('employee.password') || 'Password'}</Label>
-                      {isEditing ? (
-                        <input
-                          className="mt-1 px-3 py-2 border rounded w-full"
-                          type="password"
-                          value={editData.password}
-                          onChange={e => setEditData({ ...editData, password: e.target.value })}
-                          placeholder={t('employee.password') || 'Password'}
-                        />
-                      ) : (
-                        <p className="text-lg text-blue-700 mt-1">********</p>
-                      )}
-                    </div>
-                    {/* Edit/Save/Cancel Button */}
-                    <div className="flex gap-2">
-                      {isEditing ? (
-                        <>
-                          <Button onClick={handleSave} size="sm" className="bg-green-600 hover:bg-green-700 text-white rounded-full px-4 py-2 font-bold shadow">
-                            {t('common.save')}
-                          </Button>
-                          <Button onClick={handleCancel} size="sm" variant="outline" className="rounded-full px-4 py-2 font-bold border-blue-200 text-blue-700 hover:bg-blue-50 shadow">
-                            {t('common.cancel')}
-                          </Button>
-                        </>
-                      ) : (
-                        <Button onClick={handleEdit} size="sm" variant="outline" className="rounded-full px-4 py-2 font-bold border-blue-200 text-blue-700 hover:bg-blue-50 shadow">
-                          <Edit className="w-4 h-4 mr-1" />{t('common.edit')}
+                        <Calendar className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2 mt-1">
+                        <Calendar className="w-5 h-5 text-blue-400" />
+                        <p className="text-lg text-blue-700">
+                          {employee.startWorkDate ? new Date(employee.startWorkDate).toLocaleDateString('th-TH') : 'วว/ดด/ปปปป'}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3 pt-4">
+                    {isEditing ? (
+                      <>
+                        <Button 
+                          onClick={handleSave} 
+                          size="sm" 
+                          className="bg-green-600 hover:bg-green-700 text-white rounded-lg px-6 py-2 font-semibold shadow-lg hover:shadow-xl transition-all duration-200"
+                        >
+                          {t('common.save')}
                         </Button>
-                      )}
-                    </div>
+                        <Button 
+                          onClick={handleCancel} 
+                          size="sm" 
+                          variant="outline" 
+                          className="rounded-lg px-6 py-2 font-semibold border-blue-300 text-blue-700 hover:bg-blue-50 shadow-lg transition-all duration-200"
+                        >
+                          {t('common.cancel')}
+                        </Button>
+                      </>
+                    ) : (
+                      <Button 
+                        onClick={handleEdit} 
+                        size="sm" 
+                        variant="outline" 
+                        className="rounded-lg px-6 py-2 font-semibold border-blue-300 text-blue-700 hover:bg-blue-50 shadow-lg transition-all duration-200"
+                      >
+                        <Edit className="w-4 h-4 mr-2" />
+                        {t('common.edit')}
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
