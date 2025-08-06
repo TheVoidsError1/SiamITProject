@@ -14,7 +14,11 @@ interface Employee {
   full_name: string;
   email: string;
   position: string;
+  position_name_th?: string;
+  position_name_en?: string;
   department: string;
+  department_name_th?: string;
+  department_name_en?: string;
   role: string;
   usedLeaveDays: number;
   totalLeaveDays: number;
@@ -63,37 +67,63 @@ const EmployeeManagement = () => {
             full_name: item.name || '',
             email: item.email || '',
             position: item.position || '', // เก็บ id
+            position_name_th: item.position_name_th || '',
+            position_name_en: item.position_name_en || '',
             department: item.department || '', // เก็บ id
+            department_name_th: item.department_name_th || '',
+            department_name_en: item.department_name_en || '',
             role: item.role || '',
             usedLeaveDays: item.usedLeaveDays ?? 0,
             totalLeaveDays: item.totalLeaveDays ?? 0,
             avatar: item.avatar || undefined, // เพิ่ม avatar จากข้อมูล
           }));
 
+          console.log('Processed employees data:', employees);
           setEmployees(employees);
         } else {
+          console.error('Invalid employees data format:', data);
           setEmployees([]);
         }
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((error) => {
+        console.error('Error fetching employees:', error);
+        setLoading(false);
+      });
   }, [user]);
 
-  // ดึงตำแหน่ง
+  // ดึงตำแหน่งและแผนก
   useEffect(() => {
+    // ดึงข้อมูลตำแหน่ง
     fetch(`${API_BASE_URL}/api/positions`)
       .then((res) => res.json())
       .then((data) => {
-        if (data.status === 'success' && Array.isArray(data.data)) {
+        console.log('Raw positions API response:', data);
+        if ((data.status === 'success' || data.success === true) && Array.isArray(data.data)) {
+          console.log('Processed positions data:', data.data);
           setPositions(data.data);
+        } else {
+          console.error('Invalid positions data format:', data);
         }
+      })
+      .catch((error) => {
+        console.error('Error fetching positions:', error);
       });
+
+    // ดึงข้อมูลแผนก
     fetch(`${API_BASE_URL}/api/departments`)
       .then((res) => res.json())
       .then((data) => {
-        if (data.status === 'success' && Array.isArray(data.data)) {
+        console.log('Raw departments API response:', data);
+        if ((data.status === 'success' || data.success === true) && Array.isArray(data.data)) {
+          console.log('Processed departments data:', data.data);
           setDepartments(data.data);
+        } else {
+          console.error('Invalid departments data format:', data);
         }
+      })
+      .catch((error) => {
+        console.error('Error fetching departments:', error);
       });
   }, []);
 
@@ -117,12 +147,54 @@ const EmployeeManagement = () => {
     return i18n.language === 'th' ? found.department_name_th : found.department_name_en;
   };
 
+  // ฟังก์ชันแสดงชื่อตำแหน่งตามภาษา
+  const getDisplayPositionName = (employee: Employee) => {
+    // ถ้ามีชื่อภาษาไทยและอังกฤษในข้อมูลพนักงาน
+    if (employee.position_name_th && employee.position_name_en) {
+      return i18n.language === 'th' ? employee.position_name_th : employee.position_name_en;
+    }
+    // ถ้าไม่มี ให้ใช้ฟังก์ชัน lookup
+    return getPositionName(employee.position);
+  };
+
+  // ฟังก์ชันแสดงชื่อแผนกตามภาษา
+  const getDisplayDepartmentName = (employee: Employee) => {
+    // ถ้ามีชื่อภาษาไทยและอังกฤษในข้อมูลพนักงาน
+    if (employee.department_name_th && employee.department_name_en) {
+      return i18n.language === 'th' ? employee.department_name_th : employee.department_name_en;
+    }
+    // ถ้าไม่มี ให้ใช้ฟังก์ชัน lookup
+    return getDepartmentName(employee.department);
+  };
+
   // ฟังก์ชันกรองข้อมูล
-  const filteredEmployees = employees.filter(emp =>
-    (positionFilter === "" || emp.position === positionFilter) &&
-    (departmentFilter === "" || emp.department === departmentFilter) &&
-    (roleFilter === "" || emp.role === roleFilter)
-  );
+  const filteredEmployees = employees.filter(emp => {
+    const positionMatch = positionFilter === "" || emp.position === positionFilter;
+    const departmentMatch = departmentFilter === "" || emp.department === departmentFilter;
+    const roleMatch = roleFilter === "" || emp.role === roleFilter;
+    
+    // Debug logging only when filters are active
+    if (positionFilter !== "" || departmentFilter !== "" || roleFilter !== "") {
+      console.log('Filtering employee:', emp.full_name, {
+        position: emp.position,
+        positionFilter,
+        positionMatch,
+        department: emp.department,
+        departmentFilter,
+        departmentMatch,
+        role: emp.role,
+        roleFilter,
+        roleMatch
+      });
+    }
+    
+    return positionMatch && departmentMatch && roleMatch;
+  });
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [positionFilter, departmentFilter, roleFilter]);
   const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
   const paginatedEmployees = filteredEmployees.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
@@ -138,8 +210,8 @@ const EmployeeManagement = () => {
     {
       title: t('system.regularEmployees'),
       value: employees.filter(emp => {
-        const positionName = getPositionName(emp.position);
-        return positionName === t('auth.employee') || positionName === 'Employee';
+        const positionName = getDisplayPositionName(emp);
+        return positionName === t('auth.employee') || positionName === 'Employee' || positionName === 'พนักงาน';
       }).length.toString(),
       icon: User,
       color: "text-green-600",
@@ -148,8 +220,8 @@ const EmployeeManagement = () => {
     {
       title: t('system.interns'),
       value: employees.filter(emp => {
-        const positionName = getPositionName(emp.position);
-        return positionName === t('auth.intern') || positionName === 'Intern';
+        const positionName = getDisplayPositionName(emp);
+        return positionName === t('auth.intern') || positionName === 'Intern' || positionName === 'นักศึกษาฝึกงาน';
       }).length.toString(),
       icon: User,
       color: "text-orange-600",
@@ -266,9 +338,12 @@ const EmployeeManagement = () => {
                     style={{ minWidth: 160 }}
                   >
                     <option value="">{t('system.allPositions')}</option>
-                    {positions.map(pos => (
-                      <option key={pos.id} value={pos.id}>{i18n.language === 'th' ? pos.position_name_th : pos.position_name_en}</option>
-                    ))}
+                    {positions.map(pos => {
+                      const displayName = i18n.language === 'th' ? pos.position_name_th : pos.position_name_en;
+                      return (
+                        <option key={pos.id} value={pos.id}>{displayName}</option>
+                      );
+                    })}
                   </select>
                 </div>
                 <div className="flex flex-col">
@@ -281,9 +356,12 @@ const EmployeeManagement = () => {
                     style={{ minWidth: 180 }}
                   >
                     <option value="">{t('system.allDepartments')}</option>
-                    {departments.map(dep => (
-                      <option key={dep.id} value={dep.id}>{i18n.language === 'th' ? dep.department_name_th : dep.department_name_en}</option>
-                    ))}
+                    {departments.map(dep => {
+                      const displayName = i18n.language === 'th' ? dep.department_name_th : dep.department_name_en;
+                      return (
+                        <option key={dep.id} value={dep.id}>{displayName}</option>
+                      );
+                    })}
                   </select>
                 </div>
                 <div className="flex flex-col">
@@ -405,8 +483,12 @@ const EmployeeManagement = () => {
                                 </div>
                               </td>
                               <td className="px-3 py-2 text-blue-700 text-sm">{employee.email}</td>
-                              <td className="px-3 py-2 text-blue-700 text-sm">{getPositionName(employee.position)}</td>
-                              <td className="px-3 py-2 text-blue-700 text-sm">{getDepartmentName(employee.department)}</td>
+                              <td className="px-3 py-2 text-blue-700 text-sm">
+                                {getDisplayPositionName(employee)}
+                              </td>
+                              <td className="px-3 py-2 text-blue-700 text-sm">
+                                {getDisplayDepartmentName(employee)}
+                              </td>
                               <td className="px-3 py-2">
                                 {employee.role === 'superadmin' ? (
                                   <span className="text-xs px-2 py-0.5 rounded-full border border-purple-300 bg-purple-50 text-purple-700 font-bold shadow-sm" style={{letterSpacing:0.5}}>

@@ -268,7 +268,8 @@ const Index = () => {
   const fetchDashboardStats = (month?: number, year?: number) => {
     setLoadingStats(true);
     const token = localStorage.getItem("token");
-    let url = "/api/dashboard-stats";
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+    let url = `${API_BASE_URL}/api/dashboard-stats`;
     if (month && year) url += `?month=${month}&year=${year}`;
     else if (year) url += `?year=${year}`;
     fetch(url, {
@@ -278,7 +279,7 @@ const Index = () => {
     })
       .then((res) => res.json())
       .then((data) => {
-        if (data && data.status === "success" && data.data) {
+        if (data && (data.status === "success" || data.success === true) && data.data) {
           setStats([
             { title: t('main.daysRemaining'), value: data.data.remainingDays, unit: t('common.days'), icon: Calendar, color: "text-blue-600", bgColor: "bg-blue-50" },
             { title: t('main.daysUsed'), value: data.data.daysUsed, unit: t('common.days'), icon: Clock, color: "text-green-600", bgColor: "bg-green-50" },
@@ -307,12 +308,13 @@ const Index = () => {
     setLoadingRecentLeaves(true);
     setErrorRecentLeaves("");
     const token = localStorage.getItem("token");
-    fetch("/api/recent-leave-requests", {
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+    fetch(`${API_BASE_URL}/api/recent-leave-requests`, {
       headers: { Authorization: token ? `Bearer ${token}` : undefined },
     })
       .then((res) => res.json())
       .then((data) => {
-        if (data && data.status === "success" && Array.isArray(data.data)) {
+        if (data && (data.status === "success" || data.success === true) && Array.isArray(data.data)) {
           setRecentLeaves(data.data);
           // Summarize leave types
           const stats = { sick: 0, vacation: 0, business: 0 };
@@ -336,7 +338,8 @@ const Index = () => {
     setLoadingRecentLeaves(true);
     setErrorRecentLeaves("");
     const token = localStorage.getItem("token");
-    let url = `/api/recent-leave-requests?year=${filterYear}`;
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+    let url = `${API_BASE_URL}/api/recent-leave-requests?year=${filterYear}`;
     if (filterMonth && filterMonth !== 0) {
       url += `&month=${filterMonth}`;
     }
@@ -345,7 +348,7 @@ const Index = () => {
     })
       .then((res) => res.json())
       .then((data) => {
-        if (data && data.status === "success" && Array.isArray(data.data)) {
+        if (data && (data.status === "success" || data.success === true) && Array.isArray(data.data)) {
           setRecentLeaves(data.data);
         } else {
           setErrorRecentLeaves(t('error.cannotLoadStats'));
@@ -359,20 +362,28 @@ const Index = () => {
   useEffect(() => {
     setLoadingDashboard(true);
     const token = localStorage.getItem("token");
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
     // Fetch dashboard stats
-    const statsUrl = `/api/dashboard-stats?year=${filterYear}` + (filterMonth && filterMonth !== 0 ? `&month=${filterMonth}` : '');
-    const backdatedUrl = `/api/my-backdated?year=${filterYear}` + (filterMonth && filterMonth !== 0 ? `&month=${filterMonth}` : '');
+    const statsUrl = `${API_BASE_URL}/api/dashboard-stats?year=${filterYear}` + (filterMonth && filterMonth !== 0 ? `&month=${filterMonth}` : '');
+    const backdatedUrl = `${API_BASE_URL}/api/my-backdated?year=${filterYear}` + (filterMonth && filterMonth !== 0 ? `&month=${filterMonth}` : '');
     Promise.all([
       fetch(statsUrl, { headers: { Authorization: token ? `Bearer ${token}` : undefined } }).then(res => res.json()),
       fetch(backdatedUrl, { headers: { Authorization: token ? `Bearer ${token}` : undefined } }).then(res => res.json())
     ]).then(([statsRes, backdatedRes]) => {
-      if (statsRes && statsRes.status === 'success' && statsRes.data) {
+      console.log('Dashboard stats response:', statsRes);
+      if (statsRes && (statsRes.status === 'success' || statsRes.success === true) && statsRes.data) {
+        console.log('Setting dashboard stats:', {
+          daysUsed: statsRes.data.daysUsed,
+          hoursUsed: statsRes.data.hoursUsed,
+          pendingRequests: statsRes.data.pendingRequests,
+          approvalRate: statsRes.data.approvalRate
+        });
         setDaysUsed(statsRes.data.daysUsed || 0);
         setHoursUsed(statsRes.data.hoursUsed || 0);
         setPendingRequests(statsRes.data.pendingRequests || 0);
         setApprovalRate(statsRes.data.approvalRate || 0);
       }
-      if (backdatedRes && backdatedRes.status === 'success' && backdatedRes.data) {
+      if (backdatedRes && (backdatedRes.status === 'success' || backdatedRes.success === true) && backdatedRes.data) {
         setBackdatedCount(backdatedRes.data.count || 0);
       }
     }).finally(() => setLoadingDashboard(false));
@@ -397,7 +408,7 @@ const Index = () => {
 
         if (response.ok) {
           const data = await response.json();
-          if (data.status === 'success' && data.data) {
+          if ((data.status === 'success' || data.success === true) && data.data) {
             setUserProfile(data.data);
           } else {
             console.error('Failed to fetch user profile:', data.message);
@@ -430,7 +441,7 @@ const Index = () => {
         
         if (response.ok) {
           const data = await response.json();
-          if (data.status === 'success' && Array.isArray(data.data)) {
+          if ((data.status === 'success' || data.success === true) && Array.isArray(data.data)) {
             // Sort by creation date (latest first) and take only the latest 3
             const sortedAnnouncements = data.data
               .sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
@@ -500,10 +511,10 @@ const Index = () => {
 
         if (response.ok) {
           const data = await response.json();
-          if (data.status === 'success' && Array.isArray(data.data)) {
+          if ((data.status === 'success' || data.success === true) && Array.isArray(data.data)) {
             setCompanyHolidaysOfMonth(data.data);
           } else {
-            console.error('Failed to fetch company holidays:', data.message);
+            console.error('Failed to fetch company holidays:', data.message || 'Invalid response format');
             setCompanyHolidaysOfMonth([]);
           }
         } else if (response.status === 401) {
@@ -539,8 +550,6 @@ const Index = () => {
         
         // Refresh dashboard stats
         fetchDashboardStats();
-        fetchRecentLeaveStats();
-        fetchRecentLeaves();
       });
 
       // Listen for new announcements
@@ -554,8 +563,7 @@ const Index = () => {
           variant: 'default'
         });
         
-        // Refresh announcements
-        fetchAnnouncements();
+        // Refresh announcements - will be handled by useEffect
       });
 
       // Listen for new leave requests (for admin users)
@@ -572,8 +580,6 @@ const Index = () => {
           
           // Refresh dashboard stats
           fetchDashboardStats();
-          fetchRecentLeaveStats();
-          fetchRecentLeaves();
         });
       }
 
@@ -692,7 +698,6 @@ const Index = () => {
               </div>
               <div className="text-3xl font-extrabold text-blue-800 mb-1">
                 {loadingDashboard ? '-' : `${daysUsed} ${t('common.days')}`}
-                {loadingDashboard ? '' : ` ${hoursUsed} ${t('common.hour')}`}
               </div>
               <div className="text-base font-bold text-blue-600 mt-1 text-center opacity-90 animate-pop-in delay-200">{t('main.daysUsed', 'Days Used')}</div>
             </div>

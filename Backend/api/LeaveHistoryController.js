@@ -2,6 +2,7 @@ const express = require('express');
 const authMiddleware = require('../middleware/authMiddleware');
 const { Between } = require('typeorm');
 const config = require('../config');
+const { calculateDaysBetween } = require('../utils');
 
 module.exports = (AppDataSource) => {
   const router = express.Router();
@@ -128,7 +129,7 @@ module.exports = (AppDataSource) => {
             // ลาวัน
             const start = new Date(leave.startDate);
             const end = new Date(leave.endDate);
-            const days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+            const days = calculateDaysBetween(start, end);
             if (days > 0 && !isNaN(days)) {
               totalLeaveDays += days;
             }
@@ -234,7 +235,7 @@ module.exports = (AppDataSource) => {
           // ลาวัน
           const start = new Date(leave.startDate);
           const end = new Date(leave.endDate);
-          days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+          days = calculateDaysBetween(start, end);
           if (days < 0 || isNaN(days)) days = 0;
           durationType = 'day';
           durationHours = 0;

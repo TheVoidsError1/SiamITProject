@@ -1,25 +1,25 @@
    // Backend/api/LeaveRequestController.js
    const express = require('express');
-   const multer = require('multer');
-   const path = require('path');
    const fs = require('fs');
    const jwt = require('jsonwebtoken');
    const config = require('../config');
    const LineController = require('./LineController');
+   const { leaveAttachmentsUpload, handleUploadError } = require('../middleware/fileUploadMiddleware');
+   const { 
+     verifyToken, 
+     sendSuccess, 
+     sendError, 
+     sendUnauthorized,
+     convertToMinutes,
+     calculateDaysBetween,
+     convertTimeRangeToDecimal,
+     isWithinWorkingHours,
+     sendValidationError,
+     sendNotFound,
+     sendConflict
+   } = require('../utils');
 
-   // ตั้งค่าที่เก็บไฟล์
-   const storage = multer.diskStorage({
-     destination: function (req, file, cb) {
-       const uploadPath = config.getLeaveUploadsPath();
-       if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
-       cb(null, uploadPath);
-     },
-     filename: function (req, file, cb) {
-       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-       cb(null, uniqueSuffix + path.extname(file.originalname));
-     }
-   });
-   const upload = multer({ storage: storage });
+   // File upload middleware is now imported from fileUploadMiddleware.js
 
    // ใช้ฟังก์ชัน parseAttachments ปลอดภัย
    function parseAttachments(val) {
@@ -138,7 +138,7 @@
      const router = express.Router();
 
      // POST /api/leave-request
-     router.post('/', upload.array('attachments', 10), async (req, res) => {
+     router.post('/', leaveAttachmentsUpload.array('attachments', 10), async (req, res) => {
        try {
          const leaveRepo = AppDataSource.getRepository('LeaveRequest');
          let userId = null;
@@ -148,11 +148,11 @@
          if (authHeader && authHeader.startsWith('Bearer ')) {
            const token = authHeader.split(' ')[1];
            try {
-             const decoded = jwt.verify(token, config.server.jwtSecret);
+             const decoded = verifyToken(token);
              userId = decoded.userId;
              role = decoded.role;
            } catch (err) {
-             return res.status(401).json({ status: 'error', message: 'Invalid or expired token' });
+             return sendUnauthorized(res, 'Invalid or expired token');
            }
          }
          // กำหนดภาษา (ต้องมาก่อน validation quota)
@@ -222,11 +222,7 @@
            });
            // 3. คำนวณ leave ที่ใช้ไป (approved) ในปีนี้ (ชั่วโมง เฉพาะ leaveType นี้)
            let usedHours = 0;
-           function parseTimeToMinutes(t) {
-             if (!t) return 0;
-             const [h, m] = t.split(':').map(Number);
-             return h * 60 + (m || 0);
-           }
+           // Using utility function instead of local function
            for (const lr of approvedLeaves) {
              let leaveTypeName = lr.leaveType;
              if (leaveTypeName && leaveTypeName.length > 20) {
@@ -243,15 +239,15 @@
                // Personal leave: อาจเป็นชั่วโมงหรือวัน
                if (leaveTypeEntity.leave_type_en === 'Personal' || leaveTypeEntity.leave_type_th === 'ลากิจ') {
                  if (lr.startTime && lr.endTime) {
-                   const startMinutes = parseTimeToMinutes(lr.startTime);
-                   const endMinutes = parseTimeToMinutes(lr.endTime);
+                   const startMinutes = convertToMinutes(...lr.startTime.split(':').map(Number));
+                   const endMinutes = convertToMinutes(...lr.endTime.split(':').map(Number));
                    let durationHours = (endMinutes - startMinutes) / 60;
                    if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
                    usedHours += durationHours;
                  } else if (lr.startDate && lr.endDate) {
                    const start = new Date(lr.startDate);
                    const end = new Date(lr.endDate);
-                   let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                   let days = calculateDaysBetween(start, end);
                    if (days < 0 || isNaN(days)) days = 0;
                    usedHours += days * config.business.workingHoursPerDay;
                  }
@@ -260,7 +256,7 @@
                  if (lr.startDate && lr.endDate) {
                    const start = new Date(lr.startDate);
                    const end = new Date(lr.endDate);
-                   let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                   let days = calculateDaysBetween(start, end);
                    if (days < 0 || isNaN(days)) days = 0;
                    usedHours += days * config.business.workingHoursPerDay;
                  }
@@ -271,15 +267,15 @@
            let requestHours = 0;
            if (leaveTypeEntity.leave_type_en === 'Personal' || leaveTypeEntity.leave_type_th === 'ลากิจ') {
              if (startTime && endTime) {
-               const startMinutes = parseTimeToMinutes(startTime);
-               const endMinutes = parseTimeToMinutes(endTime);
+               const startMinutes = convertToMinutes(...startTime.split(':').map(Number));
+               const endMinutes = convertToMinutes(...endTime.split(':').map(Number));
                let durationHours = (endMinutes - startMinutes) / 60;
                if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
                requestHours += durationHours;
              } else if (startDate && endDate) {
                const start = parseLocalDate(startDate);
                const end = parseLocalDate(endDate);
-               let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+               let days = calculateDaysBetween(start, end);
                if (days < 0 || isNaN(days)) days = 0;
                requestHours += days * config.business.workingHoursPerDay;
              }
@@ -287,7 +283,7 @@
              if (startDate && endDate) {
                const start = parseLocalDate(startDate);
                const end = parseLocalDate(endDate);
-               let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+               let days = calculateDaysBetween(start, end);
                if (days < 0 || isNaN(days)) days = 0;
                requestHours += days * config.business.workingHoursPerDay;
              }
@@ -1067,7 +1063,7 @@
      });
 
      // PUT /api/leave-request/:id (update leave request)
-     router.put('/:id', upload.array('attachments', 10), async (req, res) => {
+     router.put('/:id', leaveAttachmentsUpload.array('attachments', 10), async (req, res) => {
        try {
          const leaveRepo = AppDataSource.getRepository('LeaveRequest');
          const { id } = req.params;

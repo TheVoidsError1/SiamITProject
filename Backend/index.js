@@ -176,7 +176,11 @@ app.post('/register', async (req, res) => {
     await userRepo.save(user);
 
     // สร้าง JWT
-            const token = jwt.sign({ userId: user.id, email: Email }, config.server.jwtSecret, { expiresIn: config.server.jwtExpiresIn });
+            const token = jwt.sign(
+              { userId: user.id, email: Email },
+              config.server.jwtSecret,
+              { expiresIn: config.server.jwtExpiresIn }
+            );
 
     // อัปเดต token ใน ProcessCheck (optional)
     processCheck.Token = token;

@@ -25,7 +25,7 @@ const config = {
   server: {
     port: process.env.PORT || 3001,
     jwtSecret: process.env.JWT_SECRET || 'your_jwt_secret_here',
-    jwtExpiresIn: process.env.JWT_EXPIRES_IN || '1h',
+    jwtExpiresIn: process.env.JWT_EXPIRES_IN || '24h',
     apiBaseUrl: process.env.VITE_API_BASE_URL || 'http://localhost:3001',
   },
 

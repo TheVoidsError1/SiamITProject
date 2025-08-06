@@ -1,6 +1,12 @@
 const line = require('@line/bot-sdk');
 const axios = require('axios');
 const { Between } = require('typeorm');
+const { 
+  toDayHour, 
+  calculateDaysBetween, 
+  convertTimeRangeToDecimal,
+  convertToMinutes
+} = require('../utils');
 
 // LINE Bot configuration using environment variables
 const config = {
@@ -174,12 +180,7 @@ To link your account for full access, please visit the web application and use L
         take: 3 
       });
 
-      // Helper to calculate duration
-      function parseTimeToMinutes(t) {
-        if (!t) return 0;
-        const [h, m] = t.split(':').map(Number);
-        return h * 60 + (m || 0);
-      }
+      // Helper to calculate duration - using utility function
 
       // Helper to get status in both languages
       function getStatusDisplay(status) {
@@ -228,8 +229,8 @@ To link your account for full access, please visit the web application and use L
           let duration = '';
           if (lr.startTime && lr.endTime) {
             // Hour-based
-            const startMinutes = parseTimeToMinutes(lr.startTime);
-            const endMinutes = parseTimeToMinutes(lr.endTime);
+            const startMinutes = convertToMinutes(...lr.startTime.split(':').map(Number));
+            const endMinutes = convertToMinutes(...lr.endTime.split(':').map(Number));
             let durationHours = (endMinutes - startMinutes) / 60;
             if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
             duration = `${Math.floor(durationHours)} hour`;
@@ -237,7 +238,7 @@ To link your account for full access, please visit the web application and use L
             // Day-based
             const start = new Date(lr.startDate);
             const end = new Date(lr.endDate);
-            let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+            let days = calculateDaysBetween(start, end);
             if (days < 0 || isNaN(days)) days = 0;
             duration = `${days} day`;
           }
@@ -308,11 +309,7 @@ To link your account for full access, please visit the web application and use L
       const leaveRequests = await leaveRequestRepo.find({ where: { Repid: user.Repid, status: 'approved' } });
 
              // Helper: Convert decimal days to days/hours (configurable working hours per day)
-       function toDayHour(val) {
-         const day = Math.floor(val);
-         const hour = Math.round((val - day) * config.business.workingHoursPerDay);
-         return { day, hour };
-       }
+       // Using utility function instead of local function
 
       // Helper: Format duration display
       function formatDuration(day, hour) {
@@ -354,17 +351,17 @@ To link your account for full access, please visit the web application and use L
             // Personal leave: may be by hour or day
             if (leaveType.leave_type_en?.toLowerCase() === 'personal' || leaveType.leave_type_th === 'ลากิจ') {
               if (lr.startTime && lr.endTime) {
-                const [sh, sm] = lr.startTime.split(":").map(Number);
-                const [eh, em] = lr.endTime.split(":").map(Number);
-                               let start = sh + (sm || 0) / 60;
-               let end = eh + (em || 0) / 60;
-               let diff = end - start;
-               if (diff < 0) diff += 24;
-               used += diff / config.business.workingHoursPerDay; // configurable working hours per day
+                const timeRange = convertTimeRangeToDecimal(
+                  ...lr.startTime.split(":").map(Number),
+                  ...lr.endTime.split(":").map(Number)
+                );
+                let diff = timeRange.end - timeRange.start;
+                if (diff < 0) diff += 24;
+                used += diff / config.business.workingHoursPerDay; // configurable working hours per day
               } else if (lr.startDate && lr.endDate) {
                 const start = new Date(lr.startDate);
                 const end = new Date(lr.endDate);
-                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                let days = calculateDaysBetween(start, end);
                 if (days < 0 || isNaN(days)) days = 0;
                 used += days;
               }
@@ -373,7 +370,7 @@ To link your account for full access, please visit the web application and use L
               if (lr.startDate && lr.endDate) {
                 const start = new Date(lr.startDate);
                 const end = new Date(lr.endDate);
-                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                let days = calculateDaysBetween(start, end);
                 if (days < 0 || isNaN(days)) days = 0;
                 used += days;
               }

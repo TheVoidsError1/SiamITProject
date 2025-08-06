@@ -1,10 +1,19 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
-const multer = require('multer');
-const path = require('path');
 const fs = require('fs');
 const bcrypt = require('bcryptjs');
 const config = require('../config');
+const { avatarUpload, handleUploadError } = require('../middleware/fileUploadMiddleware');
+const { 
+  hashPassword, 
+  verifyToken, 
+  sendSuccess, 
+  sendError, 
+  sendUnauthorized,
+  toDayHour,
+  calculateDaysBetween,
+  convertTimeRangeToDecimal
+} = require('../utils');
 
 console.log('ProfileController is being loaded...');
 
@@ -12,37 +21,7 @@ module.exports = (AppDataSource) => {
   console.log('ProfileController module function is being executed...');
   const router = express.Router();
 
-  // Configure multer for file uploads
-  const storage = multer.diskStorage({
-    destination: function (req, file, cb) {
-      const uploadDir = config.getAvatarsUploadPath();
-      // Create directory if it doesn't exist
-      if (!fs.existsSync(uploadDir)) {
-        fs.mkdirSync(uploadDir, { recursive: true });
-      }
-      cb(null, uploadDir);
-    },
-    filename: function (req, file, cb) {
-      // Generate unique filename with timestamp
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      cb(null, 'avatar-' + uniqueSuffix + path.extname(file.originalname));
-    }
-  });
-
-  const upload = multer({
-    storage: storage,
-    limits: {
-      fileSize: config.uploads.maxFileSize
-    },
-    fileFilter: function (req, file, cb) {
-      // Check file type
-      if (file.mimetype.startsWith('image/')) {
-        cb(null, true);
-      } else {
-        cb(new Error('Only image files are allowed!'), false);
-      }
-    }
-  });
+  // File upload middleware is now imported from fileUploadMiddleware.js
 
   /**
    * @swagger
@@ -280,7 +259,7 @@ module.exports = (AppDataSource) => {
       let updated;
       let hashedPassword = null;
       if (password) {
-        hashedPassword = await bcrypt.hash(password, 10);
+        hashedPassword = await hashPassword(password);
       }
       let userEntity = null;
       if (role === 'admin') {
@@ -424,19 +403,14 @@ module.exports = (AppDataSource) => {
         return res.status(404).json({ success: false, message: 'User not found in ProcessCheck' });
       }
 
-      // 4. Handle file upload
-      upload.single('avatar')(req, res, async function (err) {
+      // 4. Handle file upload using new middleware
+      avatarUpload.single('avatar')(req, res, async function (err) {
         if (err) {
-          if (err instanceof multer.MulterError) {
-            if (err.code === 'LIMIT_FILE_SIZE') {
-              return res.status(400).json({ success: false, message: 'File size too large. Maximum 5MB allowed.' });
-            }
-          }
-          return res.status(400).json({ success: false, message: err.message || 'File upload error' });
+          return handleUploadError(err, req, res, () => {});
         }
 
         if (!req.file) {
-          return res.status(400).json({ success: false, message: 'No file uploaded' });
+          return sendError(res, 'No file uploaded', 400);
         }
 
         try {
@@ -447,18 +421,14 @@ module.exports = (AppDataSource) => {
           processCheck.avatar_url = avatarUrl;
           await processRepo.save(processCheck);
 
-          return res.json({
-            success: true,
-            message: 'Avatar uploaded successfully',
-            avatar_url: avatarUrl
-          });
+          return sendSuccess(res, { avatar_url: avatarUrl }, 'Avatar uploaded successfully');
         } catch (updateErr) {
           console.error('Avatar update error:', updateErr);
           // If database update fails, delete the uploaded file
           if (req.file.path && fs.existsSync(req.file.path)) {
             fs.unlinkSync(req.file.path);
           }
-          return res.status(500).json({ success: false, message: 'Failed to update avatar URL' });
+          return sendError(res, 'Failed to update avatar URL', 500);
         }
       });
     } catch (err) {
@@ -707,11 +677,7 @@ module.exports = (AppDataSource) => {
       const leaveRequests = await leaveRequestRepo.find({ where: { Repid: repid, status: 'approved' } });
 
       // Helper: แปลงค่าทศนิยมวันเป็นวัน/ชั่วโมง (configurable working hours per day)
-      function toDayHour(val) {
-        const day = Math.floor(val);
-        const hour = Math.round((val - day) * config.business.workingHoursPerDay);
-        return { day, hour };
-      }
+      // Using utility function instead of local function
 
       // 6. For each leave type, calculate quota and used (sick, personal, vacation, maternity)
       const result = [];
@@ -737,17 +703,17 @@ module.exports = (AppDataSource) => {
             // Personal leave: may be by hour or day
             if (leaveType.leave_type_en?.toLowerCase() === 'personal' || leaveType.leave_type_th === 'ลากิจ') {
               if (lr.startTime && lr.endTime) {
-                const [sh, sm] = lr.startTime.split(":").map(Number);
-                const [eh, em] = lr.endTime.split(":").map(Number);
-                let start = sh + (sm || 0) / 60;
-                let end = eh + (em || 0) / 60;
-                let diff = end - start;
+                const timeRange = convertTimeRangeToDecimal(
+                  ...lr.startTime.split(":").map(Number),
+                  ...lr.endTime.split(":").map(Number)
+                );
+                let diff = timeRange.end - timeRange.start;
                 if (diff < 0) diff += 24;
                 used += diff / config.business.workingHoursPerDay; // configurable working hours per day
               } else if (lr.startDate && lr.endDate) {
                 const start = new Date(lr.startDate);
                 const end = new Date(lr.endDate);
-                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                let days = calculateDaysBetween(start, end);
                 if (days < 0 || isNaN(days)) days = 0;
                 used += days;
               }
@@ -756,7 +722,7 @@ module.exports = (AppDataSource) => {
               if (lr.startDate && lr.endDate) {
                 const start = new Date(lr.startDate);
                 const end = new Date(lr.endDate);
-                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                let days = calculateDaysBetween(start, end);
                 if (days < 0 || isNaN(days)) days = 0;
                 used += days;
               }
@@ -777,7 +743,7 @@ module.exports = (AppDataSource) => {
           remaining_hour: remainingObj.hour
         });
       }
-      return res.json({ success: true, data: result });
+      return sendSuccess(res, result);
     } catch (err) {
       console.error('Leave quota error:', err);
       return res.status(500).json({ success: false, message: 'Internal server error' });
