@@ -76,7 +76,8 @@ const AppDataSource = new DataSource({
     require('./EnityTable/department.js'),
     require('./EnityTable/leaveQuota.js'),
     require('./EnityTable/announcements.js'),
-    require('./EnityTable/customHoliday.js')
+    require('./EnityTable/customHoliday.js'),
+    require('./EnityTable/leave_use.js')
   ],
 });
 
