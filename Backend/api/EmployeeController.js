@@ -1,5 +1,7 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
+const config = require('../config');
+const { calculateDaysBetween, sendSuccess, sendError, sendNotFound } = require('../utils');
 
 /**
  * @swagger
@@ -63,6 +65,7 @@ module.exports = (AppDataSource) => {
         let department_name_en = '';
         let id = '';
         let role = proc.Role;
+        
         if (proc.Role === 'admin') {
           profile = await adminRepo.findOneBy({ id: proc.Repid });
           if (profile) {
@@ -70,12 +73,12 @@ module.exports = (AppDataSource) => {
             // ดึงชื่อ position และ department
             const posEntity = await AppDataSource.getRepository('Position').findOne({ where: { id: profile.position } });
             const deptEntity = await AppDataSource.getRepository('Department').findOne({ where: { id: profile.department } });
-            position_id = profile.position;
-            position = posEntity ? posEntity.position_name_th : profile.position;
+            position_id = profile.position || '';
+            position = profile.position || ''; // เก็บ ID แทนชื่อ
             position_name_th = posEntity ? posEntity.position_name_th : '';
             position_name_en = posEntity ? posEntity.position_name_en : '';
-            department_id = profile.department;
-            department = deptEntity ? deptEntity.department_name_th : profile.department;
+            department_id = profile.department || '';
+            department = profile.department || ''; // เก็บ ID แทนชื่อ
             department_name_th = deptEntity ? deptEntity.department_name_th : '';
             department_name_en = deptEntity ? deptEntity.department_name_en : '';
             id = profile.id;
@@ -87,12 +90,12 @@ module.exports = (AppDataSource) => {
             name = profile.superadmin_name;
             const posEntity = await AppDataSource.getRepository('Position').findOne({ where: { id: profile.position } });
             const deptEntity = await AppDataSource.getRepository('Department').findOne({ where: { id: profile.department } });
-            position_id = profile.position;
-            position = posEntity ? posEntity.position_name_th : profile.position;
+            position_id = profile.position || '';
+            position = profile.position || ''; // เก็บ ID แทนชื่อ
             position_name_th = posEntity ? posEntity.position_name_th : '';
             position_name_en = posEntity ? posEntity.position_name_en : '';
-            department_id = profile.department;
-            department = deptEntity ? deptEntity.department_name_th : profile.department;
+            department_id = profile.department || '';
+            department = profile.department || ''; // เก็บ ID แทนชื่อ
             department_name_th = deptEntity ? deptEntity.department_name_th : '';
             department_name_en = deptEntity ? deptEntity.department_name_en : '';
             id = profile.id;
@@ -104,12 +107,12 @@ module.exports = (AppDataSource) => {
             // ดึงชื่อ position และ department
             const posEntity = await AppDataSource.getRepository('Position').findOne({ where: { id: profile.position } });
             const deptEntity = await AppDataSource.getRepository('Department').findOne({ where: { id: profile.department } });
-            position_id = profile.position;
-            position = posEntity ? posEntity.position_name_th : profile.position;
+            position_id = profile.position || '';
+            position = profile.position || ''; // เก็บ ID แทนชื่อ
             position_name_th = posEntity ? posEntity.position_name_th : '';
             position_name_en = posEntity ? posEntity.position_name_en : '';
-            department_id = profile.department;
-            department = deptEntity ? deptEntity.department_name_th : profile.department;
+            department_id = profile.department || '';
+            department = profile.department || ''; // เก็บ ID แทนชื่อ
             department_name_th = deptEntity ? deptEntity.department_name_th : '';
             department_name_en = deptEntity ? deptEntity.department_name_en : '';
             id = profile.id;
@@ -147,37 +150,50 @@ module.exports = (AppDataSource) => {
             }
             // ทุกประเภทการลา: สามารถเป็นชั่วโมงหรือวันได้ (9 ชม. = 1 วัน)
             if (["sick", "ลาป่วย", "vacation", "ลาพักผ่อน", "personal", "ลากิจ"].includes(leaveTypeName)) {
-              if (lr.startTime && lr.endTime) {
-                // ชั่วโมง
-                const [sh, sm] = lr.startTime.split(":").map(Number);
-                const [eh, em] = lr.endTime.split(":").map(Number);
-                let start = sh + (sm || 0) / 60;
-                let end = eh + (em || 0) / 60;
-                let diff = end - start;
-                if (diff < 0) diff += 24;
-                usedLeaveDays += diff / 9; // 1 วัน = 9 ชม.
-              } else if (lr.startDate && lr.endDate) {
-                // วัน
-                const start = new Date(lr.startDate);
-                const end = new Date(lr.endDate);
-                let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-                if (days < 0 || isNaN(days)) days = 0;
-                usedLeaveDays += days;
+              if (leaveTypeName === "personal" || leaveTypeName === "ลากิจ") {
+                // personal: อาจเป็นชั่วโมงหรือวัน
+                if (lr.startTime && lr.endTime) {
+                  // ชั่วโมง
+                  const [sh, sm] = lr.startTime.split(":").map(Number);
+                  const [eh, em] = lr.endTime.split(":").map(Number);
+                  let start = sh + (sm || 0) / 60;
+                  let end = eh + (em || 0) / 60;
+                  let diff = end - start;
+                  if (diff < 0) diff += 24;
+                  usedLeaveDays += diff / 9; // configurable working hours per day
+                } else if (lr.startDate && lr.endDate) {
+                  // วัน
+                  const start = new Date(lr.startDate);
+                  const end = new Date(lr.endDate);
+                  let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                  if (days < 0 || isNaN(days)) days = 0;
+                  usedLeaveDays += days;
+                }
+              } else {
+                // sick, vacation: วันเท่านั้น
+                if (lr.startDate && lr.endDate) {
+                  const start = new Date(lr.startDate);
+                  const end = new Date(lr.endDate);
+                  let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                  if (days < 0 || isNaN(days)) days = 0;
+                  usedLeaveDays += days;
+                }
               }
             }
           }
         } catch (e) { usedLeaveDays = 0; }
         usedLeaveDays = Math.round(usedLeaveDays * 100) / 100;
+
         // --- จบส่วนเพิ่ม ---
 
         results.push({
           id,
           name,
           email: proc.Email,
-          position: position_id,
+          position: position_id, // ส่ง ID สำหรับ filtering
           position_name_th,
           position_name_en,
-          department: department_id,
+          department: department_id, // ส่ง ID สำหรับ filtering
           department_name_th,
           department_name_en,
           status: proc.Role,
@@ -187,9 +203,9 @@ module.exports = (AppDataSource) => {
           avatar: proc.avatar_url || null
         });
       }
-      res.json({ success: true, data: results, message: 'ดึงข้อมูลผู้ใช้ทั้งหมดสำเร็จ' });
+      sendSuccess(res, results, 'ดึงข้อมูลผู้ใช้ทั้งหมดสำเร็จ');
     } catch (err) {
-      res.status(500).json({ success: false, data: null, message: err.message });
+      sendError(res, err.message, 500);
     }
   });
 
@@ -221,7 +237,7 @@ module.exports = (AppDataSource) => {
         role = 'superadmin';
       }
       if (!profile) {
-        return res.status(404).json({ success: false, message: 'User/Admin/SuperAdmin not found' });
+        return sendNotFound(res, 'User/Admin/SuperAdmin not found');
       }
 
       // Find processCheck for email (if exists)
@@ -277,23 +293,34 @@ module.exports = (AppDataSource) => {
           }
           // เฉพาะประเภท sick, vacation, personal
           if (["sick", "ลาป่วย", "vacation", "ลาพักผ่อน", "personal", "ลากิจ"].includes(leaveTypeName)) {
-            // ทุกประเภทการลา: สามารถเป็นชั่วโมงหรือวันได้ (9 ชม. = 1 วัน)
-            if (lr.startTime && lr.endTime) {
-              // ชั่วโมง
-              const [sh, sm] = lr.startTime.split(":").map(Number);
-              const [eh, em] = lr.endTime.split(":").map(Number);
-              let start = sh + (sm || 0) / 60;
-              let end = eh + (em || 0) / 60;
-              let diff = end - start;
-              if (diff < 0) diff += 24;
-              usedLeaveDays += diff / 9; // 1 วัน = 9 ชม.
-            } else if (lr.startDate && lr.endDate) {
-              // วัน
-              const start = new Date(lr.startDate);
-              const end = new Date(lr.endDate);
-              let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-              if (days < 0 || isNaN(days)) days = 0;
-              usedLeaveDays += days;
+            if (leaveTypeName === "personal" || leaveTypeName === "ลากิจ") {
+              // personal: อาจเป็นชั่วโมงหรือวัน
+              if (lr.startTime && lr.endTime) {
+                // ชั่วโมง
+                const [sh, sm] = lr.startTime.split(":").map(Number);
+                const [eh, em] = lr.endTime.split(":").map(Number);
+                let start = sh + (sm || 0) / 60;
+                let end = eh + (em || 0) / 60;
+                let diff = end - start;
+                if (diff < 0) diff += 24;
+                usedLeaveDays += diff / config.business.workingHoursPerDay; // configurable working hours per day
+              } else if (lr.startDate && lr.endDate) {
+                // วัน
+                const start = new Date(lr.startDate);
+                const end = new Date(lr.endDate);
+                let days = calculateDaysBetween(start, end);
+                if (days < 0 || isNaN(days)) days = 0;
+                usedLeaveDays += days;
+              }
+            } else {
+              // sick, vacation: วันเท่านั้น
+              if (lr.startDate && lr.endDate) {
+                const start = new Date(lr.startDate);
+                const end = new Date(lr.endDate);
+                let days = calculateDaysBetween(start, end);
+                if (days < 0 || isNaN(days)) days = 0;
+                usedLeaveDays += days;
+              }
             }
           }
         }
@@ -319,7 +346,7 @@ module.exports = (AppDataSource) => {
         }
       });
     } catch (err) {
-      res.status(500).json({ success: false, message: err.message });
+      sendError(res, err.message, 500);
     }
   });
 
@@ -353,7 +380,7 @@ module.exports = (AppDataSource) => {
         role = 'superadmin';
       }
       if (!profile) {
-        return res.status(404).json({ success: false, message: 'User/Admin/SuperAdmin not found' });
+        return sendNotFound(res, 'User/Admin/SuperAdmin not found');
       }
 
       // Update fields
@@ -397,22 +424,19 @@ module.exports = (AppDataSource) => {
         positionName = posEntity ? posEntity.position_name_th : profile.position;
       }
 
-      res.json({
-        success: true,
-        data: {
-          id,
-          name: profile.admin_name || profile.User_name || profile.superadmin_name || '',
-          email: processCheck ? processCheck.Email : (profile.email || ''),
-          password: processCheck ? processCheck.Password : '',
-          position: positionName,
-          department: departmentName,
-          role,
-          usedLeaveDays: null,
-          totalLeaveDays: null
-        }
-      });
+      sendSuccess(res, {
+        id,
+        name: profile.admin_name || profile.User_name || profile.superadmin_name || '',
+        email: processCheck ? processCheck.Email : (profile.email || ''),
+        password: processCheck ? processCheck.Password : '',
+        position: positionName,
+        department: departmentName,
+        role,
+        usedLeaveDays: null,
+        totalLeaveDays: null
+      }, 'Employee profile updated successfully');
     } catch (err) {
-      res.status(500).json({ success: false, message: err.message });
+      sendError(res, err.message, 500);
     }
   });
 
@@ -420,7 +444,7 @@ module.exports = (AppDataSource) => {
   router.get('/employee/:id/leave-history', async (req, res) => {
     try {
       const { id } = req.params;
-      const { leaveType, month, year, status, page = 1, limit = 6, backdated } = req.query;
+      const { leaveType, month, year, status, page = 1, limit = config.pagination.defaultLimit, backdated } = req.query;
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
       const userRepo = AppDataSource.getRepository('User');
@@ -488,7 +512,7 @@ module.exports = (AppDataSource) => {
         if (l.startDate && l.endDate && (!l.startTime || !l.endTime)) {
           const start = new Date(l.startDate);
           const end = new Date(l.endDate);
-          let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+          let days = calculateDaysBetween(start, end);
           if (days < 0 || isNaN(days)) days = 0;
           totalLeaveDays += days;
         } else if (l.startTime && l.endTime) {
@@ -502,8 +526,8 @@ module.exports = (AppDataSource) => {
         }
       });
       // รวมชั่วโมงเป็นวัน (1 วัน = 9 ชั่วโมง)
-      const summaryDays = totalLeaveDays + Math.floor(totalLeaveHours / 9);
-      const summaryHours = totalLeaveHours % 9;
+               const summaryDays = totalLeaveDays + Math.floor(totalLeaveHours / config.business.workingHoursPerDay);
+               const summaryHours = totalLeaveHours % config.business.workingHoursPerDay;
       // ===== จบส่วนที่เพิ่ม =====
 
       // Apply paging
@@ -543,7 +567,7 @@ module.exports = (AppDataSource) => {
           // ลาวัน
           const start = new Date(l.startDate);
           const end = new Date(l.endDate);
-          let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+          let days = calculateDaysBetween(start, end);
           if (days < 0 || isNaN(days)) days = 0;
           durationType = 'day';
           duration = days;
@@ -580,7 +604,7 @@ module.exports = (AppDataSource) => {
         if (l.startDate && l.endDate && (!l.startTime || !l.endTime)) {
           const start = new Date(l.startDate);
           const end = new Date(l.endDate);
-          let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+          let days = calculateDaysBetween(start, end);
           if (days < 0 || isNaN(days)) days = 0;
           totalLeaveDaysAllApproved += days;
         } else if (l.startTime && l.endTime) {
@@ -594,11 +618,10 @@ module.exports = (AppDataSource) => {
         }
       });
       // รวมชั่วโมงเป็นวัน (1 วัน = 9 ชั่วโมง)
-      const totalLeaveDaysFinal = totalLeaveDaysAllApproved + (totalLeaveHoursAllApproved / 9);
+               const totalLeaveDaysFinal = totalLeaveDaysAllApproved + (totalLeaveHoursAllApproved / config.business.workingHoursPerDay);
       // ===== จบส่วนเพิ่ม =====
 
-      res.json({ 
-        success: true, 
+      sendSuccess(res, { 
         data: leaves, 
         total,
         page: pageNum,
@@ -606,11 +629,11 @@ module.exports = (AppDataSource) => {
         summary: {
           days: summaryDays,
           hours: summaryHours,
-          totalLeaveDays: summaryDays + summaryHours / 9, // สำหรับ compat เดิม
+                     totalLeaveDays: summaryDays + summaryHours / config.business.workingHoursPerDay, // สำหรับ compat เดิม
         }
-      });
+      }, 'Leave history retrieved successfully');
     } catch (err) {
-      res.status(500).json({ success: false, message: err.message });
+      sendError(res, err.message, 500);
     }
   });
 

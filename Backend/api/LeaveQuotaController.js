@@ -1,4 +1,5 @@
 const express = require('express');
+const { BaseController, sendSuccess, sendError, sendNotFound, sendValidationError } = require('../utils');
 
 /**
  * @swagger
@@ -159,30 +160,30 @@ const express = require('express');
 
 module.exports = (AppDataSource) => {
   const router = express.Router();
-  const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
+  // Create base controller instance for LeaveQuota
+  const leaveQuotaController = new BaseController('LeaveQuota');
 
   // Create a new leave quota
   router.post('/', async (req, res) => {
     try {
       const { positionId, leaveTypeId, quota } = req.body;
       if (!positionId || !leaveTypeId || quota === undefined) {
-        return res.status(400).json({ status: 'error', data: null, message: 'positionId, leaveTypeId, and quota are required' });
+        return sendValidationError(res, 'positionId, leaveTypeId, and quota are required');
       }
-      const newQuota = leaveQuotaRepo.create({ positionId, leaveTypeId, quota });
-      await leaveQuotaRepo.save(newQuota);
-      res.json({ status: 'success', data: newQuota, message: 'Created leave quota successfully' });
+      const newQuota = await leaveQuotaController.create(AppDataSource, { positionId, leaveTypeId, quota });
+      sendSuccess(res, newQuota, 'Created leave quota successfully');
     } catch (err) {
-      res.status(500).json({ status: 'error', data: null, message: err.message });
+      sendError(res, err.message, 500);
     }
   });
 
   // Get all leave quotas
   router.get('/', async (req, res) => {
     try {
-      const quotas = await leaveQuotaRepo.find();
-      res.json({ status: 'success', data: quotas, message: 'Fetched all leave quotas' });
+      const quotas = await leaveQuotaController.findAll(AppDataSource);
+      sendSuccess(res, quotas, 'Fetched all leave quotas');
     } catch (err) {
-      res.status(500).json({ status: 'error', data: null, message: err.message });
+      sendError(res, err.message, 500);
     }
   });
 
@@ -190,39 +191,42 @@ module.exports = (AppDataSource) => {
   router.get('/position/:positionId', async (req, res) => {
     try {
       const { positionId } = req.params;
-      const quotas = await leaveQuotaRepo.find({ where: { positionId } });
-      res.json({ status: 'success', data: quotas, message: 'Fetched leave quotas by positionId' });
+      const quotas = await leaveQuotaController.findAll(AppDataSource, { where: { positionId } });
+      sendSuccess(res, quotas, 'Fetched leave quotas by positionId');
     } catch (err) {
-      res.status(500).json({ status: 'error', data: null, message: err.message });
+      sendError(res, err.message, 500);
     }
   });
 
   // Update leave quota by id
   router.put('/:id', async (req, res) => {
     try {
-      const { id } = req.params;
       const { positionId, leaveTypeId, quota } = req.body;
-      const quotaObj = await leaveQuotaRepo.findOneBy({ id });
-      if (!quotaObj) return res.status(404).json({ status: 'error', data: null, message: 'Not found' });
-      if (positionId !== undefined) quotaObj.positionId = positionId;
-      if (leaveTypeId !== undefined) quotaObj.leaveTypeId = leaveTypeId;
-      if (quota !== undefined) quotaObj.quota = quota;
-      await leaveQuotaRepo.save(quotaObj);
-      res.json({ status: 'success', data: quotaObj, message: 'Updated leave quota successfully' });
+      const updateData = {};
+      if (positionId !== undefined) updateData.positionId = positionId;
+      if (leaveTypeId !== undefined) updateData.leaveTypeId = leaveTypeId;
+      if (quota !== undefined) updateData.quota = quota;
+      
+      const quotaObj = await leaveQuotaController.update(AppDataSource, req.params.id, updateData);
+      sendSuccess(res, quotaObj, 'Updated leave quota successfully');
     } catch (err) {
-      res.status(500).json({ status: 'error', data: null, message: err.message });
+      if (err.message === 'Record not found') {
+        return sendNotFound(res, 'Leave quota not found');
+      }
+      sendError(res, err.message, 500);
     }
   });
 
   // Delete leave quota by id
   router.delete('/:id', async (req, res) => {
     try {
-      const { id } = req.params;
-      const result = await leaveQuotaRepo.delete({ id });
-      if (result.affected === 0) return res.status(404).json({ status: 'error', data: null, message: 'Not found' });
-      res.json({ status: 'success', data: null, message: 'Deleted leave quota successfully' });
+      await leaveQuotaController.delete(AppDataSource, req.params.id);
+      sendSuccess(res, null, 'Deleted leave quota successfully');
     } catch (err) {
-      res.status(500).json({ status: 'error', data: null, message: err.message });
+      if (err.message === 'Record not found') {
+        return sendNotFound(res, 'Leave quota not found');
+      }
+      sendError(res, err.message, 500);
     }
   });
 
@@ -241,23 +245,20 @@ module.exports = (AppDataSource) => {
       const quotas = await leaveQuotaRepo.find();
       const leaveTypes = await leaveTypeRepo.find();
       
-      res.json({
-        success: true,
-        data: {
-          users: users.length,
-          processes: processes.length,
-          positions: positions.length,
-          quotas: quotas.length,
-          leaveTypes: leaveTypes.length,
-          sampleUser: users[0] || null,
-          sampleProcess: processes[0] || null,
-          samplePosition: positions[0] || null,
-          sampleQuota: quotas[0] || null,
-          sampleLeaveType: leaveTypes[0] || null,
-        }
-      });
+      sendSuccess(res, {
+        users: users.length,
+        processes: processes.length,
+        positions: positions.length,
+        quotas: quotas.length,
+        leaveTypes: leaveTypes.length,
+        sampleUser: users[0] || null,
+        sampleProcess: processes[0] || null,
+        samplePosition: positions[0] || null,
+        sampleQuota: quotas[0] || null,
+        sampleLeaveType: leaveTypes[0] || null,
+      }, 'Database state retrieved successfully');
     } catch (err) {
-      res.status(500).json({ success: false, message: err.message });
+      sendError(res, err.message, 500);
     }
   });
 
@@ -272,18 +273,15 @@ module.exports = (AppDataSource) => {
       const user = await userRepo.findOne({ where: { id: userId } });
       const processUser = await processRepo.findOne({ where: { Repid: userId } });
       
-      res.json({
-        success: true,
-        data: {
-          userId,
-          user: user || null,
-          processUser: processUser || null,
-          userPosition: user?.position || null,
-          processPosition: processUser?.Position || null,
-        }
-      });
+      sendSuccess(res, {
+        userId,
+        user: user || null,
+        processUser: processUser || null,
+        userPosition: user?.position || null,
+        processPosition: processUser?.Position || null,
+      }, 'User position retrieved successfully');
     } catch (err) {
-      res.status(500).json({ success: false, message: err.message });
+      sendError(res, err.message, 500);
     }
   });
 

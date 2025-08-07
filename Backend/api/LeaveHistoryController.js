@@ -1,6 +1,8 @@
 const express = require('express');
 const authMiddleware = require('../middleware/authMiddleware');
 const { Between } = require('typeorm');
+const config = require('../config');
+const { calculateDaysBetween } = require('../utils');
 
 module.exports = (AppDataSource) => {
   const router = express.Router();
@@ -24,7 +26,7 @@ module.exports = (AppDataSource) => {
 
       // --- เพิ่ม paging ---
       const page = parseInt(req.query.page) || 1;
-      const limit = parseInt(req.query.limit) || 6;
+      const limit = parseInt(req.query.limit) || config.pagination.defaultLimit;
       const skip = (page - 1) * limit;
 
       // --- เพิ่ม filter เดือนและปี ---
@@ -80,9 +82,9 @@ module.exports = (AppDataSource) => {
       if (startDate && endDate) {
         where = { ...where, startDate: Between(startDate, endDate) };
       } else if (startDate) {
-        where = { ...where, startDate: Between(startDate, new Date(3000, 0, 1)) };
+        where = { ...where, startDate: Between(startDate, new Date(config.business.maxDate)) };
       } else if (endDate) {
-        where = { ...where, startDate: Between(new Date(2000, 0, 1), endDate) };
+        where = { ...where, startDate: Between(new Date(config.business.minDate), endDate) };
       }
       
       // กรองตามวันที่เดียว
@@ -127,16 +129,16 @@ module.exports = (AppDataSource) => {
             // ลาวัน
             const start = new Date(leave.startDate);
             const end = new Date(leave.endDate);
-            const days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+            const days = calculateDaysBetween(start, end);
             if (days > 0 && !isNaN(days)) {
               totalLeaveDays += days;
             }
           }
         });
         
-        // คำนวณวันจากชั่วโมงรวมทั้งหมด (9 ชั่วโมง = 1 วัน)
-        const totalDaysFromHours = Math.floor(totalHoursFromHourlyLeaves / 9);
-        const totalRemainingHours = totalHoursFromHourlyLeaves % 9;
+        // คำนวณวันจากชั่วโมงรวมทั้งหมด (configurable working hours per day)
+        const totalDaysFromHours = Math.floor(totalHoursFromHourlyLeaves / config.business.workingHoursPerDay);
+        const totalRemainingHours = totalHoursFromHourlyLeaves % config.business.workingHoursPerDay;
         
         totalLeaveDays += totalDaysFromHours;
         totalLeaveHours = totalRemainingHours;
@@ -182,8 +184,8 @@ module.exports = (AppDataSource) => {
       });
       
       console.log(`  รวมชั่วโมงทั้งหมด: ${totalHours} ชั่วโมง`);
-      console.log(`  แปลงเป็นวัน: ${Math.floor(totalHours / 9)} วัน`);
-      console.log(`  ชั่วโมงที่เหลือ: ${totalHours % 9} ชั่วโมง`);
+               console.log(`  แปลงเป็นวัน: ${Math.floor(totalHours / config.business.workingHoursPerDay)} วัน`);
+         console.log(`  ชั่วโมงที่เหลือ: ${totalHours % config.business.workingHoursPerDay} ชั่วโมง`);
 
       // join leaveType, admin (approver/rejector)
       const result = await Promise.all(leaves.map(async (leave) => {
@@ -225,15 +227,15 @@ module.exports = (AppDataSource) => {
           durationHours = Math.floor(diff);
           days = 0;
           
-          // คำนวณวันจากชั่วโมง (9 ชั่วโมง = 1 วัน)
-          // ถ้าครบ 9 ชั่วโมงให้นับเป็น 1 วัน และแสดงชั่วโมงที่เหลือ
-          daysFromHours = Math.floor(durationHours / 9);
-          remainingHours = durationHours % 9; // ชั่วโมงที่เหลือ
+                 // คำนวณวันจากชั่วโมง (configurable working hours per day)
+       // ถ้าครบ working hours ให้นับเป็น 1 วัน และแสดงชั่วโมงที่เหลือ
+       daysFromHours = Math.floor(durationHours / config.business.workingHoursPerDay);
+       remainingHours = durationHours % config.business.workingHoursPerDay; // ชั่วโมงที่เหลือ
         } else if (leave.startDate && leave.endDate) {
           // ลาวัน
           const start = new Date(leave.startDate);
           const end = new Date(leave.endDate);
-          days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+          days = calculateDaysBetween(start, end);
           if (days < 0 || isNaN(days)) days = 0;
           durationType = 'day';
           durationHours = 0;

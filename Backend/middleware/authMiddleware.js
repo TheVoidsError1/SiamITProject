@@ -1,4 +1,5 @@
 const jwt = require('jsonwebtoken');
+const config = require('../config');
 
 const authMiddleware = (req, res, next) => {
   const authHeader = req.headers['authorization'];
@@ -13,7 +14,7 @@ const authMiddleware = (req, res, next) => {
     return res.status(401).json({ error: 'No token provided' });
   }
   
-  jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key', (err, user) => {
+  jwt.verify(token, config.server.jwtSecret, (err, user) => {
     if (err) {
       console.log('Token verification failed:', err.message);
       return res.status(403).json({ error: 'Invalid token' });

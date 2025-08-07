@@ -1,56 +1,41 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
+const { BaseController, sendSuccess, sendError, sendNotFound, sendValidationError } = require('../utils');
 
 module.exports = (AppDataSource) => {
+  // Create base controller instance for CustomHoliday
+  const customHolidayController = new BaseController('CustomHoliday');
 
   // GET all custom holidays
   router.get('/custom-holidays', async (req, res) => {
       try {
-          const customHolidayRepository = AppDataSource.getRepository('CustomHoliday');
-          const holidays = await customHolidayRepository.find({
+          const holidays = await customHolidayController.findAll(AppDataSource, {
               order: {
                   date: 'ASC'
               }
           });
           
-          res.json({
-              status: 'success',
-              data: holidays
-          });
+          sendSuccess(res, holidays, 'Custom holidays fetched successfully');
       } catch (error) {
           console.error('Error fetching custom holidays:', error);
-          res.status(500).json({
-              status: 'error',
-              message: 'Failed to fetch custom holidays'
-          });
+          sendError(res, 'Failed to fetch custom holidays', 500);
       }
   });
 
   // GET custom holiday by ID
   router.get('/custom-holidays/:id', async (req, res) => {
       try {
-          const { id } = req.params;
-          const customHolidayRepository = AppDataSource.getRepository('CustomHoliday');
-          const holiday = await customHolidayRepository.findOne({ where: { id } });
+          const holiday = await customHolidayController.findOne(AppDataSource, req.params.id);
           
           if (!holiday) {
-              return res.status(404).json({
-                  status: 'error',
-                  message: 'Custom holiday not found'
-              });
+              return sendNotFound(res, 'Custom holiday not found');
           }
           
-          res.json({
-              status: 'success',
-              data: holiday
-          });
+          sendSuccess(res, holiday, 'Custom holiday fetched successfully');
       } catch (error) {
           console.error('Error fetching custom holiday:', error);
-          res.status(500).json({
-              status: 'error',
-              message: 'Failed to fetch custom holiday'
-          });
+          sendError(res, 'Failed to fetch custom holiday', 500);
       }
   });
 
@@ -60,15 +45,12 @@ module.exports = (AppDataSource) => {
       const { title, description, date } = req.body;
       const createdBy = req.user?.userId || 'system';
       
-      const customHolidayRepo = AppDataSource.getRepository('CustomHoliday');
-      const newHoliday = customHolidayRepo.create({
+      const savedHoliday = await customHolidayController.create(AppDataSource, {
         title,
         description,
         date,
         createdBy
       });
-      
-      const savedHoliday = await customHolidayRepo.save(newHoliday);
       
       // Emit Socket.io event for real-time notification
       if (global.io) {
@@ -83,32 +65,24 @@ module.exports = (AppDataSource) => {
         });
       }
       
-      res.json({ status: 'success', data: savedHoliday, message: 'Custom holiday created successfully' });
+      sendSuccess(res, savedHoliday, 'Custom holiday created successfully', 201);
     } catch (err) {
       console.error('Error creating custom holiday:', err);
-      res.status(500).json({ status: 'error', data: null, message: err.message });
+      sendError(res, err.message, 500);
     }
   });
 
   // Update custom holiday
   router.put('/custom-holidays/:id', async (req, res) => {
     try {
-      const { id } = req.params;
       const { title, description, date } = req.body;
       
-      const customHolidayRepo = AppDataSource.getRepository('CustomHoliday');
-      const holiday = await customHolidayRepo.findOneBy({ id });
+      const updateData = {};
+      if (title !== undefined) updateData.title = title;
+      if (description !== undefined) updateData.description = description;
+      if (date !== undefined) updateData.date = date;
       
-      if (!holiday) {
-        return res.status(404).json({ status: 'error', data: null, message: 'Custom holiday not found' });
-      }
-      
-      // Update fields
-      holiday.title = title || holiday.title;
-      holiday.description = description || holiday.description;
-      holiday.date = date || holiday.date;
-      
-      const updatedHoliday = await customHolidayRepo.save(holiday);
+      const updatedHoliday = await customHolidayController.update(AppDataSource, req.params.id, updateData);
       
       // Emit Socket.io event for real-time notification
       if (global.io) {
@@ -123,26 +97,26 @@ module.exports = (AppDataSource) => {
         });
       }
       
-      res.json({ status: 'success', data: updatedHoliday, message: 'Custom holiday updated successfully' });
+      sendSuccess(res, updatedHoliday, 'Custom holiday updated successfully');
     } catch (err) {
+      if (err.message === 'Record not found') {
+        return sendNotFound(res, 'Custom holiday not found');
+      }
       console.error('Error updating custom holiday:', err);
-      res.status(500).json({ status: 'error', data: null, message: err.message });
+      sendError(res, err.message, 500);
     }
   });
 
   // Delete custom holiday
   router.delete('/custom-holidays/:id', async (req, res) => {
     try {
-      const { id } = req.params;
-      
-      const customHolidayRepo = AppDataSource.getRepository('CustomHoliday');
-      const holiday = await customHolidayRepo.findOneBy({ id });
+      const holiday = await customHolidayController.findOne(AppDataSource, req.params.id);
       
       if (!holiday) {
-        return res.status(404).json({ status: 'error', data: null, message: 'Custom holiday not found' });
+        return sendNotFound(res, 'Custom holiday not found');
       }
       
-      await customHolidayRepo.delete({ id });
+      await customHolidayController.delete(AppDataSource, req.params.id);
       
       // Emit Socket.io event for real-time notification
       if (global.io) {
@@ -157,10 +131,13 @@ module.exports = (AppDataSource) => {
         });
       }
       
-      res.json({ status: 'success', message: 'Custom holiday deleted successfully' });
+      sendSuccess(res, null, 'Custom holiday deleted successfully');
     } catch (err) {
+      if (err.message === 'Record not found') {
+        return sendNotFound(res, 'Custom holiday not found');
+      }
       console.error('Error deleting custom holiday:', err);
-      res.status(500).json({ status: 'error', data: null, message: err.message });
+      sendError(res, err.message, 500);
     }
   });
 
@@ -170,10 +147,7 @@ module.exports = (AppDataSource) => {
           const { startDate, endDate } = req.query;
           
           if (!startDate || !endDate) {
-              return res.status(400).json({
-                  status: 'error',
-                  message: 'Start date and end date are required'
-              });
+              return sendValidationError(res, 'Start date and end date are required');
           }
           
           const customHolidayRepository = AppDataSource.getRepository('CustomHoliday');
@@ -184,16 +158,10 @@ module.exports = (AppDataSource) => {
             .orderBy('holiday.date', 'ASC')
             .getMany();
         
-        res.json({
-            status: 'success',
-            data: holidays
-        });
+        sendSuccess(res, holidays, 'Custom holidays fetched successfully');
     } catch (error) {
         console.error('Error fetching custom holidays by range:', error);
-        res.status(500).json({
-            status: 'error',
-            message: 'Failed to fetch custom holidays by range'
-        });
+        sendError(res, 'Failed to fetch custom holidays by range', 500);
     }
 });
 
@@ -203,10 +171,7 @@ module.exports = (AppDataSource) => {
           const { year } = req.params;
           
           if (!year || isNaN(year)) {
-              return res.status(400).json({
-                  status: 'error',
-                  message: 'Valid year is required'
-              });
+              return sendValidationError(res, 'Valid year is required');
           }
           
           const startDate = `${year}-01-01`;
@@ -220,16 +185,10 @@ module.exports = (AppDataSource) => {
             .orderBy('holiday.date', 'ASC')
             .getMany();
         
-        res.json({
-            status: 'success',
-            data: holidays
-        });
+        sendSuccess(res, holidays, 'Custom holidays fetched successfully');
     } catch (error) {
         console.error('Error fetching custom holidays by year:', error);
-        res.status(500).json({
-            status: 'error',
-            message: 'Failed to fetch custom holidays by year'
-        });
+        sendError(res, 'Failed to fetch custom holidays by year', 500);
     }
 });
 
@@ -239,18 +198,12 @@ module.exports = (AppDataSource) => {
           const { year, month } = req.params;
           
           if (!year || isNaN(year) || !month || isNaN(month)) {
-              return res.status(400).json({
-                  status: 'error',
-                  message: 'Valid year and month are required'
-              });
+              return sendValidationError(res, 'Valid year and month are required');
           }
           
           // Validate month is between 1-12
           if (month < 1 || month > 12) {
-              return res.status(400).json({
-                  status: 'error',
-                  message: 'Month must be between 1 and 12'
-              });
+              return sendValidationError(res, 'Month must be between 1 and 12');
           }
           
           const startDate = `${year}-${month.toString().padStart(2, '0')}-01`;
@@ -264,16 +217,10 @@ module.exports = (AppDataSource) => {
             .orderBy('holiday.date', 'ASC')
             .getMany();
         
-        res.json({
-            status: 'success',
-            data: holidays
-        });
+        sendSuccess(res, holidays, 'Custom holidays fetched successfully');
     } catch (error) {
         console.error('Error fetching custom holidays by year and month:', error);
-        res.status(500).json({
-            status: 'error',
-            message: 'Failed to fetch custom holidays by year and month'
-        });
+        sendError(res, 'Failed to fetch custom holidays by year and month', 500);
     }
 });
 

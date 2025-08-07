@@ -1,9 +1,15 @@
 const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const config = require('../config');
+const { BaseController, sendSuccess, sendError, sendValidationError } = require('../utils');
 
 module.exports = (AppDataSource) => {
   const router = require('express').Router();
+  // Create base controller instances
+  const userController = new BaseController('User');
+  const departmentController = new BaseController('Department');
+  const positionController = new BaseController('Position');
 
   router.post('/register', async (req, res) => {
     try {
@@ -16,21 +22,21 @@ module.exports = (AppDataSource) => {
       // ตรวจสอบชื่อซ้ำ
       const nameExist = await userRepo.findOneBy({ User_name });
       if (nameExist) {
-        return res.status(400).json({ success: false, data: null, message: 'ชื่อผู้ใช้นี้ถูกใช้ไปแล้ว' });
+        return sendValidationError(res, 'ชื่อผู้ใช้นี้ถูกใช้ไปแล้ว');
       }
 
       // ตรวจสอบ email ซ้ำ
       const exist = await processRepo.findOneBy({ Email: email });
       if (exist) {
-        return res.status(400).json({ success: false, data: null, message: 'Email นี้ถูกใช้ไปแล้ว' });
+        return sendValidationError(res, 'Email นี้ถูกใช้ไปแล้ว');
       }
 
       // แปลง department id เป็น entity
       let departmentId = null;
       if (department) {
-        const deptEntity = await departmentRepo.findOne({ where: { id: department } });
+        const deptEntity = await departmentController.findOne(AppDataSource, department);
         if (!deptEntity) {
-          return res.status(400).json({ success: false, data: null, message: 'Department not found' });
+          return sendValidationError(res, 'Department not found');
         }
         departmentId = deptEntity.id;
       }
@@ -38,9 +44,9 @@ module.exports = (AppDataSource) => {
       // แปลง position id เป็น entity
       let positionId = null;
       if (position) {
-        const posEntity = await positionRepo.findOne({ where: { id: position } });
+        const posEntity = await positionController.findOne(AppDataSource, position);
         if (!posEntity) {
-          return res.status(400).json({ success: false, data: null, message: 'Position not found' });
+          return sendValidationError(res, 'Position not found');
         }
         positionId = posEntity.id;
       }
@@ -49,19 +55,18 @@ module.exports = (AppDataSource) => {
       const hashedPassword = await bcrypt.hash(password, 10);
 
       // สร้าง user ก่อน เพื่อให้ได้ user.id
-      const user = userRepo.create({
+      const user = await userController.create(AppDataSource, {
         id: uuidv4(),
         User_name,
         department: departmentId,
         position: positionId
       });
-      await userRepo.save(user);
 
       // สร้าง JWT Token
       const token = jwt.sign(
         { userId: user.id, email: email },
-        'your_secret_key', // เปลี่ยนเป็น secret จริงใน production
-        { expiresIn: '1h' }
+        config.server.jwtSecret,
+        { expiresIn: config.server.jwtExpiresIn }
       );
 
       // สร้าง process_check พร้อม Token และ Repid
@@ -76,42 +81,36 @@ module.exports = (AppDataSource) => {
       });
       await processRepo.save(processCheck);
 
-      res.status(201).json({
-        success: true,
-        data: { ...user, token, repid: user.id },
-        message: 'Register successful'
-      });
+      sendSuccess(res, { ...user, token, repid: user.id }, 'Register successful', 201);
     } catch (err) {
       // Handle unique constraint errors
       if (err.code === 'ER_DUP_ENTRY' && err.message.includes('Email')) {
-        return res.status(400).json({ success: false, data: null, message: 'Email นี้ถูกใช้ไปแล้ว' });
+        return sendValidationError(res, 'Email นี้ถูกใช้ไปแล้ว');
       }
       if (err.code === 'ER_DUP_ENTRY' && err.message.includes('User_name')) {
-        return res.status(400).json({ success: false, data: null, message: 'ชื่อผู้ใช้นี้ถูกใช้ไปแล้ว' });
+        return sendValidationError(res, 'ชื่อผู้ใช้นี้ถูกใช้ไปแล้ว');
       }
-      res.status(500).json({ success: false, data: null, message: err.message });
+      sendError(res, err.message, 500);
     }
   });
 
   // ดึงข้อมูล department ทั้งหมด
   router.get('/departments', async (req, res) => {
     try {
-      const departmentRepo = AppDataSource.getRepository('Department');
-      const departments = await departmentRepo.find();
-      res.json({ success: true, data: departments, message: 'ดึงข้อมูล department สำเร็จ' });
+      const departments = await departmentController.findAll(AppDataSource);
+      sendSuccess(res, departments, 'ดึงข้อมูล department สำเร็จ');
     } catch (err) {
-      res.status(500).json({ success: false, data: null, message: err.message });
+      sendError(res, err.message, 500);
     }
   });
 
   // ดึงข้อมูล position ทั้งหมด
   router.get('/positions', async (req, res) => {
     try {
-      const positionRepo = AppDataSource.getRepository('Position');
-      const positions = await positionRepo.find();
-      res.json({ success: true, data: positions, message: 'ดึงข้อมูล position สำเร็จ' });
+      const positions = await positionController.findAll(AppDataSource);
+      sendSuccess(res, positions, 'ดึงข้อมูล position สำเร็จ');
     } catch (err) {
-      res.status(500).json({ success: false, data: null, message: err.message });
+      sendError(res, err.message, 500);
     }
   });
 
@@ -119,12 +118,10 @@ module.exports = (AppDataSource) => {
   router.post('/departments', async (req, res) => {
     try {
       const { department } = req.body;
-      const departmentRepo = AppDataSource.getRepository('Department');
-      const newDept = departmentRepo.create({ department_name_th: department });
-      await departmentRepo.save(newDept);
-      res.status(201).json({ success: true, data: newDept, message: 'เพิ่ม department สำเร็จ' });
+      const newDept = await departmentController.create(AppDataSource, { department_name_th: department });
+      sendSuccess(res, newDept, 'เพิ่ม department สำเร็จ', 201);
     } catch (err) {
-      res.status(500).json({ success: false, data: null, message: err.message });
+      sendError(res, err.message, 500);
     }
   });
 
@@ -132,12 +129,10 @@ module.exports = (AppDataSource) => {
   router.post('/positions', async (req, res) => {
     try {
       const { position } = req.body;
-      const positionRepo = AppDataSource.getRepository('Position');
-      const newPos = positionRepo.create({ position_name_th: position });
-      await positionRepo.save(newPos);
-      res.status(201).json({ success: true, data: newPos, message: 'เพิ่ม position สำเร็จ' });
+      const newPos = await positionController.create(AppDataSource, { position_name_th: position });
+      sendSuccess(res, newPos, 'เพิ่ม position สำเร็จ', 201);
     } catch (err) {
-      res.status(500).json({ success: false, data: null, message: err.message });
+      sendError(res, err.message, 500);
     }
   });
 

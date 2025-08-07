@@ -565,8 +565,17 @@ const Profile = () => {
                     <div className="flex justify-between items-center">
                       <span className="text-base font-medium text-blue-900">{stat.label}</span>
                       <span className="text-base text-gray-500">
-                        {stat.used.days}/{stat.quota} {t('common.days')}
-                        {stat.used.hours > 0 && ` ${stat.used.hours} ${t('common.hours')}`}
+                        {(() => {
+                          const usedDays = Number(stat.used.days) || 0;
+                          const usedHours = Number(stat.used.hours) || 0;
+                          const quota = Number(stat.quota);
+                          
+                          if (usedHours > 0) {
+                            return `${usedDays} ${t('common.days')} ${usedHours} ${t('common.hours')} / ${quota} ${t('common.days')}`;
+                          } else {
+                            return `${usedDays} ${t('common.days')} / ${quota} ${t('common.days')}`;
+                          }
+                        })()}
                       </span>
                     </div>
                     <div className="w-full bg-blue-100 rounded-full h-2">
@@ -576,8 +585,18 @@ const Profile = () => {
                       ></div>
                     </div>
                     <div className="text-xs text-blue-500">
-                      {t('common.remaining')} {Number(stat.quota) - Number(stat.used.days)} {t('common.days')}
-                      {stat.remaining.hours > 0 && ` ${stat.remaining.hours} ${t('common.hours')}`}
+                      {(() => {
+                        const usedDays = Number(stat.used.days) || 0;
+                        const usedHours = Number(stat.used.hours) || 0;
+                        const remainingDays = Number(stat.quota) - usedDays;
+                        const remainingHours = Number(stat.remaining.hours) || 0;
+                        
+                        if (remainingHours > 0) {
+                          return `${t('common.remaining')} ${remainingDays} ${t('common.days')} ${remainingHours} ${t('common.hours')}`;
+                        } else {
+                          return `${t('common.remaining')} ${remainingDays} ${t('common.days')}`;
+                        }
+                      })()}
                     </div>
                   </div>
                 ))}

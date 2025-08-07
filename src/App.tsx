@@ -119,6 +119,7 @@ const AppContent = () => {
                 <SuperAdminList />
               </ProtectedRoute>
             } />
+            <Route path="/login" element={<Navigate to="/" replace />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
