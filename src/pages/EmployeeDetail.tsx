@@ -116,20 +116,27 @@ const EmployeeDetail = () => {
     // เพิ่ม debug log
     console.log('🔍 Fetching leave history with params:', params);
     console.log('🔍 filterBackdated value:', filterBackdated);
-    console.log('🔍 Full URL:', `${API_BASE_URL}/api/employee/${id}/leave-history${query}`);
+    console.log('🔍 Full URL:', `${API_BASE_URL}${apiEndpoints.employees.leaveHistory(id, query)}`);
     
     try {
-      const data = await apiService.get(`${API_BASE_URL}/api/employee/${id}/leave-history${query}`);
+      const data = await apiService.get(apiEndpoints.employees.leaveHistory(id, query));
+      // เพิ่ม log เพื่อตรวจสอบ response
+      console.log('🟢 Leave history API response:', data);
       if (data.success) {
-        setLeaveHistory(data.data);
-        setLeaveTotalPages(data.totalPages || 1);
-        setLeaveSummary(data.summary || null); // <--- เก็บ summary
+        // แก้ตรงนี้: data.data.data
+        const leaveData = Array.isArray(data.data?.data) ? data.data.data : [];
+        setLeaveHistory(leaveData);
+        setLeaveTotalPages(data.data?.totalPages || 1);
+        setLeaveSummary(data.data?.summary || null); // <--- เก็บ summary
       } else {
+        // เพิ่ม log กรณี error
+        console.error('🔴 Leave history API error:', data);
         setLeaveHistory([]);
         setLeaveTotalPages(1);
         setLeaveSummary(null); // <--- reset summary
       }
     } catch (error) {
+      console.error('Error fetching leave history:', error);
       setLeaveHistory([]);
       setLeaveTotalPages(1);
       setLeaveSummary(null); // <--- reset summary
@@ -239,9 +246,9 @@ const EmployeeDetail = () => {
       position: (employee?.position_id || employee?.position?.id || '') + '',
       role: employee?.role || '',
       gender: employee?.gender || '',
-      birthdate: employee?.birthdate || '',
-      phone: employee?.phone || '',
-      startWorkDate: employee?.startWorkDate || '',
+      birthdate: employee?.dob || '', // <-- เปลี่ยนจาก birthdate เป็น dob
+      phone: employee?.phone_number || '', // <-- เปลี่ยนจาก phone เป็น phone_number
+      startWorkDate: employee?.start_work || '', // <-- เปลี่ยนจาก startWorkDate เป็น start_work
       internStartDate: employee?.internStartDate || '',
       internEndDate: employee?.internEndDate || ''
     });
@@ -261,7 +268,7 @@ const EmployeeDetail = () => {
         startWorkDate: editData.startWorkDate,
       };
       if (editData.password && editData.password.trim() !== '') payload.password = editData.password;
-      const data = await apiService.put(`${API_BASE_URL}/api/employee/${id}`, payload);
+      const data = await apiService.put(apiEndpoints.employees.detail(id), payload);
       if (data.success) {
         toast({
           title: t('employee.saveSuccess'),
@@ -269,7 +276,7 @@ const EmployeeDetail = () => {
         });
         setIsEditing(false);
         // Refresh profile data
-        const empData = await apiService.get(`${API_BASE_URL}/api/employee/${id}`);
+        const empData = await apiService.get(apiEndpoints.employees.detail(id));
         if (empData.success) setEmployee(empData.data);
       } else {
         toast({ title: t('error.title'), description: data.message || t('employee.saveError') });
@@ -324,7 +331,7 @@ const EmployeeDetail = () => {
     if (!deleteLeaveId) return;
     setDeleting(true);
     try {
-      const data = await apiService.delete(`${API_BASE_URL}/api/leave-request/${deleteLeaveId}`, undefined, showSessionExpiredDialog);
+      const data = await apiService.delete(apiEndpoints.leave.delete(deleteLeaveId), undefined, showSessionExpiredDialog);
       if (data && (data.success || data.status === 'success')) {
         setDeleteLeaveId(null);
         toast({
@@ -356,7 +363,7 @@ const EmployeeDetail = () => {
     if (!id) return;
     setLoading(true);
     setError(null);
-    apiService.get(`${API_BASE_URL}/api/employee/${id}`)
+            apiService.get(apiEndpoints.employees.detail(id))
       .then(data => {
         if (data.success) {
           setEmployee(data.data);
@@ -560,7 +567,7 @@ const EmployeeDetail = () => {
                           onChange={e => setEditData({ ...editData, birthdate: e.target.value })}
                         />
                       ) : (
-                        <p className="text-lg text-blue-700">{employee.birthdate ? format(new Date(employee.birthdate), 'dd/MM/yyyy') : '-'}</p>
+                        <p className="text-lg text-blue-700">{employee.dob ? format(new Date(employee.dob), 'dd/MM/yyyy') : '-'}</p>
                       )}
                     </div>
                   </div>
@@ -615,7 +622,7 @@ const EmployeeDetail = () => {
                           onChange={e => setEditData({ ...editData, phone: e.target.value })}
                         />
                       ) : (
-                        <p className="text-lg text-indigo-700">{employee.phone || '-'}</p>
+                        <p className="text-lg text-indigo-700">{employee.phone_number || '-'}</p>
                       )}
                     </div>
                     {/* Start Work Date (เฉพาะ role ไม่ใช่ intern) */}
@@ -630,7 +637,7 @@ const EmployeeDetail = () => {
                             onChange={e => setEditData({ ...editData, startWorkDate: e.target.value })}
                           />
                         ) : (
-                          <p className="text-lg text-indigo-700">{employee.startWorkDate ? format(new Date(employee.startWorkDate), 'dd/MM/yyyy') : '-'}</p>
+                          <p className="text-lg text-indigo-700">{employee.start_work ? format(new Date(employee.start_work), 'dd/MM/yyyy') : '-'}</p>
                         )}
                       </div>
                     )}
@@ -877,7 +884,7 @@ const EmployeeDetail = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {leaveHistory.map((leave, idx) => {
+                    {Array.isArray(leaveHistory) && leaveHistory.map((leave, idx) => {
                       // เพิ่ม debug log
                       console.log(`🎨 Rendering leave ${idx}:`, { id: leave.id, backdated: leave.backdated, leaveType: leave.leaveType });
                       
@@ -1007,7 +1014,7 @@ const EmployeeDetail = () => {
                       </TableRow>
                       );
                     })}
-                      {leaveHistory.length === 0 && (
+                      {(!Array.isArray(leaveHistory) || leaveHistory.length === 0) && (
                         <TableRow>
                           <TableCell colSpan={7} className="text-center py-6 text-gray-500">
                             <div className="flex flex-col items-center gap-2">

@@ -174,53 +174,45 @@ const Index = () => {
 
   const fetchDashboardStats = async (month?: number, year?: number) => {
     setLoadingStats(true);
-    const token = localStorage.getItem("token");
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-    let url = `${API_BASE_URL}/api/dashboard-stats`;
-    if (month && year) url += `?month=${month}&year=${year}`;
-    else if (year) url += `?year=${year}`;
-    fetch(url, {
-      headers: {
-        Authorization: token ? `Bearer ${token}` : undefined,
-      },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && (data.status === "success" || data.success === true) && data.data) {
-          setStats([
-            { title: t('main.daysRemaining'), value: data.data.remainingDays, unit: t('common.days'), icon: Calendar, color: "text-blue-600", bgColor: "bg-blue-50" },
-            { title: t('main.daysUsed'), value: data.data.daysUsed, unit: t('common.days'), icon: Clock, color: "text-green-600", bgColor: "bg-green-50" },
-            { title: t('main.pendingRequests'), value: data.data.pendingRequests, unit: t('main.requests'), icon: Users, color: "text-orange-600", bgColor: "bg-orange-50" },
-            { title: t('main.approvalRate'), value: data.data.approvalRate, unit: "%", icon: TrendingUp, color: "text-purple-600", bgColor: "bg-purple-50" },
-          ]);
-          // อัปเดต filteredDaysUsed และ filteredHoursUsed สำหรับ Days Used card
-          setFilteredDaysUsed(data.data.daysUsed || 0);
-          setFilteredHoursUsed(data.data.hoursUsed || 0);
-          const stats = data.data.leaveTypeStats || {};
-          setLeaveStats({
-            sick: stats["ลาป่วย"] || stats["sick"] || 0,
-            vacation: stats["ลาพักผ่อน"] || stats["vacation"] || 0,
-            business: stats["ลากิจ"] || stats["personal"] || 0,
-          });
-        } else {
-          setErrorStats(t('error.cannotLoadStats'));
-        }
-      })
-      .catch(() => setErrorStats(t('error.apiConnectionError')))
-      .finally(() => setLoadingStats(false));
+    try {
+      let url = apiEndpoints.dashboard.stats;
+      if (month && year) url += `?month=${month}&year=${year}`;
+      else if (year) url += `?year=${year}`;
+      
+      const data = await apiService.get(url);
+      if (data && (data.status === "success" || data.success === true) && data.data) {
+        setStats([
+          { title: t('main.daysRemaining'), value: data.data.remainingDays, unit: t('common.days'), icon: Calendar, color: "text-blue-600", bgColor: "bg-blue-50" },
+          { title: t('main.daysUsed'), value: data.data.daysUsed, unit: t('common.days'), icon: Clock, color: "text-green-600", bgColor: "bg-green-50" },
+          { title: t('main.pendingRequests'), value: data.data.pendingRequests, unit: t('main.requests'), icon: Users, color: "text-orange-600", bgColor: "bg-orange-50" },
+          { title: t('main.approvalRate'), value: data.data.approvalRate, unit: "%", icon: TrendingUp, color: "text-purple-600", bgColor: "bg-purple-50" },
+        ]);
+        // อัปเดต filteredDaysUsed และ filteredHoursUsed สำหรับ Days Used card
+        setFilteredDaysUsed(data.data.daysUsed || 0);
+        setFilteredHoursUsed(data.data.hoursUsed || 0);
+        const stats = data.data.leaveTypeStats || {};
+        setLeaveStats({
+          sick: stats["ลาป่วย"] || stats["sick"] || 0,
+          vacation: stats["ลาพักผ่อน"] || stats["vacation"] || 0,
+          business: stats["ลากิจ"] || stats["personal"] || 0,
+        });
+      } else {
+        setErrorStats(t('error.cannotLoadStats'));
+      }
+    } catch (error) {
+      setErrorStats(t('error.apiConnectionError'));
+    } finally {
+      setLoadingStats(false);
+    }
   };
 
   // Fetch recent leave requests and generate statistics
   useEffect(() => {
-    setLoadingRecentLeaves(true);
-    setErrorRecentLeaves("");
-    const token = localStorage.getItem("token");
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-    fetch(`${API_BASE_URL}/api/recent-leave-requests`, {
-      headers: { Authorization: token ? `Bearer ${token}` : undefined },
-    })
-      .then((res) => res.json())
-      .then((data) => {
+    const fetchRecentLeaves = async () => {
+      setLoadingRecentLeaves(true);
+      setErrorRecentLeaves("");
+      try {
+        const data = await apiService.get(apiEndpoints.dashboard.recentLeaves);
         if (data && (data.status === "success" || data.success === true) && Array.isArray(data.data)) {
           setRecentLeaves(data.data);
           // Summarize leave types
@@ -235,44 +227,56 @@ const Index = () => {
         } else {
           setErrorRecentLeaves(t('error.cannotLoadStats'));
         }
-      })
-      .catch(() => setErrorRecentLeaves(t('error.apiConnectionError')))
-      .finally(() => setLoadingRecentLeaves(false));
+      } catch (error) {
+        setErrorRecentLeaves(t('error.apiConnectionError'));
+      } finally {
+        setLoadingRecentLeaves(false);
+      }
+    };
+    
+    fetchRecentLeaves();
   }, [t]);
 
   // Update fetch for recent leaves to use filterMonth/filterYear
   useEffect(() => {
-    setLoadingRecentLeaves(true);
-    setErrorRecentLeaves("");
-    const token = localStorage.getItem("token");
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-    let url = `${API_BASE_URL}/api/recent-leave-requests?year=${filterYear}`;
-    if (filterMonth && filterMonth !== 0) {
-      url += `&month=${filterMonth}`;
-    }
-    fetch(url, {
-      headers: { Authorization: token ? `Bearer ${token}` : undefined },
-    })
-      .then((res) => res.json())
-      .then((data) => {
+    const fetchFilteredRecentLeaves = async () => {
+      setLoadingRecentLeaves(true);
+      setErrorRecentLeaves("");
+      try {
+        let url = `${apiEndpoints.dashboard.recentLeaves}?year=${filterYear}`;
+        if (filterMonth && filterMonth !== 0) {
+          url += `&month=${filterMonth}`;
+        }
+        const data = await apiService.get(url);
         if (data && (data.status === "success" || data.success === true) && Array.isArray(data.data)) {
           setRecentLeaves(data.data);
         } else {
           setErrorRecentLeaves(t('error.cannotLoadStats'));
         }
-      })
-      .catch(() => setErrorRecentLeaves(t('error.apiConnectionError')))
-      .finally(() => setLoadingRecentLeaves(false));
+      } catch (error) {
+        setErrorRecentLeaves(t('error.apiConnectionError'));
+      } finally {
+        setLoadingRecentLeaves(false);
+      }
+    };
+    
+    fetchFilteredRecentLeaves();
   }, [t, filterMonth, filterYear]);
 
   // Fetch dashboard stats and backdated count
   useEffect(() => {
     setLoadingDashboard(true);
     const token = localStorage.getItem("token");
-    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
     // Fetch dashboard stats
-    const statsUrl = `${API_BASE_URL}/api/dashboard-stats?year=${filterYear}` + (filterMonth && filterMonth !== 0 ? `&month=${filterMonth}` : '');
-    const backdatedUrl = `${API_BASE_URL}/api/my-backdated?year=${filterYear}` + (filterMonth && filterMonth !== 0 ? `&month=${filterMonth}` : '');
+    let statsUrl = `${apiEndpoints.dashboard.stats}?year=${filterYear}`;
+    if (filterMonth && filterMonth !== 0) {
+      statsUrl += `&month=${filterMonth}`;
+    }
+    let backdatedUrl = `${apiEndpoints.dashboard.myBackdated}?year=${filterYear}`;
+    if (filterMonth && filterMonth !== 0) {
+      backdatedUrl += `&month=${filterMonth}`;
+    }
     Promise.all([
       apiService.get(statsUrl, undefined, showSessionExpiredDialog),
       apiService.get(backdatedUrl, undefined, showSessionExpiredDialog)
@@ -369,8 +373,7 @@ const Index = () => {
     const fetchAnnouncements = async () => {
       setLoadingAnnouncements(true);
       try {
-        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-        const response = await fetch(`${API_BASE_URL}/api/announcements`);
+        const response = await apiService.get(apiEndpoints.announcements);
         
         if (response.ok) {
           const data = await response.json();

@@ -179,7 +179,7 @@ const Profile = () => {
     const fetchLeaveQuota = async () => {
       setLeaveLoading(true);
       try {
-        const res = await apiService.get('/api/leave-quota/me');
+        const res = await apiService.get(apiEndpoints.leaveQuota.me);
         if (res.debug) {
           console.log('LEAVE QUOTA DEBUG:', res.debug);
         }

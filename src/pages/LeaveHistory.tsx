@@ -82,7 +82,7 @@ const LeaveHistory = () => {
     setLoading(true);
     setError(null);
     try {
-      let url = `/api/leave-history?page=${page}&limit=${limit}`;
+      let url = `${apiEndpoints.leaveHistory.list}?page=${page}&limit=${limit}`;
       if (filterLeaveType && filterLeaveType !== 'all') {
         url += `&leaveType=${filterLeaveType}`;
       }
@@ -134,7 +134,7 @@ const LeaveHistory = () => {
     setSelectedLeave(null);
     setShowDetailDialog(true);
     try {
-      const data = await apiService.get(`/api/leave-request/detail/${leaveId}`, undefined, showSessionExpiredDialog);
+      const data = await apiService.get(apiEndpoints.leave.detail(leaveId), undefined, showSessionExpiredDialog);
       if (data && data.success) {
         const leaveDetail = {
           ...data.data,
@@ -154,7 +154,7 @@ const LeaveHistory = () => {
       setLeaveTypesLoading(true);
       setLeaveTypesError(null);
       try {
-        const data = await apiService.get('/api/leave-history/filters', undefined, showSessionExpiredDialog);
+        const data = await apiService.get(apiEndpoints.leaveHistory.filters, undefined, showSessionExpiredDialog);
         if (data && data.status === 'success') {
           setLeaveTypes(data.leaveTypes || []);
           setStatusOptions(data.statuses || []);

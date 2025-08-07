@@ -236,11 +236,11 @@ const EmployeeManagement = () => {
     setDeleting(true);
     let url = '';
     if (deleteTarget.role === 'superadmin') {
-      url = `/api/superadmin/${deleteTarget.id}`;
-    } else if (deleteTarget.role === 'admin') {
-      url = `/api/admins/${deleteTarget.id}`;
-    } else {
-      url = `/api/users/${deleteTarget.id}`;
+              url = apiEndpoints.superAdmin.delete(deleteTarget.id);
+      } else if (deleteTarget.role === 'admin') {
+        url = apiEndpoints.superAdmin.admins(deleteTarget.id);
+      } else {
+        url = apiEndpoints.superAdmin.users(deleteTarget.id);
     }
     try {
       const data = await apiService.delete(url);

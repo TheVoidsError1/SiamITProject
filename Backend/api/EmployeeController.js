@@ -340,6 +340,12 @@ module.exports = (AppDataSource) => {
           department: department,
           department_id: department_id,
           role,
+          gender: profile.gender || null,
+          dob: profile.dob || null,
+          phone_number: profile.phone_number || null,
+          start_work: profile.start_work || null,
+          internStartDate: profile.internStartDate || null,
+          internEndDate: profile.internEndDate || null,
           usedLeaveDays,
           totalLeaveDays,
           avatar: processCheck ? processCheck.avatar_url || null : null
@@ -388,16 +394,34 @@ module.exports = (AppDataSource) => {
         if (name !== undefined) profile.admin_name = name;
         if (position !== undefined) profile.position = position;
         if (department !== undefined) profile.department = department;
+        if (req.body.gender !== undefined) profile.gender = req.body.gender;
+        if (req.body.birthdate !== undefined) profile.dob = req.body.birthdate;
+        if (req.body.phone !== undefined) profile.phone_number = req.body.phone;
+        if (req.body.startWorkDate !== undefined) profile.start_work = req.body.startWorkDate;
+        if (req.body.internStartDate !== undefined) profile.internStartDate = req.body.internStartDate;
+        if (req.body.internEndDate !== undefined) profile.internEndDate = req.body.internEndDate;
         await adminRepo.save(profile);
       } else if (role === 'superadmin') {
         if (name !== undefined) profile.superadmin_name = name;
         if (position !== undefined) profile.position = position;
         if (department !== undefined) profile.department = department;
+        if (req.body.gender !== undefined) profile.gender = req.body.gender;
+        if (req.body.birthdate !== undefined) profile.dob = req.body.birthdate;
+        if (req.body.phone !== undefined) profile.phone_number = req.body.phone;
+        if (req.body.startWorkDate !== undefined) profile.start_work = req.body.startWorkDate;
+        if (req.body.internStartDate !== undefined) profile.internStartDate = req.body.internStartDate;
+        if (req.body.internEndDate !== undefined) profile.internEndDate = req.body.internEndDate;
         await superadminRepo.save(profile);
       } else {
         if (name !== undefined) profile.User_name = name;
         if (position !== undefined) profile.position = position;
         if (department !== undefined) profile.department = department;
+        if (req.body.gender !== undefined) profile.gender = req.body.gender;
+        if (req.body.birthdate !== undefined) profile.dob = req.body.birthdate;
+        if (req.body.phone !== undefined) profile.phone_number = req.body.phone;
+        if (req.body.startWorkDate !== undefined) profile.start_work = req.body.startWorkDate;
+        if (req.body.internStartDate !== undefined) profile.internStartDate = req.body.internStartDate;
+        if (req.body.internEndDate !== undefined) profile.internEndDate = req.body.internEndDate;
         await userRepo.save(profile);
       }
 

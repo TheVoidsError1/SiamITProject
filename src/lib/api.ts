@@ -176,6 +176,38 @@ export const apiEndpoints = {
     linkStatus: '/api/line/link-status',
     loginUrl: '/api/line/login-url',
     unlink: '/api/line/unlink'
+  },
+
+  // Dashboard
+  dashboard: {
+    stats: '/api/dashboard-stats',
+    recentLeaves: '/api/recent-leave-requests',
+    myBackdated: '/api/my-backdated'
+  },
+
+  // Leave History
+  leaveHistory: {
+    list: '/api/leave-history',
+    filters: '/api/leave-history/filters'
+  },
+
+  // Leave Quota
+  leaveQuota: {
+    me: '/api/leave-quota/me'
+  },
+
+  // Admin
+  admin: {
+    leaveHistory: '/api/leave-request/history',
+    leavePending: '/api/leave-request/pending',
+    dashboardStats: '/api/leave-request/dashboard-stats'
+  },
+
+  // Super Admin
+  superAdmin: {
+    delete: (id: string) => `/api/superadmin/${id}`,
+    admins: (id: string) => `/api/admins/${id}`,
+    users: (id: string) => `/api/users/${id}`
   }
 };
 

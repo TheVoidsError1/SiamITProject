@@ -294,7 +294,7 @@ const AdminDashboard = () => {
   // ปรับ fetchHistoryRequests
   const fetchHistoryRequests = () => {
     setLoading(true);
-    let url = `/api/leave-request/history?page=${historyPage}&limit=${historyLimit}`;
+            let url = `${apiEndpoints.admin.leaveHistory}?page=${historyPage}&limit=${historyLimit}`;
     if (filterMonth) url += `&month=${filterMonth}`;
     if (filterYear) url += `&year=${filterYear}`;
     // ในการสร้าง url ให้ส่ง status=approved,rejected ถ้าเลือก all
@@ -348,7 +348,7 @@ const AdminDashboard = () => {
     const fetchPending = async () => {
       setLoading(true);
       try {
-        let url = `/api/leave-request/pending?page=${pendingPage}&limit=${pendingLimit}`;
+        let url = `${apiEndpoints.admin.leavePending}?page=${pendingPage}&limit=${pendingLimit}`;
         if (pendingFilterLeaveType) url += `&leaveType=${pendingFilterLeaveType}`;
         if (pendingBackdatedFilter === 'backdated') url += `&backdated=1`;
         else if (pendingBackdatedFilter === 'normal') url += `&backdated=0`;
@@ -422,7 +422,7 @@ const AdminDashboard = () => {
   }, [t, historyPage, filterMonth, filterYear, historyLimit, historyStatusFilter, dateRange, recentSingleDate, historyBackdatedFilter, historyFilterLeaveType]);
 
   useEffect(() => {
-    let url = `/api/leave-request/dashboard-stats`;
+            let url = apiEndpoints.admin.dashboardStats;
     const params = [];
     if (filterMonth) params.push(`month=${filterMonth}`);
     if (filterYear) params.push(`year=${filterYear}`);
