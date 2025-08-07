@@ -193,6 +193,9 @@ module.exports = (AppDataSource) => {
         name_en: department.department_name_en
       } : null;
       
+      // Add avatar_url from ProcessCheck
+      profile.avatar_url = processCheck.avatar_url || null;
+      
       return res.json({ success: true, data: profile });
     } catch (err) {
       console.error('Profile error:', err);

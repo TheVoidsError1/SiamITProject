@@ -311,19 +311,15 @@ const Index = () => {
           return;
         }
 
-        const response = await apiService.get(apiEndpoints.auth.profile, undefined, showSessionExpiredDialog);
-
-        if (response.ok) {
-          const data = await response.json();
-          if ((data.status === 'success' || data.success === true) && data.data) {
-            setUserProfile(data.data);
-          } else {
-            console.error('Failed to fetch user profile:', data.message);
+        const data = await apiService.get(apiEndpoints.auth.profile, undefined, showSessionExpiredDialog);
+        if (data && (data.status === 'success' || data.success === true) && data.data) {
+          setUserProfile(data.data);
+          // ดึง avatar_url จาก user profile
+          if (data.data.avatar_url) {
+            setAvatarUrl(data.data.avatar_url);
           }
-        } else if (response.status === 401) {
-          showSessionExpiredDialog();
         } else {
-          console.error('Failed to fetch user profile:', response.statusText);
+          console.error('Failed to fetch user profile:', data?.message || 'Unknown error');
         }
       } catch (error) {
         console.error('Error fetching user profile:', error);
@@ -373,17 +369,14 @@ const Index = () => {
     const fetchAnnouncements = async () => {
       setLoadingAnnouncements(true);
       try {
-        const response = await apiService.get(apiEndpoints.announcements);
+        const data = await apiService.get(apiEndpoints.announcements, undefined, showSessionExpiredDialog);
         
-        if (response.ok) {
-          const data = await response.json();
-          if ((data.status === 'success' || data.success === true) && Array.isArray(data.data)) {
-            // Sort by creation date (latest first) and take only the latest 3
-            const sortedAnnouncements = data.data
-              .sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
-              .slice(0, 3);
-            setAnnouncements(sortedAnnouncements);
-          }
+        if (data && (data.status === 'success' || data.success === true) && Array.isArray(data.data)) {
+          // Sort by creation date (latest first) and take only the latest 3
+          const sortedAnnouncements = data.data
+            .sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+            .slice(0, 3);
+          setAnnouncements(sortedAnnouncements);
         } else {
           setErrorAnnouncements(t('error.cannotLoadStats'));
         }
@@ -778,7 +771,7 @@ const Index = () => {
               ) : errorAnnouncements ? (
                 <div className="text-center py-4 text-red-500 animate-shake text-sm">{errorAnnouncements}</div>
               ) : announcements.length === 0 ? (
-                <div className="text-center py-4 text-blue-400 text-sm">{t('companyNews.noNews')}</div>
+                <div className="text-center py-4 text-blue-400 text-sm">{t('main.noAnnouncements', )}</div>
               ) : (
                 announcements.map((a, idx) => (
                   <div key={a.id} className="flex items-start gap-2 p-2 rounded-xl glass bg-gradient-to-br from-white/80 via-blue-50/80 to-indigo-100/80 shadow border-0 animate-pop-in" style={{ animationDelay: `${idx * 60}ms` }}>

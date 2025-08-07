@@ -225,7 +225,10 @@ export function AppSidebar() {
           <Link to="/profile" className="block">
             <div className="flex items-center gap-3 p-4 rounded-2xl glass bg-white/60 dark:bg-gray-900/60 backdrop-blur-md shadow-lg hover:shadow-xl transition-all cursor-pointer border border-blue-100 dark:border-gray-800">
               <Avatar className="w-8 h-8">
-                <AvatarImage src={avatarUrl || undefined} />
+                <AvatarImage 
+                  src={user?.avatar_url ? `${API_BASE_URL}${user.avatar_url}` : undefined} 
+                  alt={user?.full_name || 'User'}
+                />
                 <AvatarFallback className="text-xs font-medium bg-sidebar-accent text-sidebar-foreground">
                   {user?.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
                 </AvatarFallback>
