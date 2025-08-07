@@ -566,29 +566,29 @@ const CompanyMonthDetailPage = () => {
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('companyEvent.addTitle', 'เพิ่มกิจกรรมของบริษัท')}</DialogTitle>
+            <DialogTitle>{t('companyEvent.addTitle')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <Input 
-              placeholder={t('companyEvent.name', 'ชื่อกิจกรรม')} 
+              placeholder={t('companyEvent.name')} 
               value={newEvent.title} 
               onChange={e => setNewEvent(prev => ({ ...prev, title: e.target.value }))} 
             />
             <Textarea 
-              placeholder={t('companyEvent.description', 'รายละเอียดกิจกรรม (ไม่บังคับ)')} 
+              placeholder={t('companyEvent.description')} 
               value={newEvent.description} 
               onChange={e => setNewEvent(prev => ({ ...prev, description: e.target.value }))} 
             />
             <Input 
               type="date" 
-              placeholder={t('companyEvent.datePlaceholder', 'yyyy-mm-dd')}
+              placeholder={t('companyEvent.datePlaceholder')}
               value={newEvent.date} 
               onChange={e => setNewEvent(prev => ({ ...prev, date: e.target.value }))} 
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAdd(false)}>{t('common.cancel', 'ยกเลิก')}</Button>
-            <Button onClick={handleAdd}>{t('common.save', 'บันทึก')}</Button>
+            <Button variant="outline" onClick={() => setShowAdd(false)}>{t('common.cancel')}</Button>
+            <Button onClick={handleAdd}>{t('common.save')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -597,16 +597,16 @@ const CompanyMonthDetailPage = () => {
       <Dialog open={showEdit} onOpenChange={setShowEdit}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>แก้ไขกิจกรรมของบริษัท</DialogTitle>
+            <DialogTitle>{t('companyEvent.editTitle')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <Input 
-              placeholder="ชื่อกิจกรรม" 
+              placeholder={t('companyEvent.name')}
               value={editingEvent?.title || ''} 
               onChange={e => setEditingEvent(prev => prev ? { ...prev, title: e.target.value } : null)} 
             />
             <Textarea 
-              placeholder="รายละเอียดกิจกรรม (ไม่บังคับ)" 
+              placeholder={t('companyEvent.description' )}
               value={editingEvent?.description || ''} 
               onChange={e => setEditingEvent(prev => prev ? { ...prev, description: e.target.value } : null)} 
             />
@@ -617,8 +617,8 @@ const CompanyMonthDetailPage = () => {
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEdit(false)}>ยกเลิก</Button>
-            <Button onClick={handleEditSave}>บันทึก</Button>
+            <Button variant="outline" onClick={() => setShowEdit(false)}>{t('common.cancel')}</Button>
+            <Button onClick={handleEditSave}>{t('common.save')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

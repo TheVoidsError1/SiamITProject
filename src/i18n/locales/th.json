@@ -752,6 +752,16 @@
     "saveChanges": "บันทึกการแก้ไข",
     "editNewsError": "แก้ไขข่าวสารไม่สำเร็จ"
   },
+  "companyEvent": {
+    "editTitle": "แก้ไขกิจกรรมของบริษัท",
+    "name": "ชื่อกิจกรรม",
+    "description": "รายละเอียดกิจกรรม (ไม่บังคับ)",
+    "datePlaceholder": "yyyy-mm-dd",
+    "save": "บันทึก",
+    "cancel": "ยกเลิก",
+    "edit": "แก้ไข",
+    "addTitle": "เพิ่มกิจกรรมของบริษัท"
+  },
   "announcementsFeed": {
     "title": "ฟีดข่าวสาร",
     "subtitle": "ดูข่าวสารและประกาศล่าสุดจากบริษัท",

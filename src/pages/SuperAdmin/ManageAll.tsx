@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '@/contexts/AuthContext';
 import { apiService, apiEndpoints } from '@/lib/api';
 import { showToastMessage } from '@/lib/toast';
 
@@ -24,6 +25,7 @@ import { showToastMessage } from '@/lib/toast';
 
 const ManageAll: React.FC = () => {
   const { t, i18n } = useTranslation();
+  const { user } = useAuth();
 
   const lang = i18n.language.startsWith('th') ? 'th' : 'en';
   // Position state

@@ -66,7 +66,7 @@ const LeaveHistory = () => {
   const [deleting, setDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
-  const { showSessionExpiredDialog } = useAuth();
+  const { showSessionExpiredDialog, user } = useAuth();
 
   // Calculate summary statistics from summary data (all pages)
   const totalLeaveDays = summary ? summary.totalLeaveDays : 0;
@@ -895,37 +895,39 @@ const LeaveHistory = () => {
                           >
                             {t('common.viewDetails')}
                           </Button>
-                          <AlertDialog open={showDeleteDialog && deleteLeaveId === leave.id} onOpenChange={setShowDeleteDialog}>
-                            <AlertDialogTrigger asChild>
-                              <Button 
-                                size="sm" 
-                                variant="destructive" 
-                                onClick={() => handleDeleteLeave(leave.id)}
-                                className="transition-all duration-300 transform hover:scale-105 hover:shadow-md btn-press hover-glow text-sm px-4 py-2"
-                              >
-                                <Trash2 className="w-4 h-4 mr-1" />
-                                {t('common.delete')}
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>{t('common.confirmDelete')}</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                  {t('leave.deleteConfirmMessage', 'คุณต้องการลบใบลานี้หรือไม่? การดำเนินการนี้ไม่สามารถยกเลิกได้')}
-                                </AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                                <AlertDialogAction 
-                                  onClick={confirmDeleteLeave}
-                                  disabled={deleting}
-                                  className="bg-red-600 hover:bg-red-700"
+                          {user?.role === 'superadmin' && (
+                            <AlertDialog open={showDeleteDialog && deleteLeaveId === leave.id} onOpenChange={setShowDeleteDialog}>
+                              <AlertDialogTrigger asChild>
+                                <Button 
+                                  size="sm" 
+                                  variant="destructive" 
+                                  onClick={() => handleDeleteLeave(leave.id)}
+                                  className="transition-all duration-300 transform hover:scale-105 hover:shadow-md btn-press hover-glow text-sm px-4 py-2"
                                 >
-                                  {deleting ? t('common.deleting', 'กำลังลบ...') : t('common.delete')}
-                                </AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
+                                  <Trash2 className="w-4 h-4 mr-1" />
+                                  {t('common.delete')}
+                                </Button>
+                              </AlertDialogTrigger>
+                              <AlertDialogContent>
+                                <AlertDialogHeader>
+                                  <AlertDialogTitle>{t('common.confirmDelete')}</AlertDialogTitle>
+                                  <AlertDialogDescription>
+                                    {t('leave.deleteConfirmMessage', 'คุณต้องการลบใบลานี้หรือไม่? การดำเนินการนี้ไม่สามารถยกเลิกได้')}
+                                  </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                  <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                                  <AlertDialogAction 
+                                    onClick={confirmDeleteLeave}
+                                    disabled={deleting}
+                                    className="bg-red-600 hover:bg-red-700"
+                                  >
+                                    {deleting ? t('common.deleting', 'กำลังลบ...') : t('common.delete')}
+                                  </AlertDialogAction>
+                                </AlertDialogFooter>
+                              </AlertDialogContent>
+                            </AlertDialog>
+                          )}
                         </div>
                       </div>
                     </div>

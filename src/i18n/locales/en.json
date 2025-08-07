@@ -736,6 +736,16 @@
     "saveChanges": "Save Changes",
     "editNewsError": "Failed to edit news"
   },
+  "companyEvent": {
+    "editTitle": "Edit Company Event",
+    "name": "Event Name",
+    "description": "Event Description (optional)",
+    "datePlaceholder": "yyyy-mm-dd",
+    "save": "Save",
+    "cancel": "Cancel",
+    "edit": "Edit",
+    "addTitle": "Add Company Event"
+  },
   "announcementsFeed": {
     "title": "Announcements Feed",
     "subtitle": "View latest announcements and news from the company",

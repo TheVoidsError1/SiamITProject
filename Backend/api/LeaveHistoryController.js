@@ -142,6 +142,9 @@ module.exports = (AppDataSource) => {
         
         totalLeaveDays += totalDaysFromHours;
         totalLeaveHours = totalRemainingHours;
+        
+        // เพิ่มการคำนวณชั่วโมงรวมทั้งหมด (ไม่แปลงเป็นวัน)
+        const totalHoursUsed = totalHoursFromHourlyLeaves;
       
       const approvedCount = allLeavesForSummary.filter(l => l.status === 'approved').length;
       const pendingCount = allLeavesForSummary.filter(l => l.status === 'pending').length;
@@ -159,7 +162,7 @@ module.exports = (AppDataSource) => {
         totalDaysFromHours: `${totalDaysFromHours} days (แปลงจากชั่วโมงรวม)`,
         totalRemainingHours: `${totalRemainingHours} hours (ชั่วโมงที่เหลือ)`,
         totalLeaveDays: `${totalLeaveDays} days (รวมจากวันปกติ + วันจากชั่วโมงรวม)`,
-        totalLeaveHours: `${totalLeaveHours} hours (ชั่วโมงที่เหลือจากชั่วโมงรวม)`,
+        totalLeaveHours: `${totalHoursUsed} hours (ชั่วโมงรวมทั้งหมดที่ส่งไป frontend)`,
         approvedCount,
         pendingCount,
         rejectedCount,
@@ -293,7 +296,7 @@ module.exports = (AppDataSource) => {
         totalPages: Math.ceil(total / limit),
         summary: {
           totalLeaveDays,
-          totalLeaveHours,
+          totalLeaveHours: totalHoursUsed, // ส่งชั่วโมงรวมทั้งหมดแทนที่จะเป็นแค่ชั่วโมงที่เหลือ
           approvedCount,
           pendingCount,
           rejectedCount,

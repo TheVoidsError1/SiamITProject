@@ -1000,15 +1000,17 @@ const EmployeeDetail = () => {
                                 <Eye className="w-3.5 h-3.5 mr-1" />
                                 {t('common.viewDetails')}
                               </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                className="rounded-lg px-3 py-1.5 font-medium bg-gradient-to-r from-red-500 to-red-600 text-white shadow hover:scale-105 transition text-xs"
-                                onClick={() => setDeleteLeaveId(leave.id)}
-                              >
-                                <Trash2 className="w-3.5 h-3.5 mr-1" />
-                                {t('common.delete')}
-                          </Button>
+                              {user?.role === 'superadmin' && (
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  className="rounded-lg px-3 py-1.5 font-medium bg-gradient-to-r from-red-500 to-red-600 text-white shadow hover:scale-105 transition text-xs"
+                                  onClick={() => setDeleteLeaveId(leave.id)}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5 mr-1" />
+                                  {t('common.delete')}
+                                </Button>
+                              )}
                             </div>
                         </TableCell>
                       </TableRow>
