@@ -31,6 +31,7 @@ module.exports = new EntitySchema({
       },
       phone_number: {
         type: 'varchar',
+        nullable: true
       },
       start_work: {
         type: 'date',

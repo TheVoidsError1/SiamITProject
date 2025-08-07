@@ -6,6 +6,7 @@ const leaveRequestController = require('../api/LeaveRequestController');
 const leaveHistoryController = require('../api/LeaveHistoryController');
 const leaveQuotaController = require('../api/LeaveQuotaController');
 const typeLeaveController = require('../api/TpyeLeaveController');
+const leaveUsedController = require('../api/LeaveUsedController');
 
 const initializeLeaveRoutes = (AppDataSource) => {
   // Leave request routes
@@ -19,6 +20,9 @@ const initializeLeaveRoutes = (AppDataSource) => {
   
   // Leave type routes
   router.use('/', typeLeaveController(AppDataSource));
+  
+  // Leave used routes
+  router.use('/leave-used', leaveUsedController(AppDataSource));
   
   return router;
 };
