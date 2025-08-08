@@ -196,6 +196,15 @@ module.exports = (AppDataSource) => {
       // Add avatar_url from ProcessCheck
       profile.avatar_url = processCheck.avatar_url || null;
       
+      // Add additional user fields
+      if (userEntity) {
+        profile.gender = userEntity.gender || null;
+        profile.dob = userEntity.dob || null;
+        profile.phone_number = userEntity.phone_number || null;
+        profile.start_work = userEntity.start_work || null;
+        profile.end_work = userEntity.end_work || null;
+      }
+      
       return res.json({ success: true, data: profile });
     } catch (err) {
       console.error('Profile error:', err);
@@ -270,7 +279,7 @@ module.exports = (AppDataSource) => {
         return res.status(404).json({ success: false, message: 'User not found in ProcessCheck' });
       }
       const { Role: role, Repid: repid, Email: email } = processCheck;
-      const { name, email: newEmail, position_id, department_id, password } = req.body;
+      const { name, email: newEmail, position_id, department_id, password, gender, dob, phone_number, start_work, end_work } = req.body;
       const departmentRepo = AppDataSource.getRepository('Department');
       const positionRepo = AppDataSource.getRepository('Position');
       let updated;
@@ -307,6 +316,11 @@ module.exports = (AppDataSource) => {
         userEntity.email = newEmail || userEntity.email;
         userEntity.department = department_id || userEntity.department;
         userEntity.position = position_id || userEntity.position;
+        userEntity.gender = gender !== undefined ? gender : userEntity.gender;
+        userEntity.dob = dob !== undefined ? dob : userEntity.dob;
+        userEntity.phone_number = phone_number !== undefined ? phone_number : userEntity.phone_number;
+        userEntity.start_work = start_work !== undefined ? start_work : userEntity.start_work;
+        userEntity.end_work = end_work !== undefined ? end_work : userEntity.end_work;
         if (hashedPassword) userEntity.password = hashedPassword;
         updated = await userRepo.save(userEntity);
       }
@@ -339,6 +353,16 @@ module.exports = (AppDataSource) => {
       if (role === 'admin') profile.name = updated.admin_name;
       else if (role === 'superadmin') profile.name = updated.superadmin_name;
       else profile.name = updated.User_name;
+      
+      // Add additional user fields to response
+      if (updated) {
+        profile.gender = updated.gender || null;
+        profile.dob = updated.dob || null;
+        profile.phone_number = updated.phone_number || null;
+        profile.start_work = updated.start_work || null;
+        profile.end_work = updated.end_work || null;
+      }
+      
       return res.json({ success: true, data: profile });
     } catch (err) {
       console.error('Profile update error:', err);

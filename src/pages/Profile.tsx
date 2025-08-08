@@ -30,6 +30,11 @@ const Profile = () => {
     email: '',
     department: '',
     position: '',
+    gender: '',
+    dob: '',
+    phone_number: '',
+    start_work: '',
+    end_work: '',
   });
   const [saving, setSaving] = useState(false);
   const [departments, setDepartments] = useState<any[]>([]);
@@ -102,6 +107,11 @@ const Profile = () => {
           email: data.email || '',
           department: data.department_id ? String(data.department_id) : '',
           position: data.position_id ? String(data.position_id) : '',
+          gender: data.gender || '',
+          dob: data.dob || '',
+          phone_number: data.phone_number || '',
+          start_work: data.start_work || '',
+          end_work: data.end_work || '',
         });
           setProfileLoaded(true);
         }
@@ -293,6 +303,11 @@ const Profile = () => {
         email: formData.email,
         position_id: formData.position || null,
         department_id: formData.department || null,
+        gender: formData.gender || null,
+        dob: formData.dob || null,
+        phone_number: formData.phone_number || null,
+        start_work: formData.start_work || null,
+        end_work: formData.end_work || null,
       };
       const res = await apiService.put(apiEndpoints.auth.profile, requestData);
       if (res.success) {
@@ -306,6 +321,11 @@ const Profile = () => {
           email: updatedData.email || formData.email,
           department: updatedData.department_id ? String(updatedData.department_id) : '',
           position: updatedData.position_id ? String(updatedData.position_id) : '',
+          gender: updatedData.gender || formData.gender,
+          dob: updatedData.dob || formData.dob,
+          phone_number: updatedData.phone_number || formData.phone_number,
+          start_work: updatedData.start_work || formData.start_work,
+          end_work: updatedData.end_work || formData.end_work,
         });
         updateUser({
           full_name: updatedData.name || formData.full_name,
@@ -473,7 +493,7 @@ const Profile = () => {
 
             <TabsContent value="personal" className="p-8 bg-white/90 rounded-3xl">
               <form className="space-y-6" onSubmit={e => { e.preventDefault(); handleSave(); }}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-3">
                     <Label htmlFor="full_name" className="text-base text-blue-900 font-medium">{t('auth.fullName')}</Label>
                     <Input
@@ -538,6 +558,72 @@ const Profile = () => {
                           ))}
                       </SelectContent>
                     </Select>
+                  </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="gender" className="text-base text-blue-900 font-medium">{t('employee.gender')}</Label>
+                    <Select
+                      value={formData.gender || "not_specified"}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, gender: value === "not_specified" ? "" : value }))}
+                    >
+                      <SelectTrigger className="input-blue">
+                        <SelectValue placeholder={t('employee.selectGender')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="not_specified" className="text-blue-900">
+                          {t('employee.preferNotToSay')}
+                        </SelectItem>
+                        <SelectItem value="male" className="text-blue-900">
+                          {t('employee.male')}
+                        </SelectItem>
+                        <SelectItem value="female" className="text-blue-900">
+                          {t('employee.female')}
+                        </SelectItem>
+                        <SelectItem value="other" className="text-blue-900">
+                          {t('employee.other')}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="dob" className="text-base text-blue-900 font-medium">{t('employee.birthday')}</Label>
+                    <Input
+                      id="dob"
+                      type="date"
+                      value={formData.dob}
+                      onChange={(e) => setFormData(prev => ({ ...prev, dob: e.target.value }))}
+                      className="input-blue"
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="phone_number" className="text-base text-blue-900 font-medium">{t('employee.phoneNumber')}</Label>
+                    <Input
+                      id="phone_number"
+                      type="tel"
+                      value={formData.phone_number}
+                      onChange={(e) => setFormData(prev => ({ ...prev, phone_number: e.target.value }))}
+                      placeholder={t('employee.enterPhoneNumber')}
+                      className="input-blue"
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="start_work" className="text-base text-blue-900 font-medium">{t('employee.internshipStartDate')}</Label>
+                    <Input
+                      id="start_work"
+                      type="date"
+                      value={formData.start_work}
+                      onChange={(e) => setFormData(prev => ({ ...prev, start_work: e.target.value }))}
+                      className="input-blue"
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="end_work" className="text-base text-blue-900 font-medium">{t('employee.internshipEndDate')}</Label>
+                    <Input
+                      id="end_work"
+                      type="date"
+                      value={formData.end_work}
+                      onChange={(e) => setFormData(prev => ({ ...prev, end_work: e.target.value }))}
+                      className="input-blue"
+                    />
                   </div>
                 </div>
                 <div className="flex justify-end">

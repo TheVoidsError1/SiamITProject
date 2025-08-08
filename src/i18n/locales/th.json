@@ -662,7 +662,17 @@
     "startWorkDate": "วันที่เริ่มงาน",
     "selectGender": "เลือกเพศ",
     "male": "ชาย",
-    "female": "หญิง"
+    "female": "หญิง",
+    "birthday": "วันเกิด",
+    "phoneNumber": "เบอร์โทรศัพท์",
+    "internshipStartDate": "วันเริ่มฝึกงาน",
+    "internshipEndDate": "วันสิ้นสุดฝึกงาน",
+    "selectBirthday": "เลือกวันเกิด",
+    "enterPhoneNumber": "กรอกเบอร์โทรศัพท์",
+    "selectInternshipStartDate": "เลือกวันเริ่มฝึกงาน",
+    "selectInternshipEndDate": "เลือกวันสิ้นสุดฝึกงาน",
+    "other": "อื่นๆ",
+    "preferNotToSay": "ไม่ต้องการระบุ"
   },
   "notification": {
     "notifications": "การแจ้งเตือน",
