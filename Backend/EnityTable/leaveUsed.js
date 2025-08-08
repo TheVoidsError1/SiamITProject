@@ -16,7 +16,7 @@ module.exports = new EntitySchema({
             length: 36,
             nullable: false,
         },
-        leave_type_id: {
+        leave_type: {
             type: 'varchar',
             nullable: false,
         },
@@ -40,17 +40,16 @@ module.exports = new EntitySchema({
             onUpdate: 'CURRENT_TIMESTAMP',
         },
     },
-    // No foreign key constraint - user_id can reference users, admin, or superadmin tables
-    // relations: {
-    //     user: {
-    //         type: 'many-to-one',
-    //         target: 'User',
-    //         joinColumn: {
-    //             name: 'user_id',
-    //             referencedColumnName: 'id',
-    //         },
-    //     },
-    // },
+    relations: {
+        user: {
+            type: 'many-to-one',
+            target: 'User',
+            joinColumn: {
+                name: 'user_id',
+                referencedColumnName: 'id',
+            },
+        },
+    },
     beforeInsert: (entity) => {
         if (!entity.id) {
             entity.id = uuidv4();

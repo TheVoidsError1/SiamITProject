@@ -32,6 +32,102 @@
      }
    }
 
+   // Helper function to update LeaveUsed table (only for approved requests)
+   async function updateLeaveUsed(leave) {
+     try {
+       const leaveUsedRepo = AppDataSource.getRepository('LeaveUsed');
+       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+       
+       // Get leave type entity
+       let leaveTypeEntity = null;
+       if (leave.leaveType && leave.leaveType.length > 20) {
+         leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leave.leaveType });
+       } else {
+         leaveTypeEntity = await leaveTypeRepo.findOne({
+           where: [
+             { leave_type_th: leave.leaveType },
+             { leave_type_en: leave.leaveType }
+           ]
+         });
+       }
+
+       if (!leaveTypeEntity) {
+         console.error('Leave type not found for leave request:', leave.id);
+         return;
+       }
+
+       // Calculate days/hours
+       let days = 0;
+       let hours = 0;
+
+       const isPersonalLeave = leaveTypeEntity && 
+         (leaveTypeEntity.leave_type_en?.toLowerCase() === 'personal' || 
+          leaveTypeEntity.leave_type_th === 'ลากิจ');
+
+       if (isPersonalLeave && leave.startTime && leave.endTime) {
+         // Hour-based calculation for personal leave
+         const startMinutes = convertToMinutes(...leave.startTime.split(':').map(Number));
+         const endMinutes = convertToMinutes(...leave.endTime.split(':').map(Number));
+         let durationHours = (endMinutes - startMinutes) / 60;
+         if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
+         hours = durationHours;
+       } else if (leave.startDate && leave.endDate) {
+         // Day-based calculation
+         const start = new Date(leave.startDate);
+         const end = new Date(leave.endDate);
+         let calculatedDays = calculateDaysBetween(start, end);
+         if (calculatedDays < 0 || isNaN(calculatedDays)) calculatedDays = 0;
+         days = calculatedDays;
+       }
+
+       // Skip if no days or hours
+       if (days === 0 && hours === 0) {
+         console.log('No days or hours to update for leave request:', leave.id);
+         return;
+       }
+
+       // Convert 9 hours to 1 day
+       let finalDays = days;
+       let finalHours = hours;
+       
+       if (hours >= config.business.workingHoursPerDay) {
+         const additionalDays = Math.floor(hours / config.business.workingHoursPerDay);
+         finalDays += additionalDays;
+         finalHours = hours % config.business.workingHoursPerDay;
+         console.log(`Converted ${hours} hours to ${additionalDays} days + ${finalHours} hours for leave request:`, leave.id);
+       }
+
+       // Find existing record
+       const existingRecord = await leaveUsedRepo.findOne({
+         where: { 
+           user_id: leave.Repid, 
+           leave_type_id: leaveTypeEntity.id 
+         }
+       });
+
+       // Add to LeaveUsed table
+       if (existingRecord) {
+         existingRecord.days = (existingRecord.days || 0) + finalDays;
+         existingRecord.hour = (existingRecord.hour || 0) + finalHours;
+         existingRecord.updated_at = new Date();
+         await leaveUsedRepo.save(existingRecord);
+         console.log('Updated LeaveUsed record for user:', leave.Repid, 'leave type:', leaveTypeEntity.leave_type_th, `(${finalDays} days, ${finalHours} hours)`);
+       } else {
+         const newRecord = leaveUsedRepo.create({
+           user_id: leave.Repid,
+           leave_type_id: leaveTypeEntity.id,
+           days: finalDays,
+           hour: finalHours
+         });
+         await leaveUsedRepo.save(newRecord);
+         console.log('Created new LeaveUsed record for user:', leave.Repid, 'leave type:', leaveTypeEntity.leave_type_th, `(${finalDays} days, ${finalHours} hours)`);
+       }
+     } catch (error) {
+       console.error('Error updating LeaveUsed table:', error);
+       // Don't fail the main request if LeaveUsed update fails
+     }
+   }
+
    // ใช้ฟังก์ชันแปลงวันที่ให้เป็น Local Time (แก้บัค -1 วัน)
    function parseLocalDate(dateStr) {
      if (!dateStr) return null;
@@ -1288,6 +1384,9 @@
          const leave = await leaveRepo.findOneBy({ id: id });
          if (!leave) return res.status(404).json({ success: false, message: 'Leave request not found' });
 
+         // Store the old status to check if we need to update LeaveUsed
+         const oldStatus = leave.status;
+         
          leave.status = status;
          leave.statusBy = approverName;
          leave.statusChangeTime = new Date();
@@ -1299,6 +1398,11 @@
            if (rejectedReason) leave.rejectedReason = rejectedReason;
          }
          await leaveRepo.save(leave);
+
+         // Update LeaveUsed table only when status changes to approved
+         if (status === 'approved') {
+           await updateLeaveUsed(leave);
+         }
 
          // Emit Socket.io event for real-time notification
          if (global.io) {
