@@ -43,6 +43,7 @@ const LeaveHistory = () => {
   const [selectedLeave, setSelectedLeave] = useState<any | null>(null);
   const [showDetailDialog, setShowDetailDialog] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
   const [showImagePreview, setShowImagePreview] = useState(false);
   // --- เพิ่ม state สำหรับ items per page ---
   const [limit, setLimit] = useState(5);
@@ -1288,11 +1289,11 @@ const LeaveHistory = () => {
                             {isImage ? (
                               <div className="space-y-3">
                                 <div className="relative group cursor-pointer" onClick={() => {
-                                  setSelectedImage(`/leave-uploads/${attachment}`);
+                                  setSelectedImage(`${API_BASE_URL}/leave-uploads/${attachment}`);
                                   setShowImagePreview(true);
                                 }}>
                                   <img 
-                                    src={`/leave-uploads/${attachment}`} 
+                                    src={`${API_BASE_URL}/leave-uploads/${attachment}`} 
                                     alt={fileName}
                                     className="w-full h-32 object-cover rounded-lg border transition-all duration-300 group-hover:scale-105"
                                     onError={(e) => {
@@ -1313,7 +1314,7 @@ const LeaveHistory = () => {
                                       size="sm" 
                                       variant="outline"
                                       onClick={() => {
-                                        setSelectedImage(`/leave-uploads/${attachment}`);
+                                        setSelectedImage(`${API_BASE_URL}/leave-uploads/${attachment}`);
                                         setShowImagePreview(true);
                                       }}
                                       className="text-xs px-2 py-1"
@@ -1325,7 +1326,7 @@ const LeaveHistory = () => {
                                       variant="outline"
                                       onClick={() => {
                                         const link = document.createElement('a');
-                                        link.href = `/leave-uploads/${attachment}`;
+                                        link.href = `${API_BASE_URL}/leave-uploads/${attachment}`;
                                         link.download = fileName;
                                         link.click();
                                       }}
@@ -1353,7 +1354,7 @@ const LeaveHistory = () => {
                                     <Button 
                                       size="sm" 
                                       variant="outline"
-                                      onClick={() => window.open(`/leave-uploads/${attachment}`, '_blank')}
+                                      onClick={() => window.open(`${API_BASE_URL}/leave-uploads/${attachment}`, '_blank')}
                                       className="text-xs px-2 py-1"
                                     >
                                       {t('common.view')}
@@ -1363,7 +1364,7 @@ const LeaveHistory = () => {
                                       variant="outline"
                                       onClick={() => {
                                         const link = document.createElement('a');
-                                        link.href = `/leave-uploads/${attachment}`;
+                                        link.href = `${API_BASE_URL}/leave-uploads/${attachment}`;
                                         link.download = fileName;
                                         link.click();
                                       }}

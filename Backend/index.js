@@ -141,6 +141,8 @@ if (!fs.existsSync(announcementsDir)) {
 
 // Serve static files for uploaded images
 app.use('/uploads', express.static(uploadsDir));
+// Serve static files for leave request attachments stored under public/leave-uploads
+app.use('/leave-uploads', express.static(config.getLeaveUploadsPath()));
 
 app.get('/', (req, res) => {
   res.send('Hello from Express + TypeORM!');

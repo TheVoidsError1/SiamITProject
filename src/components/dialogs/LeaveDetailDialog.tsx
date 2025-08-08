@@ -470,7 +470,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                           {isImage ? (
                             <div className="space-y-3">
                               <img 
-                                src={`/leave-uploads/${attachment}`} 
+                                src={`${API_BASE_URL}/leave-uploads/${attachment}`} 
                                 alt={fileName}
                                 className="w-full h-32 object-cover rounded-lg border"
                                 onError={(e) => {
@@ -484,7 +484,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                                   <Button 
                                     size="sm" 
                                     variant="outline"
-                                    onClick={() => window.open(`/leave-uploads/${attachment}`, '_blank')}
+                                     onClick={() => window.open(`${API_BASE_URL}/leave-uploads/${attachment}`, '_blank')}
                                   >
                                     {t('common.view', 'View')}
                                   </Button>
@@ -493,7 +493,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                                     variant="outline"
                                     onClick={() => {
                                       const link = document.createElement('a');
-                                      link.href = `/leave-uploads/${attachment}`;
+                                        link.href = `${API_BASE_URL}/leave-uploads/${attachment}`;
                                       link.download = fileName;
                                       link.click();
                                     }}
@@ -510,12 +510,12 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                               </div>
                               <div className="flex items-center justify-between">
                                 <span className="text-sm text-gray-600 truncate">{fileName}</span>
-                                <Button 
+                                    <Button 
                                   size="sm" 
                                   variant="outline"
                                   onClick={() => {
                                     const link = document.createElement('a');
-                                    link.href = `/leave-uploads/${attachment}`;
+                                         link.href = `${API_BASE_URL}/leave-uploads/${attachment}`;
                                     link.download = fileName;
                                     link.click();
                                   }}

@@ -23,7 +23,12 @@ const Register = () => {
     full_name: '',
     department: '',
     position: '',
-    role: 'employee' as 'employee' | 'admin' | 'intern'
+    role: 'employee' as 'employee' | 'admin' | 'intern',
+    gender: '' as '' | 'male' | 'female' | 'other',
+    dob: '',
+    phone_number: '',
+    start_work: '',
+    end_work: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -129,6 +134,24 @@ const Register = () => {
       return;
     }
 
+    // ตรวจว่าเป็นเด็กฝึกงานหรือไม่ เพื่อกำหนด validation ช่วงฝึกงาน
+    const selectedPos = positions.find(p => p.id === formData.position);
+    const isIntern = selectedPos ? (
+      (selectedPos.position_name_th || '').includes('ฝึกงาน') ||
+      (selectedPos.position_name_en || '').toLowerCase().includes('intern')
+    ) : false;
+
+    if (isIntern) {
+      if (!formData.start_work || !formData.end_work) {
+        toast({ title: t('common.error'), description: t('auth.pleaseFillInternDates', 'กรุณาเลือกวันที่เริ่มและสิ้นสุดการฝึกงาน'), variant: 'destructive' });
+        return;
+      }
+      if (formData.start_work > formData.end_work) {
+        toast({ title: t('common.error'), description: t('auth.dateRangeInvalid', 'ช่วงวันที่ฝึกงานไม่ถูกต้อง'), variant: 'destructive' });
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
@@ -139,7 +162,12 @@ const Register = () => {
         full_name: formData.full_name,
         department: formData.department,
         position: formData.position,
-        role: signupRole
+        role: signupRole,
+        gender: formData.gender,
+        dob: formData.dob,
+        phone_number: formData.phone_number,
+        start_work: formData.start_work || undefined,
+        end_work: isIntern ? formData.end_work : undefined,
       });
       
       toast({
@@ -226,20 +254,32 @@ const Register = () => {
                   />
                   <User className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
                 </div>
-                {error.full_name && (
-                  <div className="flex items-center gap-2 text-red-500 text-sm mt-1">
-                    <AlertCircle className="h-4 w-4" />
-                    {error.full_name}
-                  </div>
-                )}
+                {error.full_name && <div className="text-red-500 text-xs mt-1">{error.full_name}</div>}
               </div>
 
-              {/* Position Field */}
-              <div className="space-y-2">
-                <Label htmlFor="position" className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <Building className="h-4 w-4" />
-                  {t('auth.position')}
-                </Label>
+              {/* Gender */}
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="gender" className="mb-2 block">{t('employee.gender')}</Label>
+                <Select value={formData.gender} onValueChange={(value) => setFormData(prev => ({ ...prev, gender: value as any }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('employee.selectGender')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">{t('employee.male')}</SelectItem>
+                    <SelectItem value="female">{t('employee.female')}</SelectItem>
+                    <SelectItem value="other">{t('employee.other')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Date of Birth */}
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="dob" className="mb-2 block">{t('employee.birthdate')}</Label>
+                <Input id="dob" type="date" value={formData.dob} onChange={(e) => setFormData(prev => ({ ...prev, dob: e.target.value }))} />
+              </div>
+
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="position" className="mb-2 block">{t('auth.position')}</Label>
                 <Select onValueChange={(value) => setFormData(prev => ({ ...prev, position: value }))}>
                   <SelectTrigger className="border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 rounded-xl py-3">
                     <SelectValue placeholder={t('positions.selectPosition')} />
@@ -284,13 +324,39 @@ const Register = () => {
                 </Select>
               </div>
 
-              {/* Email Field */}
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  {t('auth.email')}
-                </Label>
-                <div className="relative group">
+              {/* Phone number */}
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="phone" className="mb-2 block">{t('employee.phoneNumber')}</Label>
+                <Input id="phone" type="tel" placeholder={t('employee.enterPhoneNumber')} value={formData.phone_number} onChange={(e) => setFormData(prev => ({ ...prev, phone_number: e.target.value }))} />
+              </div>
+
+              {/* Start/End work dates: always show start date; show end date only for Intern */}
+              {(() => {
+                const selectedPos = positions.find(p => p.id === formData.position);
+                const isIntern = selectedPos ? (
+                  (selectedPos.position_name_th || '').includes('ฝึกงาน') ||
+                  (selectedPos.position_name_en || '').toLowerCase().includes('intern')
+                ) : false;
+                return (
+                  <div className={`grid grid-cols-1 ${isIntern ? 'md:grid-cols-2' : ''} gap-4`}>
+                    <div className="space-y-2">
+                      <Label htmlFor="start_work" className="mb-2 block">{isIntern ? t('employee.internshipStartDate') : t('employee.startWorkDate')}</Label>
+                      <Input id="start_work" type="date" value={formData.start_work} onChange={(e) => setFormData(prev => ({ ...prev, start_work: e.target.value }))} />
+                    </div>
+                    {isIntern && (
+                      <div className="space-y-2">
+                        <Label htmlFor="end_work" className="mb-2 block">{t('employee.internshipEndDate')}</Label>
+                        <Input id="end_work" type="date" value={formData.end_work} onChange={(e) => setFormData(prev => ({ ...prev, end_work: e.target.value }))} />
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="email" className="mb-2 block">{t('auth.email')}</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     id="email"
                     type="email"

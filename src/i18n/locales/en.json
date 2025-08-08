@@ -652,7 +652,17 @@
     "startWorkDate": "Start Work Date",
     "selectGender": "Select Gender",
     "male": "Male",
-    "female": "Female"
+    "female": "Female",
+    "birthday": "Birthday",
+    "phoneNumber": "Phone Number",
+    "internshipStartDate": "Internship Start Date",
+    "internshipEndDate": "Internship End Date",
+    "selectBirthday": "Select Birthday",
+    "enterPhoneNumber": "Enter Phone Number",
+    "selectInternshipStartDate": "Select Internship Start Date",
+    "selectInternshipEndDate": "Select Internship End Date",
+    "other": "Other",
+    "preferNotToSay": "Prefer not to say"
   },
   "notification": {
     "notifications": "Notifications",
