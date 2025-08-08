@@ -101,7 +101,12 @@ app.use(cors({
       // Allow all ngrok domains
       /^https:\/\/.*\.ngrok-free\.app$/,
       /^https:\/\/.*\.ngrok\.io$/,
-      /^https:\/\/.*\.loca\.lt$/
+      /^https:\/\/.*\.loca\.lt$/,
+      // Allow common local dev hosts on any port (http)
+      /^http:\/\/localhost:\d{2,5}$/,
+      /^http:\/\/127\.0\.0\.1:\d{2,5}$/,
+      // Allow local network IPs on any port (e.g., 192.168.x.x:5173)
+      /^http:\/\/192\.168\.[0-9]{1,3}\.[0-9]{1,3}:\d{2,5}$/
     ];
     
     // Check if the origin is allowed
