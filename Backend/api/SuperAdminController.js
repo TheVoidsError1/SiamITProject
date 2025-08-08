@@ -637,17 +637,15 @@ module.exports = (AppDataSource) => {
     try {
       const { id } = req.params;
       const superadminRepo = AppDataSource.getRepository('SuperAdmin');
-      const processRepo = AppDataSource.getRepository('ProcessCheck');
+      const { deleteUserComprehensive } = require('../utils/userDeletionUtils');
 
-      // Delete from process_check
-      await processRepo.delete({ Repid: id, Role: 'superadmin' });
-      // Delete from superadmin table
-      const result = await superadminRepo.delete({ id });
-      if (result.affected === 0) {
+      const result = await deleteUserComprehensive(AppDataSource, id, 'superadmin', superadminRepo);
+      
+      sendSuccess(res, result.deletionSummary, result.message);
+    } catch (err) {
+      if (err.message === 'superadmin not found') {
         return sendNotFound(res, 'Superadmin not found');
       }
-      sendSuccess(res, null, 'Superadmin deleted successfully');
-    } catch (err) {
       sendError(res, err.message, 500);
     }
   });

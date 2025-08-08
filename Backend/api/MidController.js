@@ -150,10 +150,15 @@ module.exports = (AppDataSource) => {
    */
   router.delete('/users/:id', async (req, res) => {
     try {
-      await userController.delete(AppDataSource, req.params.id);
-      sendSuccess(res, {}, 'User deleted');
+      const { id } = req.params;
+      const userRepo = AppDataSource.getRepository('User');
+      const { deleteUserComprehensive } = require('../utils/userDeletionUtils');
+
+      const result = await deleteUserComprehensive(AppDataSource, id, 'user', userRepo);
+      
+      sendSuccess(res, result.deletionSummary, result.message);
     } catch (err) {
-      if (err.message === 'Record not found') {
+      if (err.message === 'user not found') {
         return sendNotFound(res, 'User not found');
       }
       sendError(res, err.message, 500);
@@ -342,10 +347,15 @@ module.exports = (AppDataSource) => {
    */
   router.delete('/admins/:id', async (req, res) => {
     try {
-      await adminController.delete(AppDataSource, req.params.id);
-      sendSuccess(res, {}, 'Admin deleted');
+      const { id } = req.params;
+      const adminRepo = AppDataSource.getRepository('Admin');
+      const { deleteUserComprehensive } = require('../utils/userDeletionUtils');
+
+      const result = await deleteUserComprehensive(AppDataSource, id, 'admin', adminRepo);
+      
+      sendSuccess(res, result.deletionSummary, result.message);
     } catch (err) {
-      if (err.message === 'Record not found') {
+      if (err.message === 'admin not found') {
         return sendNotFound(res, 'Admin not found');
       }
       sendError(res, err.message, 500);
