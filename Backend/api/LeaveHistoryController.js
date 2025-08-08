@@ -7,6 +7,17 @@ const { calculateDaysBetween } = require('../utils');
 module.exports = (AppDataSource) => {
   const router = express.Router();
 
+  // ใช้ฟังก์ชัน parseAttachments ปลอดภัย (same as LeaveRequestController)
+  function parseAttachments(val) {
+    if (!val) return [];
+    try {
+      return JSON.parse(val);
+    } catch (e) {
+      console.error('Invalid attachments JSON:', val, e);
+      return [];
+    }
+  }
+
   // GET /api/leave-history (ต้องแนบ JWT)
   router.get('/', authMiddleware, async (req, res) => {
     try {
@@ -265,14 +276,7 @@ module.exports = (AppDataSource) => {
           rejectionReason: leave.rejectedReason,
           submittedDate: leave.createdAt,
           backdated: Boolean(leave.backdated), // แปลงเป็น boolean เพื่อให้แน่ใจ
-          attachments: leave.attachments ? (() => {
-            try {
-              return JSON.parse(leave.attachments);
-            } catch (error) {
-              console.error('Error parsing attachments JSON:', error);
-              return [];
-            }
-          })() : [], // แปลง JSON string เป็น array พร้อม error handling
+          attachments: parseAttachments(leave.attachments), // แปลง JSON string เป็น array พร้อม error handling
           contact: leave.contact || null, // เพิ่มข้อมูลการติดต่อ
         };
       }));

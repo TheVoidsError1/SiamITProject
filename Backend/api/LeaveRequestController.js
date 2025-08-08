@@ -1,6 +1,7 @@
    // Backend/api/LeaveRequestController.js
    const express = require('express');
    const fs = require('fs');
+   const path = require('path');
    const jwt = require('jsonwebtoken');
    const config = require('../config');
    const LineController = require('./LineController');
@@ -1445,6 +1446,28 @@
          const { id } = req.params;
          const leave = await leaveRepo.findOneBy({ id });
          if (!leave) return res.status(404).json({ success: false, message: 'Leave request not found' });
+         
+         // Delete attachment files from file system
+         if (leave.attachments) {
+           try {
+             const attachments = parseAttachments(leave.attachments);
+             const leaveUploadsPath = config.getLeaveUploadsPath();
+             
+             for (const attachment of attachments) {
+               const filePath = path.join(leaveUploadsPath, attachment);
+               if (fs.existsSync(filePath)) {
+                 fs.unlinkSync(filePath);
+                 console.log(`Deleted attachment file: ${filePath}`);
+               } else {
+                 console.log(`Attachment file not found: ${filePath}`);
+               }
+             }
+           } catch (fileError) {
+             console.error('Error deleting attachment files:', fileError);
+             // Continue with deletion even if file deletion fails
+           }
+         }
+         
          await leaveRepo.delete({ id });
          res.json({ success: true, message: 'Leave request deleted successfully' });
        } catch (err) {

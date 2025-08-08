@@ -83,7 +83,7 @@ const config = {
   },
 
   getLeaveUploadsPath: () => {
-    return path.join(__dirname, '../../public', config.uploads.leaveUploads);
+    return config.getUploadsPath(config.uploads.leaveUploads);
   }
 };
 

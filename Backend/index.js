@@ -126,6 +126,7 @@ app.use(cors({
 // Ensure uploads directories exist
 const uploadsDir = config.getUploadsPath();
 const announcementsDir = config.getAnnouncementsUploadPath();
+const leaveUploadsDir = config.getLeaveUploadsPath();
 
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -133,9 +134,30 @@ if (!fs.existsSync(uploadsDir)) {
 if (!fs.existsSync(announcementsDir)) {
   fs.mkdirSync(announcementsDir, { recursive: true });
 }
+if (!fs.existsSync(leaveUploadsDir)) {
+  fs.mkdirSync(leaveUploadsDir, { recursive: true });
+}
 
 // Serve static files for uploaded images
 app.use('/uploads', express.static(uploadsDir));
+
+// Serve leave uploads with authentication
+app.use('/leave-uploads', (req, res, next) => {
+  // Check if user is authenticated
+  const token = req.headers.authorization?.replace('Bearer ', '') || req.query.token;
+  
+  if (!token) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  
+  try {
+    const decoded = jwt.verify(token, config.server.jwtSecret);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+}, express.static(leaveUploadsDir));
 
 app.get('/', (req, res) => {
   res.send('Hello from Express + TypeORM!');

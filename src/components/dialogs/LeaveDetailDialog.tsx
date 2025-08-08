@@ -9,6 +9,7 @@ import { Calendar, CheckCircle, Clock, FileText, History, User, XCircle } from "
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatDateLocalized } from '../../lib/utils';
+import { createAuthenticatedFileUrl } from '../../lib/api';
 
 interface LeaveRequest {
   id: string;
@@ -211,19 +212,12 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto animate-scale-in">
         <DialogHeader>
-          <DialogTitle className="flex items-center">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl font-bold text-blue-600">
-                {t('common.viewDetails')}
-              </span>
-              {leaveDetail && (
-                <div className="flex flex-wrap gap-2">
-                  {getStatusBadge(leaveDetail.status)}
-                  {getRetroactiveBadge(leaveDetail)}
-                </div>
-              )}
-            </div>
+          <DialogTitle>
+            {t('common.viewDetails')}
           </DialogTitle>
+          <DialogDescription>
+            {t('leave.detailDescription', 'Detailed information about this leave request.')}
+          </DialogDescription>
         </DialogHeader>
         
         {leaveDetail ? (
@@ -243,6 +237,11 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                       {formatDateLocalized(leaveDetail.submittedDate || leaveDetail.createdAt || '', i18n.language)}
                     </div>
                   </div>
+                </div>
+                {/* Status badges moved here */}
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {getStatusBadge(leaveDetail.status)}
+                  {getRetroactiveBadge(leaveDetail)}
                 </div>
               </CardContent>
             </Card>
@@ -461,16 +460,21 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {leaveDetail.attachments.map((attachment: string, index: number) => {
+                      // Handle both cases: just filename or full path
                       const fileName = attachment.split('/').pop() || attachment;
                       const fileExtension = fileName.split('.').pop()?.toLowerCase();
                       const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension || '');
+                      
+                      // Construct the correct file path - always prepend /leave-uploads/ if not already present
+                      const filePath = attachment.startsWith('/leave-uploads/') ? attachment : `/leave-uploads/${attachment}`;
+                      const authenticatedFilePath = createAuthenticatedFileUrl(filePath);
                       
                       return (
                         <div key={index} className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
                           {isImage ? (
                             <div className="space-y-3">
                               <img 
-                                src={`/leave-uploads/${attachment}`} 
+                                src={authenticatedFilePath} 
                                 alt={fileName}
                                 className="w-full h-32 object-cover rounded-lg border"
                                 onError={(e) => {
@@ -484,7 +488,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                                   <Button 
                                     size="sm" 
                                     variant="outline"
-                                    onClick={() => window.open(`/leave-uploads/${attachment}`, '_blank')}
+                                    onClick={() => window.open(authenticatedFilePath, '_blank')}
                                   >
                                     {t('common.view', 'View')}
                                   </Button>
@@ -493,7 +497,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                                     variant="outline"
                                     onClick={() => {
                                       const link = document.createElement('a');
-                                      link.href = `/leave-uploads/${attachment}`;
+                                      link.href = authenticatedFilePath;
                                       link.download = fileName;
                                       link.click();
                                     }}
@@ -515,7 +519,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                                   variant="outline"
                                   onClick={() => {
                                     const link = document.createElement('a');
-                                    link.href = `/leave-uploads/${attachment}`;
+                                    link.href = authenticatedFilePath;
                                     link.download = fileName;
                                     link.click();
                                   }}
