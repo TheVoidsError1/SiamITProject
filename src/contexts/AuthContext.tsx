@@ -14,6 +14,11 @@ interface User {
   position?: string;
   position_name_th?: string;
   position_name_en?: string;
+  gender?: 'male' | 'female' | 'other';
+  dob?: string;
+  phone_number?: string;
+  start_work?: string;
+  end_work?: string;
 }
 
 interface AuthContextType {
@@ -190,6 +195,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: email,         // <-- แก้ตรงนี้
         password: password,   // <-- แก้ตรงนี้
         Role: userData.role || 'employee',
+        gender: userData.gender,
+        dob: userData.dob,
+        phone_number: userData.phone_number,
+        start_work: userData.start_work,
+        end_work: userData.end_work,
       }),
     });
     const data = await response.json();

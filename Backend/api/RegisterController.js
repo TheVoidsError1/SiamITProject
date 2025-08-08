@@ -13,7 +13,7 @@ module.exports = (AppDataSource) => {
 
   router.post('/register', async (req, res) => {
     try {
-      const { User_name, department, position, email, password } = req.body;
+      const { User_name, department, position, email, password, gender, dob, phone_number, start_work, end_work } = req.body;
       const userRepo = AppDataSource.getRepository('User');
       const processRepo = AppDataSource.getRepository('ProcessCheck');
       const departmentRepo = AppDataSource.getRepository('Department');
@@ -59,7 +59,12 @@ module.exports = (AppDataSource) => {
         id: uuidv4(),
         User_name,
         department: departmentId,
-        position: positionId
+        position: positionId,
+        gender: gender || null,
+        dob: dob || null,
+        phone_number: phone_number || null,
+        start_work: start_work || null,
+        end_work: end_work || null
       });
 
       // สร้าง JWT Token

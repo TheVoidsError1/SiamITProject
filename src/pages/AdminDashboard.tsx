@@ -38,6 +38,7 @@ const clampLines = 3;
 
 const AdminDashboard = () => {
   const { t, i18n } = useTranslation();
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
   const { toast } = useToast();
   const { user, showSessionExpiredDialog } = useAuth();
   const { socket, isConnected } = useSocket();
@@ -1854,7 +1855,7 @@ const AdminDashboard = () => {
                             const fileName = file.split('/').pop() || file;
                             const ext = fileName.split('.').pop()?.toLowerCase();
                             const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext || '');
-                            const fileUrl = `/leave-uploads/${file}`;
+                            const fileUrl = `${API_BASE_URL}/leave-uploads/${file}`;
                             return (
                               <div key={file} className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
                                 {isImage ? (
