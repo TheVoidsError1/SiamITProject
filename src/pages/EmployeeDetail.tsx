@@ -1,5 +1,4 @@
 import { LeaveDetailDialog } from "@/components/dialogs/LeaveDetailDialog";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,8 +23,7 @@ import { ArrowLeft, Calendar, Edit, Eye, Mail, Trash2, User } from "lucide-react
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useParams } from 'react-router-dom';
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+import { API_BASE_URL, apiEndpoints, apiService } from '../lib/api';
 
 const EmployeeDetail = () => {
   const { id } = useParams();
@@ -42,7 +40,13 @@ const EmployeeDetail = () => {
     password: '',
     department: '',
     position: '',
-    role: ''
+    role: '',
+    gender: '',
+    birthdate: '',
+    phone: '',
+    startWorkDate: '',
+    internStartDate: '',
+    internEndDate: ''
   });
 
   // เพิ่ม state สำหรับข้อมูลจริง
@@ -93,7 +97,7 @@ const EmployeeDetail = () => {
   // ลบ useMemo เดิมออก ไม่ต้อง filter ฝั่ง frontend แล้ว
 
   // --- Move fetch leave history logic to a function ---
-  const fetchLeaveHistory = () => {
+  const fetchLeaveHistory = async () => {
     if (!id) return;
     let params = [];
     if (filterType && filterType !== "all") params.push(`leaveType=${encodeURIComponent(filterType)}`);
@@ -112,32 +116,31 @@ const EmployeeDetail = () => {
     // เพิ่ม debug log
     console.log('🔍 Fetching leave history with params:', params);
     console.log('🔍 filterBackdated value:', filterBackdated);
-    console.log('🔍 Full URL:', `${API_BASE_URL}/api/employee/${id}/leave-history${query}`);
+    console.log('🔍 Full URL:', `${API_BASE_URL}${apiEndpoints.employees.leaveHistory(id, query)}`);
     
-    fetch(`${API_BASE_URL}/api/employee/${id}/leave-history${query}`)
-      .then(res => res.json())
-      .then(data => {
-        // เพิ่ม debug log
-        console.log('📥 Response from backend:', data);
-        console.log('📥 leaveHistory data length:', data.data?.length);
-        console.log('📥 Each leave backdated value:', data.data?.map(l => ({ id: l.id, backdated: l.backdated, leaveType: l.leaveType })));
-        
-        if (data.success) {
-          setLeaveHistory(data.data);
-          setLeaveTotalPages(data.totalPages || 1);
-          setLeaveSummary(data.summary || null); // <--- เก็บ summary
-        } else {
-          setLeaveHistory([]);
-          setLeaveTotalPages(1);
-          setLeaveSummary(null); // <--- reset summary
-        }
-      })
-      .catch((error) => {
-        console.error('❌ Error fetching leave history:', error);
+    try {
+      const data = await apiService.get(apiEndpoints.employees.leaveHistory(id, query));
+      // เพิ่ม log เพื่อตรวจสอบ response
+      console.log('🟢 Leave history API response:', data);
+      if (data.success) {
+        // แก้ตรงนี้: data.data.data
+        const leaveData = Array.isArray(data.data?.data) ? data.data.data : [];
+        setLeaveHistory(leaveData);
+        setLeaveTotalPages(data.data?.totalPages || 1);
+        setLeaveSummary(data.data?.summary || null); // <--- เก็บ summary
+      } else {
+        // เพิ่ม log กรณี error
+        console.error('🔴 Leave history API error:', data);
         setLeaveHistory([]);
         setLeaveTotalPages(1);
         setLeaveSummary(null); // <--- reset summary
-      });
+      }
+    } catch (error) {
+      console.error('Error fetching leave history:', error);
+      setLeaveHistory([]);
+      setLeaveTotalPages(1);
+      setLeaveSummary(null); // <--- reset summary
+    }
   };
 
   // useEffect สำหรับ fetch leaveHistory เฉพาะเมื่อ filter จริง (active) เปลี่ยน
@@ -174,31 +177,18 @@ const EmployeeDetail = () => {
   };
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/departments`)
-      .then(res => {
-        if (res.status === 401) {
-          showSessionExpiredDialog();
-          return Promise.reject(new Error('Session expired'));
-        }
-        return res.json();
-      })
-      .then(data => {
-        setDepartments(Array.isArray(data.data) ? data.data : []);
-      })
-      .catch(() => setDepartments([]));
-
-    fetch(`${API_BASE_URL}/api/positions`)
-      .then(res => {
-        if (res.status === 401) {
-          showSessionExpiredDialog();
-          return Promise.reject(new Error('Session expired'));
-        }
-        return res.json();
-      })
-      .then(data => {
-        setPositions(Array.isArray(data.data) ? data.data : []);
-      })
-      .catch(() => setPositions([]));
+    const fetchDeps = async () => {
+      try {
+        const deptData = await apiService.get(apiEndpoints.departments, undefined, showSessionExpiredDialog);
+        setDepartments(Array.isArray(deptData.data) ? deptData.data : []);
+        const posData = await apiService.get(apiEndpoints.positions, undefined, showSessionExpiredDialog);
+        setPositions(Array.isArray(posData.data) ? posData.data : []);
+      } catch {
+        setDepartments([]);
+        setPositions([]);
+      }
+    };
+    fetchDeps();
   }, []);
 
   // --- เพิ่ม state สำหรับ leave types dropdown ---
@@ -212,8 +202,7 @@ const EmployeeDetail = () => {
       setLeaveTypesLoading(true);
       setLeaveTypesError(null);
       try {
-        const res = await fetch(`${API_BASE_URL}/api/leave-types`);
-        const data = await res.json();
+        const data = await apiService.get(apiEndpoints.leaveTypes);
         if (data.success) {
           setLeaveTypes(data.data);
         } else {
@@ -255,7 +244,13 @@ const EmployeeDetail = () => {
       password: '', // Always blank when editing
       department: (employee?.department_id || employee?.department?.id || '') + '',
       position: (employee?.position_id || employee?.position?.id || '') + '',
-      role: employee?.role || ''
+      role: employee?.role || '',
+      gender: employee?.gender || '',
+      birthdate: employee?.dob || '', // <-- เปลี่ยนจาก birthdate เป็น dob
+      phone: employee?.phone_number || '', // <-- เปลี่ยนจาก phone เป็น phone_number
+      startWorkDate: employee?.start_work || '', // <-- เปลี่ยนจาก startWorkDate เป็น start_work
+      internStartDate: employee?.internStartDate || '',
+      internEndDate: employee?.internEndDate || ''
     });
     setIsEditing(true);
   };
@@ -267,14 +262,13 @@ const EmployeeDetail = () => {
         position_id: editData.position, // id
         department_id: editData.department, // id
         email: editData.email,
+        gender: editData.gender,
+        birthdate: editData.birthdate,
+        phone: editData.phone,
+        startWorkDate: editData.startWorkDate,
       };
       if (editData.password && editData.password.trim() !== '') payload.password = editData.password;
-      const response = await fetch(`${API_BASE_URL}/api/employee/${id}` , {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const data = await response.json();
+      const data = await apiService.put(apiEndpoints.employees.detail(id), payload);
       if (data.success) {
         toast({
           title: t('employee.saveSuccess'),
@@ -282,8 +276,7 @@ const EmployeeDetail = () => {
         });
         setIsEditing(false);
         // Refresh profile data
-        const res = await fetch(`${API_BASE_URL}/api/employee/${id}`);
-        const empData = await res.json();
+        const empData = await apiService.get(apiEndpoints.employees.detail(id));
         if (empData.success) setEmployee(empData.data);
       } else {
         toast({ title: t('error.title'), description: data.message || t('employee.saveError') });
@@ -301,7 +294,13 @@ const EmployeeDetail = () => {
       password: '',
       department: '',
       position: '',
-      role: ''
+      role: '',
+      gender: '',
+      birthdate: '',
+      phone: '',
+      startWorkDate: '',
+      internStartDate: '',
+      internEndDate: ''
     });
   };
 
@@ -332,9 +331,8 @@ const EmployeeDetail = () => {
     if (!deleteLeaveId) return;
     setDeleting(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/leave-request/${deleteLeaveId}`, { method: "DELETE" });
-      const data = await res.json();
-      if (data.success) {
+      const data = await apiService.delete(apiEndpoints.leave.delete(deleteLeaveId), undefined, showSessionExpiredDialog);
+      if (data && (data.success || data.status === 'success')) {
         setDeleteLeaveId(null);
         toast({
           title: t('system.deleteSuccess', 'ลบสำเร็จ'),
@@ -343,10 +341,18 @@ const EmployeeDetail = () => {
         });
         fetchLeaveHistory(); // fetch leave history again
       } else {
-        alert(data.message || t("system.deleteFailed", "Delete failed"));
+        toast({
+          title: t('system.deleteFailed', 'ลบไม่สำเร็จ'),
+          description: data?.message || t('system.deleteFailedDesc', 'ไม่สามารถลบใบลาได้'),
+          variant: 'destructive',
+        });
       }
     } catch (e) {
-      alert(t("system.deleteFailed", "Delete failed"));
+      toast({
+        title: t('system.deleteFailed', 'ลบไม่สำเร็จ'),
+        description: t('system.deleteFailedDesc', 'ไม่สามารถลบใบลาได้'),
+        variant: 'destructive',
+      });
     } finally {
       setDeleting(false);
     }
@@ -357,8 +363,7 @@ const EmployeeDetail = () => {
     if (!id) return;
     setLoading(true);
     setError(null);
-    fetch(`${API_BASE_URL}/api/employee/${id}`)
-      .then(res => res.json())
+            apiService.get(apiEndpoints.employees.detail(id))
       .then(data => {
         if (data.success) {
           setEmployee(data.data);
@@ -389,6 +394,7 @@ const EmployeeDetail = () => {
       : found.position_name_en || found.position_name;
   };
 
+  
   const getDepartmentLabel = (departmentIdOrName: string) => {
     if (!departmentIdOrName || departmentIdOrName === "not_specified") {
       return t("departments.noDepartment");
@@ -428,7 +434,6 @@ const EmployeeDetail = () => {
             <h1 className="text-3xl font-extrabold text-blue-900 tracking-tight drop-shadow-lg animate-slide-in-left">{t('employee.details')}</h1>
             <p className="text-sm text-blue-500 animate-slide-in-left delay-100">{employee.name}</p>
           </div>
-          <LanguageSwitcher />
         </div>
       </div>
       <div className="p-6 animate-fade-in">
@@ -445,13 +450,14 @@ const EmployeeDetail = () => {
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="flex flex-col md:flex-row gap-8 p-6 items-center md:items-start">
-                <div className="relative w-24 h-24">
+              <div className="flex flex-col items-center p-8">
+                {/* Profile Picture - Centered with enhanced styling */}
+                <div className="relative w-36 h-36 mb-10">
                   {employee.avatar ? (
                     <img
                       src={`${API_BASE_URL}${employee.avatar}`}
                       alt={employee.name}
-                      className="w-full h-full rounded-full object-cover shadow-xl"
+                      className="w-full h-full rounded-full object-cover shadow-2xl border-4 border-white"
                       onError={(e) => {
                         // ถ้าโหลดรูปไม่สำเร็จ ให้แสดง fallback
                         const target = e.target as HTMLImageElement;
@@ -460,121 +466,231 @@ const EmployeeDetail = () => {
                       }}
                     />
                   ) : null}
-                  <div className={`w-full h-full rounded-full bg-gradient-to-br from-blue-200 via-indigo-200 to-purple-200 flex items-center justify-center text-blue-900 font-bold text-3xl shadow-xl ${employee.avatar ? 'hidden' : ''}`}>
+                  <div className={`w-full h-full rounded-full bg-gradient-to-br from-blue-200 via-indigo-200 to-purple-200 flex items-center justify-center text-blue-900 font-bold text-5xl shadow-2xl border-4 border-white ${employee.avatar ? 'hidden' : ''}`}>
                     {employee.name ? employee.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : '?'}
                   </div>
                 </div>
-                <div className="flex-1 grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {/* ซ้าย: Full Name, Position, Department */}
-                  <div className="space-y-8">
+                
+                {/* Information Grid - Enhanced 2 columns for better usability */}
+                <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl">
+                  {/* Column 1: Personal Info */}
+                  <div className="space-y-6 bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-2xl border border-blue-100">
+                    <h3 className="text-lg font-bold text-blue-800 mb-6 flex items-center gap-2">
+                      <User className="w-5 h-5" />
+                      {t('employee.personalInfo')}
+                    </h3>
                     {/* Full Name */}
                     <div>
-                      <Label className="text-sm font-medium text-blue-700">{t('employee.fullName')}</Label>
+                      <Label className="text-sm font-semibold text-blue-700 mb-2 block">{t('employee.fullName')}</Label>
                       {isEditing ? (
                         <input
-                          className="mt-1 px-3 py-2 border rounded w-full"
+                          className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white"
                           value={editData.full_name}
                           onChange={e => setEditData({ ...editData, full_name: e.target.value })}
                           placeholder={t('employee.fullName')}
                         />
                       ) : (
-                        <p className="text-xl font-bold text-blue-900 mt-1">{employee.name}</p>
+                        <p className="text-xl font-bold text-blue-900">{employee.name}</p>
                       )}
                     </div>
                     {/* Position */}
                     <div>
-                      <Label className="text-sm font-medium text-blue-700">{t('employee.position')}</Label>
+                      <Label className="text-sm font-semibold text-blue-700 mb-2 block">{t('employee.position')}</Label>
                       {isEditing ? (
                         <select
-                          className="mt-1 px-3 py-2 border rounded w-full"
+                          className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white"
                           value={editData.position}
                           onChange={e => setEditData({ ...editData, position: e.target.value })}
                         >
                           <option value="not_specified">{t('positions.noPosition')}</option>
-                          {positions.map(pos => (
-                            <option key={pos.id} value={pos.id}>
-                              {i18n.language.startsWith('th') ? pos.position_name_th : pos.position_name_en}
-                            </option>
-                          ))}
+                          {positions
+                            .filter(pos => pos.id !== 'not_specified')
+                            .map(pos => (
+                              <option key={pos.id} value={pos.id}>
+                                {i18n.language.startsWith('th') ? pos.position_name_th : pos.position_name_en}
+                              </option>
+                            ))}
                         </select>
                       ) : (
-                        <p className="text-lg text-blue-700 mt-1">{getPositionLabel(employee.position_id || employee.position)}</p>
+                        <p className="text-lg text-blue-700">{getPositionLabel(employee.position_id || employee.position)}</p>
                       )}
                     </div>
                     {/* Department */}
                     <div>
-                      <Label className="text-sm font-medium text-blue-700">{t('employee.department')}</Label>
+                      <Label className="text-sm font-semibold text-blue-700 mb-2 block">{t('employee.department')}</Label>
                       {isEditing ? (
                         <select
-                          className="mt-1 px-3 py-2 border rounded w-full"
+                          className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white"
                           value={editData.department}
                           onChange={e => setEditData({ ...editData, department: e.target.value })}
                         >
                           <option value="not_specified">{t('departments.noDepartment')}</option>
-                          {departments.map(dept => (
-                            <option key={dept.id} value={dept.id}>
-                              {i18n.language.startsWith('th') ? dept.department_name_th : dept.department_name_en}
-                            </option>
-                          ))}
+                          {departments
+                            .filter(dept => dept.id !== 'not_specified')
+                            .map(dept => (
+                              <option key={dept.id} value={dept.id}>
+                                {i18n.language.startsWith('th') ? dept.department_name_th : dept.department_name_en}
+                              </option>
+                            ))}
                         </select>
                       ) : (
-                        <p className="text-lg text-blue-700 mt-1">{getDepartmentLabel(employee.department_id || employee.department)}</p>
+                        <p className="text-lg text-blue-700">{getDepartmentLabel(employee.department_id || employee.department)}</p>
+                      )}
+                    </div>
+                    {/* Gender */}
+                    <div>
+                      <Label className="text-sm font-semibold text-blue-700 mb-2 block">{t('employee.gender')}</Label>
+                      {isEditing ? (
+                        <select
+                          className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white"
+                          value={editData.gender}
+                          onChange={e => setEditData({ ...editData, gender: e.target.value })}
+                        >
+                          <option value="">{t('employee.selectGender')}</option>
+                          <option value="male">{t('employee.male')}</option>
+                          <option value="female">{t('employee.female')}</option>
+                        </select>
+                      ) : (
+                        <p className="text-lg text-blue-700">
+                          {employee.gender === 'male' ? t('employee.male') : employee.gender === 'female' ? t('employee.female') : '-'}
+                        </p>
+                      )}
+                    </div>
+                    {/* Birthdate */}
+                    <div>
+                      <Label className="text-sm font-semibold text-blue-700 mb-2 block">{t('employee.birthdate')}</Label>
+                      {isEditing ? (
+                        <input
+                          type="date"
+                          className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white"
+                          value={editData.birthdate}
+                          onChange={e => setEditData({ ...editData, birthdate: e.target.value })}
+                        />
+                      ) : (
+                        <p className="text-lg text-blue-700">{employee.dob ? format(new Date(employee.dob), 'dd/MM/yyyy') : '-'}</p>
                       )}
                     </div>
                   </div>
-                  {/* ขวา: Email, Password, Edit/Save/Cancel */}
-                  <div className="space-y-8">
+                  
+                  {/* Column 2: Contact & Actions */}
+                  <div className="space-y-6 bg-gradient-to-br from-indigo-50 to-purple-50 p-6 rounded-2xl border border-indigo-100">
+                    <h3 className="text-lg font-bold text-indigo-800 mb-6 flex items-center gap-2">
+                      <Mail className="w-5 h-5" />
+                      {t('employee.contactInfo')}
+                    </h3>
                     {/* Email */}
                     <div>
-                      <Label className="text-sm font-medium text-blue-700">{t('employee.email')}</Label>
+                      <Label className="text-sm font-semibold text-indigo-700 mb-2 block">{t('employee.email')}</Label>
                       {isEditing ? (
                         <input
-                          className="mt-1 px-3 py-2 border rounded w-full"
+                          className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-white"
                           type="email"
                           value={editData.email}
                           onChange={e => setEditData({ ...editData, email: e.target.value })}
                           placeholder={t('employee.email')}
                         />
                       ) : (
-                        <div className="flex items-center gap-2 mt-1">
-                          <Mail className="w-5 h-5 text-blue-400" />
-                          <p className="text-lg text-blue-700">{employee.email}</p>
+                        <div className="flex items-center gap-3">
+                          <Mail className="w-5 h-5 text-indigo-400" />
+                          <p className="text-lg text-indigo-700">{employee.email}</p>
                         </div>
                       )}
                     </div>
                     {/* Password */}
                     <div>
-                      <Label className="text-sm font-medium text-blue-700">{t('employee.password') || 'Password'}</Label>
+                      <Label className="text-sm font-semibold text-indigo-700 mb-2 block">{t('employee.password')}</Label>
                       {isEditing ? (
                         <input
-                          className="mt-1 px-3 py-2 border rounded w-full"
+                          className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-white"
                           type="password"
                           value={editData.password}
                           onChange={e => setEditData({ ...editData, password: e.target.value })}
-                          placeholder={t('employee.password') || 'Password'}
+                          placeholder={t('employee.password')}
                         />
                       ) : (
-                        <p className="text-lg text-blue-700 mt-1">********</p>
+                        <p className="text-lg text-indigo-700">********</p>
                       )}
                     </div>
-                    {/* Edit/Save/Cancel Button */}
-                    <div className="flex gap-2">
+                    {/* Phone */}
+                    <div>
+                      <Label className="text-sm font-semibold text-indigo-700 mb-2 block">{t('employee.phone')}</Label>
                       {isEditing ? (
-                        <>
-                          <Button onClick={handleSave} size="sm" className="bg-green-600 hover:bg-green-700 text-white rounded-full px-4 py-2 font-bold shadow">
-                            {t('common.save')}
-                          </Button>
-                          <Button onClick={handleCancel} size="sm" variant="outline" className="rounded-full px-4 py-2 font-bold border-blue-200 text-blue-700 hover:bg-blue-50 shadow">
-                            {t('common.cancel')}
-                          </Button>
-                        </>
+                        <input
+                          type="tel"
+                          className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-white"
+                          value={editData.phone}
+                          onChange={e => setEditData({ ...editData, phone: e.target.value })}
+                        />
                       ) : (
-                        <Button onClick={handleEdit} size="sm" variant="outline" className="rounded-full px-4 py-2 font-bold border-blue-200 text-blue-700 hover:bg-blue-50 shadow">
-                          <Edit className="w-4 h-4 mr-1" />{t('common.edit')}
-                        </Button>
+                        <p className="text-lg text-indigo-700">{employee.phone_number || '-'}</p>
                       )}
                     </div>
+                    {/* Start Work Date (เฉพาะ role ไม่ใช่ intern) */}
+                    {!(employee.role === 'intern' || editData.role === 'intern' || employee.position?.includes('intern') || employee.position?.includes('ฝึกงาน') || employee.position?.includes('นักศึกษาฝึกงาน')) && (
+                      <div>
+                        <Label className="text-sm font-semibold text-indigo-700 mb-2 block">{t('employee.startWorkDate')}</Label>
+                        {isEditing ? (
+                          <input
+                            type="date"
+                            className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-white"
+                            value={editData.startWorkDate}
+                            onChange={e => setEditData({ ...editData, startWorkDate: e.target.value })}
+                          />
+                        ) : (
+                          <p className="text-lg text-indigo-700">{employee.start_work ? format(new Date(employee.start_work), 'dd/MM/yyyy') : '-'}</p>
+                        )}
+                      </div>
+                    )}
+                    {/* Intern Dates (เฉพาะ role intern) */}
+                    {(employee.role === 'intern' || editData.role === 'intern' || employee.position?.includes('intern') || employee.position?.includes('ฝึกงาน') || employee.position?.includes('นักศึกษาฝึกงาน')) && (
+                      <div className="space-y-4">
+                        <div>
+                          <Label className="text-sm font-semibold text-indigo-700 mb-2 block">{t('employee.internStartDate')}</Label>
+                          {isEditing ? (
+                            <input
+                              type="date"
+                              className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-white"
+                              value={editData.internStartDate}
+                              onChange={e => setEditData({ ...editData, internStartDate: e.target.value })}
+                            />
+                          ) : (
+                            <p className="text-lg text-indigo-700">{employee.internStartDate ? format(new Date(employee.internStartDate), 'dd/MM/yyyy') : '-'}</p>
+                          )}
+                        </div>
+                        <div>
+                          <Label className="text-sm font-semibold text-indigo-700 mb-2 block">{t('employee.internEndDate')}</Label>
+                          {isEditing ? (
+                            <input
+                              type="date"
+                              className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-white"
+                              value={editData.internEndDate}
+                              onChange={e => setEditData({ ...editData, internEndDate: e.target.value })}
+                            />
+                          ) : (
+                            <p className="text-lg text-indigo-700">{employee.internEndDate ? format(new Date(employee.internEndDate), 'dd/MM/yyyy') : '-'}</p>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
+                </div>
+                
+                {/* Action Buttons - Moved to bottom center */}
+                <div className="flex justify-center gap-3 mt-8">
+                  {isEditing ? (
+                    <>
+                      <Button onClick={handleSave} size="lg" className="bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white rounded-xl px-8 py-3 font-bold shadow-lg hover:shadow-xl transition-all duration-200">
+                        {t('common.save')}
+                      </Button>
+                      <Button onClick={handleCancel} size="lg" variant="outline" className="rounded-xl px-8 py-3 font-bold border-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50 shadow transition-all duration-200">
+                        {t('common.cancel')}
+                      </Button>
+                    </>
+                  ) : (
+                    <Button onClick={handleEdit} size="lg" variant="outline" className="rounded-xl px-8 py-3 font-bold border-2 border-indigo-200 text-indigo-700 hover:bg-indigo-50 shadow transition-all duration-200">
+                      <Edit className="w-5 h-5 mr-2" />{t('common.edit')}
+                    </Button>
+                  )}
                 </div>
               </div>
             </CardContent>
@@ -595,7 +711,7 @@ const EmployeeDetail = () => {
                 <div className="flex justify-end items-center gap-3">
                   <Calendar className="w-6 h-6 text-gray-600" />
                   <span className="text-base font-semibold text-gray-800">
-                    {t('leave.usedLeaveDays', 'จำนวนวันลาที่ใช้ไป')}: {leaveSummary.days || 0} {t('leave.days', 'วัน')} {leaveSummary.hours || 0} {t('leave.hours', 'ชั่วโมง')}
+                    {t('leave.usedLeaveDays')}: {leaveSummary.days || 0} {t('leave.days', 'วัน')} {leaveSummary.hours > 0 ? `${leaveSummary.hours} ${t('leave.hours', 'ชั่วโมง')}` : ''}
                   </span>
                 </div>
               </div>
@@ -768,7 +884,7 @@ const EmployeeDetail = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {leaveHistory.map((leave, idx) => {
+                    {Array.isArray(leaveHistory) && leaveHistory.map((leave, idx) => {
                       // เพิ่ม debug log
                       console.log(`🎨 Rendering leave ${idx}:`, { id: leave.id, backdated: leave.backdated, leaveType: leave.leaveType });
                       
@@ -839,8 +955,14 @@ const EmployeeDetail = () => {
                         </TableCell>
                           <TableCell className="text-blue-700 px-4 py-3">
                             <div className="pr-2">
-                              <div className="break-words text-sm leading-relaxed" title={leave.reason}>
-                                {leave.reason || <span className="text-gray-400">-</span>}
+                              <div
+                                className="truncate text-sm leading-relaxed max-w-[180px]"
+                                title={leave.reason}
+                                style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}
+                              >
+                                {leave.reason && leave.reason.length > 50
+                                  ? leave.reason.slice(0, 50) + '...'
+                                  : (leave.reason || <span className="text-gray-400">-</span>)}
                               </div>
                             </div>
                           </TableCell>
@@ -878,21 +1000,23 @@ const EmployeeDetail = () => {
                                 <Eye className="w-3.5 h-3.5 mr-1" />
                                 {t('common.viewDetails')}
                               </Button>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                className="rounded-lg px-3 py-1.5 font-medium bg-gradient-to-r from-red-500 to-red-600 text-white shadow hover:scale-105 transition text-xs"
-                                onClick={() => setDeleteLeaveId(leave.id)}
-                              >
-                                <Trash2 className="w-3.5 h-3.5 mr-1" />
-                                {t('common.delete')}
-                          </Button>
+                              {user?.role === 'superadmin' && (
+                                <Button
+                                  size="sm"
+                                  variant="destructive"
+                                  className="rounded-lg px-3 py-1.5 font-medium bg-gradient-to-r from-red-500 to-red-600 text-white shadow hover:scale-105 transition text-xs"
+                                  onClick={() => setDeleteLeaveId(leave.id)}
+                                >
+                                  <Trash2 className="w-3.5 h-3.5 mr-1" />
+                                  {t('common.delete')}
+                                </Button>
+                              )}
                             </div>
                         </TableCell>
                       </TableRow>
                       );
                     })}
-                      {leaveHistory.length === 0 && (
+                      {(!Array.isArray(leaveHistory) || leaveHistory.length === 0) && (
                         <TableRow>
                           <TableCell colSpan={7} className="text-center py-6 text-gray-500">
                             <div className="flex flex-col items-center gap-2">

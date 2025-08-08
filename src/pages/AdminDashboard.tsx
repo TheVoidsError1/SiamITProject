@@ -1,20 +1,25 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from '@/contexts/AuthContext';
+import { useSocket } from '@/contexts/SocketContext';
 import { useToast } from "@/hooks/use-toast";
 import { differenceInCalendarDays, format } from "date-fns";
-import { th } from "date-fns/locale";
-import { AlertCircle, CheckCircle, Clock, Eye, FileText, Users, XCircle, History, Calendar, User, ChevronLeft, ChevronRight } from "lucide-react";
+import { enUS, th } from "date-fns/locale";
+import { AlertCircle, Calendar, CalendarIcon, CheckCircle, ChevronLeft, ChevronRight, Clock, Eye, FileText, History, User, Users, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Avatar } from "@/components/ui/avatar";
-import LanguageSwitcher from "@/components/LanguageSwitcher";
-import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { formatDateLocalized, formatDateOnly } from '../lib/utils';
+import { apiService, apiEndpoints } from '../lib/api';
+import { showToastMessage } from '../lib/toast';
+import { monthNames } from '../constants/common';
 
 type LeaveRequest = {
   id: number;
@@ -31,12 +36,11 @@ type LeaveRequest = {
 // --- เพิ่ม helper สำหรับ clamp ข้อความ ---
 const clampLines = 3;
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
 const AdminDashboard = () => {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const { user, showSessionExpiredDialog } = useAuth();
+  const { socket, isConnected } = useSocket();
 
   // ลบ state ที่ไม่ได้ใช้จริง
   // const [adminName, setAdminName] = useState<string>("");
@@ -88,9 +92,7 @@ const AdminDashboard = () => {
   // --- state สำหรับ filter สถานะ ---
   const [historyStatusFilter, setHistoryStatusFilter] = useState('all'); // default เป็น all (All status)
   // รายชื่อเดือนรองรับ i18n
-  const monthNames = i18n.language === 'th'
-    ? ['มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน', 'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม']
-    : ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const currentMonthNames = monthNames[i18n.language === 'th' ? 'th' : 'en'];
 
   // --- เพิ่ม state สำหรับ show more/less ของแต่ละ request ---
   const [expandedRejection, setExpandedRejection] = useState<{ [id: string]: boolean }>({});
@@ -182,28 +184,7 @@ const AdminDashboard = () => {
     ).toFixed(1)
     : 0;
 
-  // --- เพิ่มฟังก์ชันแปลงวันที่ตามภาษา ---
-  const formatDateLocalized = (dateStr: string) => {
-    const date = new Date(dateStr);
-    // แปลงเป็นเวลาท้องถิ่นไทย
-    if (i18n.language === 'th') {
-      const buddhistYear = date.getFullYear() + 543;
-      const time = date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false });
-      return `${date.getDate().toString().padStart(2, '0')} ${format(date, 'MMM', { locale: th })} ${buddhistYear}, ${time}`;
-    }
-    // ภาษาอื่น
-    return format(date, 'dd MMM yyyy, HH:mm');
-  };
 
-  // --- เพิ่มฟังก์ชันแปลงวันที่แบบไม่มีเวลา ---
-  const formatDateOnly = (dateStr: string) => {
-    const date = new Date(dateStr);
-    if (i18n.language === 'th') {
-      const buddhistYear = date.getFullYear() + 543;
-      return `${date.getDate().toString().padStart(2, '0')} ${format(date, 'MMM', { locale: th })} ${buddhistYear}`;
-    }
-    return format(date, 'dd MMM yyyy');
-  };
 
   // --- เพิ่มฟังก์ชันคำนวณชั่วโมง ---
   const calcHours = (start: string, end: string) => {
@@ -227,30 +208,24 @@ const AdminDashboard = () => {
 
   const confirmApprove = () => {
     if (!approvingRequest) return;
-    const token = localStorage.getItem('token');
-    if (!token) {
-      toast({ title: "ไม่พบ token", description: "กรุณาเข้าสู่ระบบใหม่", variant: "destructive" });
-      return;
-    }
     const approverName = localStorage.getItem('user_name');
-    fetch(`${API_BASE_URL}/api/leave-request/${approvingRequest.id}/status`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ status: 'approved', statusby: approverName }),
-    })
-      .then(res => res.json())
+    
+    apiService.put(apiEndpoints.leave.status(approvingRequest.id), { 
+      status: 'approved', 
+      statusby: approverName 
+    }, undefined, showSessionExpiredDialog)
       .then(data => {
         if (data.success) {
-          toast({ title: t('admin.approveSuccess'), description: `${t('admin.approveSuccessDesc')} ${approvingRequest.employeeName}` });
+          showToastMessage.leave.requestApproved(approvingRequest.employeeName);
           setPendingRequests(prev => prev.filter(r => r.id !== approvingRequest.id));
           fetchHistoryRequests();
           refreshLeaveRequests();
         } else {
-          toast({ title: t('admin.rejectError'), description: data.message, variant: "destructive" });
+          showToastMessage.leave.requestError('อนุมัติ', data.message);
         }
+      })
+      .catch(() => {
+        showToastMessage.leave.requestError('อนุมัติ');
       })
       .finally(() => {
         setShowApproveDialog(false);
@@ -266,29 +241,23 @@ const AdminDashboard = () => {
 
   const confirmReject = () => {
     if (!rejectingRequest) return;
-    const token = localStorage.getItem('token');
-    if (!token) {
-      toast({ title: "ไม่พบ token", description: "กรุณาเข้าสู่ระบบใหม่", variant: "destructive" });
-      return;
-    }
-    fetch(`${API_BASE_URL}/api/leave-request/${rejectingRequest.id}/status`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ status: 'rejected', rejectedReason: rejectReason }),
-    })
-      .then(res => res.json())
+    
+    apiService.put(apiEndpoints.leave.status(rejectingRequest.id), { 
+      status: 'rejected', 
+      rejectedReason: rejectReason 
+    }, undefined, showSessionExpiredDialog)
       .then(data => {
         if (data.success) {
-          toast({ title: t('admin.rejectSuccess'), description: `${t('admin.rejectSuccessDesc')} ${rejectingRequest.employeeName}`, variant: "destructive" });
+          showToastMessage.leave.requestRejected(rejectingRequest.employeeName);
           setPendingRequests(prev => prev.filter(r => r.id !== rejectingRequest.id));
           fetchHistoryRequests();
-          refreshLeaveRequests(); // <-- เพิ่มบรรทัดนี้
+          refreshLeaveRequests();
         } else {
-          toast({ title: t('admin.rejectError'), description: data.message, variant: "destructive" });
+          showToastMessage.leave.requestError('ปฏิเสธ', data.message);
         }
+      })
+      .catch(() => {
+        showToastMessage.leave.requestError('ปฏิเสธ');
       })
       .finally(() => {
         setShowRejectDialog(false);
@@ -305,15 +274,7 @@ const AdminDashboard = () => {
   // เพิ่มฟังก์ชันสำหรับรีเฟรชข้อมูล
   const refreshLeaveRequests = () => {
     setLoading(true);
-    const token = localStorage.getItem('token');
-    if (!token) {
-      showSessionExpiredDialog();
-      return;
-    }
-    fetch(`${API_BASE_URL}/api/leave-request/pending`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then((res) => res.json())
+    apiService.get(apiEndpoints.leave.pending, undefined, showSessionExpiredDialog)
       .then((data) => {
         if (data.status === "success") {
           setPendingRequests(data.data);
@@ -333,12 +294,7 @@ const AdminDashboard = () => {
   // ปรับ fetchHistoryRequests
   const fetchHistoryRequests = () => {
     setLoading(true);
-    const token = localStorage.getItem('token');
-    if (!token) {
-      showSessionExpiredDialog();
-      return;
-    }
-    let url = `${API_BASE_URL}/api/leave-request/history?page=${historyPage}&limit=${historyLimit}`;
+            let url = `${apiEndpoints.admin.leaveHistory}?page=${historyPage}&limit=${historyLimit}`;
     if (filterMonth) url += `&month=${filterMonth}`;
     if (filterYear) url += `&year=${filterYear}`;
     // ในการสร้าง url ให้ส่ง status=approved,rejected ถ้าเลือก all
@@ -356,16 +312,8 @@ const AdminDashboard = () => {
       if (dateRange.to) url += `&endDate=${format(dateRange.to, 'yyyy-MM-dd')}`;
     }
     if (historyFilterLeaveType) url += `&leaveType=${historyFilterLeaveType}`;
-    fetch(url, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-      .then(res => {
-        if (res.status === 401) {
-          showSessionExpiredDialog();
-          return;
-        }
-        return res.json();
-      })
+    
+    apiService.get(url, undefined, showSessionExpiredDialog)
       .then(data => {
         if (data.status === "success") {
           let filtered = data.data;
@@ -400,12 +348,7 @@ const AdminDashboard = () => {
     const fetchPending = async () => {
       setLoading(true);
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          showSessionExpiredDialog();
-          return;
-        }
-        let url = `${API_BASE_URL}/api/leave-request/pending?page=${pendingPage}&limit=${pendingLimit}`;
+        let url = `${apiEndpoints.admin.leavePending}?page=${pendingPage}&limit=${pendingLimit}`;
         if (pendingFilterLeaveType) url += `&leaveType=${pendingFilterLeaveType}`;
         if (pendingBackdatedFilter === 'backdated') url += `&backdated=1`;
         else if (pendingBackdatedFilter === 'normal') url += `&backdated=0`;
@@ -418,14 +361,7 @@ const AdminDashboard = () => {
         // ใช้ filterMonth และ filterYear สำหรับ filter เดือน/ปี
         if (filterMonth) url += `&month=${filterMonth}`;
         if (filterYear) url += `&year=${filterYear}`;
-        const res = await fetch(url, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.status === 401) {
-          showSessionExpiredDialog();
-          return;
-        }
-        const data = await res.json();
+        const data = await apiService.get(url, undefined, showSessionExpiredDialog);
         if (data.status === "success") {
           let filtered = data.data;
           // กรองย้อนหลังฝั่ง frontend ถ้า API ไม่กรองให้
@@ -454,28 +390,27 @@ const AdminDashboard = () => {
 
   // ตั้งค่าเริ่มต้นของ filter เดือนและปี
   useEffect(() => {
-    const currentMonth = new Date().getMonth() + 1;
     const currentYear = new Date().getFullYear();
     
-    // ตั้งค่าเริ่มต้นสำหรับ pending tab
+    // ตั้งค่าเริ่มต้นสำหรับ pending tab - เริ่มต้นเป็น all (ค่าว่าง)
     if (!pendingPendingMonth) {
-      setPendingPendingMonth(currentMonth);
+      setPendingPendingMonth('');
     }
     if (!pendingPendingYear) {
       setPendingPendingYear(currentYear);
     }
     
-    // ตั้งค่าเริ่มต้นสำหรับ history tab
+    // ตั้งค่าเริ่มต้นสำหรับ history tab - เริ่มต้นเป็น all (ค่าว่าง)
     if (!pendingFilterMonth) {
-      setPendingFilterMonth(currentMonth);
+      setPendingFilterMonth('');
     }
     if (!pendingFilterYear) {
       setPendingFilterYear(currentYear);
     }
     
-    // ตั้งค่าเริ่มต้นสำหรับ filter จริง
+    // ตั้งค่าเริ่มต้นสำหรับ filter จริง - เริ่มต้นเป็น all (ค่าว่าง)
     if (!filterMonth) {
-      setFilterMonth(currentMonth);
+      setFilterMonth('');
     }
     if (!filterYear) {
       setFilterYear(currentYear);
@@ -487,13 +422,12 @@ const AdminDashboard = () => {
   }, [t, historyPage, filterMonth, filterYear, historyLimit, historyStatusFilter, dateRange, recentSingleDate, historyBackdatedFilter, historyFilterLeaveType]);
 
   useEffect(() => {
-    let url = `${API_BASE_URL}/api/leave-request/dashboard-stats`;
+            let url = apiEndpoints.admin.dashboardStats;
     const params = [];
     if (filterMonth) params.push(`month=${filterMonth}`);
     if (filterYear) params.push(`year=${filterYear}`);
     if (params.length > 0) url += `?${params.join("&")}`;
-    fetch(url)
-      .then(res => res.json())
+    apiService.get(url)
       .then(data => {
         if (data.status === "success") {
           setDashboardStats(data.data);
@@ -510,14 +444,7 @@ const AdminDashboard = () => {
           showSessionExpiredDialog();
           return;
         }
-        const res = await fetch(`${API_BASE_URL}/api/departments`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.status === 401) {
-          showSessionExpiredDialog();
-          return;
-        }
-        const data = await res.json();
+        const data = await apiService.get(apiEndpoints.departments, undefined, showSessionExpiredDialog);
         if (data.status === 'success' && Array.isArray(data.data)) {
           setDepartments(data.data);
         }
@@ -526,19 +453,7 @@ const AdminDashboard = () => {
     // ดึง position
     const fetchPositions = async () => {
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          showSessionExpiredDialog();
-          return;
-        }
-        const res = await fetch(`${API_BASE_URL}/api/positions`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.status === 401) {
-          showSessionExpiredDialog();
-          return;
-        }
-        const data = await res.json();
+        const data = await apiService.get(apiEndpoints.positions, undefined, showSessionExpiredDialog);
         if (data.status === 'success' && Array.isArray(data.data)) {
           setPositions(data.data);
         }
@@ -556,8 +471,7 @@ const AdminDashboard = () => {
       setPendingLeaveTypesLoading(true);
       setPendingLeaveTypesError(null);
       try {
-        const res = await fetch('/api/leave-types');
-        const data = await res.json();
+        const data = await apiService.get(apiEndpoints.leaveTypes);
         if (data.success) {
           setPendingLeaveTypes(data.data);
         } else {
@@ -685,10 +599,7 @@ const AdminDashboard = () => {
         showSessionExpiredDialog();
         return;
       }
-      const res = await fetch(`${API_BASE_URL}/api/leave-request/detail/${request.id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await res.json();
+      const data = await apiService.get(apiEndpoints.leave.detail(request.id), undefined, showSessionExpiredDialog);
       if (data.success) {
         setSelectedRequest({ ...data.data, ...request });
       } else {
@@ -711,30 +622,46 @@ const AdminDashboard = () => {
 
   const confirmDelete = async () => {
     if (!deletingRequest) return;
-    const token = localStorage.getItem('token');
-    if (!token) {
-      showSessionExpiredDialog();
-      return;
-    }
     try {
-      const res = await fetch(`${API_BASE_URL}/api/leave-request/${deletingRequest.id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      const data = await res.json();
+      const data = await apiService.delete(apiEndpoints.leave.delete(deletingRequest.id), undefined, showSessionExpiredDialog);
       if (data.success || data.status === 'success') {
-        toast({ title: t('system.deleteSuccess', 'ลบสำเร็จ'), description: t('system.deleteSuccessDesc', 'ลบใบลาสำเร็จ') });
+        showToastMessage.crud.deleteSuccess('ใบลา');
         setShowDeleteDialog(false);
         setDeletingRequest(null);
         refreshLeaveRequests();
         fetchHistoryRequests();
       } else {
-        toast({ title: t('common.error'), description: data.message || t('system.deleteError', 'ลบไม่สำเร็จ'), variant: 'destructive' });
+        showToastMessage.crud.deleteError('ใบลา', data.message);
       }
     } catch (e) {
-      toast({ title: t('common.error'), description: t('system.deleteError', 'ลบไม่สำเร็จ'), variant: 'destructive' });
+      showToastMessage.crud.deleteError('ใบลา');
     }
   };
+
+  // Socket.io event listeners for real-time updates
+  useEffect(() => {
+    if (socket && isConnected) {
+      // Listen for leave request status changes
+      socket.on('leaveRequestStatusChanged', (data) => {
+        console.log('Received leave request status change:', data);
+        
+        // Show toast notification
+        toast({
+          title: t('notifications.statusChanged'),
+          description: `${t('notifications.request')} ${data.requestId} ${t('notifications.hasBeen')} ${data.status === 'approved' ? t('notifications.approved') : t('notifications.rejected')}`,
+          variant: 'default'
+        });
+        
+        // Refresh dashboard data
+        refreshLeaveRequests();
+        fetchHistoryRequests();
+      });
+
+      return () => {
+        socket.off('leaveRequestStatusChanged');
+      };
+    }
+  }, [socket, isConnected, toast, t]);
 
   // --- Custom animation styles for this file only ---
   const customAnimationStyle = (
@@ -1073,11 +1000,11 @@ const AdminDashboard = () => {
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.3s' }}>
                   <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('leave.leaveType')}</label>
                   <select
-                    className="border border-blue-200 rounded-xl px-3 py-2 min-w-[140px] dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
+                    className="border border-blue-200 rounded-xl px-3 py-2 min-w-[160px] dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
                     value={pendingPendingFilterLeaveType}
                     onChange={e => setPendingPendingFilterLeaveType(e.target.value)}
                   >
-                    <option value="">{t('leave.allTypes')}</option>
+                    <option value="">{t('leave.allTypes', 'All Types')}</option>
                     {pendingLeaveTypes.map(lt => (
                       <option key={lt.id} value={lt.id}>{i18n.language.startsWith('th') ? lt.leave_type_th : lt.leave_type_en}</option>
                     ))}
@@ -1085,24 +1012,48 @@ const AdminDashboard = () => {
                 </div>
                 {/* Date Filter */}
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.4s' }}>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.date')}</label>
-                  <input
-                    type="date"
-                    className={`border border-blue-200 rounded-xl px-3 py-2 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press ${
-                      pendingPendingMonth !== '' && !pendingPendingSingleDate
-                        ? 'opacity-50 cursor-not-allowed bg-gray-100'
-                        : 'hover:bg-blue-50 hover:border-blue-300'
-                    }`}
-                    value={pendingPendingSingleDate ? format(pendingPendingSingleDate, 'yyyy-MM-dd') : ''}
-                    onChange={e => handleDateChange(e.target.value ? new Date(e.target.value) : undefined)}
-                    disabled={pendingPendingMonth !== '' && !pendingPendingSingleDate}
-                  />
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.date', 'วันที่')}</label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        variant="outline"
+                        className={`w-full justify-start text-left font-normal border border-blue-200 rounded-xl px-3 py-2 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press ${
+                          pendingPendingMonth !== '' && !pendingPendingSingleDate
+                            ? 'opacity-50 cursor-not-allowed bg-gray-100'
+                            : 'hover:bg-blue-50 hover:border-blue-300'
+                        }`}
+                        disabled={pendingPendingMonth !== '' && !pendingPendingSingleDate}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {pendingPendingSingleDate ? (
+                          formatDateLocalized(pendingPendingSingleDate.toISOString(), i18n.language, true)
+                        ) : (
+                          <span>{t('leave.selectDate')}</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0">
+                      <CalendarComponent
+                        mode="single"
+                        selected={pendingPendingSingleDate}
+                        onSelect={(date) => handleDateChange(date)}
+                        initialFocus
+                        className="rounded-md border"
+                        modifiers={{
+                          today: new Date()
+                        }}
+                        modifiersStyles={{
+                          today: { backgroundColor: '#e5e7eb', color: '#374151' }
+                        }}
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
                 {/* Month Filter */}
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.5s' }}>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.month')}</label>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.month', 'เดือน')}</label>
                   <select
-                    className={`border border-blue-200 rounded-xl px-3 py-2 w-28 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press ${
+                    className={`border border-blue-200 rounded-xl px-3 py-2 w-32 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press ${
                       pendingPendingSingleDate 
                         ? 'opacity-50 cursor-not-allowed bg-gray-100' 
                         : 'hover:bg-blue-50 hover:border-blue-300'
@@ -1111,20 +1062,20 @@ const AdminDashboard = () => {
                     onChange={e => handleMonthChange(e.target.value ? Number(e.target.value) : '')}
                     disabled={!!pendingPendingSingleDate}
                   >
-                    <option value="">{t('months.all', 'ทั้งหมด')}</option>
-                    {monthNames.map((name, idx) => (
+                    <option value="">{t('months.all', 'All Months')}</option>
+                    {currentMonthNames.map((name, idx) => (
                       <option key={idx + 1} value={idx + 1}>{name}</option>
                     ))}
                   </select>
                 </div>
                 {/* Year Filter */}
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.6s' }}>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.year')}</label>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.year', 'ปี')}</label>
                   <input
                     type="number"
                     min={2000}
                     max={2100}
-                    className={`border border-blue-200 rounded-xl px-3 py-2 w-24 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press ${
+                    className={`border border-blue-200 rounded-xl px-3 py-2 w-28 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press ${
                       pendingPendingSingleDate 
                         ? 'opacity-50 cursor-not-allowed bg-gray-100' 
                         : 'hover:bg-blue-50 hover:border-blue-300'
@@ -1139,11 +1090,11 @@ const AdminDashboard = () => {
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.7s' }}>
                   <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('leave.backdatedFilter')}</label>
                   <select
-                    className="border border-blue-200 rounded-xl px-3 py-2 min-w-[120px] dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
+                    className="border border-blue-200 rounded-xl px-3 py-2 min-w-[140px] dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
                     value={pendingPendingBackdatedFilter}
                     onChange={e => setPendingPendingBackdatedFilter(e.target.value)}
                   >
-                    <option value="all">{t('leave.allBackdated')}</option>
+                    <option value="all">{t('leave.allBackdated', 'All Types')}</option>
                     <option value="backdated">{t('leave.backdatedOnly')}</option>
                     <option value="normal">{t('leave.notBackdatedOnly')}</option>
                   </select>
@@ -1151,14 +1102,14 @@ const AdminDashboard = () => {
                 {/* Buttons */}
                 <div className="flex gap-3 mt-2 animate-slide-in-left" style={{ animationDelay: '0.8s' }}>
                   <button
-                    className="bg-gradient-to-r from-gray-200 to-gray-300 dark:from-slate-700 dark:to-slate-600 text-blue-900 dark:text-white px-4 py-2 rounded-xl shadow-lg hover:from-gray-300 hover:to-gray-400 dark:hover:from-slate-600 dark:hover:to-slate-500 transition-all duration-300 transform hover:scale-105 hover:shadow-xl animate-bounce-in btn-press hover-glow"
+                    className="bg-gradient-to-r from-gray-200 to-gray-300 dark:from-slate-700 dark:to-slate-600 text-blue-900 dark:text-white px-6 py-2 rounded-xl shadow-lg hover:from-gray-300 hover:to-gray-400 dark:hover:from-slate-600 dark:hover:to-slate-500 transition-all duration-300 transform hover:scale-105 hover:shadow-xl animate-bounce-in btn-press hover-glow min-w-[100px]"
                     onClick={clearPendingFilters}
                     type="button"
                   >
                     {t('common.reset')}
                   </button>
                   <button
-                    className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-xl shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 hover:shadow-xl animate-bounce-in btn-press hover-glow"
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-2 rounded-xl shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 hover:shadow-xl animate-bounce-in btn-press hover-glow min-w-[100px]"
                     onClick={applyPendingFilters}
                     type="button"
                   >
@@ -1368,58 +1319,58 @@ const AdminDashboard = () => {
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.3s' }}>
                   <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('leave.leaveType')}</label>
                   <select
-                    className="border border-blue-200 rounded-xl px-3 py-2 min-w-[140px] dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
+                    className="border border-blue-200 rounded-xl px-3 py-2 min-w-[160px] dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
                     value={pendingHistoryFilterLeaveType}
                     onChange={e => setPendingHistoryFilterLeaveType(e.target.value)}
                   >
-                    <option value="">{t('leave.allTypes')}</option>
+                    <option value="">{t('leave.allTypes', 'All Types')}</option>
                     {pendingLeaveTypes.map(lt => (
                       <option key={lt.id} value={lt.id}>{i18n.language.startsWith('th') ? lt.leave_type_th : lt.leave_type_en}</option>
                     ))}
                   </select>
                 </div>
                 {/* Month Filter */}
-                <div className="animate-slide-in-left" style={{ animationDelay: '0.4s' }}>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.month')}</label>
+                <div className="animate-slide-in-left" style={{ animationDelay: '0.5s' }}>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.month', 'เดือน')}</label>
                   <select
-                    className="border border-blue-200 rounded-xl px-3 py-2 w-28 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
+                    className="border border-blue-200 rounded-xl px-3 py-2 w-32 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
                     value={pendingFilterMonth}
                     onChange={e => setPendingFilterMonth(e.target.value ? Number(e.target.value) : '')}
                   >
-                    <option value="">{t('months.all', 'ทั้งหมด')}</option>
-                    {monthNames.map((name, idx) => (
+                    <option value="">{t('months.all', 'All Months')}</option>
+                    {currentMonthNames.map((name, idx) => (
                       <option key={idx + 1} value={idx + 1}>{name}</option>
                     ))}
                   </select>
                 </div>
                 {/* Year Filter */}
-                <div className="animate-slide-in-left" style={{ animationDelay: '0.5s' }}>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.year')}</label>
+                <div className="animate-slide-in-left" style={{ animationDelay: '0.6s' }}>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.year', 'ปี')}</label>
                   <input
                     type="number"
                     min={2000}
                     max={2100}
-                    className="border border-blue-200 rounded-xl px-3 py-2 w-24 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
+                    className="border border-blue-200 rounded-xl px-3 py-2 w-28 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
                     value={pendingFilterYear}
                     onChange={e => setPendingFilterYear(e.target.value ? Number(e.target.value) : '')}
                     placeholder="YYYY"
                   />
                 </div>
                 {/* Backdated Filter */}
-                <div className="animate-slide-in-left" style={{ animationDelay: '0.6s' }}>
+                <div className="animate-slide-in-left" style={{ animationDelay: '0.7s' }}>
                   <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('leave.backdatedFilter')}</label>
                   <select
-                    className="border border-blue-200 rounded-xl px-3 py-2 min-w-[120px] dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
+                    className="border border-blue-200 rounded-xl px-3 py-2 min-w-[140px] dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
                     value={pendingHistoryBackdatedFilter}
                     onChange={e => setPendingHistoryBackdatedFilter(e.target.value)}
                   >
-                    <option value="all">{t('leave.allBackdated')}</option>
+                    <option value="all">{t('leave.allBackdated', 'All Types')}</option>
                     <option value="backdated">{t('leave.backdatedOnly')}</option>
                     <option value="normal">{t('leave.notBackdatedOnly')}</option>
                   </select>
                 </div>
                 {/* Status Filter */}
-                <div className="animate-slide-in-left" style={{ animationDelay: '0.7s' }}>
+                <div className="animate-slide-in-left" style={{ animationDelay: '0.8s' }}>
                   <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.status')}</label>
                   <select
                     className="border border-blue-200 rounded-xl px-3 py-2 min-w-[120px] dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
@@ -1432,16 +1383,16 @@ const AdminDashboard = () => {
                   </select>
                 </div>
                 {/* Buttons */}
-                <div className="flex gap-3 mt-2 animate-slide-in-left" style={{ animationDelay: '0.8s' }}>
+                <div className="flex gap-3 mt-2 animate-slide-in-left" style={{ animationDelay: '0.9s' }}>
                   <button
-                    className="bg-gradient-to-r from-gray-200 to-gray-300 dark:from-slate-700 dark:to-slate-600 text-blue-900 dark:text-white px-4 py-2 rounded-xl shadow-lg hover:from-gray-300 hover:to-gray-400 dark:hover:from-slate-600 dark:hover:to-slate-500 transition-all duration-300 transform hover:scale-105 hover:shadow-xl animate-bounce-in btn-press hover-glow"
+                    className="bg-gradient-to-r from-gray-200 to-gray-300 dark:from-slate-700 dark:to-slate-600 text-blue-900 dark:text-white px-6 py-2 rounded-xl shadow-lg hover:from-gray-300 hover:to-gray-400 dark:hover:from-slate-600 dark:hover:to-slate-500 transition-all duration-300 transform hover:scale-105 hover:shadow-xl animate-bounce-in btn-press hover-glow min-w-[100px]"
                     onClick={clearHistoryFilters}
                     type="button"
                   >
                     {t('common.reset')}
                   </button>
                   <button
-                    className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-2 rounded-xl shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 hover:shadow-xl animate-bounce-in btn-press hover-glow"
+                    className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-6 py-2 rounded-xl shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-300 transform hover:scale-105 hover:shadow-xl animate-bounce-in btn-press hover-glow min-w-[100px]"
                     onClick={applyHistoryFilters}
                     type="button"
                   >
@@ -1731,7 +1682,7 @@ const AdminDashboard = () => {
                         <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
                           <Calendar className="w-4 h-4 text-blue-500" />
                           <span className="font-medium text-blue-900">
-                            {formatDateOnly(selectedRequest.startDate)}
+                            {formatDateOnly(selectedRequest.startDate, i18n.language)}
                           </span>
                         </div>
                       </div>
@@ -1740,7 +1691,7 @@ const AdminDashboard = () => {
                         <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
                           <Calendar className="w-4 h-4 text-blue-500" />
                           <span className="font-medium text-blue-900">
-                            {formatDateOnly(selectedRequest.endDate)}
+                            {formatDateOnly(selectedRequest.endDate, i18n.language)}
                           </span>
                         </div>
                       </div>

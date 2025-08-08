@@ -7,7 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Mail, Lock, User, Building, CheckCircle, AlertCircle, ArrowRight, Sparkles } from 'lucide-react';
+import { apiService, apiEndpoints } from '@/lib/api';
+import { showToastMessage } from '@/lib/toast';
+import { Eye, EyeOff, Mail, Lock, User, Building } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 
@@ -37,15 +39,16 @@ const Register = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+
 
   // ดึงข้อมูลจาก API
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/departments`)
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.data && Array.isArray(data.data)) {
-          const depts = data.data.map((d: any) => ({ id: d.id, department_name_th: d.department_name_th, department_name_en: d.department_name_en }));
+    const fetchData = async () => {
+      try {
+        // Fetch departments
+        const deptData = await apiService.get(apiEndpoints.departments);
+        if (deptData && deptData.data && Array.isArray(deptData.data)) {
+          const depts = deptData.data.map((d: any) => ({ id: d.id, department_name_th: d.department_name_th, department_name_en: d.department_name_en }));
           const noDepartmentItem = depts.find(d => d.department_name_en === 'No Department');
           const otherDepts = depts.filter(d => d.department_name_en !== 'No Department');
           otherDepts.sort((a, b) => {
@@ -59,14 +62,11 @@ const Register = () => {
           }
           setDepartments(sortedDepts);
         }
-      })
-      .catch(() => setDepartments([]));
 
-    fetch(`${API_BASE_URL}/api/positions`)
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.data && Array.isArray(data.data)) {
-          const pos = data.data.map((p: any) => ({ id: p.id, position_name_th: p.position_name_th, position_name_en: p.position_name_en }));
+        // Fetch positions
+        const posData = await apiService.get(apiEndpoints.positions);
+        if (posData && posData.data && Array.isArray(posData.data)) {
+          const pos = posData.data.map((p: any) => ({ id: p.id, position_name_th: p.position_name_th, position_name_en: p.position_name_en }));
           const noPositionItem = pos.find(p => p.position_name_en === 'No Position');
           const otherPos = pos.filter(p => p.position_name_en !== 'No Position');
           otherPos.sort((a, b) => {
@@ -80,76 +80,39 @@ const Register = () => {
           }
           setPositions(sortedPositions);
         }
-      })
-      .catch(() => setPositions([]));
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        setDepartments([]);
+        setPositions([]);
+      }
+    };
+
+    fetchData();
   }, [lang]);
 
   // เพิ่ม department ใหม่
   const handleAddDepartment = async () => {
     if (!newDepartment) return;
-    const res = await fetch(`${API_BASE_URL}/api/departments`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ department_name: newDepartment }),
-    });
-    if (res.ok) {
+    try {
+      await apiService.post(apiEndpoints.departments, { department_name: newDepartment });
       setDepartments(prev => [...prev, { id: 'new', department_name_en: newDepartment, department_name_th: newDepartment }]);
       setNewDepartment('');
+      showToastMessage.crud.createSuccess('แผนก');
+    } catch (error) {
+      showToastMessage.crud.createError('แผนก');
     }
   };
 
   // เพิ่ม position ใหม่
   const handleAddPosition = async () => {
     if (!newPosition) return;
-    const res = await fetch(`${API_BASE_URL}/api/positions`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ position_name: newPosition }),
-    });
-    if (res.ok) {
+    try {
+      await apiService.post(apiEndpoints.positions, { position_name: newPosition });
       setPositions(prev => [...prev, { id: 'new', position_name_en: newPosition, position_name_th: newPosition }]);
       setNewPosition('');
-    }
-  };
-
-  // Password strength checker
-  const checkPasswordStrength = (password: string) => {
-    const hasLower = /[a-z]/.test(password);
-    const hasUpper = /[A-Z]/.test(password);
-    const hasNumber = /\d/.test(password);
-    const hasSpecial = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-    const length = password.length;
-    
-    if (length >= 8 && hasLower && hasUpper && hasNumber && hasSpecial) {
-      setPasswordStrength('strong');
-    } else if (length >= 6 && ((hasLower && hasUpper) || (hasNumber && hasSpecial))) {
-      setPasswordStrength('medium');
-    } else {
-      setPasswordStrength('weak');
-    }
-  };
-
-  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setFormData(prev => ({ ...prev, password: value }));
-    checkPasswordStrength(value);
-  };
-
-  const getPasswordStrengthColor = () => {
-    switch (passwordStrength) {
-      case 'strong': return 'text-green-600';
-      case 'medium': return 'text-yellow-600';
-      case 'weak': return 'text-red-600';
-      default: return 'text-gray-600';
-    }
-  };
-
-  const getPasswordStrengthText = () => {
-    switch (passwordStrength) {
-      case 'strong': return t('auth.passwordStrong');
-      case 'medium': return t('auth.passwordMedium');
-      case 'weak': return t('auth.passwordWeak');
-      default: return '';
+      showToastMessage.crud.createSuccess('ตำแหน่ง');
+    } catch (error) {
+      showToastMessage.crud.createError('ตำแหน่ง');
     }
   };
 

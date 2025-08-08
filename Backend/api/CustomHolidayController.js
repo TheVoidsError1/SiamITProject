@@ -1,237 +1,145 @@
 const express = require('express');
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware');
+const { BaseController, sendSuccess, sendError, sendNotFound, sendValidationError } = require('../utils');
 
 module.exports = (AppDataSource) => {
+  // Create base controller instance for CustomHoliday
+  const customHolidayController = new BaseController('CustomHoliday');
 
   // GET all custom holidays
   router.get('/custom-holidays', async (req, res) => {
       try {
-          const customHolidayRepository = AppDataSource.getRepository('CustomHoliday');
-          const holidays = await customHolidayRepository.find({
+          const holidays = await customHolidayController.findAll(AppDataSource, {
               order: {
                   date: 'ASC'
               }
           });
           
-          res.json({
-              status: 'success',
-              data: holidays
-          });
+          sendSuccess(res, holidays, 'Custom holidays fetched successfully');
       } catch (error) {
           console.error('Error fetching custom holidays:', error);
-          res.status(500).json({
-              status: 'error',
-              message: 'Failed to fetch custom holidays'
-          });
+          sendError(res, 'Failed to fetch custom holidays', 500);
       }
   });
 
   // GET custom holiday by ID
   router.get('/custom-holidays/:id', async (req, res) => {
       try {
-          const { id } = req.params;
-          const customHolidayRepository = AppDataSource.getRepository('CustomHoliday');
-          const holiday = await customHolidayRepository.findOne({ where: { id } });
+          const holiday = await customHolidayController.findOne(AppDataSource, req.params.id);
           
           if (!holiday) {
-              return res.status(404).json({
-                  status: 'error',
-                  message: 'Custom holiday not found'
-              });
+              return sendNotFound(res, 'Custom holiday not found');
           }
           
-          res.json({
-              status: 'success',
-              data: holiday
-          });
+          sendSuccess(res, holiday, 'Custom holiday fetched successfully');
       } catch (error) {
           console.error('Error fetching custom holiday:', error);
-          res.status(500).json({
-              status: 'error',
-              message: 'Failed to fetch custom holiday'
-          });
+          sendError(res, 'Failed to fetch custom holiday', 500);
       }
   });
 
-// POST create new custom holiday
-router.post('/custom-holidays', authMiddleware, async (req, res) => {
+  // Create new custom holiday
+  router.post('/custom-holidays', async (req, res) => {
     try {
-        const { title, description, date, type } = req.body;
-        
-        // Validate required fields
-        if (!title || !date) {
-            return res.status(400).json({
-                status: 'error',
-                message: 'Title and date are required'
-            });
-        }
-        
-        // Validate date format (YYYY-MM-DD)
-        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-        if (!dateRegex.test(date)) {
-            return res.status(400).json({
-                status: 'error',
-                message: 'Date must be in YYYY-MM-DD format'
-            });
-        }
-        
-        const customHolidayRepository = AppDataSource.getRepository('CustomHoliday');
-        
-        // Check if holiday already exists for this date
-        const existingHoliday = await customHolidayRepository.findOne({
-            where: { date }
+      const { title, description, date } = req.body;
+      const createdBy = req.user?.userId || 'system';
+      
+      const savedHoliday = await customHolidayController.create(AppDataSource, {
+        title,
+        description,
+        date,
+        createdBy
+      });
+      
+      // Emit Socket.io event for real-time notification
+      if (global.io) {
+        global.io.emit('newCompanyEvent', {
+          id: savedHoliday.id,
+          title: savedHoliday.title,
+          description: savedHoliday.description,
+          date: savedHoliday.date,
+          createdAt: savedHoliday.createdAt,
+          createdBy: savedHoliday.createdBy,
+          type: 'company'
         });
-        
-        if (existingHoliday) {
-            return res.status(409).json({
-                status: 'error',
-                message: 'A custom holiday already exists for this date'
-            });
-        }
-        
-        // Get superadmin name from superadmin table via ProcessCheck
-        let createdBy = 'system';
-        if (req.user.userId) {
-            const processRepo = AppDataSource.getRepository('ProcessCheck');
-            const processCheck = await processRepo.findOne({ where: { Repid: req.user.userId } });
-            if (processCheck && processCheck.Repid) {
-                const superAdminRepo = AppDataSource.getRepository('SuperAdmin');
-                const superAdmin = await superAdminRepo.findOne({ where: { id: processCheck.Repid } });
-                if (superAdmin && superAdmin.superadmin_name) {
-                    createdBy = superAdmin.superadmin_name;
-                }
-            }
-        }
-        
-        const newHoliday = customHolidayRepository.create({
-            title,
-            description: description || '',
-            date,
-            type: type || 'company',
-            createdBy: createdBy
-        });
-        
-        const savedHoliday = await customHolidayRepository.save(newHoliday);
-        
-        res.status(201).json({
-            status: 'success',
-            message: 'Custom holiday created successfully',
-            data: savedHoliday
-        });
-    } catch (error) {
-        console.error('Error creating custom holiday:', error);
-        res.status(500).json({
-            status: 'error',
-            message: 'Failed to create custom holiday'
-        });
+      }
+      
+      sendSuccess(res, savedHoliday, 'Custom holiday created successfully', 201);
+    } catch (err) {
+      console.error('Error creating custom holiday:', err);
+      sendError(res, err.message, 500);
     }
-});
+  });
 
-  // PUT update custom holiday
-  router.put('/custom-holidays/:id', authMiddleware, async (req, res) => {
-      try {
-          const { id } = req.params;
-          const { title, description, date, type } = req.body;
-          
-          const customHolidayRepository = AppDataSource.getRepository('CustomHoliday');
-          const holiday = await customHolidayRepository.findOne({ where: { id } });
-        
-        if (!holiday) {
-            return res.status(404).json({
-                status: 'error',
-                message: 'Custom holiday not found'
-            });
-        }
-        
-        // Validate date format if provided
-        if (date) {
-            const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-            if (!dateRegex.test(date)) {
-                return res.status(400).json({
-                    status: 'error',
-                    message: 'Date must be in YYYY-MM-DD format'
-                });
-            }
-            
-            // Check if new date conflicts with existing holiday (excluding current holiday)
-            const existingHoliday = await customHolidayRepository.findOne({
-                where: { date, id: { $ne: id } }
-            });
-            
-            if (existingHoliday) {
-                return res.status(409).json({
-                    status: 'error',
-                    message: 'A custom holiday already exists for this date'
-                });
-            }
-        }
-        
-        // Update fields
-        if (title !== undefined) holiday.title = title;
-        if (description !== undefined) holiday.description = description;
-        if (date !== undefined) holiday.date = date;
-        if (type !== undefined) holiday.type = type;
-        
-        // Update createdBy to show who last modified it
-        let updatedBy = holiday.createdBy;
-        if (req.user.userId) {
-            const processRepo = AppDataSource.getRepository('ProcessCheck');
-            const processCheck = await processRepo.findOne({ where: { Repid: req.user.userId } });
-            if (processCheck && processCheck.Repid) {
-                const superAdminRepo = AppDataSource.getRepository('SuperAdmin');
-                const superAdmin = await superAdminRepo.findOne({ where: { id: processCheck.Repid } });
-                if (superAdmin && superAdmin.superadmin_name) {
-                    updatedBy = superAdmin.superadmin_name;
-                }
-            }
-        }
-        holiday.createdBy = updatedBy;
-        
-        const updatedHoliday = await customHolidayRepository.save(holiday);
-        
-        res.json({
-            status: 'success',
-            message: 'Custom holiday updated successfully',
-            data: updatedHoliday
+  // Update custom holiday
+  router.put('/custom-holidays/:id', async (req, res) => {
+    try {
+      const { title, description, date } = req.body;
+      
+      const updateData = {};
+      if (title !== undefined) updateData.title = title;
+      if (description !== undefined) updateData.description = description;
+      if (date !== undefined) updateData.date = date;
+      
+      const updatedHoliday = await customHolidayController.update(AppDataSource, req.params.id, updateData);
+      
+      // Emit Socket.io event for real-time notification
+      if (global.io) {
+        global.io.emit('companyEventUpdated', {
+          id: updatedHoliday.id,
+          title: updatedHoliday.title,
+          description: updatedHoliday.description,
+          date: updatedHoliday.date,
+          createdAt: updatedHoliday.createdAt,
+          createdBy: updatedHoliday.createdBy,
+          type: 'company'
         });
-    } catch (error) {
-        console.error('Error updating custom holiday:', error);
-        res.status(500).json({
-            status: 'error',
-            message: 'Failed to update custom holiday'
-        });
+      }
+      
+      sendSuccess(res, updatedHoliday, 'Custom holiday updated successfully');
+    } catch (err) {
+      if (err.message === 'Record not found') {
+        return sendNotFound(res, 'Custom holiday not found');
+      }
+      console.error('Error updating custom holiday:', err);
+      sendError(res, err.message, 500);
     }
-});
+  });
 
-  // DELETE custom holiday
-  router.delete('/custom-holidays/:id', authMiddleware, async (req, res) => {
-      try {
-          const { id } = req.params;
-          const customHolidayRepository = AppDataSource.getRepository('CustomHoliday');
-          const holiday = await customHolidayRepository.findOne({ where: { id } });
-        
-        if (!holiday) {
-            return res.status(404).json({
-                status: 'error',
-                message: 'Custom holiday not found'
-            });
-        }
-        
-        await customHolidayRepository.remove(holiday);
-        
-        res.json({
-            status: 'success',
-            message: 'Custom holiday deleted successfully'
+  // Delete custom holiday
+  router.delete('/custom-holidays/:id', async (req, res) => {
+    try {
+      const holiday = await customHolidayController.findOne(AppDataSource, req.params.id);
+      
+      if (!holiday) {
+        return sendNotFound(res, 'Custom holiday not found');
+      }
+      
+      await customHolidayController.delete(AppDataSource, req.params.id);
+      
+      // Emit Socket.io event for real-time notification
+      if (global.io) {
+        global.io.emit('companyEventDeleted', {
+          id: holiday.id,
+          title: holiday.title,
+          description: holiday.description,
+          date: holiday.date,
+          createdAt: holiday.createdAt,
+          createdBy: holiday.createdBy,
+          type: 'company'
         });
-    } catch (error) {
-        console.error('Error deleting custom holiday:', error);
-        res.status(500).json({
-            status: 'error',
-            message: 'Failed to delete custom holiday'
-        });
+      }
+      
+      sendSuccess(res, null, 'Custom holiday deleted successfully');
+    } catch (err) {
+      if (err.message === 'Record not found') {
+        return sendNotFound(res, 'Custom holiday not found');
+      }
+      console.error('Error deleting custom holiday:', err);
+      sendError(res, err.message, 500);
     }
-});
+  });
 
   // GET custom holidays by date range
   router.get('/custom-holidays/range', async (req, res) => {
@@ -239,10 +147,7 @@ router.post('/custom-holidays', authMiddleware, async (req, res) => {
           const { startDate, endDate } = req.query;
           
           if (!startDate || !endDate) {
-              return res.status(400).json({
-                  status: 'error',
-                  message: 'Start date and end date are required'
-              });
+              return sendValidationError(res, 'Start date and end date are required');
           }
           
           const customHolidayRepository = AppDataSource.getRepository('CustomHoliday');
@@ -253,16 +158,10 @@ router.post('/custom-holidays', authMiddleware, async (req, res) => {
             .orderBy('holiday.date', 'ASC')
             .getMany();
         
-        res.json({
-            status: 'success',
-            data: holidays
-        });
+        sendSuccess(res, holidays, 'Custom holidays fetched successfully');
     } catch (error) {
         console.error('Error fetching custom holidays by range:', error);
-        res.status(500).json({
-            status: 'error',
-            message: 'Failed to fetch custom holidays by range'
-        });
+        sendError(res, 'Failed to fetch custom holidays by range', 500);
     }
 });
 
@@ -272,10 +171,7 @@ router.post('/custom-holidays', authMiddleware, async (req, res) => {
           const { year } = req.params;
           
           if (!year || isNaN(year)) {
-              return res.status(400).json({
-                  status: 'error',
-                  message: 'Valid year is required'
-              });
+              return sendValidationError(res, 'Valid year is required');
           }
           
           const startDate = `${year}-01-01`;
@@ -289,16 +185,10 @@ router.post('/custom-holidays', authMiddleware, async (req, res) => {
             .orderBy('holiday.date', 'ASC')
             .getMany();
         
-        res.json({
-            status: 'success',
-            data: holidays
-        });
+        sendSuccess(res, holidays, 'Custom holidays fetched successfully');
     } catch (error) {
         console.error('Error fetching custom holidays by year:', error);
-        res.status(500).json({
-            status: 'error',
-            message: 'Failed to fetch custom holidays by year'
-        });
+        sendError(res, 'Failed to fetch custom holidays by year', 500);
     }
 });
 
@@ -308,18 +198,12 @@ router.post('/custom-holidays', authMiddleware, async (req, res) => {
           const { year, month } = req.params;
           
           if (!year || isNaN(year) || !month || isNaN(month)) {
-              return res.status(400).json({
-                  status: 'error',
-                  message: 'Valid year and month are required'
-              });
+              return sendValidationError(res, 'Valid year and month are required');
           }
           
           // Validate month is between 1-12
           if (month < 1 || month > 12) {
-              return res.status(400).json({
-                  status: 'error',
-                  message: 'Month must be between 1 and 12'
-              });
+              return sendValidationError(res, 'Month must be between 1 and 12');
           }
           
           const startDate = `${year}-${month.toString().padStart(2, '0')}-01`;
@@ -333,16 +217,10 @@ router.post('/custom-holidays', authMiddleware, async (req, res) => {
             .orderBy('holiday.date', 'ASC')
             .getMany();
         
-        res.json({
-            status: 'success',
-            data: holidays
-        });
+        sendSuccess(res, holidays, 'Custom holidays fetched successfully');
     } catch (error) {
         console.error('Error fetching custom holidays by year and month:', error);
-        res.status(500).json({
-            status: 'error',
-            message: 'Failed to fetch custom holidays by year and month'
-        });
+        sendError(res, 'Failed to fetch custom holidays by year and month', 500);
     }
 });
 

@@ -78,9 +78,15 @@
 const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const config = require('../config');
+const { BaseController, sendSuccess, sendError, sendNotFound, sendValidationError } = require('../utils');
 
 module.exports = (AppDataSource) => {
   const router = require('express').Router();
+  // Create base controller instances
+  const superadminController = new BaseController('SuperAdmin');
+  const departmentController = new BaseController('Department');
+  const positionController = new BaseController('Position');
 
   // Create superadmin
   router.post('/superadmin', async (req, res) => {
@@ -94,13 +100,13 @@ module.exports = (AppDataSource) => {
       // Check for duplicate name
       const nameExist = await superadminRepo.findOneBy({ superadmin_name });
       if (nameExist) {
-        return res.status(400).json({ success: false, data: null, message: 'Superadmin name already exists' });
+        return sendValidationError(res, 'Superadmin name already exists');
       }
 
       // Check for duplicate email
       const exist = await processRepo.findOneBy({ Email: email });
       if (exist) {
-        return res.status(400).json({ success: false, data: null, message: 'Email already exists' });
+        return sendValidationError(res, 'Email already exists');
       }
 
       // Accept department as name or ID
@@ -113,7 +119,7 @@ module.exports = (AppDataSource) => {
         } else {
           const deptEntity = await departmentRepo.findOne({ where: { department_name_th: department } });
           if (!deptEntity) {
-            return res.status(400).json({ success: false, data: null, message: 'Department not found' });
+            return sendValidationError(res, 'Department not found');
           }
           departmentId = deptEntity.id;
         }
@@ -128,7 +134,7 @@ module.exports = (AppDataSource) => {
         } else {
           const posEntity = await positionRepo.findOne({ where: { position_name_th: position } });
           if (!posEntity) {
-            return res.status(400).json({ success: false, data: null, message: 'Position not found' });
+            return sendValidationError(res, 'Position not found');
           }
           positionId = posEntity.id;
         }
@@ -138,19 +144,18 @@ module.exports = (AppDataSource) => {
       const hashedPassword = await bcrypt.hash(password, 10);
 
       // Create superadmin
-      const superadmin = superadminRepo.create({
+      const superadmin = await superadminController.create(AppDataSource, {
         id: uuidv4(),
         superadmin_name,
         department: departmentId,
         position: positionId
       });
-      await superadminRepo.save(superadmin);
 
       // Create JWT Token
       const token = jwt.sign(
         { userId: superadmin.id, email: email },
-        'your_secret_key',
-        { expiresIn: '1h' }
+        config.server.jwtSecret,
+        { expiresIn: config.server.jwtExpiresIn }
       );
 
       // Create process_check with Token and Repid
@@ -165,19 +170,15 @@ module.exports = (AppDataSource) => {
       });
       await processRepo.save(processCheck);
 
-      res.status(201).json({
-        success: true,
-        data: { ...superadmin, token, repid: superadmin.id },
-        message: 'Superadmin created successfully'
-      });
+      sendSuccess(res, { ...superadmin, token, repid: superadmin.id }, 'Superadmin created successfully', 201);
     } catch (err) {
       if (err.code === 'ER_DUP_ENTRY' && err.message.includes('Email')) {
-        return res.status(400).json({ success: false, data: null, message: 'Email already exists' });
+        return sendValidationError(res, 'Email already exists');
       }
       if (err.code === 'ER_DUP_ENTRY' && err.message.includes('superadmin_name')) {
-        return res.status(400).json({ success: false, data: null, message: 'Superadmin name already exists' });
+        return sendValidationError(res, 'Superadmin name already exists');
       }
-      res.status(500).json({ success: false, data: null, message: err.message });
+      sendError(res, err.message, 500);
     }
   });
 
@@ -299,7 +300,7 @@ module.exports = (AppDataSource) => {
       const nameExist = await userRepo.findOneBy({ [nameField]: name });
       if (nameExist) {
         await queryRunner.rollbackTransaction();
-        return res.status(400).json({ success: false, message: 'Name already exists' });
+        return sendValidationError(res, 'Name already exists');
       }
       
       // Create user
@@ -314,8 +315,8 @@ module.exports = (AppDataSource) => {
       // Create JWT Token
       const token = jwt.sign(
         { userId: user.id, email: email },
-        'your_secret_key',
-        { expiresIn: '1h' }
+        config.server.jwtSecret,
+        { expiresIn: config.server.jwtExpiresIn }
       );
       
       // Create process_check with Token and Repid
@@ -332,15 +333,11 @@ module.exports = (AppDataSource) => {
       
       await queryRunner.commitTransaction();
       
-      res.status(201).json({
-        success: true,
-        data: { ...user, token, repid: user.id },
-        message: 'User created successfully'
-      });
+      sendSuccess(res, { ...user, token, repid: user.id }, 'User created successfully', 201);
     } catch (err) {
       await queryRunner.rollbackTransaction();
       console.error('Error creating user with role:', err);
-      res.status(500).json({ success: false, message: err.message });
+      sendError(res, err.message, 500);
     } finally {
       await queryRunner.release();
     }
@@ -389,7 +386,7 @@ module.exports = (AppDataSource) => {
     const { position_name_en, position_name_th, quotas } = req.body;
     console.log('Received quotas:', quotas);
     if (!position_name_en || !position_name_th || typeof quotas !== 'object') {
-      return res.status(400).json({ success: false, message: 'position_name_en, position_name_th, and quotas are required' });
+      return sendValidationError(res, 'position_name_en, position_name_th, and quotas are required');
     }
     const queryRunner = AppDataSource.createQueryRunner();
     await queryRunner.connect();
@@ -571,10 +568,10 @@ module.exports = (AppDataSource) => {
         updatedQuotas.push({ leave_type_en: leaveType.leave_type_en, leave_type_th: leaveType.leave_type_th, quota: quotaValue });
       }
       await queryRunner.commitTransaction();
-      res.json({ success: true, data: { position, quotas: updatedQuotas }, message: 'Position and quotas updated successfully' });
+      sendSuccess(res, { position, quotas: updatedQuotas }, 'Position and quotas updated successfully');
     } catch (err) {
       await queryRunner.rollbackTransaction();
-      res.status(500).json({ success: false, message: err.message });
+      sendError(res, err.message, 500);
     } finally {
       await queryRunner.release();
     }
@@ -621,15 +618,15 @@ module.exports = (AppDataSource) => {
       const position = await positionRepo.findOneBy({ id });
       if (!position) {
         await queryRunner.rollbackTransaction();
-        return res.status(404).json({ success: false, message: 'Position not found' });
+        return sendNotFound(res, 'Position not found');
       }
       await leaveQuotaRepo.delete({ positionId: id });
       await positionRepo.delete({ id });
       await queryRunner.commitTransaction();
-      res.json({ success: true, message: 'Position and quotas deleted successfully' });
+      sendSuccess(res, null, 'Position and quotas deleted successfully');
     } catch (err) {
       await queryRunner.rollbackTransaction();
-      res.status(500).json({ success: false, message: err.message });
+      sendError(res, err.message, 500);
     } finally {
       await queryRunner.release();
     }
@@ -647,11 +644,11 @@ module.exports = (AppDataSource) => {
       // Delete from superadmin table
       const result = await superadminRepo.delete({ id });
       if (result.affected === 0) {
-        return res.status(404).json({ success: false, message: 'Superadmin not found' });
+        return sendNotFound(res, 'Superadmin not found');
       }
-      res.json({ success: true, message: 'Superadmin deleted successfully' });
+      sendSuccess(res, null, 'Superadmin deleted successfully');
     } catch (err) {
-      res.status(500).json({ success: false, message: err.message });
+      sendError(res, err.message, 500);
     }
   });
 

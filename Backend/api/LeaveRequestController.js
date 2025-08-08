@@ -1,24 +1,25 @@
    // Backend/api/LeaveRequestController.js
    const express = require('express');
-   const multer = require('multer');
-   const path = require('path');
    const fs = require('fs');
    const jwt = require('jsonwebtoken');
-   const SECRET = process.env.JWT_SECRET || 'your-secret-key';
+   const config = require('../config');
+   const LineController = require('./LineController');
+   const { leaveAttachmentsUpload, handleUploadError } = require('../middleware/fileUploadMiddleware');
+   const { 
+     verifyToken, 
+     sendSuccess, 
+     sendError, 
+     sendUnauthorized,
+     convertToMinutes,
+     calculateDaysBetween,
+     convertTimeRangeToDecimal,
+     isWithinWorkingHours,
+     sendValidationError,
+     sendNotFound,
+     sendConflict
+   } = require('../utils');
 
-   // ตั้งค่าที่เก็บไฟล์
-   const storage = multer.diskStorage({
-     destination: function (req, file, cb) {
-       const uploadPath = path.join(__dirname, '../../public/leave-uploads');
-       if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath, { recursive: true });
-       cb(null, uploadPath);
-     },
-     filename: function (req, file, cb) {
-       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-       cb(null, uniqueSuffix + path.extname(file.originalname));
-     }
-   });
-   const upload = multer({ storage: storage });
+   // File upload middleware is now imported from fileUploadMiddleware.js
 
    // ใช้ฟังก์ชัน parseAttachments ปลอดภัย
    function parseAttachments(val) {
@@ -31,6 +32,102 @@
      }
    }
 
+   // Helper function to update LeaveUsed table (only for approved requests)
+   async function updateLeaveUsed(leave) {
+     try {
+       const leaveUsedRepo = AppDataSource.getRepository('LeaveUsed');
+       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+       
+       // Get leave type entity
+       let leaveTypeEntity = null;
+       if (leave.leaveType && leave.leaveType.length > 20) {
+         leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leave.leaveType });
+       } else {
+         leaveTypeEntity = await leaveTypeRepo.findOne({
+           where: [
+             { leave_type_th: leave.leaveType },
+             { leave_type_en: leave.leaveType }
+           ]
+         });
+       }
+
+       if (!leaveTypeEntity) {
+         console.error('Leave type not found for leave request:', leave.id);
+         return;
+       }
+
+       // Calculate days/hours
+       let days = 0;
+       let hours = 0;
+
+       const isPersonalLeave = leaveTypeEntity && 
+         (leaveTypeEntity.leave_type_en?.toLowerCase() === 'personal' || 
+          leaveTypeEntity.leave_type_th === 'ลากิจ');
+
+       if (isPersonalLeave && leave.startTime && leave.endTime) {
+         // Hour-based calculation for personal leave
+         const startMinutes = convertToMinutes(...leave.startTime.split(':').map(Number));
+         const endMinutes = convertToMinutes(...leave.endTime.split(':').map(Number));
+         let durationHours = (endMinutes - startMinutes) / 60;
+         if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
+         hours = durationHours;
+       } else if (leave.startDate && leave.endDate) {
+         // Day-based calculation
+         const start = new Date(leave.startDate);
+         const end = new Date(leave.endDate);
+         let calculatedDays = calculateDaysBetween(start, end);
+         if (calculatedDays < 0 || isNaN(calculatedDays)) calculatedDays = 0;
+         days = calculatedDays;
+       }
+
+       // Skip if no days or hours
+       if (days === 0 && hours === 0) {
+         console.log('No days or hours to update for leave request:', leave.id);
+         return;
+       }
+
+       // Convert 9 hours to 1 day
+       let finalDays = days;
+       let finalHours = hours;
+       
+       if (hours >= config.business.workingHoursPerDay) {
+         const additionalDays = Math.floor(hours / config.business.workingHoursPerDay);
+         finalDays += additionalDays;
+         finalHours = hours % config.business.workingHoursPerDay;
+         console.log(`Converted ${hours} hours to ${additionalDays} days + ${finalHours} hours for leave request:`, leave.id);
+       }
+
+       // Find existing record
+       const existingRecord = await leaveUsedRepo.findOne({
+         where: { 
+           user_id: leave.Repid, 
+           leave_type_id: leaveTypeEntity.id 
+         }
+       });
+
+       // Add to LeaveUsed table
+       if (existingRecord) {
+         existingRecord.days = (existingRecord.days || 0) + finalDays;
+         existingRecord.hour = (existingRecord.hour || 0) + finalHours;
+         existingRecord.updated_at = new Date();
+         await leaveUsedRepo.save(existingRecord);
+         console.log('Updated LeaveUsed record for user:', leave.Repid, 'leave type:', leaveTypeEntity.leave_type_th, `(${finalDays} days, ${finalHours} hours)`);
+       } else {
+         const newRecord = leaveUsedRepo.create({
+           user_id: leave.Repid,
+           leave_type_id: leaveTypeEntity.id,
+           days: finalDays,
+           hour: finalHours
+         });
+         await leaveUsedRepo.save(newRecord);
+         console.log('Created new LeaveUsed record for user:', leave.Repid, 'leave type:', leaveTypeEntity.leave_type_th, `(${finalDays} days, ${finalHours} hours)`);
+       }
+     } catch (error) {
+       console.error('Error updating LeaveUsed table:', error);
+       // Don't fail the main request if LeaveUsed update fails
+     }
+   }
+
    // ใช้ฟังก์ชันแปลงวันที่ให้เป็น Local Time (แก้บัค -1 วัน)
    function parseLocalDate(dateStr) {
      if (!dateStr) return null;
@@ -39,11 +136,105 @@
      return new Date(year, month - 1, day);
    }
 
+     // Function to send LINE notification when leave request status changes
+  async function sendLineNotification(leave, status, approverName, rejectedReason) {
+    try {
+      // Get the user's LINE user ID from ProcessCheck table
+      const processRepo = AppDataSource.getRepository('ProcessCheck');
+      const processCheck = await processRepo.findOneBy({ Repid: leave.Repid });
+      
+      console.log('=== LINE Notification Database Debug ===');
+      console.log('Leave Repid:', leave.Repid);
+      console.log('ProcessCheck found:', !!processCheck);
+      if (processCheck) {
+        console.log('ProcessCheck lineUserId:', processCheck.lineUserId);
+        console.log('ProcessCheck lineUserId type:', typeof processCheck.lineUserId);
+        console.log('ProcessCheck lineUserId length:', processCheck.lineUserId ? processCheck.lineUserId.length : 0);
+      }
+      console.log('========================================');
+      
+      if (!processCheck || !processCheck.lineUserId) {
+        console.log('User not linked to LINE or not found:', leave.Repid);
+        return; // User not linked to LINE
+      }
+
+      // Get the leave type name from the database
+      const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+      const leaveTypeData = await leaveTypeRepo.findOneBy({ id: leave.leaveType });
+      const leaveTypeNameTh = leaveTypeData ? leaveTypeData.leave_type_th : 'ไม่ระบุประเภท';
+      const leaveTypeNameEn = leaveTypeData ? leaveTypeData.leave_type_en : 'Unknown Type';
+      const leaveTypeNameBilingual = leaveTypeNameEn && leaveTypeNameEn !== leaveTypeNameTh 
+        ? `${leaveTypeNameTh} (${leaveTypeNameEn})` 
+        : leaveTypeNameTh;
+
+      // Format the notification message (Thai and English)
+      let message = '';
+      const startDate = new Date(leave.startDate).toLocaleDateString('th-TH');
+      const endDate = new Date(leave.endDate).toLocaleDateString('th-TH');
+      const currentTime = new Date().toLocaleString('th-TH');
+       
+       if (status === 'approved') {
+         message = `✅ คำขอการลาของคุณได้รับการอนุมัติแล้ว!\n\n` +
+                   `📋 ประเภทการลา: ${leaveTypeNameBilingual}\n` +
+                   `📅 วันที่: ${startDate} - ${endDate}\n` +
+                   `👤 ผู้อนุมัติ: ${approverName}\n` +
+                   `⏰ เวลาที่อนุมัติ: ${currentTime}\n\n` +
+                   `ขอบคุณที่ใช้ระบบจัดการการลาของเรา!\n\n` +
+                   `---\n` +
+                   `✅ Your leave request has been approved!\n\n` +
+                   `📋 Leave Type: ${leaveTypeNameBilingual}\n` +
+                   `📅 Date: ${startDate} - ${endDate}\n` +
+                   `👤 Approved by: ${approverName}\n` +
+                   `⏰ Approved at: ${currentTime}\n\n` +
+                   `Thank you for using our leave management system!`;
+       } else if (status === 'rejected') {
+         message = `❌ คำขอการลาของคุณไม่ได้รับการอนุมัติ\n\n` +
+                   `📋 ประเภทการลา: ${leaveTypeNameBilingual}\n` +
+                   `📅 วันที่: ${startDate} - ${endDate}\n` +
+                   `👤 ผู้อนุมัติ: ${approverName}\n` +
+                   `⏰ เวลาที่ปฏิเสธ: ${currentTime}`;
+         
+         if (rejectedReason) {
+           message += `\n📝 เหตุผล: ${rejectedReason}`;
+         }
+         
+         message += `\n\nหากมีข้อสงสัย กรุณาติดต่อผู้ดูแลระบบ\n\n` +
+                   `---\n` +
+                   `❌ Your leave request has been rejected\n\n` +
+                   `📋 Leave Type: ${leaveTypeNameBilingual}\n` +
+                   `📅 Date: ${startDate} - ${endDate}\n` +
+                   `👤 Rejected by: ${approverName}\n` +
+                   `⏰ Rejected at: ${currentTime}`;
+         
+         if (rejectedReason) {
+           message += `\n📝 Reason: ${rejectedReason}`;
+         }
+         
+         message += `\n\nIf you have any questions, please contact the administrator.`;
+       }
+
+       // Send the notification via LINE
+       const notificationResult = await LineController.sendNotification(processCheck.lineUserId, message);
+       
+       if (notificationResult.success) {
+         console.log('LINE notification sent successfully to:', processCheck.lineUserId);
+       } else {
+         console.error('Failed to send LINE notification:', notificationResult.error);
+         console.log('LINE user ID:', processCheck.lineUserId);
+         console.log('Message length:', message.length);
+       }
+       
+     } catch (error) {
+       console.error('Error sending LINE notification:', error);
+       throw error;
+     }
+   }
+
    module.exports = (AppDataSource) => {
      const router = express.Router();
 
      // POST /api/leave-request
-     router.post('/', upload.array('attachments', 10), async (req, res) => {
+     router.post('/', leaveAttachmentsUpload.array('attachments', 10), async (req, res) => {
        try {
          const leaveRepo = AppDataSource.getRepository('LeaveRequest');
          let userId = null;
@@ -53,11 +244,11 @@
          if (authHeader && authHeader.startsWith('Bearer ')) {
            const token = authHeader.split(' ')[1];
            try {
-             const decoded = jwt.verify(token, SECRET);
+             const decoded = verifyToken(token);
              userId = decoded.userId;
              role = decoded.role;
            } catch (err) {
-             return res.status(401).json({ status: 'error', message: 'Invalid or expired token' });
+             return sendUnauthorized(res, 'Invalid or expired token');
            }
          }
          // กำหนดภาษา (ต้องมาก่อน validation quota)
@@ -127,11 +318,7 @@
            });
            // 3. คำนวณ leave ที่ใช้ไป (approved) ในปีนี้ (ชั่วโมง เฉพาะ leaveType นี้)
            let usedHours = 0;
-           function parseTimeToMinutes(t) {
-             if (!t) return 0;
-             const [h, m] = t.split(':').map(Number);
-             return h * 60 + (m || 0);
-           }
+           // Using utility function instead of local function
            for (const lr of approvedLeaves) {
              let leaveTypeName = lr.leaveType;
              if (leaveTypeName && leaveTypeName.length > 20) {
@@ -148,26 +335,26 @@
                // Personal leave: อาจเป็นชั่วโมงหรือวัน
                if (leaveTypeEntity.leave_type_en === 'Personal' || leaveTypeEntity.leave_type_th === 'ลากิจ') {
                  if (lr.startTime && lr.endTime) {
-                   const startMinutes = parseTimeToMinutes(lr.startTime);
-                   const endMinutes = parseTimeToMinutes(lr.endTime);
+                   const startMinutes = convertToMinutes(...lr.startTime.split(':').map(Number));
+                   const endMinutes = convertToMinutes(...lr.endTime.split(':').map(Number));
                    let durationHours = (endMinutes - startMinutes) / 60;
                    if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
                    usedHours += durationHours;
                  } else if (lr.startDate && lr.endDate) {
                    const start = new Date(lr.startDate);
                    const end = new Date(lr.endDate);
-                   let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                   let days = calculateDaysBetween(start, end);
                    if (days < 0 || isNaN(days)) days = 0;
-                   usedHours += days * 9;
+                   usedHours += days * config.business.workingHoursPerDay;
                  }
                } else {
                  // อื่น ๆ: วันเท่านั้น
                  if (lr.startDate && lr.endDate) {
                    const start = new Date(lr.startDate);
                    const end = new Date(lr.endDate);
-                   let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+                   let days = calculateDaysBetween(start, end);
                    if (days < 0 || isNaN(days)) days = 0;
-                   usedHours += days * 9;
+                   usedHours += days * config.business.workingHoursPerDay;
                  }
                }
              }
@@ -176,29 +363,29 @@
            let requestHours = 0;
            if (leaveTypeEntity.leave_type_en === 'Personal' || leaveTypeEntity.leave_type_th === 'ลากิจ') {
              if (startTime && endTime) {
-               const startMinutes = parseTimeToMinutes(startTime);
-               const endMinutes = parseTimeToMinutes(endTime);
+               const startMinutes = convertToMinutes(...startTime.split(':').map(Number));
+               const endMinutes = convertToMinutes(...endTime.split(':').map(Number));
                let durationHours = (endMinutes - startMinutes) / 60;
                if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
                requestHours += durationHours;
              } else if (startDate && endDate) {
                const start = parseLocalDate(startDate);
                const end = parseLocalDate(endDate);
-               let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+               let days = calculateDaysBetween(start, end);
                if (days < 0 || isNaN(days)) days = 0;
-               requestHours += days * 9;
+               requestHours += days * config.business.workingHoursPerDay;
              }
            } else {
              if (startDate && endDate) {
                const start = parseLocalDate(startDate);
                const end = parseLocalDate(endDate);
-               let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+               let days = calculateDaysBetween(start, end);
                if (days < 0 || isNaN(days)) days = 0;
-               requestHours += days * 9;
+               requestHours += days * config.business.workingHoursPerDay;
              }
            }
            // 5. quota (ชั่วโมง)
-           const totalQuotaHours = quota * 9;
+           const totalQuotaHours = quota * config.business.workingHoursPerDay;
            // 6. ถ้า used + request > quota => reject
            if (usedHours + requestHours > totalQuotaHours) {
              return res.status(400).json({
@@ -226,7 +413,7 @@
            if (!/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(timeStr)) return false;
            const [h, m] = timeStr.split(':').map(Number);
            const minutes = h * 60 + m;
-           return minutes >= 9 * 60 && minutes <= 18 * 60;
+           return minutes >= config.business.workingStartHour * 60 && minutes <= config.business.workingEndHour * 60;
          }
          // ตรวจสอบเฉพาะกรณีมี startTime/endTime
          if (startTime && endTime) {
@@ -240,8 +427,8 @@
              return res.status(400).json({
                status: 'error',
                message: lang === 'en'
-                 ? 'You can request leave only during working hours: 09:00 to 18:00.'
-                 : 'สามารถลาได้เฉพาะช่วงเวลาทำงาน 09:00 ถึง 18:00 เท่านั้น'
+                 ? `You can request leave only during working hours: ${config.business.workingStartHour}:00 to ${config.business.workingEndHour}:00.`
+                 : `สามารถลาได้เฉพาะช่วงเวลาทำงาน ${config.business.workingStartHour}:00 ถึง ${config.business.workingEndHour}:00 เท่านั้น`
              });
            }
          }
@@ -278,9 +465,51 @@
 
          // เพิ่มข้อมูลลงฐานข้อมูล
          const leave = leaveRepo.create(leaveData);
-         await leaveRepo.save(leave);
+         const savedLeave = await leaveRepo.save(leave);
 
-         res.status(201).json({ status: 'success', data: leave, message: 'Leave request created' });
+         // Emit Socket.io event for real-time notification
+         if (global.io) {
+           // Get user information for the notification
+           let userName = 'Unknown User';
+           let leaveTypeName = leaveType;
+           
+           try {
+             // Get user name based on role
+             if (role === 'admin') {
+               const adminRepo = AppDataSource.getRepository('Admin');
+               const admin = await adminRepo.findOneBy({ id: userId });
+               userName = admin ? admin.name : 'Unknown User';
+             } else if (role === 'superadmin') {
+               const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+               const superadmin = await superadminRepo.findOneBy({ id: userId });
+               userName = superadmin ? superadmin.name : 'Unknown User';
+             } else {
+               const userRepo = AppDataSource.getRepository('User');
+               const user = await userRepo.findOneBy({ id: userId });
+               userName = user ? user.name : 'Unknown User';
+             }
+             
+             // Get leave type name
+             if (leaveTypeEntity) {
+               leaveTypeName = leaveTypeEntity.leave_type_th || leaveTypeEntity.leave_type_en || leaveType;
+             }
+           } catch (error) {
+             console.error('Error getting user/leave type info for socket emit:', error);
+           }
+           
+           // Emit to admin room for new leave request notification
+           global.io.to('admin_room').emit('newLeaveRequest', {
+             requestId: savedLeave.id,
+             userName: userName,
+             leaveType: leaveTypeName,
+             startDate: savedLeave.startDate,
+             endDate: savedLeave.endDate,
+             reason: savedLeave.reason,
+             employeeId: savedLeave.Repid
+           });
+         }
+
+         res.status(201).json({ status: 'success', data: savedLeave, message: 'Leave request created' });
        } catch (err) {
          res.status(500).json({ status: 'error', message: err.message });
        }
@@ -297,7 +526,7 @@
          const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
          // --- เพิ่ม paging ---
          const page = parseInt(req.query.page) || 1;
-         const limit = parseInt(req.query.limit) || 4;
+         const limit = parseInt(req.query.limit) || config.pagination.defaultLimit;
          const skip = (page - 1) * limit;
          // --- เพิ่ม filter leaveType, startDate, endDate, month, year ---
          const leaveType = req.query.leaveType || null;
@@ -443,9 +672,9 @@
              if (startDate && endDate) {
                where = where.map(w => ({ ...w, startDate: Between(startDate, endDate) }));
              } else if (startDate) {
-               where = where.map(w => ({ ...w, startDate: Between(startDate, new Date(3000, 0, 1)) }));
+               where = where.map(w => ({ ...w, startDate: Between(startDate, new Date(config.business.maxDate)) }));
              } else if (endDate) {
-               where = where.map(w => ({ ...w, startDate: Between(new Date(2000, 0, 1), endDate) }));
+               where = where.map(w => ({ ...w, startDate: Between(new Date(config.business.minDate), endDate) }));
              }
            } else {
              // เดิม: status เดียว
@@ -466,9 +695,9 @@
              if (startDate && endDate) {
                where = where.map(w => ({ ...w, startDate: Between(startDate, endDate) }));
              } else if (startDate) {
-               where = where.map(w => ({ ...w, startDate: Between(startDate, new Date(3000, 0, 1)) }));
+               where = where.map(w => ({ ...w, startDate: Between(startDate, new Date(config.business.maxDate)) }));
              } else if (endDate) {
-               where = where.map(w => ({ ...w, startDate: Between(new Date(2000, 0, 1), endDate) }));
+               where = where.map(w => ({ ...w, startDate: Between(new Date(config.business.minDate), endDate) }));
              }
            }
          } else {
@@ -516,9 +745,9 @@
            if (startDate && endDate) {
              where = where.map(w => ({ ...w, startDate: Between(startDate, endDate) }));
            } else if (startDate) {
-             where = where.map(w => ({ ...w, startDate: Between(startDate, new Date(3000, 0, 1)) }));
+             where = where.map(w => ({ ...w, startDate: Between(startDate, new Date(config.business.maxDate)) }));
            } else if (endDate) {
-             where = where.map(w => ({ ...w, startDate: Between(new Date(2000, 0, 1), endDate) }));
+             where = where.map(w => ({ ...w, startDate: Between(new Date(config.business.minDate), endDate) }));
            }
          }
          // --- ใน /history ---
@@ -552,7 +781,7 @@
          }
          // --- เพิ่ม paging ---
          const page = parseInt(req.query.page) || 1;
-         const limit = parseInt(req.query.limit) || 5;
+         const limit = parseInt(req.query.limit) || config.pagination.defaultLimit;
          const skip = (page - 1) * limit;
          // ดึงใบคำขอที่ status เป็น approved หรือ rejected (และ filter ตาม userId/เดือน/ปี/ช่วงวัน ถ้ามี) (paging)
          const [processedLeaves, total] = await Promise.all([
@@ -731,7 +960,7 @@
            return res.status(401).json({ status: 'error', message: 'No token provided' });
          }
          const token = authHeader.split(' ')[1];
-         const decoded = jwt.verify(token, SECRET);
+         const decoded = jwt.verify(token, config.server.jwtSecret);
          const userId = decoded.userId;
 
          const leaveRepo = AppDataSource.getRepository('LeaveRequest');
@@ -792,7 +1021,7 @@
          const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
          // --- เพิ่ม paging ---
          const page = parseInt(req.query.page) || 1;
-         const limit = parseInt(req.query.limit) || 6;
+         const limit = parseInt(req.query.limit) || config.pagination.defaultLimit;
          const skip = (page - 1) * limit;
          // ดึง leave requests ของ user ตาม id (paging)
          const [leaves, total] = await Promise.all([
@@ -930,7 +1159,7 @@
      });
 
      // PUT /api/leave-request/:id (update leave request)
-     router.put('/:id', upload.array('attachments', 10), async (req, res) => {
+     router.put('/:id', leaveAttachmentsUpload.array('attachments', 10), async (req, res) => {
        try {
          const leaveRepo = AppDataSource.getRepository('LeaveRequest');
          const { id } = req.params;
@@ -1122,7 +1351,7 @@
          if (!approverName && authHeader && authHeader.startsWith('Bearer ')) {
            const token = authHeader.split(' ')[1];
            try {
-             const decoded = jwt.verify(token, SECRET);
+             const decoded = jwt.verify(token, config.server.jwtSecret);
              let user = await userRepo.findOneBy({ id: decoded.userId });
              if (user) {
                approverName = user.User_name;
@@ -1155,6 +1384,9 @@
          const leave = await leaveRepo.findOneBy({ id: id });
          if (!leave) return res.status(404).json({ success: false, message: 'Leave request not found' });
 
+         // Store the old status to check if we need to update LeaveUsed
+         const oldStatus = leave.status;
+         
          leave.status = status;
          leave.statusBy = approverName;
          leave.statusChangeTime = new Date();
@@ -1166,6 +1398,39 @@
            if (rejectedReason) leave.rejectedReason = rejectedReason;
          }
          await leaveRepo.save(leave);
+
+         // Update LeaveUsed table only when status changes to approved
+         if (status === 'approved') {
+           await updateLeaveUsed(leave);
+         }
+
+         // Emit Socket.io event for real-time notification
+         if (global.io) {
+           // Emit to specific user room
+           global.io.to(`user_${leave.Repid}`).emit('leaveRequestUpdated', {
+             requestId: leave.id,
+             status: leave.status,
+             statusBy: leave.statusBy,
+             employeeId: leave.Repid,
+             message: status === 'approved' ? 'คำขอลาของคุณได้รับการอนุมัติ' : 'คำขอลาของคุณถูกปฏิเสธ'
+           });
+
+           // Emit to admin room for dashboard updates
+           global.io.to('admin_room').emit('leaveRequestStatusChanged', {
+             requestId: leave.id,
+             status: leave.status,
+             employeeId: leave.Repid,
+             statusBy: leave.statusBy
+           });
+         }
+
+         // Send LINE notification to the user
+         try {
+           await sendLineNotification(leave, status, approverName, rejectedReason);
+         } catch (notificationError) {
+           console.error('Failed to send LINE notification:', notificationError);
+           // Don't fail the request if notification fails
+         }
 
          res.json({ success: true, data: leave });
        } catch (err) {
@@ -1193,6 +1458,21 @@
          const { year } = req.params;
          const { month } = req.query;
          
+         // Get user info from JWT token
+         let currentUserId = null;
+         let currentUserRole = null;
+         const authHeader = req.headers.authorization;
+         if (authHeader && authHeader.startsWith('Bearer ')) {
+           const token = authHeader.split(' ')[1];
+           try {
+             const decoded = jwt.verify(token, config.server.jwtSecret);
+             currentUserId = decoded.userId;
+             currentUserRole = decoded.role;
+           } catch (err) {
+             return res.status(401).json({ status: 'error', message: 'Invalid or expired token' });
+           }
+         }
+         
          const leaveRepo = AppDataSource.getRepository('LeaveRequest');
          const userRepo = AppDataSource.getRepository('User');
          const adminRepo = AppDataSource.getRepository('Admin');
@@ -1218,6 +1498,11 @@
              status: 'approved',
              startDate: Between(startOfMonth, endOfMonth)
            };
+         }
+         
+         // Filter by user role - admin/superadmin can see all, user can only see their own
+         if (currentUserRole === 'user') {
+           where.Repid = currentUserId;
          }
          
          const approvedLeaves = await leaveRepo.find({

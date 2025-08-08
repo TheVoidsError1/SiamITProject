@@ -7,6 +7,8 @@ import { Eye, User, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
+import { apiService, apiEndpoints, API_BASE_URL } from '../lib/api';
+import { getImageUrl } from '../lib/utils';
 
 // เพิ่ม type สำหรับข้อมูลพนักงาน
 interface Employee {
@@ -14,7 +16,11 @@ interface Employee {
   full_name: string;
   email: string;
   position: string;
+  position_name_th?: string;
+  position_name_en?: string;
   department: string;
+  department_name_th?: string;
+  department_name_en?: string;
   role: string;
   usedLeaveDays: number;
   totalLeaveDays: number;
@@ -26,7 +32,7 @@ function formatLeaveDays(days: number, t: (key: string) => string): string {
   const fullDays = Math.floor(days);
   const hours = Math.round((days - fullDays) * 9);
   if (hours > 0) {
-    return `${fullDays} ${t('common.days')} ${hours} ${t('common.hour')}`;
+    return `${fullDays} ${t('common.days')} ${hours} ${t('common.hours')}`;
   }
   return `${fullDays} ${t('common.days')}`;
 }
@@ -41,8 +47,9 @@ const EmployeeManagement = () => {
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6; // เพิ่มจำนวนแถวต่อหน้า
-  const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null);
-  const [deleting, setDeleting] = useState(false);
+  // State สำหรับจัดการการลบพนักงาน
+  const [deleteTarget, setDeleteTarget] = useState<Employee | null>(null); // พนักงานที่จะลบ
+  const [deleting, setDeleting] = useState(false); // สถานะกำลังลบ
   const [pendingPositionFilter, setPendingPositionFilter] = useState<string>("");
   const [pendingDepartmentFilter, setPendingDepartmentFilter] = useState<string>("");
   const [pendingRoleFilter, setPendingRoleFilter] = useState<string>("");
@@ -50,50 +57,76 @@ const EmployeeManagement = () => {
   const [departmentFilter, setDepartmentFilter] = useState<string>("");
   const [roleFilter, setRoleFilter] = useState<string>("");
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/employees`)
-      .then((res) => res.json())
-      .then((data) => {
+    const fetchEmployees = async () => {
+      try {
+        const data = await apiService.get(apiEndpoints.employees.list);
         if (data.success && Array.isArray(data.data)) {
           const employees = data.data.map((item) => ({
             id: item.id,
             full_name: item.name || '',
             email: item.email || '',
             position: item.position || '', // เก็บ id
+            position_name_th: item.position_name_th || '',
+            position_name_en: item.position_name_en || '',
             department: item.department || '', // เก็บ id
+            department_name_th: item.department_name_th || '',
+            department_name_en: item.department_name_en || '',
             role: item.role || '',
             usedLeaveDays: item.usedLeaveDays ?? 0,
             totalLeaveDays: item.totalLeaveDays ?? 0,
-            avatar: item.avatar || undefined, // เพิ่ม avatar จากข้อมูล
+            avatar: item.avatar || undefined,
           }));
+
+          console.log('Processed employees data:', employees);
           setEmployees(employees);
         } else {
+          console.error('Invalid employees data format:', data);
           setEmployees([]);
         }
         setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, []);
+      } catch (error) {
+        console.error('Error fetching employees:', error);
+        setLoading(false);
+      }
+    };
 
-  // ดึงตำแหน่ง
+    fetchEmployees();
+  }, [user]);
+
+  // ดึงตำแหน่งและแผนก
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/positions`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.status === 'success' && Array.isArray(data.data)) {
-          setPositions(data.data);
+    const fetchData = async () => {
+      try {
+        // ดึงข้อมูลตำแหน่ง
+        const positionsData = await apiService.get(apiEndpoints.positions);
+        if (positionsData.success && Array.isArray(positionsData.data)) {
+          console.log('Processed positions data:', positionsData.data);
+          setPositions(positionsData.data);
+        } else {
+          console.error('Invalid positions data format:', positionsData);
         }
-      });
-    fetch(`${API_BASE_URL}/api/departments`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.status === 'success' && Array.isArray(data.data)) {
-          setDepartments(data.data);
+
+        // ดึงข้อมูลแผนก
+        const departmentsData = await apiService.get(apiEndpoints.departments);
+        if (departmentsData.success && Array.isArray(departmentsData.data)) {
+          console.log('Processed departments data:', departmentsData.data);
+          setDepartments(departmentsData.data);
+        } else {
+          console.error('Invalid departments data format:', departmentsData);
         }
-      });
-  }, []);
+      } catch (error) {
+        console.error('Error fetching positions/departments:', error);
+        toast({
+          title: t('system.error'),
+          description: t('system.fetchDataError'),
+          variant: "destructive",
+        });
+      }
+    };
+
+    fetchData();
+  }, [t, toast]);
 
   // ฟังก์ชันแปลง id เป็นชื่อ
   const getPositionName = (id: string) => {
@@ -115,12 +148,54 @@ const EmployeeManagement = () => {
     return i18n.language === 'th' ? found.department_name_th : found.department_name_en;
   };
 
+  // ฟังก์ชันแสดงชื่อตำแหน่งตามภาษา
+  const getDisplayPositionName = (employee: Employee) => {
+    // ถ้ามีชื่อภาษาไทยและอังกฤษในข้อมูลพนักงาน
+    if (employee.position_name_th && employee.position_name_en) {
+      return i18n.language === 'th' ? employee.position_name_th : employee.position_name_en;
+    }
+    // ถ้าไม่มี ให้ใช้ฟังก์ชัน lookup
+    return getPositionName(employee.position);
+  };
+
+  // ฟังก์ชันแสดงชื่อแผนกตามภาษา
+  const getDisplayDepartmentName = (employee: Employee) => {
+    // ถ้ามีชื่อภาษาไทยและอังกฤษในข้อมูลพนักงาน
+    if (employee.department_name_th && employee.department_name_en) {
+      return i18n.language === 'th' ? employee.department_name_th : employee.department_name_en;
+    }
+    // ถ้าไม่มี ให้ใช้ฟังก์ชัน lookup
+    return getDepartmentName(employee.department);
+  };
+
   // ฟังก์ชันกรองข้อมูล
-  const filteredEmployees = employees.filter(emp =>
-    (positionFilter === "" || emp.position === positionFilter) &&
-    (departmentFilter === "" || emp.department === departmentFilter) &&
-    (roleFilter === "" || emp.role === roleFilter)
-  );
+  const filteredEmployees = employees.filter(emp => {
+    const positionMatch = positionFilter === "" || emp.position === positionFilter;
+    const departmentMatch = departmentFilter === "" || emp.department === departmentFilter;
+    const roleMatch = roleFilter === "" || emp.role === roleFilter;
+    
+    // Debug logging only when filters are active
+    if (positionFilter !== "" || departmentFilter !== "" || roleFilter !== "") {
+      console.log('Filtering employee:', emp.full_name, {
+        position: emp.position,
+        positionFilter,
+        positionMatch,
+        department: emp.department,
+        departmentFilter,
+        departmentMatch,
+        role: emp.role,
+        roleFilter,
+        roleMatch
+      });
+    }
+    
+    return positionMatch && departmentMatch && roleMatch;
+  });
+
+  // Reset to first page when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [positionFilter, departmentFilter, roleFilter]);
   const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
   const paginatedEmployees = filteredEmployees.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
@@ -136,8 +211,8 @@ const EmployeeManagement = () => {
     {
       title: t('system.regularEmployees'),
       value: employees.filter(emp => {
-        const positionName = getPositionName(emp.position);
-        return positionName === 'พนักงาน' || positionName === 'Employee';
+        const positionName = getDisplayPositionName(emp);
+        return positionName === t('auth.employee') || positionName === 'Employee' || positionName === 'พนักงาน';
       }).length.toString(),
       icon: User,
       color: "text-green-600",
@@ -146,8 +221,8 @@ const EmployeeManagement = () => {
     {
       title: t('system.interns'),
       value: employees.filter(emp => {
-        const positionName = getPositionName(emp.position);
-        return positionName === 'นักศึกษาฝึกงาน' || positionName === 'Intern';
+        const positionName = getDisplayPositionName(emp);
+        return positionName === t('auth.intern') || positionName === 'Intern' || positionName === 'นักศึกษาฝึกงาน';
       }).length.toString(),
       icon: User,
       color: "text-orange-600",
@@ -155,33 +230,41 @@ const EmployeeManagement = () => {
     },
   ];
 
+  // ฟังก์ชันลบพนักงาน - จัดการการลบพนักงานตามบทบาท (superadmin, admin, user)
   const handleDelete = async () => {
     if (!deleteTarget || !user) return;
     setDeleting(true);
-    let url = "";
-    if (deleteTarget.role === "superadmin") {
-      url = `${API_BASE_URL}/api/superadmin/${deleteTarget.id}`;
-    } else if (deleteTarget.role === "admin") {
-      url = `${API_BASE_URL}/api/admins/${deleteTarget.id}`;
-    } else {
-      url = `${API_BASE_URL}/api/users/${deleteTarget.id}`;
+    let url = '';
+    if (deleteTarget.role === 'superadmin') {
+              url = apiEndpoints.superAdmin.delete(deleteTarget.id);
+      } else if (deleteTarget.role === 'admin') {
+        url = apiEndpoints.superAdmin.admins(deleteTarget.id);
+      } else {
+        url = apiEndpoints.superAdmin.users(deleteTarget.id);
     }
     try {
-      const res = await fetch(url, { method: "DELETE" });
-      const data = await res.json();
+      const data = await apiService.delete(url);
       if (data.success) {
         setEmployees((prev) => prev.filter((e) => e.id !== deleteTarget.id));
         setDeleteTarget(null);
         toast({
           title: t('system.deleteSuccess', 'ลบสำเร็จ'),
           description: t('system.deleteUserSuccessDesc', 'ลบผู้ใช้งานสำเร็จ'),
-          className: 'border-green-500 bg-green-50 text-green-900',
+          className: 'border-green-500 bg-green-50 text-green-900'
         });
       } else {
-        alert(data.message || t("system.deleteFailed", "Delete failed"));
+        toast({
+          title: t('system.deleteFailed', 'ลบไม่สำเร็จ'),
+          description: data.message || t('system.deleteFailed', 'Delete failed'),
+          variant: "destructive",
+        });
       }
     } catch (e) {
-      alert(t("system.deleteFailed", "Delete failed"));
+      toast({
+        title: t('system.deleteFailed', 'ลบไม่สำเร็จ'),
+        description: t('system.deleteFailed', 'Delete failed'),
+        variant: "destructive",
+      });
     } finally {
       setDeleting(false);
     }
@@ -261,9 +344,12 @@ const EmployeeManagement = () => {
                     style={{ minWidth: 160 }}
                   >
                     <option value="">{t('system.allPositions')}</option>
-                    {positions.map(pos => (
-                      <option key={pos.id} value={pos.id}>{i18n.language === 'th' ? pos.position_name_th : pos.position_name_en}</option>
-                    ))}
+                    {positions.map(pos => {
+                      const displayName = i18n.language === 'th' ? pos.position_name_th : pos.position_name_en;
+                      return (
+                        <option key={pos.id} value={pos.id}>{displayName}</option>
+                      );
+                    })}
                   </select>
                 </div>
                 <div className="flex flex-col">
@@ -276,13 +362,16 @@ const EmployeeManagement = () => {
                     style={{ minWidth: 180 }}
                   >
                     <option value="">{t('system.allDepartments')}</option>
-                    {departments.map(dep => (
-                      <option key={dep.id} value={dep.id}>{i18n.language === 'th' ? dep.department_name_th : dep.department_name_en}</option>
-                    ))}
+                    {departments.map(dep => {
+                      const displayName = i18n.language === 'th' ? dep.department_name_th : dep.department_name_en;
+                      return (
+                        <option key={dep.id} value={dep.id}>{displayName}</option>
+                      );
+                    })}
                   </select>
                 </div>
                 <div className="flex flex-col">
-                  <label className="text-xs text-gray-500 font-semibold mb-1" htmlFor="role-filter">{t('auth.role')}</label>
+                  <label className="text-xs text-gray-500 font-semibold mb-1" htmlFor="role-filter">{t('common.status')}</label>
                   <select
                     id="role-filter"
                     className="rounded-lg border border-blue-200 px-4 py-2 text-base focus:outline-none focus:ring-2 focus:ring-blue-300 bg-white shadow-sm"
@@ -290,10 +379,10 @@ const EmployeeManagement = () => {
                     onChange={e => setPendingRoleFilter(e.target.value)}
                     style={{ minWidth: 140 }}
                   >
-                    <option value="">{t('system.allRoles')}</option>
+                    <option value="">{t('system.allStatus')}</option>
                     <option value="admin">{t('system.admin')}</option>
                     <option value="superadmin">{t('system.superadmin')}</option>
-                    <option value="user">{t('system.employee')}</option>
+                    <option value="user">{t('auth.roles.user')}</option>
                   </select>
                 </div>
                 <div className="flex gap-3 items-end h-full shrink-0">
@@ -375,11 +464,10 @@ const EmployeeManagement = () => {
                                 {/* Avatar with image or initials */}
                                 {employee.avatar ? (
                                   <img
-                                    src={`${API_BASE_URL}${employee.avatar}`}
+                                    src={getImageUrl(employee.avatar, import.meta.env.VITE_API_BASE_URL)}
                                     alt={employee.full_name}
                                     className="w-8 h-8 rounded-full object-cover shadow-md border border-blue-200"
                                     onError={(e) => {
-                                      // ถ้าโหลดรูปไม่สำเร็จ ให้แสดง fallback
                                       const target = e.target as HTMLImageElement;
                                       target.style.display = 'none';
                                       target.nextElementSibling?.classList.remove('hidden');
@@ -389,23 +477,35 @@ const EmployeeManagement = () => {
                                 <div className={`w-8 h-8 rounded-full bg-gradient-to-br from-blue-200 via-indigo-200 to-purple-200 flex items-center justify-center text-blue-900 font-bold text-base shadow-md ${employee.avatar ? 'hidden' : ''}`}>
                                   {employee.full_name ? employee.full_name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : '?'}
                                 </div>
-                                <span className="font-semibold text-blue-900 text-sm">{employee.full_name}</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-semibold text-blue-900 text-sm">{employee.full_name}</span>
+                                  {/* แสดง "Me" badge สำหรับผู้ใช้ปัจจุบัน */}
+                                  {user && employee.id === user.id && (
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-green-500 to-emerald-400 text-white font-bold shadow-sm animate-pulse">
+                                      {t('common.me', 'Me')}
+                                    </span>
+                                  )}
+                                </div>
                               </td>
                               <td className="px-3 py-2 text-blue-700 text-sm">{employee.email}</td>
-                              <td className="px-3 py-2 text-blue-700 text-sm">{getPositionName(employee.position)}</td>
-                              <td className="px-3 py-2 text-blue-700 text-sm">{getDepartmentName(employee.department)}</td>
+                              <td className="px-3 py-2 text-blue-700 text-sm">
+                                {getDisplayPositionName(employee)}
+                              </td>
+                              <td className="px-3 py-2 text-blue-700 text-sm">
+                                {getDisplayDepartmentName(employee)}
+                              </td>
                               <td className="px-3 py-2">
                                 {employee.role === 'superadmin' ? (
                                   <span className="text-xs px-2 py-0.5 rounded-full border border-purple-300 bg-purple-50 text-purple-700 font-bold shadow-sm" style={{letterSpacing:0.5}}>
-                                    Superadmin
+                                    {t('auth.roles.superadmin')}
                                   </span>
                                 ) : employee.role === 'admin' ? (
                                   <span className="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-blue-500 to-indigo-400 text-white font-bold shadow-sm">
-                                    ผู้ดูแลระบบ
+                                    {t('auth.roles.admin')}
                                   </span>
                                 ) : (
                                   <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-bold shadow-sm">
-                                    พนักงาน
+                                    {t('auth.roles.employee')}
                                   </span>
                                 )}
                               </td>
@@ -421,6 +521,7 @@ const EmployeeManagement = () => {
                                     {t('common.viewDetails')}
                                   </Link>
                                 </Button>
+                                {/* ปุ่มลบพนักงาน - เปิด Dialog ยืนยันการลบ */}
                                 <AlertDialog>
                                   <AlertDialogTrigger asChild>
                                     <Button
@@ -435,13 +536,14 @@ const EmployeeManagement = () => {
                                   </AlertDialogTrigger>
                                   <AlertDialogContent>
                                     <AlertDialogHeader>
-                                      <AlertDialogTitle>{t('system.confirmDelete', 'ยืนยันการลบ')}</AlertDialogTitle>
-                                      <AlertDialogDescription>{t('system.confirmDeleteDesc', 'คุณแน่ใจหรือไม่ว่าต้องการลบผู้ใช้งานนี้?')}</AlertDialogDescription>
+                                      <AlertDialogTitle>{t('system.confirmDelete')}</AlertDialogTitle>
+                                      <AlertDialogDescription>{t('system.confirmDeleteDesc')}</AlertDialogDescription>
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
-                                      <AlertDialogCancel>{t('common.cancel', 'ยกเลิก')}</AlertDialogCancel>
+                                      <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                                      {/* ปุ่มยืนยันการลบใน Dialog */}
                                       <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-gradient-to-r from-red-500 to-pink-400 text-white">
-                                        {deleting ? t('common.loading', 'กำลังลบ...') : t('common.delete', 'ลบ')}
+                                        {deleting ? t('common.loading') : t('common.delete')}
                                       </AlertDialogAction>
                                     </AlertDialogFooter>
                                   </AlertDialogContent>
@@ -476,7 +578,8 @@ const EmployeeManagement = () => {
       {/* Footer */}
       <footer className="w-full mt-16 py-8 bg-gradient-to-r from-blue-100 via-indigo-50 to-white text-center text-gray-400 text-base font-medium shadow-inner flex flex-col items-center gap-2">
         <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-10 h-10 rounded-full mx-auto mb-1" />
-        &copy; {new Date().getFullYear()} Siam IT Leave Management System
+        <div className="font-bold text-gray-600">{t('footer.systemName')}</div>
+        <div className="text-sm">{t('footer.copyright')}</div>
       </footer>
 
 

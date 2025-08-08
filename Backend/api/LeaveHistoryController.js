@@ -1,6 +1,8 @@
 const express = require('express');
 const authMiddleware = require('../middleware/authMiddleware');
 const { Between } = require('typeorm');
+const config = require('../config');
+const { calculateDaysBetween } = require('../utils');
 
 module.exports = (AppDataSource) => {
   const router = express.Router();
@@ -24,7 +26,7 @@ module.exports = (AppDataSource) => {
 
       // --- เพิ่ม paging ---
       const page = parseInt(req.query.page) || 1;
-      const limit = parseInt(req.query.limit) || 6;
+      const limit = parseInt(req.query.limit) || config.pagination.defaultLimit;
       const skip = (page - 1) * limit;
 
       // --- เพิ่ม filter เดือนและปี ---
@@ -80,9 +82,9 @@ module.exports = (AppDataSource) => {
       if (startDate && endDate) {
         where = { ...where, startDate: Between(startDate, endDate) };
       } else if (startDate) {
-        where = { ...where, startDate: Between(startDate, new Date(3000, 0, 1)) };
+        where = { ...where, startDate: Between(startDate, new Date(config.business.maxDate)) };
       } else if (endDate) {
-        where = { ...where, startDate: Between(new Date(2000, 0, 1), endDate) };
+        where = { ...where, startDate: Between(new Date(config.business.minDate), endDate) };
       }
       
       // กรองตามวันที่เดียว
@@ -105,13 +107,45 @@ module.exports = (AppDataSource) => {
 
       // --- ดึง leave request ทั้งหมดของ user เพื่อคำนวณ summary (ไม่สนใจ filter) ---
       const allLeavesForSummary = await leaveRepo.find({ where: { Repid: userId } });
-      // คำนวณ summary จากข้อมูลทั้งหมดของ user
-      const totalLeaveDays = allLeavesForSummary.reduce((sum, leave) => {
-        if (leave.startDate && leave.endDate) {
-          return sum + (Math.floor((new Date(leave.endDate) - new Date(leave.startDate)) / (1000*60*60*24)) + 1);
-        }
-        return sum + 1;
-      }, 0);
+      
+              // คำนวณ summary จากข้อมูลทั้งหมดของ user
+        let totalLeaveDays = 0;
+        let totalLeaveHours = 0;
+        let totalHoursFromHourlyLeaves = 0; // รวมชั่วโมงทั้งหมดจากการลาเป็นชั่วโมง
+        
+        allLeavesForSummary.forEach(leave => {
+          if (leave.startTime && leave.endTime) {
+            // ลาชั่วโมง
+            const [sh, sm] = leave.startTime.split(":").map(Number);
+            const [eh, em] = leave.endTime.split(":").map(Number);
+            let start = sh + (sm || 0) / 60;
+            let end = eh + (em || 0) / 60;
+            let diff = end - start;
+            if (diff < 0) diff += 24;
+            
+            const hours = Math.floor(diff);
+            totalHoursFromHourlyLeaves += hours; // รวมชั่วโมงทั้งหมด
+          } else if (leave.startDate && leave.endDate) {
+            // ลาวัน
+            const start = new Date(leave.startDate);
+            const end = new Date(leave.endDate);
+            const days = calculateDaysBetween(start, end);
+            if (days > 0 && !isNaN(days)) {
+              totalLeaveDays += days;
+            }
+          }
+        });
+        
+        // คำนวณวันจากชั่วโมงรวมทั้งหมด (configurable working hours per day)
+        const totalDaysFromHours = Math.floor(totalHoursFromHourlyLeaves / config.business.workingHoursPerDay);
+        const totalRemainingHours = totalHoursFromHourlyLeaves % config.business.workingHoursPerDay;
+        
+        totalLeaveDays += totalDaysFromHours;
+        totalLeaveHours = totalRemainingHours;
+        
+        // เพิ่มการคำนวณชั่วโมงรวมทั้งหมด (ไม่แปลงเป็นวัน)
+        const totalHoursUsed = totalHoursFromHourlyLeaves;
+      
       const approvedCount = allLeavesForSummary.filter(l => l.status === 'approved').length;
       const pendingCount = allLeavesForSummary.filter(l => l.status === 'pending').length;
       const rejectedCount = allLeavesForSummary.filter(l => l.status === 'rejected').length;
@@ -123,6 +157,38 @@ module.exports = (AppDataSource) => {
       console.log('Debug - Total leaves for user:', allLeavesForSummary.length);
       console.log('Debug - Backdated leaves:', retroactiveCount);
       console.log('Debug - Sample backdated values:', allLeavesForSummary.slice(0, 5).map(l => ({ id: l.id, backdated: l.backdated, type: typeof l.backdated })));
+      console.log('Debug - Summary calculation:', {
+        totalHoursFromHourlyLeaves: `${totalHoursFromHourlyLeaves} hours (รวมชั่วโมงทั้งหมด)`,
+        totalDaysFromHours: `${totalDaysFromHours} days (แปลงจากชั่วโมงรวม)`,
+        totalRemainingHours: `${totalRemainingHours} hours (ชั่วโมงที่เหลือ)`,
+        totalLeaveDays: `${totalLeaveDays} days (รวมจากวันปกติ + วันจากชั่วโมงรวม)`,
+        totalLeaveHours: `${totalHoursUsed} hours (ชั่วโมงรวมทั้งหมดที่ส่งไป frontend)`,
+        approvedCount,
+        pendingCount,
+        rejectedCount,
+        retroactiveCount
+      });
+      
+      // Debug log สำหรับตรวจสอบการคำนวณชั่วโมง
+      console.log('Debug - Hour calculation examples:');
+      let totalHours = 0;
+      allLeavesForSummary.slice(0, 3).forEach(leave => {
+        if (leave.startTime && leave.endTime) {
+          const [sh, sm] = leave.startTime.split(":").map(Number);
+          const [eh, em] = leave.endTime.split(":").map(Number);
+          let start = sh + (sm || 0) / 60;
+          let end = eh + (em || 0) / 60;
+          let diff = end - start;
+          if (diff < 0) diff += 24;
+          const hours = Math.floor(diff);
+          totalHours += hours;
+          console.log(`  Leave ID ${leave.id}: ${hours} hours (รวม: ${totalHours} ชั่วโมง)`);
+        }
+      });
+      
+      console.log(`  รวมชั่วโมงทั้งหมด: ${totalHours} ชั่วโมง`);
+               console.log(`  แปลงเป็นวัน: ${Math.floor(totalHours / config.business.workingHoursPerDay)} วัน`);
+         console.log(`  ชั่วโมงที่เหลือ: ${totalHours % config.business.workingHoursPerDay} ชั่วโมง`);
 
       // join leaveType, admin (approver/rejector)
       const result = await Promise.all(leaves.map(async (leave) => {
@@ -149,6 +215,8 @@ module.exports = (AppDataSource) => {
         let days = 0;
         let durationHours = 0;
         let durationType = 'day';
+        let daysFromHours = 0; // เพิ่มตัวแปรสำหรับคำนวณวันจากชั่วโมง
+        let remainingHours = 0; // ชั่วโมงที่เหลือ (ไม่ครบ 9 ชั่วโมง)
         
         if (leave.startTime && leave.endTime) {
           // ลาชั่วโมง
@@ -161,14 +229,21 @@ module.exports = (AppDataSource) => {
           durationType = 'hour';
           durationHours = Math.floor(diff);
           days = 0;
+          
+                 // คำนวณวันจากชั่วโมง (configurable working hours per day)
+       // ถ้าครบ working hours ให้นับเป็น 1 วัน และแสดงชั่วโมงที่เหลือ
+       daysFromHours = Math.floor(durationHours / config.business.workingHoursPerDay);
+       remainingHours = durationHours % config.business.workingHoursPerDay; // ชั่วโมงที่เหลือ
         } else if (leave.startDate && leave.endDate) {
           // ลาวัน
           const start = new Date(leave.startDate);
           const end = new Date(leave.endDate);
-          days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
+          days = calculateDaysBetween(start, end);
           if (days < 0 || isNaN(days)) days = 0;
           durationType = 'day';
           durationHours = 0;
+          daysFromHours = 0;
+          remainingHours = 0;
         }
         
         return {
@@ -183,6 +258,8 @@ module.exports = (AppDataSource) => {
           endTime: leave.endTime,
           days,
           durationHours,
+          daysFromHours, // เพิ่มวันที่คำนวณจากชั่วโมง
+          remainingHours, // ชั่วโมงที่เหลือ (ไม่ครบ 9 ชั่วโมง)
           durationType,
           reason: leave.reason,
           status: leave.status,
@@ -219,6 +296,7 @@ module.exports = (AppDataSource) => {
         totalPages: Math.ceil(total / limit),
         summary: {
           totalLeaveDays,
+          totalLeaveHours: totalHoursUsed, // ส่งชั่วโมงรวมทั้งหมดแทนที่จะเป็นแค่ชั่วโมงที่เหลือ
           approvedCount,
           pendingCount,
           rejectedCount,

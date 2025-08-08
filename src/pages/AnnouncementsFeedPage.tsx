@@ -11,11 +11,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { format } from 'date-fns';
 import { th, enUS } from 'date-fns/locale';
 import axios from 'axios';
-import { Newspaper, User, Calendar, Image as ImageIcon, Settings, Plus, Upload, Image } from 'lucide-react';
+import { Newspaper, User, Calendar, Image as ImageIcon, Settings, Plus, Upload, Image, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { getImageUrl, handleImageError } from '@/lib/utils';
+import { useSocket } from '@/contexts/SocketContext';
+import { useToast } from '@/hooks/use-toast';
+import { handleFileSelect, getImageUrl, handleImageError, formatDate } from '../lib/utils';
+import { apiService, apiEndpoints } from '../lib/api';
 
 interface Announcement {
+  id: string;
   subject: string;
   detail: string;
   createdAt: string;
@@ -27,6 +31,8 @@ interface Announcement {
 const AnnouncementsFeedPage = () => {
   const { t, i18n } = useTranslation();
   const { user, showSessionExpiredDialog } = useAuth();
+  const { socket, isConnected } = useSocket();
+  const { toast } = useToast();
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,100 +45,114 @@ const AnnouncementsFeedPage = () => {
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+  const [previewImageOpen, setPreviewImageOpen] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string>('');
+  const [previewImageName, setPreviewImageName] = useState<string>('');
+
+  // Socket.io event listeners for real-time announcements
+  useEffect(() => {
+    if (socket && isConnected) {
+      // Listen for new announcements
+      socket.on('newAnnouncement', (data) => {
+        console.log('Received new announcement:', data);
+        
+        // Show toast notification
+        toast({
+          title: t('notifications.newAnnouncement'),
+          description: data.subject,
+          variant: 'default'
+        });
+        
+        // Add new announcement to the list
+        setAnnouncements(prev => [data, ...prev]);
+      });
+
+      // Listen for announcement updates
+      socket.on('announcementUpdated', (data) => {
+        console.log('Received announcement update:', data);
+        
+        // Show toast notification
+        toast({
+          title: t('notifications.announcementUpdated'),
+          description: data.subject,
+          variant: 'default'
+        });
+        
+        // Update announcement in the list
+        setAnnouncements(prev => 
+          prev.map(announcement => 
+            announcement.id === data.id ? data : announcement
+          )
+        );
+      });
+
+      // Listen for announcement deletions
+      socket.on('announcementDeleted', (data) => {
+        console.log('Received announcement deletion:', data);
+        
+        // Show toast notification
+        toast({
+          title: t('notifications.announcementDeleted'),
+          description: data.subject,
+          variant: 'destructive'
+        });
+        
+        // Remove announcement from the list
+        setAnnouncements(prev => 
+          prev.filter(announcement => announcement.id !== data.id)
+        );
+      });
+
+      return () => {
+        socket.off('newAnnouncement');
+        socket.off('announcementUpdated');
+        socket.off('announcementDeleted');
+      };
+    }
+  }, [socket, isConnected, toast, t]);
 
   useEffect(() => {
     const fetchAnnouncements = async () => {
       setLoading(true);
       setError(null);
       try {
-        const token = localStorage.getItem('token');
-        if (!token) {
-          showSessionExpiredDialog();
-          return;
-        }
-
-        const response = await axios.get<{ status: string; data: Announcement[]; message?: string }>(
-          `${API_BASE_URL}/api/announcements/feed`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-        
-        if (response.data.status === 'success') {
-          setAnnouncements(response.data.data);
+        const data = await apiService.get(apiEndpoints.announcements + '/feed', undefined, showSessionExpiredDialog);
+        if (data.status === 'success') {
+          setAnnouncements(data.data);
         } else {
-          setError(response.data.message || t('common.error'));
+          setError(data.message || t('common.error'));
         }
       } catch (err: any) {
-        console.error('Error fetching announcements:', err);
-        if (err.response?.status === 401) {
-          showSessionExpiredDialog();
-        } else {
-          setError(t('common.error'));
-        }
+        setError(t('common.error'));
       } finally {
         setLoading(false);
       }
     };
-
     fetchAnnouncements();
-  }, [t, API_BASE_URL, showSessionExpiredDialog]);
+  }, [t, showSessionExpiredDialog]);
 
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    const locale = i18n.language.startsWith('th') ? th : enUS;
-    return format(date, 'PPP p', { locale });
-  };
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
+  const handleAnnouncementImageClick = (imageName: string) => {
+    const imageUrl = getImageUrl(imageName, import.meta.env.VITE_API_BASE_URL);
+    setPreviewImageUrl(imageUrl);
+    setPreviewImageName(imageName);
+    setPreviewImageOpen(true);
   };
 
   const handleCreateAnnouncement = async (e: React.FormEvent) => {
     e.preventDefault();
     setCreateLoading(true);
     setError(null);
-    
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        showSessionExpiredDialog();
-        return;
-      }
-
       const formData = new FormData();
       formData.append('subject', createForm.subject);
       formData.append('detail', createForm.detail);
       formData.append('createdBy', user?.full_name || '');
       formData.append('createdAt', new Date().toISOString());
-      
       if (selectedFile) {
         formData.append('Image', selectedFile);
       }
-
-      const response = await axios.post(
-        `${API_BASE_URL}/api/announcements`,
-        formData,
-        {
-          headers: {
-            'Content-Type': 'multipart/form-data',
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
-      if (response.data.status === 'success') {
+      const data = await apiService.post(apiEndpoints.announcements, formData, showSessionExpiredDialog);
+      if (data.status === 'success') {
         setCreateDialogOpen(false);
         setCreateForm({ subject: '', detail: '', Image: '' });
         setSelectedFile(null);
@@ -140,17 +160,14 @@ const AnnouncementsFeedPage = () => {
         // Refresh the announcements list
         const fetchAnnouncements = async () => {
           try {
-            const response = await axios.get<{ status: string; data: Announcement[]; message?: string }>(
-              `${API_BASE_URL}/api/announcements/feed`,
-              {
-                headers: {
-                  Authorization: `Bearer ${token}`,
-                },
-              }
+            const response = await apiService.get(
+              apiEndpoints.announcements + '/feed',
+              undefined,
+              showSessionExpiredDialog
             );
             
-            if (response.data.status === 'success') {
-              setAnnouncements(response.data.data);
+            if (response.status === 'success') {
+              setAnnouncements(response.data);
             }
           } catch (err) {
             console.error('Error refreshing announcements:', err);
@@ -158,15 +175,10 @@ const AnnouncementsFeedPage = () => {
         };
         fetchAnnouncements();
       } else {
-        setError(response.data.message || t('common.error'));
+        setError(data.message || t('common.error'));
       }
     } catch (err: any) {
-      console.error('Error creating announcement:', err);
-      if (err.response?.status === 401) {
-        showSessionExpiredDialog();
-      } else {
-        setError(t('common.error'));
-      }
+      setError(t('common.error'));
     } finally {
       setCreateLoading(false);
     }
@@ -271,7 +283,7 @@ const AnnouncementsFeedPage = () => {
                             <input
                               type="file"
                               accept="image/*"
-                              onChange={handleFileSelect}
+                              onChange={(e) => handleFileSelect(e, setSelectedFile, setImagePreview)}
                               className="hidden"
                             />
                           </label>
@@ -286,7 +298,7 @@ const AnnouncementsFeedPage = () => {
                             <img
                               src={imagePreview}
                               alt="Preview"
-                              className="w-full max-h-48 object-cover rounded-lg border border-gray-200"
+                              className="w-full max-h-48 object-contain rounded-lg border border-gray-200 bg-gray-50"
                             />
                             <button
                               type="button"
@@ -359,7 +371,7 @@ const AnnouncementsFeedPage = () => {
                     <div className="flex items-start gap-4">
                       <Avatar className="h-16 w-16 border-3 border-blue-200 shadow-lg">
                         <AvatarImage 
-                                                     src={announcement.avatar ? getImageUrl(announcement.avatar, API_BASE_URL) : '/placeholder-avatar.png'} 
+                                                     src={announcement.avatar ? getImageUrl(announcement.avatar, import.meta.env.VITE_API_BASE_URL) : '/placeholder-avatar.png'} 
                           alt={announcement.createdBy}
                           className="object-cover"
                           onError={(e) => {
@@ -380,7 +392,7 @@ const AnnouncementsFeedPage = () => {
                         </CardTitle>
                         <div className="flex items-center gap-1 text-sm text-gray-500">
                           <Calendar className="w-4 h-4" />
-                          <span className="truncate">{formatDate(announcement.createdAt)}</span>
+                          <span className="truncate">{formatDate(announcement.createdAt, i18n.language)}</span>
                         </div>
                       </div>
                     </div>
@@ -395,13 +407,14 @@ const AnnouncementsFeedPage = () => {
                           {announcement.detail}
                         </p>
                       </div>
-                      {announcement.Image && (
+                                            {announcement.Image && (
                         <div className="relative">
                           <img
-                                                         src={getImageUrl(announcement.Image, API_BASE_URL)}
+                            src={getImageUrl(announcement.Image, import.meta.env.VITE_API_BASE_URL)}
                             alt={announcement.subject}
-                            className="w-full h-auto rounded-lg object-cover max-h-96 shadow-md"
-                            onError={(e) => handleImageError(e, announcement.Image, API_BASE_URL)}
+                            className="w-full h-auto rounded-lg object-contain max-h-[500px] shadow-md bg-gray-50 cursor-pointer hover:opacity-90 transition-opacity"
+                            onError={(e) => handleImageError(e, announcement.Image, import.meta.env.VITE_API_BASE_URL)}
+                            onClick={() => handleAnnouncementImageClick(announcement.Image)}
                           />
                         </div>
                       )}
@@ -423,6 +436,37 @@ const AnnouncementsFeedPage = () => {
         @keyframes fadeInUp { 0% { opacity: 0; transform: translateY(20px); } 100% { opacity: 1; transform: translateY(0); } }
         @keyframes float { 0% { transform: translateY(0); } 100% { transform: translateY(-10px); } }
       `}</style>
+
+      {/* Image Preview Dialog */}
+      <Dialog open={previewImageOpen} onOpenChange={setPreviewImageOpen}>
+        <DialogContent className="w-screen h-screen max-w-none max-h-none p-0 bg-black/40 backdrop-blur-sm border-0">
+          <div className="absolute top-4 right-4 z-50">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPreviewImageOpen(false)}
+              className="bg-white/20 text-white border-white/30 hover:bg-white/30"
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+          
+          {previewImageUrl && (
+            <div className="flex items-center justify-center h-full p-4">
+              <img 
+                src={previewImageUrl} 
+                alt={previewImageName}
+                style={{ maxWidth: '100vw', maxHeight: '100vh' }}
+                className="object-contain rounded-lg shadow-2xl"
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
+                }}
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

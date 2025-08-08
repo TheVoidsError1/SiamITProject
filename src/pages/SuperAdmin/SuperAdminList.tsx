@@ -1,19 +1,17 @@
-import React, { useState } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { SidebarTrigger } from '@/components/ui/sidebar';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
-import { useEffect } from 'react';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Eye, EyeOff, Mail, Lock, User, Building, Users, Shield, Crown, Plus, X, CheckCircle, AlertCircle, Info } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
+
+import { AlertCircle, Building, CheckCircle, Crown, Eye, EyeOff, Info, Lock, Mail, Plus, Shield, User, Users } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { apiService, apiEndpoints } from '@/lib/api';
+import { showToastMessage } from '@/lib/toast';
 
 const SuperAdminList: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const { toast } = useToast();
+
   const [activeTab, setActiveTab] = useState<'employee' | 'admin' | 'superadmin'>('employee');
   const [form, setForm] = useState({
     full_name: '',
@@ -22,7 +20,7 @@ const SuperAdminList: React.FC = () => {
     confirmPassword: '',
     department: '',
     position: '',
-    role: '',
+    role: 'employee', // ตั้งค่าเริ่มต้นให้ตรงกับ activeTab
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -33,14 +31,14 @@ const SuperAdminList: React.FC = () => {
   const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong'>('weak');
 
   const lang = i18n.language.startsWith('th') ? 'th' : 'en';
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   useEffect(() => {
-    fetch(`${API_BASE_URL}/api/departments`)
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.data && Array.isArray(data.data)) {
-          const depts = data.data.map((d: any) => ({ id: d.id, department_name_th: d.department_name_th, department_name_en: d.department_name_en }));
+    const fetchData = async () => {
+      try {
+        // Fetch departments
+        const deptData = await apiService.get(apiEndpoints.departments);
+        if (deptData && deptData.data && Array.isArray(deptData.data)) {
+          const depts = deptData.data.map((d: any) => ({ id: d.id, department_name_th: d.department_name_th, department_name_en: d.department_name_en }));
           const noDepartmentItem = depts.find(d => d.department_name_en === 'No Department');
           const otherDepts = depts.filter(d => d.department_name_en !== 'No Department');
           otherDepts.sort((a, b) => {
@@ -54,13 +52,10 @@ const SuperAdminList: React.FC = () => {
           }
           setDepartments(sortedDepts);
         }
-      })
-      .catch(() => setDepartments([]));
-    fetch(`${API_BASE_URL}/api/positions`)
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.data && Array.isArray(data.data)) {
-          const pos = data.data.map((p: any) => ({ id: p.id, position_name_th: p.position_name_th, position_name_en: p.position_name_en }));
+        // Fetch positions
+        const posData = await apiService.get(apiEndpoints.positions);
+        if (posData && posData.data && Array.isArray(posData.data)) {
+          const pos = posData.data.map((p: any) => ({ id: p.id, position_name_th: p.position_name_th, position_name_en: p.position_name_en }));
           const noPositionItem = pos.find(p => p.position_name_en === 'No Position');
           const otherPos = pos.filter(p => p.position_name_en !== 'No Position');
           otherPos.sort((a, b) => {
@@ -74,8 +69,12 @@ const SuperAdminList: React.FC = () => {
           }
           setPositions(sortedPositions);
         }
-      })
-      .catch(() => setPositions([]));
+      } catch {
+        setDepartments([]);
+        setPositions([]);
+      }
+    };
+    fetchData();
   }, [lang]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -129,76 +128,61 @@ const SuperAdminList: React.FC = () => {
     
     // Validation    
     if (!form.full_name.trim()) {
-      toast({
-        title: 'กรุณากรอกชื่อ-นามสกุล',
-        variant: 'destructive',
-      });
+      showToastMessage.validation.requiredField('fullName');
       return;
     }
     
     if (!form.email.trim()) {
-      toast({
-        title: 'กรุณากรอกอีเมล',
-        variant: 'destructive',
-      });
+      showToastMessage.validation.requiredField('email');
       return;
     }
     
     if (!form.department) {
-      toast({
-        title: 'กรุณาเลือกแผนก',
-        variant: 'destructive',
-      });
+      showToastMessage.validation.requiredField('department');
       return;
     }
     
     if (!form.position) {
-      toast({
-        title: 'กรุณาเลือกตำแหน่ง',
-        variant: 'destructive',
-      });
+      showToastMessage.validation.requiredField('position');
       return;
     }
     
     if (form.password.length < 6) {
-      toast({
-        title: 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร',
-        variant: 'destructive',
-      });
+      showToastMessage.validation.passwordTooShort();
       return;
     }
     
     if (form.password !== form.confirmPassword) {
-      toast({
-        title: t('auth.passwordMismatch'),
-        description: t('auth.checkPasswordMatch'),
-        variant: 'destructive',
-      });
+      showToastMessage.validation.passwordMismatch();
+      return;
+    }
+    
+    if (!form.role) {
+      showToastMessage.validation.requiredField('role');
       return;
     }
     
     setLoading(true);
     try {
-      const url = `${API_BASE_URL}/api/create-user-with-role`;
+      // Map frontend role to backend role
+      const roleMapping: { [key: string]: string } = {
+        'employee': 'user',
+        'admin': 'admin',
+        'superadmin': 'superadmin'
+      };
+      
       const payload = {
-        role: form.role,
+        role: roleMapping[form.role] || form.role,
         name: form.full_name,
         department: form.department,
         position: form.position,
         email: form.email,
         password: form.password,
       };
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const data = await res.json();
-      if (res.ok && (data.success || data.token)) {
-        toast({
-          title: 'สร้างผู้ใช้สำเร็จ!',
-          description: `สร้าง${getTabConfig(activeTab).title}ใหม่เรียบร้อยแล้ว`,
-        });
+      
+      const data = await apiService.post('/api/create-user-with-role', payload);
+      if (data && (data.success || data.token)) {
+        showToastMessage.crud.createSuccess('user');
         setForm({
           full_name: '',
           email: '',
@@ -210,18 +194,10 @@ const SuperAdminList: React.FC = () => {
         });
         setPasswordStrength('weak');
       } else {
-        toast({
-          title: 'เกิดข้อผิดพลาด',
-          description: data.message || 'ไม่สามารถสร้างผู้ใช้ได้',
-          variant: 'destructive',
-        });
+        showToastMessage.crud.createError('user', data?.message);
       }
     } catch (err: any) {
-      toast({
-        title: 'เกิดข้อผิดพลาด',
-        description: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้',
-        variant: 'destructive',
-      });
+      showToastMessage.network.connectionError();
     } finally {
       setLoading(false);
     }
@@ -307,7 +283,7 @@ const SuperAdminList: React.FC = () => {
           </p>
           <div className="flex items-center gap-2 text-blue-700/70 animate-fade-in-up-delay">
             <Info className="w-5 h-5" />
-            <span className="text-sm">เลือกประเภทผู้ใช้ที่ต้องการสร้าง</span>
+            <span className="text-sm">{t('admin.selectUserType')}</span>
           </div>
         </div>
       </div>
@@ -356,10 +332,10 @@ const SuperAdminList: React.FC = () => {
               <currentConfig.icon className="w-10 h-10 text-white" />
             </div>
             <h3 className={`text-3xl font-bold ${currentConfig.textColor} mb-3`}>
-              สร้าง{currentConfig.title}
+              {t('admin.createUserTitle')} {currentConfig.title}
             </h3>
             <p className="text-gray-600 text-lg max-w-md mx-auto">
-              กรอกข้อมูลเพื่อสร้าง{currentConfig.title}ใหม่ในระบบ
+              {t('admin.fillInfoToCreate')} {currentConfig.title} {t('admin.inSystem')}
             </p>
           </div>
 
@@ -376,11 +352,13 @@ const SuperAdminList: React.FC = () => {
                   <Input
                     id="full_name"
                     name="full_name"
-                    placeholder="กรอกชื่อ-นามสกุล"
+                    type="text"
+                    placeholder={t('admin.enterFullName')}
                     value={form.full_name}
                     onChange={handleChange}
                     className={`pl-6 py-4 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm`}
                     required
+                    autoComplete="name"
                   />
                   {form.full_name && (
                     <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-green-500" />
@@ -400,11 +378,12 @@ const SuperAdminList: React.FC = () => {
                     id="email"
                     name="email"
                     type="email"
-                    placeholder="กรอกอีเมล"
+                    placeholder={t('admin.enterEmail')}
                     value={form.email}
                     onChange={handleChange}
                     className={`pl-6 py-4 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm`}
                     required
+                    autoComplete="email"
                   />
                   {form.email && (
                     <CheckCircle className="absolute right-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-green-500" />
@@ -420,8 +399,8 @@ const SuperAdminList: React.FC = () => {
                   <span className="text-red-500">*</span>
                 </Label>
                 <Select value={form.position} onValueChange={value => setForm(f => ({ ...f, position: value }))}>
-                  <SelectTrigger className={`rounded-xl shadow-sm text-lg transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm py-4`}>
-                    <SelectValue placeholder="เลือกตำแหน่ง" />
+                  <SelectTrigger id="position" className={`rounded-xl shadow-sm text-lg transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm py-4`}>
+                    <SelectValue placeholder={t('admin.selectPosition')} />
                   </SelectTrigger>
                   <SelectContent className="bg-white/95 backdrop-blur-md border-2 border-gray-200 rounded-xl">
                     {positions.map((pos) => (
@@ -441,8 +420,8 @@ const SuperAdminList: React.FC = () => {
                   <span className="text-red-500">*</span>
                 </Label>
                 <Select value={form.department} onValueChange={value => setForm(f => ({ ...f, department: value }))}>
-                  <SelectTrigger className={`rounded-xl shadow-sm text-lg transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm py-4`}>
-                    <SelectValue placeholder="เลือกแผนก" />
+                  <SelectTrigger id="department" className={`rounded-xl shadow-sm text-lg transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm py-4`}>
+                    <SelectValue placeholder={t('admin.selectDepartment')} />
                   </SelectTrigger>
                   <SelectContent className="bg-white/95 backdrop-blur-md border-2 border-gray-200 rounded-xl">
                     {departments.map((dep) => (
@@ -474,6 +453,7 @@ const SuperAdminList: React.FC = () => {
                     onChange={handleChange}
                     className={`pl-6 pr-12 py-4 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm`}
                     required
+                    autoComplete="new-password"
                   />
                   <button
                     type="button"
@@ -487,7 +467,7 @@ const SuperAdminList: React.FC = () => {
                 {form.password && (
                   <div className="flex items-center gap-2 text-sm">
                     <span className={getPasswordStrengthColor()}>
-                      {getPasswordStrengthText()}
+                      {t(`admin.passwordStrength.${passwordStrength}`)}
                     </span>
                     <div className="flex gap-1">
                       {[1, 2, 3].map((level) => (
@@ -526,6 +506,7 @@ const SuperAdminList: React.FC = () => {
                     onChange={handleChange}
                     className={`pl-6 pr-12 py-4 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm`}
                     required
+                    autoComplete="new-password"
                   />
                   <button
                     type="button"
@@ -541,12 +522,12 @@ const SuperAdminList: React.FC = () => {
                     {form.password === form.confirmPassword ? (
                       <>
                         <CheckCircle className="w-4 h-4 text-green-500" />
-                        <span className="text-green-600">รหัสผ่านตรงกัน</span>
+                        <span className="text-green-600">{t('admin.passwordMatch')}</span>
                       </>
                     ) : (
                       <>
                         <AlertCircle className="w-4 h-4 text-red-500" />
-                        <span className="text-red-600">รหัสผ่านไม่ตรงกัน</span>
+                        <span className="text-red-600">{t('admin.passwordMismatch')}</span>
                       </>
                     )}
                   </div>
@@ -564,14 +545,14 @@ const SuperAdminList: React.FC = () => {
                 {loading ? (
                   <div className="flex items-center justify-center">
                     <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-4"></div>
-                    <span>กำลังสร้างผู้ใช้...</span>
+                    <span>{t('admin.creatingUser')}</span>
                   </div>
                 ) : (
                   <>
                     <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
                     <span className="flex items-center justify-center gap-3 relative z-10">
                       <Plus className="w-6 h-6" />
-                      สร้าง{currentConfig.title}
+                      {t('admin.createUser')}
                     </span>
                   </>
                 )}
@@ -590,11 +571,11 @@ const SuperAdminList: React.FC = () => {
             className="w-12 h-12 rounded-full hover:scale-110 transition-all duration-300" 
           />
           <span className="text-lg font-semibold text-gray-700">
-            Siam IT Leave Management System
+            {t('footer.systemName')}
           </span>
         </div>
         <span className="transition-all duration-300 hover:text-indigo-600 text-sm">
-          &copy; {new Date().getFullYear()} All rights reserved. Developed with ❤️ by Siam IT Team
+          {t('footer.copyright')}
         </span>
       </footer>
       

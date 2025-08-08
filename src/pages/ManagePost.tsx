@@ -1,3 +1,4 @@
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -6,17 +7,24 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useAuth } from '@/contexts/AuthContext';
-import { getImageUrl, handleImageError } from '@/lib/utils';
-import { ArrowLeft, Calendar, Clock, Download, Eye, FileText, Image, Newspaper, Plus, Trash2, User, Edit, X } from 'lucide-react';
+import { formatDate, handleFileSelect, getImageUrl, handleImageError } from '../lib/utils';
+import { apiService, apiEndpoints } from '../lib/api';
+import { showToastMessage } from '../lib/toast';
+import { ArrowLeft, Calendar, Clock, Edit, Eye, FileText, Image, Newspaper, Plus, Trash2, User, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+// ฟังก์ชันสำหรับจัดการวันที่ให้รองรับ i18n
+const formatTime = (date: Date, locale: string) => {
+  return date.toLocaleTimeString(locale, {
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
 
 export default function ManagePost() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
@@ -40,6 +48,13 @@ export default function ManagePost() {
   // State สำหรับ Image Preview แบบ LeaveHistory
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [showImagePreview, setShowImagePreview] = useState(false);
+  const [previewImageOpen, setPreviewImageOpen] = useState(false);
+  const [previewImageUrl, setPreviewImageUrl] = useState<string>('');
+  const [previewImageName, setPreviewImageName] = useState<string>('');
+  
+  // State สำหรับจัดการการลบข่าวสาร
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null); 
+  const [deleting, setDeleting] = useState(false);
 
 
   // โหลดข่าวสารจาก backend
@@ -47,11 +62,7 @@ export default function ManagePost() {
     setLoading(true);
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_BASE_URL}/api/announcements`, {
-        headers: { Authorization: token ? `Bearer ${token}` : undefined },
-      });
-      const data = await res.json();
+      const data = await apiService.get(apiEndpoints.announcements);
       console.log('=== Fetch News Response ===');
       console.log('API Response:', data);
       if (data.data && data.data.length > 0) {
@@ -76,24 +87,11 @@ export default function ManagePost() {
 
   useEffect(() => {
     console.log('=== ManagePost Component Loaded ===');
-    console.log('API_BASE_URL:', API_BASE_URL);
     console.log('Current user:', user);
     console.log('===============================');
     fetchNews();
     // eslint-disable-next-line
   }, []);
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setSelectedFile(file);
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        setImagePreview(e.target?.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
 
   // เพิ่มข่าวสารใหม่
   const handleAddNews = async (e: React.FormEvent) => {
@@ -101,26 +99,18 @@ export default function ManagePost() {
     setLoading(true);
     setError('');
     try {
-      const token = localStorage.getItem('token');
       const formData = new FormData();
       formData.append('subject', form.subject);
       formData.append('detail', form.detail);
       formData.append('createdBy', user?.full_name || '');
-      formData.append('createdAt', new Date().toISOString());
       
       if (selectedFile) {
         formData.append('Image', selectedFile);
       }
 
-      const res = await fetch(`${API_BASE_URL}/api/announcements`, {
-        method: 'POST',
-        headers: {
-          Authorization: token ? `Bearer ${token}` : undefined,
-        },
-        body: formData,
-      });
-      const data = await res.json();
+      const data = await apiService.post(apiEndpoints.announcements, formData);
       if (data.status === 'success') {
+        showToastMessage.crud.createSuccess('ข่าวสาร');
         setAddOpen(false);
         setForm({ subject: '', detail: '', Image: '' });
         setSelectedFile(null);
@@ -136,27 +126,25 @@ export default function ManagePost() {
     }
   };
 
-  // ลบข่าวสาร
-  const handleDeleteNews = async (id: string) => {
-    if (!window.confirm('ยืนยันการลบข่าวสารนี้?')) return;
-    setLoading(true);
+  // ฟังก์ชันลบข่าวสาร - จัดการการลบข่าวสารพร้อม Dialog ยืนยัน
+  const handleDeleteNews = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     setError('');
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${API_BASE_URL}/api/announcements/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: token ? `Bearer ${token}` : undefined },
-      });
-      const data = await res.json();
+      const data = await apiService.delete(apiEndpoints.announcement(deleteTarget.id));
       if (data.status === 'success') {
-        fetchNews();
+        // ลบข่าวสารออกจากรายการและแสดงข้อความสำเร็จ
+        setNewsList(prev => prev.filter(news => news.id !== deleteTarget.id));
+        setDeleteTarget(null);
+        showToastMessage.crud.deleteSuccess('ข่าวสาร');
       } else {
         setError(data.message || 'ลบข่าวสารไม่สำเร็จ');
       }
     } catch (err) {
       setError('ลบข่าวสารไม่สำเร็จ');
     } finally {
-      setLoading(false);
+      setDeleting(false);
     }
   };
 
@@ -169,7 +157,7 @@ export default function ManagePost() {
       Image: news.Image || '',
     });
     setSelectedFile(null);
-    setImagePreview(news.Image ? getImageUrl(news.Image, API_BASE_URL) : null);
+    setImagePreview(news.Image ? getImageUrl(news.Image, import.meta.env.VITE_API_BASE_URL) : null);
     setEditOpen(true);
   };
 
@@ -181,7 +169,6 @@ export default function ManagePost() {
     setLoading(true);
     setError('');
     try {
-      const token = localStorage.getItem('token');
       const formData = new FormData();
       formData.append('subject', form.subject);
       formData.append('detail', form.detail);
@@ -191,14 +178,7 @@ export default function ManagePost() {
         formData.append('Image', selectedFile);
       }
 
-      const res = await fetch(`${API_BASE_URL}/api/announcements/${editingNews.id}`, {
-        method: 'PUT',
-        headers: {
-          Authorization: token ? `Bearer ${token}` : undefined,
-        },
-        body: formData,
-      });
-      const data = await res.json();
+      const data = await apiService.put(apiEndpoints.announcement(editingNews.id), formData);
       if (data.status === 'success') {
         setEditOpen(false);
         setEditingNews(null);
@@ -207,10 +187,10 @@ export default function ManagePost() {
         setImagePreview(null);
         fetchNews();
       } else {
-        setError(data.message || 'แก้ไขข่าวสารไม่สำเร็จ');
+        setError(data.message || t('companyNews.editNewsError'));
       }
     } catch (err) {
-      setError('แก้ไขข่าวสารไม่สำเร็จ');
+      setError(t('companyNews.editNewsError'));
     } finally {
       setLoading(false);
     }
@@ -220,9 +200,10 @@ export default function ManagePost() {
 
   // ฟังก์ชันสำหรับเปิด Image Preview Dialog
   const openImagePreview = (imageName: string) => {
-    const imageUrl = getImageUrl(imageName, API_BASE_URL);
-    setSelectedImage(imageUrl);
-    setShowImagePreview(true);
+    const imageUrl = getImageUrl(imageName, import.meta.env.VITE_API_BASE_URL);
+    setPreviewImageUrl(imageUrl);
+    setPreviewImageName(imageName);
+    setPreviewImageOpen(true);
   };
 
 
@@ -250,7 +231,7 @@ export default function ManagePost() {
               className="flex items-center gap-2 px-4 py-2 bg-white/90 hover:bg-white text-blue-700 font-semibold rounded-xl shadow-lg transition-all duration-200 backdrop-blur-sm border border-blue-200 hover:border-blue-300"
             >
               <ArrowLeft className="w-5 h-5" />
-              ย้อนกลับ
+              {t('common.goBack')}
             </button>
           </div>
         </div>
@@ -328,7 +309,7 @@ export default function ManagePost() {
                             <input
                               type="file"
                               accept="image/*"
-                              onChange={handleFileSelect}
+                              onChange={e => handleFileSelect(e, setSelectedFile, setImagePreview)}
                               className="hidden"
                             />
                           </label>
@@ -343,7 +324,7 @@ export default function ManagePost() {
                             <img
                               src={imagePreview}
                               alt="Preview"
-                              className="w-full max-h-48 object-cover rounded-lg border border-gray-200"
+                              className="w-full max-h-48 object-contain rounded-lg border border-gray-200 bg-gray-50"
                             />
                             <button
                               type="button"
@@ -387,7 +368,7 @@ export default function ManagePost() {
                 <DialogHeader>
                   <DialogTitle className="text-2xl font-bold text-blue-900 mb-2 flex items-center gap-2">
                     <Edit className="w-6 h-6 text-blue-600" />
-                    แก้ไขข่าวสาร
+                    {t('companyNews.editNews')}
                   </DialogTitle>
                 </DialogHeader>
                 <form className="space-y-4 mt-2" onSubmit={handleUpdateNews}>
@@ -429,7 +410,7 @@ export default function ManagePost() {
                           <input
                             type="file"
                             accept="image/*"
-                            onChange={handleFileSelect}
+                            onChange={e => handleFileSelect(e, setSelectedFile, setImagePreview)}
                             className="hidden"
                           />
                         </label>
@@ -444,7 +425,7 @@ export default function ManagePost() {
                           <img
                             src={imagePreview}
                             alt="Preview"
-                            className="w-full max-h-48 object-cover rounded-lg border border-gray-200"
+                            className="w-full max-h-48 object-contain rounded-lg border border-gray-200 bg-gray-50"
                           />
                           <button
                             type="button"
@@ -473,7 +454,7 @@ export default function ManagePost() {
                       className="px-4 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white font-bold"
                       disabled={loading}
                     >
-                      {loading ? 'กำลังบันทึก...' : 'บันทึกการแก้ไข'}
+                      {loading ? t('companyNews.saving') : t('companyNews.saveChanges')}
                     </button>
                   </div>
                   {error && <div className="text-red-500 text-sm mt-2">{error}</div>}
@@ -522,14 +503,34 @@ export default function ManagePost() {
                     )}
                     {isAdmin && (
                       <TableCell className="p-4 text-center">
-                        <button
-                          className="p-2 rounded-full bg-red-100 hover:bg-red-200 text-red-600 shadow transition"
-                          onClick={() => handleDeleteNews(news.id)}
-                          aria-label={t('companyNews.delete')}
-                          disabled={loading}
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
+                        {/* ปุ่มลบข่าวสาร - เปิด Dialog ยืนยันการลบ */}
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <button
+                              className="p-2 rounded-full bg-red-100 hover:bg-red-200 text-red-600 shadow transition"
+                              onClick={() => setDeleteTarget(news)}
+                              aria-label={t('companyNews.delete')}
+                              disabled={loading}
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          </AlertDialogTrigger>
+                                                     <AlertDialogContent>
+                             <AlertDialogHeader>
+                               <AlertDialogTitle>{t('system.confirmDelete')}</AlertDialogTitle>
+                               <AlertDialogDescription>
+                                 {t('system.confirmDeleteNewsDesc')}
+                               </AlertDialogDescription>
+                             </AlertDialogHeader>
+                             <AlertDialogFooter>
+                               <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                               {/* ปุ่มยืนยันการลบใน Dialog */}
+                               <AlertDialogAction onClick={handleDeleteNews} disabled={deleting} className="bg-gradient-to-r from-red-500 to-pink-400 text-white">
+                                 {deleting ? t('common.loading') : t('common.delete')}
+                               </AlertDialogAction>
+                             </AlertDialogFooter>
+                           </AlertDialogContent>
+                        </AlertDialog>
                       </TableCell>
                     )}
                     <TableCell className="p-4 text-center">
@@ -572,11 +573,7 @@ export default function ManagePost() {
                                     <div className="text-right">
                                       <div className="text-sm text-gray-500">{t('companyNews.publishedOn')}</div>
                                       <div className="text-lg font-semibold text-blue-600">
-                                        {new Date(news.createdAt).toLocaleDateString('th-TH', {
-                                          year: 'numeric',
-                                          month: 'short',
-                                          day: 'numeric'
-                                        })}
+                                        {formatDate(news.createdAt, i18n.language)}
                                       </div>
                                     </div>
                                   </div>
@@ -596,7 +593,7 @@ export default function ManagePost() {
                                   <CardContent>
                                     <div className="p-4 bg-orange-50 rounded-lg">
                                       <p className="text-orange-900 leading-relaxed">
-                                        {news.detail || t('companyNews.noDetailProvided', 'ไม่มีรายละเอียด')}
+                                        {news.detail || t('companyNews.noDetailProvided')}
                                       </p>
                                     </div>
                                   </CardContent>
@@ -623,11 +620,7 @@ export default function ManagePost() {
                                       <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
                                         <Calendar className="w-4 h-4 text-green-500" />
                                         <span className="font-medium text-green-900">
-                                          {new Date(news.createdAt).toLocaleDateString('th-TH', {
-                                            year: 'numeric',
-                                            month: 'long',
-                                            day: 'numeric'
-                                          })}
+                                          {formatDate(news.createdAt, i18n.language)}
                                         </span>
                                       </div>
                                     </div>
@@ -636,10 +629,7 @@ export default function ManagePost() {
                                       <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
                                         <Clock className="w-4 h-4 text-blue-500" />
                                         <span className="font-medium text-blue-900">
-                                          {new Date(news.createdAt).toLocaleTimeString('th-TH', {
-                                            hour: '2-digit',
-                                            minute: '2-digit'
-                                          })}
+                                          {formatTime(new Date(news.createdAt), i18n.language)}
                                         </span>
                                       </div>
                                     </div>
@@ -653,7 +643,7 @@ export default function ManagePost() {
                                   <CardHeader className="pb-3">
                                     <div className="flex items-center gap-2">
                                       <User className="w-5 h-5 text-teal-600" />
-                                      <h3 className="text-lg font-semibold">{t('leave.contactInformation', 'Contact Information')}</h3>
+                                      <h3 className="text-lg font-semibold">{t('leave.contactInformation')}</h3>
                                     </div>
                                   </CardHeader>
                                   <CardContent>
@@ -670,9 +660,9 @@ export default function ManagePost() {
                                   <CardHeader className="pb-3">
                                     <div className="flex items-center gap-2">
                                       <Image className="w-5 h-5 text-purple-600" />
-                                      <h3 className="text-lg font-semibold">ไฟล์แนบ</h3>
+                                      <h3 className="text-lg font-semibold">{t('leave.attachments')}</h3>
                                       <Badge variant="secondary" className="ml-2">
-                                        {((news.Image ? 1 : 0) + (news.attachments ? news.attachments.length : 0))} ไฟล์
+                                        {((news.Image ? 1 : 0) + (news.attachments ? news.attachments.length : 0))} {t('leave.files')}
                                       </Badge>
                                     </div>
                                   </CardHeader>
@@ -684,10 +674,10 @@ export default function ManagePost() {
                                           <div className="space-y-3">
                                             <div className="relative group cursor-pointer" onClick={() => openImagePreview(news.Image)}>
                                               <img
-                                                src={getImageUrl(news.Image, API_BASE_URL)}
+                                                src={getImageUrl(news.Image, import.meta.env.VITE_API_BASE_URL)}
                                                 alt="News Image"
-                                                className="w-full h-32 object-cover rounded-lg border transition-all duration-300 group-hover:scale-105"
-                                                onError={(e) => handleImageError(e, news.Image, API_BASE_URL)}
+                                                className="w-full h-32 object-contain rounded-lg border transition-all duration-300 group-hover:scale-105 bg-gray-50"
+                                                onError={(e) => handleImageError(e, news.Image, import.meta.env.VITE_API_BASE_URL)}
                                               />
                                               <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 rounded-lg flex items-center justify-center">
                                                 <div className="opacity-0 group-hover:opacity-100 transition-all duration-300">
@@ -712,16 +702,8 @@ export default function ManagePost() {
                                                 <Button 
                                                   size="sm" 
                                                   variant="outline"
-                                                  onClick={() => openImagePreview(news.Image)}
-                                                  className="text-xs px-2 py-1"
-                                                >
-                                                  {t('common.view')}
-                                                </Button>
-                                                <Button 
-                                                  size="sm" 
-                                                  variant="outline"
                                                   onClick={() => {
-                                                    const imageUrl = getImageUrl(news.Image, API_BASE_URL);
+                                                    const imageUrl = getImageUrl(news.Image, import.meta.env.VITE_API_BASE_URL);
                                                     const link = document.createElement('a');
                                                     link.href = imageUrl;
                                                     link.download = news.Image.split('/').pop() || news.Image;
@@ -751,10 +733,10 @@ export default function ManagePost() {
                                                   <div className="space-y-3">
                                                     <div className="relative group cursor-pointer" onClick={() => openImagePreview(fileName)}>
                                                       <img 
-                                                        src={getImageUrl(fileName, API_BASE_URL)} 
+                                                        src={getImageUrl(fileName, import.meta.env.VITE_API_BASE_URL)} 
                                                         alt={fileName}
-                                                        className="w-full h-32 object-cover rounded-lg border transition-all duration-300 group-hover:scale-105"
-                                                        onError={(e) => handleImageError(e, fileName, API_BASE_URL)}
+                                                        className="w-full h-32 object-contain rounded-lg border transition-all duration-300 group-hover:scale-105 bg-gray-50"
+                                                        onError={(e) => handleImageError(e, fileName, import.meta.env.VITE_API_BASE_URL)}
                                                       />
                                                       <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 rounded-lg flex items-center justify-center">
                                                         <div className="opacity-0 group-hover:opacity-100 transition-all duration-300">
@@ -777,7 +759,7 @@ export default function ManagePost() {
                                                           size="sm" 
                                                           variant="outline"
                                                           onClick={() => {
-                                                            const fileUrl = getImageUrl(fileName, API_BASE_URL);
+                                                            const fileUrl = getImageUrl(fileName, import.meta.env.VITE_API_BASE_URL);
                                                             const link = document.createElement('a');
                                                             link.href = fileUrl;
                                                             link.download = fileName;
@@ -802,7 +784,7 @@ export default function ManagePost() {
                                                           size="sm" 
                                                           variant="outline"
                                                           onClick={() => {
-                                                            const fileUrl = getImageUrl(fileName, API_BASE_URL);
+                                                            const fileUrl = getImageUrl(fileName, import.meta.env.VITE_API_BASE_URL);
                                                             window.open(fileUrl, '_blank');
                                                           }}
                                                           className="text-xs px-2 py-1"
@@ -813,7 +795,7 @@ export default function ManagePost() {
                                                           size="sm" 
                                                           variant="outline"
                                                           onClick={() => {
-                                                            const fileUrl = getImageUrl(fileName, API_BASE_URL);
+                                                            const fileUrl = getImageUrl(fileName, import.meta.env.VITE_API_BASE_URL);
                                                             const link = document.createElement('a');
                                                             link.href = fileUrl;
                                                             link.download = fileName;
@@ -858,29 +840,31 @@ export default function ManagePost() {
       {/* Footer */}
       <footer className="w-full mt-16 py-8 bg-gradient-to-r from-blue-100 via-indigo-50 to-white text-center text-gray-400 text-base font-medium shadow-inner flex flex-col items-center gap-2">
         <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-10 h-10 rounded-full mx-auto mb-1" />
-        &copy; {new Date().getFullYear()} {t('common.companyName')}
+        <div className="font-bold text-gray-600">{t('footer.systemName')}</div>
+        <div className="text-sm">{t('footer.copyright')}</div>
       </footer>
 
       {/* Image Preview Dialog */}
-      <Dialog open={showImagePreview} onOpenChange={setShowImagePreview}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0 bg-black/95">
-          <DialogHeader className="absolute top-4 right-4 z-10">
+      <Dialog open={previewImageOpen} onOpenChange={setPreviewImageOpen}>
+        <DialogContent className="w-screen h-screen max-w-none max-h-none p-0 bg-black/40 backdrop-blur-sm border-0">
+          <div className="absolute top-4 right-4 z-50">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowImagePreview(false)}
+              onClick={() => setPreviewImageOpen(false)}
               className="bg-white/20 text-white border-white/30 hover:bg-white/30"
             >
               <X className="w-4 h-4" />
             </Button>
-          </DialogHeader>
+          </div>
           
-          {selectedImage && (
+          {previewImageUrl && (
             <div className="flex items-center justify-center h-full p-4">
               <img 
-                src={selectedImage} 
-                alt="Preview"
-                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
+                src={previewImageUrl} 
+                alt={previewImageName}
+                style={{ maxWidth: '100vw', maxHeight: '100vh' }}
+                className="object-contain rounded-lg shadow-2xl"
                 onError={(e) => {
                   const target = e.target as HTMLImageElement;
                   target.style.display = 'none';

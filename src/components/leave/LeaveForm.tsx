@@ -68,6 +68,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
   const { t, i18n } = useTranslation();
   const [startDate, setStartDate] = useState<Date>();
   const [endDate, setEndDate] = useState<Date>();
+  const [leaveDate, setLeaveDate] = useState<Date>(); // เพิ่ม state สำหรับวันที่ลา
   const [leaveType, setLeaveType] = useState("");
   const [durationType, setDurationType] = useState("");
   const [startTime, setStartTime] = useState("");
@@ -92,6 +93,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
     durationType: '',
     startDate: '',
     endDate: '',
+    leaveDate: '', // เพิ่ม error สำหรับวันที่ลา
     startTime: '',
     endTime: '',
     reason: '',
@@ -144,6 +146,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
     if (initialData) {
       setStartDate(initialData.startDate ? new Date(initialData.startDate) : undefined);
       setEndDate(initialData.endDate ? new Date(initialData.endDate) : undefined);
+      setLeaveDate(initialData.leaveDate ? new Date(initialData.leaveDate) : undefined); // เพิ่มการ set leaveDate
       setLeaveType(initialData.leaveType || initialData.type || "");
       setDurationType(initialData.durationType || "");
       setStartTime(initialData.startTime || "");
@@ -266,15 +269,17 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
       durationType: '', // dummy เพื่อให้ type ตรง
       startDate: '',
       endDate: '',
+      leaveDate: '', // เพิ่ม error สำหรับวันที่ลา
       startTime: '', // dummy เพื่อให้ type ตรง
       endTime: '',   // dummy เพื่อให้ type ตรง
       reason: '',
       contact: '',
     };
-    // ถ้าเป็นลาแบบ hourly ให้เพิ่ม startTime, endTime
+    // ถ้าเป็นลาแบบ hourly ให้เพิ่ม startTime, endTime และ leaveDate
     if (durationType === 'hour') {
       newErrors.startTime = '';
       newErrors.endTime = '';
+      newErrors.leaveDate = '';
     }
     let hasError = false;
     if (!leaveType) {
@@ -291,6 +296,11 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
     }
     if (!endDate) {
       newErrors.endDate = t('leave.required');
+      hasError = true;
+    }
+    // ถ้าเป็นลาแบบ hourly ให้เช็ควันที่ลา
+    if (durationType === 'hour' && !leaveDate) {
+      newErrors.leaveDate = t('leave.required');
       hasError = true;
     }
     if (!reason) {
@@ -411,6 +421,10 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
       if (endDate instanceof Date && !isNaN(endDate.getTime())) {
         formData.append("endDate", formatDateLocal(endDate));
       }
+      // เพิ่มวันที่ลาสำหรับลาแบบชั่วโมง
+      if (durationType === 'hour' && leaveDate instanceof Date && !isNaN(leaveDate.getTime())) {
+        formData.append("leaveDate", formatDateLocal(leaveDate));
+      }
       if (startTime) formData.append("startTime", startTime);
       if (endTime) formData.append("endTime", endTime);
       formData.append("reason", reason);
@@ -478,6 +492,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
       if (mode !== 'edit') {
         setStartDate(undefined);
         setEndDate(undefined);
+        setLeaveDate(undefined); // เพิ่มการ reset leaveDate
         setLeaveType("");
         setStartTime("");
         setEndTime("");
@@ -496,6 +511,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
       // Reset form
       setStartDate(undefined);
       setEndDate(undefined);
+      setLeaveDate(undefined); // เพิ่มการ reset leaveDate
       setLeaveType("");
       setDurationType("");
       setStartTime("");
@@ -531,6 +547,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
     setDurationType("");
     setStartDate(undefined);
     setEndDate(undefined);
+    setLeaveDate(undefined); // เพิ่มการ reset leaveDate
     setStartTime("");
     setEndTime("");
   };
@@ -540,11 +557,13 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
     setDurationType(value);
     setStartTime("");
     setEndTime("");
+    setLeaveDate(undefined); // เพิ่มการ reset leaveDate
     // เมื่อเลือกรายชั่วโมง ให้ตั้งค่าวันที่เป็นวันปัจจุบันเท่านั้น
     if (value === "hour") {
       const today = new Date();
       setStartDate(today);
       setEndDate(today);
+      setLeaveDate(today); // ตั้งค่าวันที่ลาเป็นวันปัจจุบัน
       // เติมเวลาอัตโนมัติ: เริ่มต้น 09:00 และสิ้นสุด 18:00
       setStartTime("09:00");
       setEndTime("18:00");
@@ -616,51 +635,102 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
               {/* เงื่อนไข: แสดงฟิลด์อื่นๆ เฉพาะเมื่อเลือกประเภทการลาและประเภทการลาแล้ว */}
               {durationType && (
                 <>
-                  {/* Section: ช่วงวันที่ลา */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-2">
-                      <CalendarDays className="w-5 h-5 text-green-500" />
-                      <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.dateRange')}</span>
-                    </div>
-                    <div className="mb-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                        {t('leave.dateRangeDescription')}
-                      </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-500">
-                        {t('leave.currentDate')}: {new Date().toLocaleDateString(i18n.language === 'th' ? 'th-TH' : 'en-US')}
-                      </p>
-                    </div>
-                    <DateRangePicker
-                      startDate={startDate}
-                      endDate={endDate}
-                      onStartDateChange={setStartDate}
-                      onEndDateChange={setEndDate}
-                      disabled={isHourlyLeave}
-                    />
-                    {/* แจ้งเตือนเมื่อมีการลาย้อนหลังหรือลาล่วงหน้า */}
-                    {(() => {
-                      const notice = getLeaveNotice(startDate);
-                      if (!notice) return null;
-                      
-                      const iconColor = notice.type === 'backdated' ? 'text-yellow-600' : 'text-blue-600';
-                      const iconPath = notice.type === 'backdated' 
-                        ? "M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                        : "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z";
-                      
-                      return (
-                        <div className={`mt-2 p-3 border rounded-lg ${notice.className}`}>
-                          <div className="flex items-center gap-2">
-                            <svg className={`w-4 h-4 ${iconColor}`} fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d={iconPath} clipRule="evenodd" />
-                            </svg>
-                            <span className="text-sm font-medium">
-                              {notice.message}
-                            </span>
+                  {/* Section: ช่วงวันที่ลา - Only show for non-hourly leave */}
+                  {!isHourlyLeave && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <CalendarDays className="w-5 h-5 text-green-500" />
+                        <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.dateRange')}</span>
+                      </div>
+                      <div className="mb-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                          {t('leave.dateRangeDescription')}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-500">
+                          {t('leave.currentDate')}: {new Date().toLocaleDateString(i18n.language === 'th' ? 'th-TH' : 'en-US')}
+                        </p>
+                      </div>
+                      <DateRangePicker
+                        startDate={startDate}
+                        endDate={endDate}
+                        onStartDateChange={setStartDate}
+                        onEndDateChange={setEndDate}
+                        disabled={false}
+                      />
+                      {/* แจ้งเตือนเมื่อมีการลาย้อนหลังหรือลาล่วงหน้า */}
+                      {(() => {
+                        const notice = getLeaveNotice(startDate);
+                        if (!notice) return null;
+                        
+                        const iconColor = notice.type === 'backdated' ? 'text-yellow-600' : 'text-blue-600';
+                        const iconPath = notice.type === 'backdated' 
+                          ? "M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                          : "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z";
+                        
+                        return (
+                          <div className={`mt-2 p-3 border rounded-lg ${notice.className}`}>
+                            <div className="flex items-center gap-2">
+                              <svg className={`w-4 h-4 ${iconColor}`} fill="currentColor" viewBox="0 0 20 20">
+                                <path fillRule="evenodd" d={iconPath} clipRule="evenodd" />
+                              </svg>
+                              <span className="text-sm font-medium">
+                                {notice.message}
+                              </span>
+                            </div>
                           </div>
-                        </div>
-                      );
-                    })()}
-                  </div>
+                        );
+                      })()}
+                    </div>
+                  )}
+
+                  {/* เงื่อนไข: แสดงฟิลด์วันที่ลาเฉพาะเมื่อเลือกแบบชั่วโมง */}
+                  {isHourlyLeave && (
+                    <div>
+                      <div className="flex items-center gap-2 mb-2">
+                        <CalendarDays className="w-5 h-5 text-indigo-500" />
+                        <span className="font-semibold text-lg text-gray-800 dark:text-gray-100">{t('leave.leaveDate')}</span>
+                      </div>
+                      <div className="mb-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                        <p className="text-sm text-blue-800 dark:text-blue-200 mb-1">
+                          <strong>{t('leave.selectLeaveDate')}</strong>
+                        </p>
+                        <p className="text-xs text-blue-700 dark:text-blue-300">
+                          {t('leave.leaveDateDescription')}
+                        </p>
+                      </div>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={`w-full h-12 justify-start text-left font-normal rounded-xl border-2 transition-all ${
+                              errors.leaveDate 
+                                ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' 
+                                : 'focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20'
+                            }`}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {leaveDate ? (
+                              format(leaveDate, "PPP", { locale: i18n.language === 'th' ? th : enUS })
+                            ) : (
+                              <span className="text-gray-500">{t('leave.selectLeaveDate')}</span>
+                            )}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={leaveDate}
+                            onSelect={setLeaveDate}
+                            initialFocus
+                            locale={i18n.language === 'th' ? th : enUS}
+                          />
+                        </PopoverContent>
+                      </Popover>
+                      {errors.leaveDate && (
+                        <p className="mt-1 text-sm text-red-600">{errors.leaveDate}</p>
+                      )}
+                    </div>
+                  )}
 
                   {/* เงื่อนไข: แสดงฟิลด์เวลาเฉพาะเมื่อเลือกแบบชั่วโมง */}
                   {isHourlyLeave && (

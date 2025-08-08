@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Calendar, Building2, Plus, Trash2, Edit2 } from 'lucide-react';
+import { ChevronLeft, Calendar, Building2, Plus, Trash2, Edit2, Users } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -10,11 +10,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getThaiHolidaysByMonth } from '@/constants/getThaiHolidays';
-
-const monthNames = [
-  'มกราคม', 'กุมภาพันธ์', 'มีนาคม', 'เมษายน', 'พฤษภาคม', 'มิถุนายน',
-  'กรกฎาคม', 'สิงหาคม', 'กันยายน', 'ตุลาคม', 'พฤศจิกายน', 'ธันวาคม'
-];
+import { monthNames } from '@/constants/common';
+import { apiService, apiEndpoints } from '@/lib/api';
+import { showToastMessage } from '@/lib/toast';
 
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
@@ -36,6 +34,25 @@ interface ThaiHoliday {
   type: string;
 }
 
+interface EmployeeLeave {
+  id: string;
+  userId: string;
+  userName: string;
+  department: string;
+  position: string;
+  leaveType: string;
+  leaveTypeEn: string;
+  startDate: string;
+  endDate: string;
+  startTime?: string;
+  endTime?: string;
+  duration: string;
+  durationType: string;
+  reason: string;
+  status: string;
+  createdAt: string;
+}
+
 interface CalendarEvent {
   id?: string;
   title: string;
@@ -43,76 +60,80 @@ interface CalendarEvent {
   date: string;
   createdAt?: string;
   createdBy?: string;
-  type: 'company' | 'annual';
+  type: 'company' | 'annual' | 'employee';
   isThaiHoliday?: boolean;
   isDual?: boolean;
+  employeeInfo?: {
+    userName: string;
+    leaveType: string;
+    startDate: string;
+    endDate: string;
+    duration: string;
+    durationType: string;
+  };
 }
 
 const CompanyMonthDetailPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
   const { year, month } = useParams();
   const currentYear = parseInt(year || new Date().getFullYear().toString());
   const currentMonth = parseInt(month || (new Date().getMonth() + 1).toString()) - 1;
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+  const currentMonthNames = monthNames[i18n.language === 'th' ? 'th' : 'en'];
   
   const [companyEvents, setCompanyEvents] = useState<CompanyEvent[]>([]);
   const [thaiHolidays, setThaiHolidays] = useState<ThaiHoliday[]>([]);
+  const [employeeLeaves, setEmployeeLeaves] = useState<EmployeeLeave[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [editingEvent, setEditingEvent] = useState<CompanyEvent | null>(null);
   const [showCompanyHolidays, setShowCompanyHolidays] = useState(true);
   const [showAnnualHolidays, setShowAnnualHolidays] = useState(true);
+  const [showEmployeeLeaves, setShowEmployeeLeaves] = useState(true);
   const [newEvent, setNewEvent] = useState({
     title: '',
     description: '',
     date: ''
   });
 
-  // Fetch company events and Thai holidays for the specific month
+  // Fetch company events, Thai holidays, and employee leaves for the specific month
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         
-        // Fetch company events
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/custom-holidays/year/${currentYear}`, {
-          headers: {
-            'Authorization': token ? `Bearer ${token}` : undefined,
-          }
-        });
-        if (response.ok) {
-          const result = await response.json();
-          const allEvents = result.data || [];
-          // Filter events for the current month
-          const monthEvents = allEvents.filter((event: CompanyEvent) => {
-            const eventDate = new Date(event.date);
-            return eventDate.getFullYear() === currentYear && eventDate.getMonth() === currentMonth;
-          });
-          setCompanyEvents(monthEvents);
-        } else {
-          console.error('Failed to fetch company events');
-          setCompanyEvents([]);
-        }
+                 // Fetch company events
+         const result = await apiService.get(apiEndpoints.customHolidaysByYear(currentYear));
+         const allEvents = result.data || [];
+         // Filter events for the current month
+         const monthEvents = allEvents.filter((event: CompanyEvent) => {
+           const eventDate = new Date(event.date);
+           return eventDate.getFullYear() === currentYear && eventDate.getMonth() === currentMonth;
+         });
+         setCompanyEvents(monthEvents);
         
         // Get Thai holidays for the current month
         const thaiHolidaysData = getThaiHolidaysByMonth(currentYear, currentMonth, t);
         setThaiHolidays(thaiHolidaysData);
         
+                 // Fetch employee leaves
+         const leaveResult = await apiService.get(apiEndpoints.leave.calendarWithMonth(currentYear, currentMonth + 1));
+         setEmployeeLeaves(leaveResult.data || []);
+        
       } catch (error) {
         console.error('Error fetching data:', error);
         setCompanyEvents([]);
         setThaiHolidays([]);
+        setEmployeeLeaves([]);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchData();
-  }, [currentYear, currentMonth, t]);
+         fetchData();
+   }, [currentYear, currentMonth, t]);
 
   // Create calendar grid
   const days = getDaysInMonth(currentYear, currentMonth);
@@ -154,6 +175,39 @@ const CompanyMonthDetailPage = () => {
     })));
   }
 
+  // Add employee leaves if enabled
+  if (showEmployeeLeaves) {
+    // Create events for each day of the leave period
+    employeeLeaves.forEach(leave => {
+      const startDate = new Date(leave.startDate);
+      const endDate = new Date(leave.endDate);
+      const currentDate = new Date(startDate);
+      
+      while (currentDate <= endDate) {
+        if (currentDate.getFullYear() === currentYear && currentDate.getMonth() === currentMonth) {
+          allEvents.push({
+            id: `leave-${leave.id}-${currentDate.toISOString().split('T')[0]}`,
+            title: leave.userName,
+            description: leave.reason,
+            date: currentDate.toISOString().split('T')[0],
+            createdAt: leave.createdAt,
+            createdBy: leave.userId,
+            type: 'employee' as const,
+            employeeInfo: {
+              userName: leave.userName,
+              leaveType: i18n.language.startsWith('th') ? leave.leaveType : leave.leaveTypeEn,
+              startDate: leave.startDate,
+              endDate: leave.endDate,
+              duration: leave.duration,
+              durationType: leave.durationType
+            }
+          });
+        }
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+    });
+  }
+
   // Create event map for highlighting
   const eventMap: Record<string, CalendarEvent> = {};
   const eventCountMap: Record<string, number> = {};
@@ -184,39 +238,53 @@ const CompanyMonthDetailPage = () => {
     return d.getFullYear() === currentYear && d.getMonth() === currentMonth;
   });
 
+  // Get color for event type
+  const getEventColor = (event: CalendarEvent) => {
+    switch (event.type) {
+      case 'annual': return 'bg-red-500';
+      case 'company': return 'bg-blue-500';
+      case 'employee': return 'bg-green-500';
+      default: return 'bg-gray-500';
+    }
+  };
+
+  // Get tooltip content for event
+  const getEventTooltip = (event: CalendarEvent) => {
+    if (event.type === 'employee' && event.employeeInfo) {
+      const { userName, leaveType, startDate, endDate, duration, durationType } = event.employeeInfo;
+      const start = new Date(startDate).toLocaleDateString(i18n.language.startsWith('th') ? 'th-TH' : 'en-US');
+      const end = new Date(endDate).toLocaleDateString(i18n.language.startsWith('th') ? 'th-TH' : 'en-US');
+      const durationText = durationType === 'day' ? 
+        (i18n.language.startsWith('th') ? `${duration} วัน` : `${duration} days`) :
+        (i18n.language.startsWith('th') ? `${duration} ชั่วโมง` : `${duration} hours`);
+      
+      return `${userName}\n${leaveType}\n${i18n.language.startsWith('th') ? 'ช่วงเวลา' : 'Period'}: ${start} - ${end}\n${i18n.language.startsWith('th') ? 'ระยะเวลา' : 'Duration'}: ${durationText}`;
+    }
+    return event.title;
+  };
+
   // Handlers
   const handleAdd = async () => {
     if (!newEvent.title || !newEvent.date) return;
     
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/custom-holidays`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : undefined,
-        },
-        body: JSON.stringify({
-          title: newEvent.title,
-          description: newEvent.description,
-          date: newEvent.date,
-          type: 'company'
-        })
-      });
+         try {
+       const result = await apiService.post(apiEndpoints.customHolidays, {
+         title: newEvent.title,
+         description: newEvent.description,
+         date: newEvent.date,
+         type: 'company'
+       });
 
-      if (response.ok) {
-        const result = await response.json();
-        // Handle the API response structure: { status: 'success', data: {...} }
-        const createdEvent = result.data || result;
-        setCompanyEvents([...companyEvents, createdEvent]);
-        setShowAdd(false);
-        setNewEvent({ title: '', description: '', date: '' });
-      } else {
-        console.error('Failed to create company event');
-      }
-    } catch (error) {
-      console.error('Error creating company event:', error);
-    }
+       // Handle the API response structure: { status: 'success', data: {...} }
+       const createdEvent = result.data || result;
+       setCompanyEvents([...companyEvents, createdEvent]);
+       setShowAdd(false);
+       setNewEvent({ title: '', description: '', date: '' });
+       showToastMessage.crud.createSuccess('กิจกรรมของบริษัท');
+     } catch (error) {
+       console.error('Error creating company event:', error);
+       showToastMessage.crud.createError('กิจกรรมของบริษัท');
+     }
   };
 
   const handleEdit = (event: CompanyEvent) => {
@@ -227,58 +295,38 @@ const CompanyMonthDetailPage = () => {
   const handleEditSave = async () => {
     if (!editingEvent) return;
     
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/custom-holidays/${editingEvent.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': token ? `Bearer ${token}` : undefined,
-        },
-        body: JSON.stringify({
-          title: editingEvent.title,
-          description: editingEvent.description,
-          date: editingEvent.date
-        })
-      });
+         try {
+       const result = await apiService.put(apiEndpoints.customHoliday(editingEvent.id), {
+         title: editingEvent.title,
+         description: editingEvent.description,
+         date: editingEvent.date
+       });
 
-      if (response.ok) {
-        const result = await response.json();
-        // Handle the API response structure: { status: 'success', data: {...} }
-        const updatedEvent = result.data || result;
-        setCompanyEvents(companyEvents.map(event => 
-          event.id === editingEvent.id ? updatedEvent : event
-        ));
-        setShowEdit(false);
-        setEditingEvent(null);
-      } else {
-        console.error('Failed to update company event');
-      }
-    } catch (error) {
-      console.error('Error updating company event:', error);
-    }
+       // Handle the API response structure: { status: 'success', data: {...} }
+       const updatedEvent = result.data || result;
+       setCompanyEvents(companyEvents.map(event => 
+         event.id === editingEvent.id ? updatedEvent : event
+       ));
+       setShowEdit(false);
+       setEditingEvent(null);
+       showToastMessage.crud.updateSuccess('กิจกรรมของบริษัท');
+     } catch (error) {
+       console.error('Error updating company event:', error);
+       showToastMessage.crud.updateError('กิจกรรมของบริษัท');
+     }
   };
 
   const handleDelete = async (eventId: string) => {
     if (!confirm('Are you sure you want to delete this event?')) return;
     
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch(`${API_BASE_URL}/api/custom-holidays/${eventId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': token ? `Bearer ${token}` : undefined,
-        }
-      });
-
-      if (response.ok) {
-        setCompanyEvents(companyEvents.filter(event => event.id !== eventId));
-      } else {
-        console.error('Failed to delete company event');
-      }
-    } catch (error) {
-      console.error('Error deleting company event:', error);
-    }
+         try {
+       await apiService.delete(apiEndpoints.customHoliday(eventId));
+       setCompanyEvents(companyEvents.filter(event => event.id !== eventId));
+       showToastMessage.crud.deleteSuccess('กิจกรรมของบริษัท');
+     } catch (error) {
+       console.error('Error deleting company event:', error);
+       showToastMessage.crud.deleteError('กิจกรรมของบริษัท');
+     }
   };
 
   // Add Event Dialog: open with default date for current month
@@ -309,7 +357,7 @@ const CompanyMonthDetailPage = () => {
           </button>
           <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-24 h-24 rounded-full bg-white/80 shadow-2xl border-4 border-white mb-4" />
           <h1 className="text-4xl md:text-5xl font-extrabold text-indigo-900 drop-shadow mb-2 flex items-center gap-3">
-            {monthNames[currentMonth]} {currentYear + 543}
+            {currentMonthNames[currentMonth]} {currentYear + 543}
           </h1>
           <p className="text-lg md:text-xl text-blue-900/70 mb-2 font-medium text-center max-w-2xl">
             จัดการกิจกรรมและวันสำคัญของบริษัท
@@ -336,12 +384,40 @@ const CompanyMonthDetailPage = () => {
             />
             <span className="text-sm font-medium text-blue-700">วันหยุดบริษัท</span>
           </div>
+          <div className="flex items-center gap-3">
+            <Switch 
+              checked={showEmployeeLeaves}
+              onCheckedChange={setShowEmployeeLeaves}
+              className="data-[state=checked]:bg-green-500"
+            />
+            <span className="text-sm font-medium text-green-700">
+              {user?.role === 'admin' || user?.role === 'superadmin' ? 'การลาของพนักงาน' : 'การลาของฉัน'}
+            </span>
+          </div>
+          
+          {/* Legend */}
+          <div className="flex items-center gap-4 ml-6 pl-6 border-l border-gray-300">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+              <span className="text-xs text-red-700">วันหยุดประจำปี</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+              <span className="text-xs text-blue-700">วันหยุดบริษัท</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+              <span className="text-xs text-green-700">
+                {user?.role === 'admin' || user?.role === 'superadmin' ? 'การลาของพนักงาน' : 'การลาของฉัน'}
+              </span>
+            </div>
+          </div>
         </div>
         
         <div className="bg-white/80 rounded-2xl shadow-xl p-4 flex flex-col items-center w-full max-w-lg mb-8">
           <div className="flex items-center gap-2 mb-2">
             <Building2 className="w-5 h-5 text-indigo-400" />
-            <span className="text-lg font-bold text-blue-900">{monthNames[currentMonth]}</span>
+                            <span className="text-lg font-bold text-blue-900">{currentMonthNames[currentMonth]}</span>
             {user?.role === 'superadmin' && (
               <Button size="sm" className="ml-2" onClick={handleOpenAdd}>
                 <Plus className="w-4 h-4 mr-1" /> เพิ่มกิจกรรม
@@ -371,18 +447,25 @@ const CompanyMonthDetailPage = () => {
                     return (
                       <td
                         key={dIdx}
-                        className={`py-1 px-1 rounded-lg font-semibold transition ${
-                          event 
-                            ? event.isDual
-                              ? 'bg-gradient-to-br from-purple-200 via-pink-200 to-indigo-100 text-purple-700 shadow-md border border-purple-200 cursor-help'
-                              : event.type === 'annual'
-                                ? 'bg-gradient-to-br from-red-200 via-pink-200 to-orange-100 text-red-700 shadow-md border border-red-200 cursor-help'
-                                : 'bg-gradient-to-br from-blue-200 via-indigo-200 to-purple-100 text-blue-700 shadow-md border border-blue-200 cursor-help'
-                            : 'text-blue-900'
-                        }`}
-                        title={event?.title || ''}
+                        className={`py-1 px-1 rounded-lg font-semibold transition`}
                       >
-                        {d}
+                        {event ? (
+                          <div className="relative group">
+                            <span 
+                              className={`${getEventColor(event)} text-white rounded-full w-7 h-7 flex items-center justify-center mx-auto font-bold shadow cursor-pointer hover:scale-110 transition-transform`}
+                              title={getEventTooltip(event)}
+                            >
+                              {d}
+                            </span>
+                            {/* Tooltip */}
+                            <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-pre-line z-10 max-w-xs">
+                              {getEventTooltip(event)}
+                              <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                            </div>
+                          </div>
+                        ) : (
+                          <span>{d}</span>
+                        )}
                       </td>
                     );
                   })}
@@ -415,24 +498,35 @@ const CompanyMonthDetailPage = () => {
                       ? 'text-purple-700 bg-purple-50'
                       : eventType === 'annual' 
                         ? 'text-red-700 bg-red-50' 
-                        : 'text-blue-700 bg-blue-50'
+                        : eventType === 'employee'
+                          ? 'text-green-700 bg-green-50'
+                          : 'text-blue-700 bg-blue-50'
                   }`}>
                     <span className={`inline-block w-3 h-3 rounded-full mt-1 flex-shrink-0 ${
                       event.isDual
                         ? 'bg-purple-400'
                         : eventType === 'annual' 
                           ? 'bg-red-400' 
-                          : 'bg-blue-400'
+                          : eventType === 'employee'
+                            ? 'bg-green-400'
+                            : 'bg-blue-400'
                     }`}></span>
                     <div className="flex-1">
-                      <div className="font-semibold">{event.title}</div>
+                      <div className="font-semibold">
+                        {eventType === 'employee' && event.employeeInfo 
+                          ? `${event.employeeInfo.userName} (${event.employeeInfo.leaveType})`
+                          : event.title
+                        }
+                      </div>
                       {event.description && (
                         <div className={`text-sm mt-1 ${
                           event.isDual
                             ? 'text-purple-600'
                             : eventType === 'annual' 
                               ? 'text-red-600' 
-                              : 'text-blue-600'
+                              : eventType === 'employee'
+                                ? 'text-green-600'
+                                : 'text-blue-600'
                         }`}>{event.description}</div>
                       )}
                       <div className={`text-sm mt-1 ${
@@ -440,10 +534,17 @@ const CompanyMonthDetailPage = () => {
                           ? 'text-purple-500'
                           : eventType === 'annual' 
                             ? 'text-red-500' 
-                            : 'text-blue-500'
+                            : eventType === 'employee'
+                              ? 'text-green-500'
+                              : 'text-blue-500'
                       }`}>({day}/{monthNum}/{yearNum})</div>
+                      {eventType === 'employee' && event.employeeInfo && (
+                        <div className="text-xs text-gray-500 mt-1">
+                          {new Date(event.employeeInfo.startDate).toLocaleDateString(i18n.language.startsWith('th') ? 'th-TH' : 'en-US')} - {new Date(event.employeeInfo.endDate).toLocaleDateString(i18n.language.startsWith('th') ? 'th-TH' : 'en-US')}
+                        </div>
+                      )}
                     </div>
-                    {user?.role === 'superadmin' && !event.isThaiHoliday && (
+                    {user?.role === 'superadmin' && !event.isThaiHoliday && eventType !== 'employee' && (
                       <div className="flex gap-1 flex-shrink-0">
                         <Button size="icon" variant="ghost" onClick={() => handleEdit(event as CompanyEvent)}>
                           <Edit2 className="w-4 h-4" />
@@ -465,29 +566,29 @@ const CompanyMonthDetailPage = () => {
       <Dialog open={showAdd} onOpenChange={setShowAdd}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{t('companyEvent.addTitle', 'เพิ่มกิจกรรมของบริษัท')}</DialogTitle>
+            <DialogTitle>{t('companyEvent.addTitle')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <Input 
-              placeholder={t('companyEvent.name', 'ชื่อกิจกรรม')} 
+              placeholder={t('companyEvent.name')} 
               value={newEvent.title} 
               onChange={e => setNewEvent(prev => ({ ...prev, title: e.target.value }))} 
             />
             <Textarea 
-              placeholder={t('companyEvent.description', 'รายละเอียดกิจกรรม (ไม่บังคับ)')} 
+              placeholder={t('companyEvent.description')} 
               value={newEvent.description} 
               onChange={e => setNewEvent(prev => ({ ...prev, description: e.target.value }))} 
             />
             <Input 
               type="date" 
-              placeholder={t('companyEvent.datePlaceholder', 'yyyy-mm-dd')}
+              placeholder={t('companyEvent.datePlaceholder')}
               value={newEvent.date} 
               onChange={e => setNewEvent(prev => ({ ...prev, date: e.target.value }))} 
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowAdd(false)}>{t('common.cancel', 'ยกเลิก')}</Button>
-            <Button onClick={handleAdd}>{t('common.save', 'บันทึก')}</Button>
+            <Button variant="outline" onClick={() => setShowAdd(false)}>{t('common.cancel')}</Button>
+            <Button onClick={handleAdd}>{t('common.save')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -496,16 +597,16 @@ const CompanyMonthDetailPage = () => {
       <Dialog open={showEdit} onOpenChange={setShowEdit}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>แก้ไขกิจกรรมของบริษัท</DialogTitle>
+            <DialogTitle>{t('companyEvent.editTitle')}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <Input 
-              placeholder="ชื่อกิจกรรม" 
+              placeholder={t('companyEvent.name')}
               value={editingEvent?.title || ''} 
               onChange={e => setEditingEvent(prev => prev ? { ...prev, title: e.target.value } : null)} 
             />
             <Textarea 
-              placeholder="รายละเอียดกิจกรรม (ไม่บังคับ)" 
+              placeholder={t('companyEvent.description' )}
               value={editingEvent?.description || ''} 
               onChange={e => setEditingEvent(prev => prev ? { ...prev, description: e.target.value } : null)} 
             />
@@ -516,8 +617,8 @@ const CompanyMonthDetailPage = () => {
             />
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEdit(false)}>ยกเลิก</Button>
-            <Button onClick={handleEditSave}>บันทึก</Button>
+            <Button variant="outline" onClick={() => setShowEdit(false)}>{t('common.cancel')}</Button>
+            <Button onClick={handleEditSave}>{t('common.save')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

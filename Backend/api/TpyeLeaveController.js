@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { BaseController, sendSuccess, sendError, sendNotFound } = require('../utils');
 
 /**
  * @swagger
@@ -128,64 +129,64 @@ const router = express.Router();
  */
 
 module.exports = (AppDataSource) => {
+  // Create base controller instance for LeaveType
+  const leaveTypeController = new BaseController('LeaveType');
+
   // GET all leave types
   router.get('/leave-types', async (req, res) => {
     try {
-      const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
-      const leaveTypes = await leaveTypeRepo.find();
-      res.json({ success: true, data: leaveTypes, message: 'Fetched leave types successfully' });
+      const leaveTypes = await leaveTypeController.findAll(AppDataSource);
+      sendSuccess(res, leaveTypes, 'Fetched leave types successfully');
     } catch (err) {
-      res.status(500).json({ success: false, data: [], message: err.message });
+      sendError(res, err.message, 500);
     }
   });
 
   // CREATE leave type
   router.post('/leave-types', async (req, res) => {
     try {
-      const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
-      const leaveType = leaveTypeRepo.create({
+      const leaveTypeData = {
         leave_type_en: req.body.leave_type_en,
         leave_type_th: req.body.leave_type_th,
         require_attachment: req.body.require_attachment ?? false
-      });
-      const saved = await leaveTypeRepo.save(leaveType);
-      res.status(201).json({ success: true, data: saved, message: 'Created leave type successfully' });
+      };
+      const saved = await leaveTypeController.create(AppDataSource, leaveTypeData);
+      sendSuccess(res, saved, 'Created leave type successfully', 201);
     } catch (err) {
-      res.status(500).json({ success: false, data: null, message: err.message });
+      sendError(res, err.message, 500);
     }
   });
 
   // UPDATE leave type
   router.put('/leave-types/:id', async (req, res) => {
     try {
-      const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
-      const leaveType = await leaveTypeRepo.findOneBy({ id: req.params.id });
-      if (!leaveType) {
-        return res.status(404).json({ success: false, data: null, message: 'Leave type not found' });
-      }
-      leaveType.leave_type_en = req.body.leave_type_en;
-      leaveType.leave_type_th = req.body.leave_type_th;
+      const updateData = {
+        leave_type_en: req.body.leave_type_en,
+        leave_type_th: req.body.leave_type_th
+      };
       if (typeof req.body.require_attachment !== 'undefined') {
-        leaveType.require_attachment = req.body.require_attachment;
+        updateData.require_attachment = req.body.require_attachment;
       }
-      const updated = await leaveTypeRepo.save(leaveType);
-      res.json({ success: true, data: updated, message: 'Updated leave type successfully' });
+      const updated = await leaveTypeController.update(AppDataSource, req.params.id, updateData);
+      sendSuccess(res, updated, 'Updated leave type successfully');
     } catch (err) {
-      res.status(500).json({ success: false, data: null, message: err.message });
+      if (err.message === 'Record not found') {
+        return sendNotFound(res, 'Leave type not found');
+      }
+      sendError(res, err.message, 500);
     }
   });
 
   // DELETE leave type
   router.delete('/leave-types/:id', async (req, res) => {
     try {
-      const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
-      const result = await leaveTypeRepo.delete(req.params.id);
-      if (result.affected === 0) {
-        return res.status(404).json({ success: false, data: null, message: 'Leave type not found' });
-      }
-      res.json({ success: true, data: null, message: 'Deleted leave type successfully' });
+      await leaveTypeController.delete(AppDataSource, req.params.id);
+      sendSuccess(res, null, 'Deleted leave type successfully');
     } catch (err) {
-      res.status(500).json({ success: false, data: null, message: err.message });
+      if (err.message === 'Record not found') {
+        return sendNotFound(res, 'Leave type not found');
+      }
+      sendError(res, err.message, 500);
     }
   });
 

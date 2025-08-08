@@ -21,9 +21,25 @@ module.exports = new EntitySchema({
      position: {
       type: 'varchar',
      },
-     avatar: {
+     gender: {
       type: 'varchar',
       nullable: true,
-     },
+    },
+    dob: {
+      type: 'date',
+      nullable: true,
+    },
+    phone_number: {
+      type: 'varchar',
+      nullable: true
+    },
+    start_work: {
+      type: 'date',
+      nullable: true,
+    },
+    end_work: {
+      type: 'date',
+      nullable: true,
+    },
   },
 }); 

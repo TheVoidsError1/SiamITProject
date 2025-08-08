@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Upload, X, Eye } from "lucide-react";
 import ImagePreviewDialog from "@/components/dialogs/ImagePreviewDialog";
+import { handleImageClick } from '../../lib/utils';
 
 interface FileUploadProps {
   attachments: File[];
@@ -21,12 +22,6 @@ export const FileUpload = ({
 
   const isImageFile = (file: File) => {
     return file.type.startsWith('image/');
-  };
-
-  const handleImageClick = (file: File) => {
-    const imageUrl = URL.createObjectURL(file);
-    setPreviewImage({ url: imageUrl, name: file.name });
-    setImageDialogOpen(true);
   };
 
   return (
@@ -70,7 +65,7 @@ export const FileUpload = ({
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleImageClick(file)}
+                      onClick={() => handleImageClick(file, setPreviewImage, setImageDialogOpen)}
                       className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
                     >
                       <Eye className="w-4 h-4" />
@@ -95,7 +90,7 @@ export const FileUpload = ({
                     alt={file.name}
                     className="w-full max-w-[30vw] h-auto rounded border object-cover cursor-pointer hover:opacity-80 transition-opacity"
                     style={{ maxHeight: '200px' }}
-                    onClick={() => handleImageClick(file)}
+                    onClick={() => handleImageClick(file, setPreviewImage, setImageDialogOpen)}
                   />
                 </div>
               )}

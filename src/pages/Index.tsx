@@ -4,16 +4,22 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { getThaiHolidaysByMonth, getUpcomingThaiHolidays } from "@/constants/getThaiHolidays";
 import { useAuth } from '@/contexts/AuthContext';
+import { useSocket } from '@/contexts/SocketContext';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { Bell, Calendar, Clock, TrendingUp, Users } from 'lucide-react';
+import { Bell, Calendar, Clock, TrendingUp, Users, MessageCircle, Smartphone } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
+import { apiService, apiEndpoints } from '../lib/api';
+import { showToastMessage } from '../lib/toast';
+import { getImageUrl } from '../lib/utils';
+
 
 const Index = () => {
   const { t, i18n } = useTranslation();
   const { user, logout } = useAuth();
+  const { socket, isConnected } = useSocket();
   const { toast } = useToast();
   const navigate = useNavigate();
   
@@ -89,6 +95,11 @@ const Index = () => {
     };
   } | null>(null);
   const [loadingUserProfile, setLoadingUserProfile] = useState(true);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  
+  // LINE linking states
+  const [lineLinkStatus, setLineLinkStatus] = useState<'checking' | 'linked' | 'unlinked' | 'error'>('checking');
+  const [lineLinkingLoading, setLineLinkingLoading] = useState(false);
 
   // Helper for month options
   const monthOptions = [
@@ -110,57 +121,99 @@ const Index = () => {
   const yearOptions = [filterYear - 1, filterYear, filterYear + 1];
 
   const { showSessionExpiredDialog } = useAuth();
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-  // เพิ่มฟังก์ชันสำหรับเรียก API พร้อม month/year
-  const fetchDashboardStats = (month?: number, year?: number) => {
-    setLoadingStats(true);
-    const token = localStorage.getItem("token");
-    let url = "/api/dashboard-stats";
-    if (month && year) url += `?month=${month}&year=${year}`;
-    else if (year) url += `?year=${year}`;
-    fetch(url, {
-      headers: {
-        Authorization: token ? `Bearer ${token}` : undefined,
-      },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && data.status === "success" && data.data) {
-          setStats([
-            { title: t('main.daysRemaining'), value: data.data.remainingDays, unit: t('common.days'), icon: Calendar, color: "text-blue-600", bgColor: "bg-blue-50" },
-            { title: t('main.daysUsed'), value: data.data.daysUsed, unit: t('common.days'), icon: Clock, color: "text-green-600", bgColor: "bg-green-50" },
-            { title: t('main.pendingRequests'), value: data.data.pendingRequests, unit: t('main.requests'), icon: Users, color: "text-orange-600", bgColor: "bg-orange-50" },
-            { title: t('main.approvalRate'), value: data.data.approvalRate, unit: "%", icon: TrendingUp, color: "text-purple-600", bgColor: "bg-purple-50" },
-          ]);
-          // อัปเดต filteredDaysUsed และ filteredHoursUsed สำหรับ Days Used card
-          setFilteredDaysUsed(data.data.daysUsed || 0);
-          setFilteredHoursUsed(data.data.hoursUsed || 0);
-          const stats = data.data.leaveTypeStats || {};
-          setLeaveStats({
-            sick: stats["ลาป่วย"] || stats["sick"] || 0,
-            vacation: stats["ลาพักผ่อน"] || stats["vacation"] || 0,
-            business: stats["ลากิจ"] || stats["personal"] || 0,
-          });
-        } else {
-          setErrorStats(t('error.cannotLoadStats'));
+  // LINE linking functions
+  const checkLineLinkStatus = async () => {
+    try {
+      const data = await apiService.get(apiEndpoints.line.linkStatus, undefined, showSessionExpiredDialog);
+      setLineLinkStatus(data.linked ? 'linked' : 'unlinked');
+    } catch (error) {
+      setLineLinkStatus('error');
+    }
+  };
+
+  const handleLineLogin = async () => {
+    setLineLinkingLoading(true);
+    try {
+      const data = await apiService.get(apiEndpoints.line.loginUrl, undefined, showSessionExpiredDialog);
+      const popup = window.open(data.loginUrl, 'lineLogin', 'width=500,height=600,scrollbars=yes,resizable=yes');
+      const messageListener = (event: any) => {
+        if (event.origin !== window.location.origin) return;
+        if (event.data && event.data.type === 'LINE_LINK_SUCCESS') {
+          if (popup) popup.close();
+          window.removeEventListener('message', messageListener);
+          showToastMessage.auth.loginSuccess();
+          setLineLinkStatus('linked');
+        } else if (event.data && event.data.type === 'LINE_LINK_ERROR') {
+          if (popup) popup.close();
+          window.removeEventListener('message', messageListener);
+          showToastMessage.auth.loginError(event.data.message);
         }
-      })
-      .catch(() => setErrorStats(t('error.apiConnectionError')))
-      .finally(() => setLoadingStats(false));
+      };
+      window.addEventListener('message', messageListener);
+      setTimeout(() => { checkLineLinkStatus(); }, 5000);
+    } catch (error) {
+      showToastMessage.auth.loginError();
+    } finally {
+      setLineLinkingLoading(false);
+    }
+  };
+
+  const handleLineUnlink = async () => {
+    setLineLinkingLoading(true);
+    try {
+      await apiService.post(apiEndpoints.line.unlink, {}, showSessionExpiredDialog);
+      showToastMessage.auth.logoutSuccess();
+      setLineLinkStatus('unlinked');
+    } catch (error) {
+      showToastMessage.auth.loginError();
+    } finally {
+      setLineLinkingLoading(false);
+    }
+  };
+
+  const fetchDashboardStats = async (month?: number, year?: number) => {
+    setLoadingStats(true);
+    try {
+      let url = apiEndpoints.dashboard.stats;
+      if (month && year) url += `?month=${month}&year=${year}`;
+      else if (year) url += `?year=${year}`;
+      
+      const data = await apiService.get(url);
+      if (data && (data.status === "success" || data.success === true) && data.data) {
+        setStats([
+          { title: t('main.daysRemaining'), value: data.data.remainingDays, unit: t('common.days'), icon: Calendar, color: "text-blue-600", bgColor: "bg-blue-50" },
+          { title: t('main.daysUsed'), value: data.data.daysUsed, unit: t('common.days'), icon: Clock, color: "text-green-600", bgColor: "bg-green-50" },
+          { title: t('main.pendingRequests'), value: data.data.pendingRequests, unit: t('main.requests'), icon: Users, color: "text-orange-600", bgColor: "bg-orange-50" },
+          { title: t('main.approvalRate'), value: data.data.approvalRate, unit: "%", icon: TrendingUp, color: "text-purple-600", bgColor: "bg-purple-50" },
+        ]);
+        // อัปเดต filteredDaysUsed และ filteredHoursUsed สำหรับ Days Used card
+        setFilteredDaysUsed(data.data.daysUsed || 0);
+        setFilteredHoursUsed(data.data.hoursUsed || 0);
+        const stats = data.data.leaveTypeStats || {};
+        setLeaveStats({
+          sick: stats["ลาป่วย"] || stats["sick"] || 0,
+          vacation: stats["ลาพักผ่อน"] || stats["vacation"] || 0,
+          business: stats["ลากิจ"] || stats["personal"] || 0,
+        });
+      } else {
+        setErrorStats(t('error.cannotLoadStats'));
+      }
+    } catch (error) {
+      setErrorStats(t('error.apiConnectionError'));
+    } finally {
+      setLoadingStats(false);
+    }
   };
 
   // Fetch recent leave requests and generate statistics
   useEffect(() => {
-    setLoadingRecentLeaves(true);
-    setErrorRecentLeaves("");
-    const token = localStorage.getItem("token");
-    fetch("/api/recent-leave-requests", {
-      headers: { Authorization: token ? `Bearer ${token}` : undefined },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && data.status === "success" && Array.isArray(data.data)) {
+    const fetchRecentLeaves = async () => {
+      setLoadingRecentLeaves(true);
+      setErrorRecentLeaves("");
+      try {
+        const data = await apiService.get(apiEndpoints.dashboard.recentLeaves);
+        if (data && (data.status === "success" || data.success === true) && Array.isArray(data.data)) {
           setRecentLeaves(data.data);
           // Summarize leave types
           const stats = { sick: 0, vacation: 0, business: 0 };
@@ -174,53 +227,74 @@ const Index = () => {
         } else {
           setErrorRecentLeaves(t('error.cannotLoadStats'));
         }
-      })
-      .catch(() => setErrorRecentLeaves(t('error.apiConnectionError')))
-      .finally(() => setLoadingRecentLeaves(false));
+      } catch (error) {
+        setErrorRecentLeaves(t('error.apiConnectionError'));
+      } finally {
+        setLoadingRecentLeaves(false);
+      }
+    };
+    
+    fetchRecentLeaves();
   }, [t]);
 
   // Update fetch for recent leaves to use filterMonth/filterYear
   useEffect(() => {
-    setLoadingRecentLeaves(true);
-    setErrorRecentLeaves("");
-    const token = localStorage.getItem("token");
-    let url = `/api/recent-leave-requests?year=${filterYear}`;
-    if (filterMonth && filterMonth !== 0) {
-      url += `&month=${filterMonth}`;
-    }
-    fetch(url, {
-      headers: { Authorization: token ? `Bearer ${token}` : undefined },
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && data.status === "success" && Array.isArray(data.data)) {
+    const fetchFilteredRecentLeaves = async () => {
+      setLoadingRecentLeaves(true);
+      setErrorRecentLeaves("");
+      try {
+        let url = `${apiEndpoints.dashboard.recentLeaves}?year=${filterYear}`;
+        if (filterMonth && filterMonth !== 0) {
+          url += `&month=${filterMonth}`;
+        }
+        const data = await apiService.get(url);
+        if (data && (data.status === "success" || data.success === true) && Array.isArray(data.data)) {
           setRecentLeaves(data.data);
         } else {
           setErrorRecentLeaves(t('error.cannotLoadStats'));
         }
-      })
-      .catch(() => setErrorRecentLeaves(t('error.apiConnectionError')))
-      .finally(() => setLoadingRecentLeaves(false));
+      } catch (error) {
+        setErrorRecentLeaves(t('error.apiConnectionError'));
+      } finally {
+        setLoadingRecentLeaves(false);
+      }
+    };
+    
+    fetchFilteredRecentLeaves();
   }, [t, filterMonth, filterYear]);
 
   // Fetch dashboard stats and backdated count
   useEffect(() => {
     setLoadingDashboard(true);
     const token = localStorage.getItem("token");
+
     // Fetch dashboard stats
-    const statsUrl = `/api/dashboard-stats?year=${filterYear}` + (filterMonth && filterMonth !== 0 ? `&month=${filterMonth}` : '');
-    const backdatedUrl = `/api/my-backdated?year=${filterYear}` + (filterMonth && filterMonth !== 0 ? `&month=${filterMonth}` : '');
+    let statsUrl = `${apiEndpoints.dashboard.stats}?year=${filterYear}`;
+    if (filterMonth && filterMonth !== 0) {
+      statsUrl += `&month=${filterMonth}`;
+    }
+    let backdatedUrl = `${apiEndpoints.dashboard.myBackdated}?year=${filterYear}`;
+    if (filterMonth && filterMonth !== 0) {
+      backdatedUrl += `&month=${filterMonth}`;
+    }
     Promise.all([
-      fetch(statsUrl, { headers: { Authorization: token ? `Bearer ${token}` : undefined } }).then(res => res.json()),
-      fetch(backdatedUrl, { headers: { Authorization: token ? `Bearer ${token}` : undefined } }).then(res => res.json())
+      apiService.get(statsUrl, undefined, showSessionExpiredDialog),
+      apiService.get(backdatedUrl, undefined, showSessionExpiredDialog)
     ]).then(([statsRes, backdatedRes]) => {
-      if (statsRes && statsRes.status === 'success' && statsRes.data) {
+      console.log('Dashboard stats response:', statsRes);
+      if (statsRes && (statsRes.status === 'success' || statsRes.success === true) && statsRes.data) {
+        console.log('Setting dashboard stats:', {
+          daysUsed: statsRes.data.daysUsed,
+          hoursUsed: statsRes.data.hoursUsed,
+          pendingRequests: statsRes.data.pendingRequests,
+          approvalRate: statsRes.data.approvalRate
+        });
         setDaysUsed(statsRes.data.daysUsed || 0);
         setHoursUsed(statsRes.data.hoursUsed || 0);
         setPendingRequests(statsRes.data.pendingRequests || 0);
         setApprovalRate(statsRes.data.approvalRate || 0);
       }
-      if (backdatedRes && backdatedRes.status === 'success' && backdatedRes.data) {
+      if (backdatedRes && (backdatedRes.status === 'success' || backdatedRes.success === true) && backdatedRes.data) {
         setBackdatedCount(backdatedRes.data.count || 0);
       }
     }).finally(() => setLoadingDashboard(false));
@@ -237,23 +311,15 @@ const Index = () => {
           return;
         }
 
-        const response = await fetch(`${API_BASE_URL}/api/user-profile`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.status === 'success' && data.data) {
-            setUserProfile(data.data);
-          } else {
-            console.error('Failed to fetch user profile:', data.message);
+        const data = await apiService.get(apiEndpoints.auth.profile, undefined, showSessionExpiredDialog);
+        if (data && (data.status === 'success' || data.success === true) && data.data) {
+          setUserProfile(data.data);
+          // ดึง avatar_url จาก user profile
+          if (data.data.avatar_url) {
+            setAvatarUrl(data.data.avatar_url);
           }
-        } else if (response.status === 401) {
-          showSessionExpiredDialog();
         } else {
-          console.error('Failed to fetch user profile:', response.statusText);
+          console.error('Failed to fetch user profile:', data?.message || 'Unknown error');
         }
       } catch (error) {
         console.error('Error fetching user profile:', error);
@@ -263,38 +329,10 @@ const Index = () => {
     };
 
     fetchUserProfile();
-  }, [API_BASE_URL, showSessionExpiredDialog]);
+    checkLineLinkStatus();
+  }, [showSessionExpiredDialog]);
 
-  // Fetch announcements
-  useEffect(() => {
-    const fetchAnnouncements = async () => {
-      setLoadingAnnouncements(true);
-      try {
-        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-        const response = await fetch(`${API_BASE_URL}/api/announcements`);
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.status === 'success' && Array.isArray(data.data)) {
-            // Sort by creation date (latest first) and take only the latest 3
-            const sortedAnnouncements = data.data
-              .sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
-              .slice(0, 3);
-            setAnnouncements(sortedAnnouncements);
-          }
-        } else {
-          setErrorAnnouncements(t('error.cannotLoadStats'));
-        }
-      } catch (error) {
-        console.error('Error fetching announcements:', error);
-        setErrorAnnouncements(t('error.apiConnectionError'));
-      } finally {
-        setLoadingAnnouncements(false);
-      }
-    };
 
-    fetchAnnouncements();
-  }, [t]);
 
   // Upcoming holidays (Thai calendar, 3 next)
   const upcomingHolidays = getUpcomingThaiHolidays(3, t);
@@ -326,6 +364,33 @@ const Index = () => {
   const [loadingCompanyHolidays, setLoadingCompanyHolidays] = useState(true);
   const [errorCompanyHolidays, setErrorCompanyHolidays] = useState("");
 
+  // Fetch announcements
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      setLoadingAnnouncements(true);
+      try {
+        const data = await apiService.get(apiEndpoints.announcements, undefined, showSessionExpiredDialog);
+        
+        if (data && (data.status === 'success' || data.success === true) && Array.isArray(data.data)) {
+          // Sort by creation date (latest first) and take only the latest 3
+          const sortedAnnouncements = data.data
+            .sort((a: any, b: any) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
+            .slice(0, 3);
+          setAnnouncements(sortedAnnouncements);
+        } else {
+          setErrorAnnouncements(t('error.cannotLoadStats'));
+        }
+      } catch (error) {
+        console.error('Error fetching announcements:', error);
+        setErrorAnnouncements(t('error.apiConnectionError'));
+      } finally {
+        setLoadingAnnouncements(false);
+      }
+    };
+
+    fetchAnnouncements();
+  }, [t, showSessionExpiredDialog]);
+
   // Fetch company holidays
   useEffect(() => {
     const fetchCompanyHolidays = async () => {
@@ -337,24 +402,12 @@ const Index = () => {
           return;
         }
 
-        const response = await fetch(`${API_BASE_URL}/api/custom-holidays/year/${selectedYear}/month/${selectedMonth + 1}`, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
+        const data = await apiService.get(apiEndpoints.customHolidaysByYearMonth(selectedYear, selectedMonth + 1), undefined, showSessionExpiredDialog);
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data.status === 'success' && Array.isArray(data.data)) {
-            setCompanyHolidaysOfMonth(data.data);
-          } else {
-            console.error('Failed to fetch company holidays:', data.message);
-            setCompanyHolidaysOfMonth([]);
-          }
-        } else if (response.status === 401) {
-          showSessionExpiredDialog();
+        if (data.success && Array.isArray(data.data)) {
+          setCompanyHolidaysOfMonth(data.data);
         } else {
-          console.error('Failed to fetch company holidays:', response.statusText);
+          console.error('Failed to fetch company holidays:', data.message || 'Invalid response format');
           setCompanyHolidaysOfMonth([]);
         }
       } catch (error) {
@@ -366,7 +419,64 @@ const Index = () => {
     };
 
     fetchCompanyHolidays();
-  }, [API_BASE_URL, selectedYear, selectedMonth, showSessionExpiredDialog]);
+  }, [selectedYear, selectedMonth, showSessionExpiredDialog]);
+
+  // Socket.io event listeners for real-time dashboard updates
+  useEffect(() => {
+    if (socket && isConnected) {
+      // Listen for leave request status changes
+      socket.on('leaveRequestStatusChanged', (data) => {
+        console.log('Received leave request status change:', data);
+        
+        // Show toast notification
+        toast({
+          title: t('notifications.statusChanged'),
+          description: `${t('notifications.request')} ${data.requestId} ${t('notifications.hasBeen')} ${data.status === 'approved' ? t('notifications.approved') : t('notifications.rejected')}`,
+          variant: data.status === 'approved' ? 'default' : 'destructive'
+        });
+        
+        // Refresh dashboard stats
+        fetchDashboardStats();
+      });
+
+      // Listen for new announcements
+      socket.on('newAnnouncement', (data) => {
+        console.log('Received new announcement:', data);
+        
+        // Show toast notification
+        toast({
+          title: t('notifications.newAnnouncement'),
+          description: data.subject,
+          variant: 'default'
+        });
+        
+        // Refresh announcements - will be handled by useEffect
+      });
+
+      // Listen for new leave requests (for admin users)
+      if (user?.role === 'admin' || user?.role === 'superadmin') {
+        socket.on('newLeaveRequest', (data) => {
+          console.log('Received new leave request:', data);
+          
+          // Show toast notification
+          toast({
+            title: t('notifications.newLeaveRequest'),
+            description: `${data.userName} - ${data.leaveType}`,
+            variant: 'default'
+          });
+          
+          // Refresh dashboard stats
+          fetchDashboardStats();
+        });
+      }
+
+      return () => {
+        socket.off('leaveRequestStatusChanged');
+        socket.off('newAnnouncement');
+        socket.off('newLeaveRequest');
+      };
+    }
+  }, [socket, isConnected, toast, t, user?.role]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-100 to-purple-100 dark:from-gray-900 dark:via-gray-950 dark:to-indigo-900 transition-colors relative overflow-x-hidden">
@@ -415,17 +525,39 @@ const Index = () => {
           <div className="z-10 flex-1 space-y-2">
             <h2 className="text-2xl md:text-3xl font-extrabold mb-1 drop-shadow-lg animate-slide-in-left" style={{ color: '#2563eb' }}>{t('main.hello')} {loadingUserProfile ? t('common.loading') : (userProfile?.name || t('main.user'))}! 👋</h2>
             <p className="mb-3 text-base font-medium animate-slide-in-left delay-100" style={{ color: '#6366f1' }}>
-              {t('main.today')} {new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' })}
+              {t('main.today')} {formatCurrentDate()}
             </p>
-            <Link to="/leave-request">
+            <div className="flex gap-3">
+              <Link to="/leave-request">
+                <Button 
+                  size="default" 
+                  variant="secondary"
+                  className="bg-white text-blue-600 hover:bg-blue-100 font-bold shadow-lg border-0 px-6 py-2 text-base rounded-lg animate-bounce-in"
+                >
+                  {t('main.newLeaveRequest')}
+                </Button>
+              </Link>
+              
               <Button 
                 size="default" 
                 variant="secondary"
-                className="bg-white text-blue-600 hover:bg-blue-100 font-bold shadow-lg border-0 px-6 py-2 text-base rounded-lg animate-bounce-in"
+                onClick={lineLinkStatus === 'linked' ? handleLineUnlink : handleLineLogin}
+                disabled={lineLinkingLoading}
+                className={`font-bold shadow-lg border-0 px-6 py-2 text-base rounded-lg animate-bounce-in flex items-center gap-2 ${
+                  lineLinkStatus === 'linked' 
+                    ? 'bg-red-500 text-white hover:bg-red-600' 
+                    : 'bg-green-500 text-white hover:bg-green-600'
+                }`}
               >
-                {t('main.newLeaveRequest')}
+                <span className="text-[8px] font-bold text-white hidden">LINE</span>
+                {lineLinkingLoading 
+                  ? (lineLinkStatus === 'linked' ? t('line.unlinking', 'Unlinking...') : t('line.linking', 'Linking...'))
+                  : lineLinkStatus === 'linked' 
+                    ? t('line.unlinkAccount') 
+                    : t('line.linkAccount')
+                }
               </Button>
-            </Link>
+            </div>
           </div>
           <div className="absolute top-0 right-0 w-40 h-40 rounded-full" style={{ background: 'linear-gradient(90deg, #fffbe6 0%, #ffe082 100%)', opacity: 0.18, transform: 'translateY(-50%) translateX(50%)' }}></div>
           <div className="flex-1 flex items-center justify-center animate-float">
@@ -453,7 +585,6 @@ const Index = () => {
               </div>
               <div className="text-3xl font-extrabold text-blue-800 mb-1">
                 {loadingDashboard ? '-' : `${daysUsed} ${t('common.days')}`}
-                {loadingDashboard ? '' : ` ${hoursUsed} ${t('common.hour')}`}
               </div>
               <div className="text-base font-bold text-blue-600 mt-1 text-center opacity-90 animate-pop-in delay-200">{t('main.daysUsed', 'Days Used')}</div>
             </div>
@@ -485,8 +616,19 @@ const Index = () => {
           {/* User Summary */}
           <Card className="glass shadow-xl border-0 flex flex-col items-center justify-center p-5 animate-fade-in-up">
             <Avatar className="w-16 h-16 mb-2">
-              {userProfile?.avatar ? (
-                <AvatarImage src={`${API_BASE_URL}${userProfile.avatar}`} alt={userProfile.name || '-'} />
+              {avatarUrl ? (
+                <AvatarImage
+                  src={
+                    avatarUrl.startsWith('/')
+                      ? `${import.meta.env.VITE_API_BASE_URL}${avatarUrl}`
+                      : `${import.meta.env.VITE_API_BASE_URL}/uploads/avatars/${avatarUrl}`
+                  }
+                  alt={userProfile?.name || '-'}
+                  onError={e => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = '/placeholder.svg';
+                  }}
+                />
               ) : null}
               <AvatarFallback>
                 {loadingUserProfile ? '...' : (userProfile?.name ? userProfile.name.split(' ').map((n: string) => n[0]).join('').slice(0,2).toUpperCase() : '--')}
@@ -629,7 +771,7 @@ const Index = () => {
               ) : errorAnnouncements ? (
                 <div className="text-center py-4 text-red-500 animate-shake text-sm">{errorAnnouncements}</div>
               ) : announcements.length === 0 ? (
-                <div className="text-center py-4 text-blue-400 text-sm">{t('companyNews.noNews')}</div>
+                <div className="text-center py-4 text-blue-400 text-sm">{t('main.noAnnouncements', )}</div>
               ) : (
                 announcements.map((a, idx) => (
                   <div key={a.id} className="flex items-start gap-2 p-2 rounded-xl glass bg-gradient-to-br from-white/80 via-blue-50/80 to-indigo-100/80 shadow border-0 animate-pop-in" style={{ animationDelay: `${idx * 60}ms` }}>
@@ -680,7 +822,7 @@ const Index = () => {
                   {t('navigation.calendar')}
                 </Button>
               </Link>
-              <Link to="/announcements/manage-post">
+              <Link to="/announcements">
                 <Button className="w-full justify-start btn-blue-outline-lg text-base py-2 px-3 gap-2 animate-pop-in delay-300" variant="outline">
                   <Bell className="w-5 h-5" />
                   {t('main.companyNews')}
@@ -729,9 +871,16 @@ const Index = () => {
                               <span>
                                 {(() => {
                                   if (!l.duration) return '-';
+                                  // ถ้าเป็นวัน
                                   const match = l.duration.match(/(\d+)\s*day/);
                                   if (match) {
                                     return `${match[1]} ${t('common.days')}`;
+                                  }
+                                  // ถ้าเป็นชั่วโมง
+                                  const hourMatch = l.duration.match(/([\d.]+)\s*hour/);
+                                  if (hourMatch) {
+                                    const hours = Math.floor(Number(hourMatch[1]));
+                                    return `${hours} ${t('leave.hours')}`;
                                   }
                                   return l.duration;
                                 })()}
@@ -789,6 +938,8 @@ const Index = () => {
           @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         `}</style>
       </div>
+      
+
     </div>
   );
 };

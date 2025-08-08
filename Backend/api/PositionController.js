@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { BaseController, sendSuccess, sendError, sendNotFound } = require('../utils');
 
 /**
  * @swagger
@@ -27,13 +28,15 @@ const router = express.Router();
  */
 
 module.exports = (AppDataSource) => {
+  // Create base controller instance for Position
+  const positionController = new BaseController('Position');
+
   router.get('/positions', async (req, res) => {
     try {
-      const positionRepo = AppDataSource.getRepository('Position');
-      const positions = await positionRepo.find();
-      res.json({ status: 'success', data: positions, message: 'Positions fetched successfully' });
+      const positions = await positionController.findAll(AppDataSource);
+      sendSuccess(res, positions, 'Positions fetched successfully');
     } catch (err) {
-      res.status(500).json({ status: 'error', data: [], message: err.message });
+      sendError(res, err.message, 500);
     }
   });
 
@@ -70,12 +73,10 @@ module.exports = (AppDataSource) => {
    */
   router.post('/positions', async (req, res) => {
     try {
-      const positionRepo = AppDataSource.getRepository('Position');
-      const position = positionRepo.create(req.body);
-      const saved = await positionRepo.save(position);
-      res.status(201).json({ status: 'success', data: saved, message: 'Position created successfully' });
+      const saved = await positionController.create(AppDataSource, req.body);
+      sendSuccess(res, saved, 'Position created successfully', 201);
     } catch (err) {
-      res.status(500).json({ status: 'error', data: null, message: err.message });
+      sendError(res, err.message, 500);
     }
   });
 
@@ -110,14 +111,13 @@ module.exports = (AppDataSource) => {
    */
   router.delete('/positions/:id', async (req, res) => {
     try {
-      const positionRepo = AppDataSource.getRepository('Position');
-      const result = await positionRepo.delete(req.params.id);
-      if (result.affected === 0) {
-        return res.status(404).json({ status: 'error', data: null, message: 'Position not found' });
-      }
-      res.json({ status: 'success', data: null, message: 'Position deleted successfully' });
+      await positionController.delete(AppDataSource, req.params.id);
+      sendSuccess(res, null, 'Position deleted successfully');
     } catch (err) {
-      res.status(500).json({ status: 'error', data: null, message: err.message });
+      if (err.message === 'Record not found') {
+        return sendNotFound(res, 'Position not found');
+      }
+      sendError(res, err.message, 500);
     }
   });
 
@@ -161,16 +161,13 @@ module.exports = (AppDataSource) => {
    */
   router.put('/positions/:id', async (req, res) => {
     try {
-      const positionRepo = AppDataSource.getRepository('Position');
-      const position = await positionRepo.findOneBy({ id: req.params.id });
-      if (!position) {
-        return res.status(404).json({ status: 'error', data: null, message: 'Position not found' });
-      }
-      position.position_name = req.body.position_name;
-      const updated = await positionRepo.save(position);
-      res.json({ status: 'success', data: updated, message: 'Position updated successfully' });
+      const updated = await positionController.update(AppDataSource, req.params.id, req.body);
+      sendSuccess(res, updated, 'Position updated successfully');
     } catch (err) {
-      res.status(500).json({ status: 'error', data: null, message: err.message });
+      if (err.message === 'Record not found') {
+        return sendNotFound(res, 'Position not found');
+      }
+      sendError(res, err.message, 500);
     }
   });
 

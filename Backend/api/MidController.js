@@ -1,7 +1,11 @@
 const express = require('express');
+const { BaseController, sendSuccess, sendError, sendNotFound, sendValidationError } = require('../utils');
 
 module.exports = (AppDataSource) => {
   const router = express.Router();
+  // Create base controller instances
+  const userController = new BaseController('User');
+  const adminController = new BaseController('Admin');
 
   /**
    * @swagger
@@ -43,11 +47,10 @@ module.exports = (AppDataSource) => {
    */
   router.get('/users', async (req, res) => {
     try {
-      const userRepo = AppDataSource.getRepository('User');
-      const users = await userRepo.find();
-      res.json({ success: true, data: users, message: 'ดึงข้อมูล user สำเร็จ' });
+      const users = await userController.findAll(AppDataSource);
+      sendSuccess(res, users, 'ดึงข้อมูล user สำเร็จ');
     } catch (err) {
-      res.status(500).json({ success: false, data: null, message: err.message });
+      sendError(res, err.message, 500);
     }
   });
 
@@ -97,12 +100,10 @@ module.exports = (AppDataSource) => {
   router.post('/users', async (req, res) => {
     try {
       const { User_name, department, position } = req.body;
-      const userRepo = AppDataSource.getRepository('User');
-      const user = userRepo.create({ User_name, department, position });
-      await userRepo.save(user);
-      res.status(201).json({ success: true, data: user, message: 'สร้าง user สำเร็จ' });
+      const user = await userController.create(AppDataSource, { User_name, department, position });
+      sendSuccess(res, user, 'สร้าง user สำเร็จ', 201);
     } catch (err) {
-      res.status(500).json({ success: false, data: null, message: err.message });
+      sendError(res, err.message, 500);
     }
   });
 
@@ -149,14 +150,13 @@ module.exports = (AppDataSource) => {
    */
   router.delete('/users/:id', async (req, res) => {
     try {
-      const userRepo = AppDataSource.getRepository('User');
-      const result = await userRepo.delete(req.params.id);
-      if (result.affected === 0) {
-        return res.status(404).json({ success: false, data: null, message: 'User not found' });
-      }
-      res.json({ success: true, data: {}, message: 'User deleted' });
+      await userController.delete(AppDataSource, req.params.id);
+      sendSuccess(res, {}, 'User deleted');
     } catch (err) {
-      res.status(500).json({ success: false, data: null, message: err.message });
+      if (err.message === 'Record not found') {
+        return sendNotFound(res, 'User not found');
+      }
+      sendError(res, err.message, 500);
     }
   });
 
@@ -200,11 +200,10 @@ module.exports = (AppDataSource) => {
    */
   router.get('/admins', async (req, res) => {
     try {
-      const adminRepo = AppDataSource.getRepository('Admin');
-      const admins = await adminRepo.find();
-      res.json({ success: true, data: admins, message: 'ดึงข้อมูล admin สำเร็จ' });
+      const admins = await adminController.findAll(AppDataSource);
+      sendSuccess(res, admins, 'ดึงข้อมูล admin สำเร็จ');
     } catch (err) {
-      res.status(500).json({ success: false, data: null, message: err.message });
+      sendError(res, err.message, 500);
     }
   });
 
@@ -249,6 +248,7 @@ module.exports = (AppDataSource) => {
   const { v4: uuidv4 } = require('uuid');
   const bcrypt = require('bcryptjs');
   const jwt = require('jsonwebtoken');
+  const config = require('../config');
 
   router.post('/admins/register', async (req, res) => {
     try {
@@ -259,7 +259,7 @@ module.exports = (AppDataSource) => {
       // ตรวจสอบ email ซ้ำ
       const exist = await processRepo.findOneBy({ Email: email });
       if (exist) {
-        return res.status(400).json({ success: false, data: null, message: 'Email นี้ถูกใช้ไปแล้ว' });
+        return sendValidationError(res, 'Email นี้ถูกใช้ไปแล้ว');
       }
 
       // hash password
@@ -277,8 +277,8 @@ module.exports = (AppDataSource) => {
       // สร้าง JWT Token
       const token = jwt.sign(
         { adminId: admin.id, email: email },
-        'your_secret_key',
-        { expiresIn: '1h' }
+        config.server.jwtSecret,
+        { expiresIn: config.server.jwtExpiresIn }
       );
 
       // สร้าง process_check พร้อม Token, Repid, role=admin
@@ -293,13 +293,9 @@ module.exports = (AppDataSource) => {
       });
       await processRepo.save(processCheck);
 
-      res.status(201).json({
-        success: true,
-        data: { ...admin, token, repid: admin.id },
-        message: 'สร้างแอดมินสำเร็จ'
-      });
+      sendSuccess(res, { ...admin, token, repid: admin.id }, 'สร้างแอดมินสำเร็จ', 201);
     } catch (err) {
-      res.status(500).json({ success: false, data: null, message: err.message });
+      sendError(res, err.message, 500);
     }
   });
 
@@ -346,14 +342,13 @@ module.exports = (AppDataSource) => {
    */
   router.delete('/admins/:id', async (req, res) => {
     try {
-      const adminRepo = AppDataSource.getRepository('Admin');
-      const result = await adminRepo.delete(req.params.id);
-      if (result.affected === 0) {
-        return res.status(404).json({ success: false, data: null, message: 'Admin not found' });
-      }
-      res.json({ success: true, data: {}, message: 'Admin deleted' });
+      await adminController.delete(AppDataSource, req.params.id);
+      sendSuccess(res, {}, 'Admin deleted');
     } catch (err) {
-      res.status(500).json({ success: false, data: null, message: err.message });
+      if (err.message === 'Record not found') {
+        return sendNotFound(res, 'Admin not found');
+      }
+      sendError(res, err.message, 500);
     }
   });
 

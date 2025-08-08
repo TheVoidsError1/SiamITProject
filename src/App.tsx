@@ -20,13 +20,16 @@ import EmployeeDetail from "./pages/EmployeeDetail";
 import NotFound from "./pages/NotFound";
 import '@/i18n';
 import { PushNotificationProvider } from "@/contexts/PushNotificationContext";
+import { SocketProvider } from "@/contexts/SocketContext";
 import ManageAll from './pages/SuperAdmin/ManageAll';
 import SuperAdminList from './pages/SuperAdmin/SuperAdminList';
 import ManagePost from './pages/ManagePost';
 import CalendarPage from './pages/CalendarPage';
 import CompanyMonthDetailPage from './pages/CompanyMonthDetailPage';
 import AnnouncementsFeedPage from './pages/AnnouncementsFeedPage';
+
 import LanguageSwitcher from "@/components/LanguageSwitcher";
+import ErrorBoundary from "@/components/ErrorBoundary";
 
 const queryClient = new QueryClient();
 
@@ -52,7 +55,7 @@ const AppContent = () => {
   }
 
   return (
-    <SidebarProvider>
+    <SidebarProvider defaultOpen={true}>
       <div className="min-h-screen flex w-full relative">
         {/* Global Language Switcher */}
         <div className="fixed top-4 right-4 z-50">
@@ -90,6 +93,7 @@ const AppContent = () => {
             <Route path="/calendar" element={<ProtectedRoute><CalendarPage /></ProtectedRoute>} />
             <Route path="/calendar/:year/:month" element={<ProtectedRoute><CompanyMonthDetailPage /></ProtectedRoute>} />
             <Route path="/announcements" element={<ProtectedRoute><AnnouncementsFeedPage /></ProtectedRoute>} />
+
             <Route path="/admin" element={
               <ProtectedRoute adminOnly>
                 <AdminDashboard />
@@ -115,6 +119,7 @@ const AppContent = () => {
                 <SuperAdminList />
               </ProtectedRoute>
             } />
+            <Route path="/login" element={<Navigate to="/" replace />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
@@ -124,21 +129,25 @@ const AppContent = () => {
 };
 
 const App = () => (
-  <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
-    <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AuthProvider>
-            <PushNotificationProvider>
-              <AppContent />
-            </PushNotificationProvider>
-          </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
-    </QueryClientProvider>
-  </ThemeProvider>
+  <ErrorBoundary>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+      <QueryClientProvider client={queryClient}>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AuthProvider>
+              <PushNotificationProvider>
+                <SocketProvider>
+                  <AppContent />
+                </SocketProvider>
+              </PushNotificationProvider>
+            </AuthProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
+  </ErrorBoundary>
 );
 
 export default App;

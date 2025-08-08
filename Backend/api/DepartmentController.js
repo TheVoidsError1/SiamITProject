@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { BaseController, sendSuccess, sendError, sendNotFound, sendValidationError } = require('../utils');
 
 /**
  * @swagger
@@ -27,13 +28,15 @@ const router = express.Router();
  */
 
 module.exports = (AppDataSource) => {
+  // Create base controller instance for Department
+  const departmentController = new BaseController('Department');
+
   router.get('/departments', async (req, res) => {
     try {
-      const departmentRepo = AppDataSource.getRepository('Department');
-      const departments = await departmentRepo.find();
-      res.json({ status: 'success', data: departments, message: 'Departments fetched successfully' });
+      const departments = await departmentController.findAll(AppDataSource);
+      sendSuccess(res, departments, 'Departments fetched successfully');
     } catch (err) {
-      res.status(500).json({ status: 'error', data: [], message: err.message });
+      sendError(res, err.message, 500);
     }
   });
 
@@ -72,16 +75,14 @@ module.exports = (AppDataSource) => {
    */
   router.post('/departments', async (req, res) => {
     try {
-      const departmentRepo = AppDataSource.getRepository('Department');
       const { department_name_en, department_name_th } = req.body;
       if (!department_name_en || !department_name_th) {
-        return res.status(400).json({ status: 'error', data: null, message: 'Both department_name_en and department_name_th are required' });
+        return sendValidationError(res, 'Both department_name_en and department_name_th are required');
       }
-      const department = departmentRepo.create({ department_name_en, department_name_th });
-      const saved = await departmentRepo.save(department);
-      res.status(201).json({ status: 'success', data: saved, message: 'Department created successfully' });
+      const saved = await departmentController.create(AppDataSource, { department_name_en, department_name_th });
+      sendSuccess(res, saved, 'Department created successfully', 201);
     } catch (err) {
-      res.status(500).json({ status: 'error', data: null, message: err.message });
+      sendError(res, err.message, 500);
     }
   });
 
@@ -116,14 +117,13 @@ module.exports = (AppDataSource) => {
    */
   router.delete('/departments/:id', async (req, res) => {
     try {
-      const departmentRepo = AppDataSource.getRepository('Department');
-      const result = await departmentRepo.delete(req.params.id);
-      if (result.affected === 0) {
-        return res.status(404).json({ status: 'error', data: null, message: 'Department not found' });
-      }
-      res.json({ status: 'success', data: null, message: 'Department deleted successfully' });
+      await departmentController.delete(AppDataSource, req.params.id);
+      sendSuccess(res, null, 'Department deleted successfully');
     } catch (err) {
-      res.status(500).json({ status: 'error', data: null, message: err.message });
+      if (err.message === 'Record not found') {
+        return sendNotFound(res, 'Department not found');
+      }
+      sendError(res, err.message, 500);
     }
   });
 
@@ -169,21 +169,17 @@ module.exports = (AppDataSource) => {
    */
   router.put('/departments/:id', async (req, res) => {
     try {
-      const departmentRepo = AppDataSource.getRepository('Department');
-      const department = await departmentRepo.findOneBy({ id: req.params.id });
-      if (!department) {
-        return res.status(404).json({ status: 'error', data: null, message: 'Department not found' });
-      }
       const { department_name_en, department_name_th } = req.body;
       if (!department_name_en || !department_name_th) {
-        return res.status(400).json({ status: 'error', data: null, message: 'Both department_name_en and department_name_th are required' });
+        return sendValidationError(res, 'Both department_name_en and department_name_th are required');
       }
-      department.department_name_en = department_name_en;
-      department.department_name_th = department_name_th;
-      const updated = await departmentRepo.save(department);
-      res.json({ status: 'success', data: updated, message: 'Department updated successfully' });
+      const updated = await departmentController.update(AppDataSource, req.params.id, { department_name_en, department_name_th });
+      sendSuccess(res, updated, 'Department updated successfully');
     } catch (err) {
-      res.status(500).json({ status: 'error', data: null, message: err.message });
+      if (err.message === 'Record not found') {
+        return sendNotFound(res, 'Department not found');
+      }
+      sendError(res, err.message, 500);
     }
   });
 

@@ -11,19 +11,58 @@ const cors = require('cors');
 const path = require('path');
 const leaveQuota = require('./EnityTable/leaveQuota.js');
 const fs = require('fs');
+const { createServer } = require('http');
+const { Server } = require('socket.io');
+const config = require('./config');
 
 
 const app = express();
-const port = 3001;
+const port = config.server.port;
+
+// Create HTTP server for Socket.io
+const server = createServer(app);
+
+// Initialize Socket.io
+const io = new Server(server, {
+  cors: {
+    origin: config.cors.origins,
+    methods: ["GET", "POST"],
+    credentials: true
+  }
+});
+
+// Socket.io connection handling
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+  
+  // Join user to their personal room
+  socket.on('joinRoom', (userId) => {
+    socket.join(`user_${userId}`);
+    console.log(`User ${userId} joined room: user_${userId}`);
+  });
+  
+  // Handle admin joining admin room
+  socket.on('joinAdminRoom', () => {
+    socket.join('admin_room');
+    console.log('Admin joined admin room');
+  });
+  
+  socket.on('disconnect', () => {
+    console.log('User disconnected:', socket.id);
+  });
+});
+
+// Make io available globally
+global.io = io;
 
 // TypeORM DataSource config
 const AppDataSource = new DataSource({
-  type: 'mysql',
-  host: 'localhost',
-  port: 3306,
-  username: 'root',
-  password: '', // ใส่รหัสผ่านของคุณ
-  database: 'siamitleave',
+  type: config.database.type,
+  host: config.database.host,
+  port: config.database.port,
+  username: config.database.username,
+  password: config.database.password,
+  database: config.database.database,
   synchronize: true, // dev only! จะสร้าง/อัปเดต table อัตโนมัติ
   logging: false,
   entities: [
@@ -52,26 +91,41 @@ AppDataSource.initialize()
 
 app.use(bodyParser.json());
 
-const allowedOrigins = [
-  'http://localhost:8081',
-  'http://192.168.50.64:8081',//test
-  'http://192.168.50.125:8081',//test
-  'http://192.168.50.90:8081',//yorch
-  'http://192.168.50.54:8081',//kot
-  'http://localhost:3000',
-  'http://localhost:3001',
-  'http://localhost:8080',
-  'http://localhost:8001',
-];
-
 app.use(cors({
-  origin: 'http://localhost:8081', // or use '*' for all origins (not recommended for production)
+  origin: function (origin, callback) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    const allowedOrigins = [
+      ...config.cors.origins,
+      // Allow all ngrok domains
+      /^https:\/\/.*\.ngrok-free\.app$/,
+      /^https:\/\/.*\.ngrok\.io$/,
+      /^https:\/\/.*\.loca\.lt$/
+    ];
+    
+    // Check if the origin is allowed
+    const isAllowed = allowedOrigins.some(allowedOrigin => {
+      if (typeof allowedOrigin === 'string') {
+        return origin === allowedOrigin;
+      } else if (allowedOrigin instanceof RegExp) {
+        return allowedOrigin.test(origin);
+      }
+      return false;
+    });
+    
+    if (isAllowed) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true // if you need to send cookies/auth headers
 }));
 
 // Ensure uploads directories exist
-const uploadsDir = path.join(__dirname, 'uploads');
-const announcementsDir = path.join(uploadsDir, 'announcements');
+const uploadsDir = config.getUploadsPath();
+const announcementsDir = config.getAnnouncementsUploadPath();
 
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -81,7 +135,7 @@ if (!fs.existsSync(announcementsDir)) {
 }
 
 // Serve static files for uploaded images
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(uploadsDir));
 
 app.get('/', (req, res) => {
   res.send('Hello from Express + TypeORM!');
@@ -123,7 +177,11 @@ app.post('/register', async (req, res) => {
     await userRepo.save(user);
 
     // สร้าง JWT
-            const token = jwt.sign({ userId: user.id, email: Email }, 'your_secret_key', { expiresIn: '1h' });
+            const token = jwt.sign(
+              { userId: user.id, email: Email },
+              config.server.jwtSecret,
+              { expiresIn: config.server.jwtExpiresIn }
+            );
 
     // อัปเดต token ใน ProcessCheck (optional)
     processCheck.Token = token;
@@ -140,8 +198,8 @@ const swaggerOptions = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'SiamITLeave API',
-      version: '1.0.0',
+      title: config.app.title,
+      version: config.app.version,
     },
     tags: [ 
       {
@@ -183,12 +241,13 @@ const swaggerOptions = {
 const swaggerSpec = swaggerJsdoc(swaggerOptions);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// Register PositionController and DepartmentController
-const positionController = require('./api/PositionController')(AppDataSource);
-app.use('/api', positionController);
+// Initialize centralized routes
+const initializeRoutes = require('./routes');
+const routes = initializeRoutes(AppDataSource);
+app.use('/api', routes);
 
-const departmentController = require('./api/DepartmentController')(AppDataSource);
-app.use('/api', departmentController);
+// Make AppDataSource globally available
+global.AppDataSource = AppDataSource;
 
 const typeLeaveController = require('./api/TpyeLeaveController')(AppDataSource);
 app.use('/api', typeLeaveController);

@@ -11,7 +11,7 @@ export default defineConfig({
     },
   },
   server: {
-    host: "::",
+    allowedHosts: true, // Allow all hosts for ngrok
     port: 8081,
     open: true,
     allowedHosts: [

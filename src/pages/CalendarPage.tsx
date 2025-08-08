@@ -1,12 +1,22 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Calendar, Building2, Users } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Building2, Users, Filter, X } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { Switch } from '@/components/ui/switch';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { getAllThaiHolidays } from '@/constants/getThaiHolidays';
+import { useAuth } from '@/contexts/AuthContext';
+import { useSocket } from '@/contexts/SocketContext';
+import { useToast } from '@/hooks/use-toast';
+import { apiService, apiEndpoints } from '../lib/api';
 
 const CalendarPage = () => {
   const { t, i18n } = useTranslation();
+  const { user } = useAuth();
+  const { socket, isConnected } = useSocket();
+  const { toast } = useToast();
+  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
   const now = new Date();
   const [year, setYear] = useState(now.getFullYear());
   const [companyEvents, setCompanyEvents] = useState<CompanyEvent[]>([]);
@@ -15,9 +25,21 @@ const CalendarPage = () => {
   const [loading, setLoading] = useState(true);
   const [showCompanyHolidays, setShowCompanyHolidays] = useState(true);
   const [showAnnualHolidays, setShowAnnualHolidays] = useState(true);
-  const [showEmployeeLeaves, setShowEmployeeLeaves] = useState(true);
+  const [showEmployeeLeaves, setShowEmployeeLeaves] = useState(true); // Show for all users
+  const [selectedMonth, setSelectedMonth] = useState<number | null>(null);
+  const [leaveFilters, setLeaveFilters] = useState<LeaveFilters>({
+    departments: [],
+    leaveTypes: [],
+    statuses: [],
+    employees: []
+  });
+  const [availableFilters, setAvailableFilters] = useState<AvailableFilters>({
+    departments: [],
+    leaveTypes: [],
+    statuses: [],
+    employees: []
+  });
   const navigate = useNavigate();
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   // Month names based on current language
   const monthNames = [
@@ -91,6 +113,20 @@ const CalendarPage = () => {
     createdAt: string;
   }
 
+  interface LeaveFilters {
+    departments: string[];
+    leaveTypes: string[];
+    statuses: string[];
+    employees: string[];
+  }
+
+  interface AvailableFilters {
+    departments: string[];
+    leaveTypes: string[];
+    statuses: string[];
+    employees: string[];
+  }
+
   interface CalendarEvent {
     id?: string;
     title: string;
@@ -100,7 +136,6 @@ const CalendarPage = () => {
     createdBy?: string;
     type: 'company' | 'annual' | 'employee';
     isThaiHoliday?: boolean;
-    isDual?: boolean;
     employeeInfo?: {
       userName: string;
       leaveType: string;
@@ -111,47 +146,79 @@ const CalendarPage = () => {
     };
   }
 
+  // Socket.io event listeners for real-time calendar updates
+  useEffect(() => {
+    if (socket && isConnected) {
+      // Listen for new leave requests
+      socket.on('newLeaveRequest', (data) => {
+        console.log('Received new leave request:', data);
+        
+        // Show toast notification
+        toast({
+          title: t('notifications.newLeaveRequest'),
+          description: `${data.userName} - ${data.leaveType}`,
+          variant: 'default'
+        });
+        
+        // Refresh calendar data by triggering the fetchData effect
+        setYear(prevYear => prevYear);
+      });
+
+      // Listen for leave request status changes
+      socket.on('leaveRequestStatusChanged', (data) => {
+        console.log('Received leave request status change:', data);
+        
+        // Show toast notification
+        toast({
+          title: t('notifications.leaveStatusChanged'),
+          description: `${t('notifications.request')} ${data.requestId} ${t('notifications.hasBeen')} ${data.status === 'approved' ? t('notifications.approved') : t('notifications.rejected')}`,
+          variant: data.status === 'approved' ? 'default' : 'destructive'
+        });
+        
+        // Refresh calendar data by triggering the fetchData effect
+        setYear(prevYear => prevYear);
+      });
+
+      // Listen for new company events
+      socket.on('newCompanyEvent', (data) => {
+        console.log('Received new company event:', data);
+        
+        // Show toast notification
+        toast({
+          title: t('notifications.newCompanyEvent'),
+          description: data.title,
+          variant: 'default'
+        });
+        
+        // Refresh calendar data by triggering the fetchData effect
+        setYear(prevYear => prevYear);
+      });
+
+      return () => {
+        socket.off('newLeaveRequest');
+        socket.off('leaveRequestStatusChanged');
+        socket.off('newCompanyEvent');
+      };
+    }
+  }, [socket, isConnected, toast, t]);
+
   // Fetch company events, Thai holidays, and employee leaves
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        
         // Fetch company events
-        const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/custom-holidays/year/${year}`, {
-          headers: {
-            'Authorization': token ? `Bearer ${token}` : undefined,
-          }
-        });
-        if (response.ok) {
-          const result = await response.json();
-          setCompanyEvents(result.data || []);
-        } else {
-          console.error('Failed to fetch company events');
-          setCompanyEvents([]);
-        }
-        
+        const result = await apiService.get(apiEndpoints.customHolidaysByYear(year));
+        setCompanyEvents(result.data || []);
         // Get Thai holidays for the year
         const thaiHolidaysData = getAllThaiHolidays(year, t);
         setThaiHolidays(thaiHolidaysData);
-        
         // Fetch employee leaves
-        const leaveResponse = await fetch(`${API_BASE_URL}/api/leave-request/calendar/${year}`, {
-          headers: {
-            'Authorization': token ? `Bearer ${token}` : undefined,
-          }
-        });
-        if (leaveResponse.ok) {
-          const leaveResult = await leaveResponse.json();
-          setEmployeeLeaves(leaveResult.data || []);
-        } else {
-          console.error('Failed to fetch employee leaves');
-          setEmployeeLeaves([]);
-        }
-        
+        let leaveResult;
+        // ดึง leave ทั้งปีสำหรับทุก role (API จะคืนของ user เองถ้าไม่ใช่ admin/superadmin)
+        leaveResult = await apiService.get(apiEndpoints.leave.calendar(year));
+        setEmployeeLeaves(leaveResult.data || []);
       } catch (error) {
-        console.error('Error fetching data:', error);
         setCompanyEvents([]);
         setThaiHolidays([]);
         setEmployeeLeaves([]);
@@ -159,9 +226,8 @@ const CalendarPage = () => {
         setLoading(false);
       }
     };
-
     fetchData();
-  }, [year, t]);
+  }, [year, t, isAdmin]);
 
   // Get all events (company + Thai holidays + employee leaves) for a specific month
   const getEventsByMonth = (year: number, month: number): CalendarEvent[] => {
@@ -200,7 +266,13 @@ const CalendarPage = () => {
     
     // Add employee leaves if enabled
     if (showEmployeeLeaves && Array.isArray(employeeLeaves)) {
-      const monthEmployeeLeaves = employeeLeaves.filter(leave => {
+      // กรอง leave เฉพาะ user ที่ล็อกอิน ถ้าไม่ใช่ admin/superadmin
+      const filteredLeaves = isAdmin
+        ? employeeLeaves
+        : employeeLeaves.filter(leave => leave.userId === user?.id);
+
+      // For all users, show their own leaves (API already filters for users)
+      const monthEmployeeLeaves = filteredLeaves.filter(leave => {
         const startDate = new Date(leave.startDate);
         const endDate = new Date(leave.endDate);
         return (startDate.getFullYear() === year && startDate.getMonth() === month) ||
@@ -244,7 +316,6 @@ const CalendarPage = () => {
 
   // Get color for event type
   const getEventColor = (event: CalendarEvent) => {
-    if (event.isDual) return 'bg-purple-500';
     switch (event.type) {
       case 'annual': return 'bg-red-500';
       case 'company': return 'bg-blue-500';
@@ -259,7 +330,11 @@ const CalendarPage = () => {
       const { userName, leaveType, startDate, endDate, duration, durationType } = event.employeeInfo;
       const start = new Date(startDate).toLocaleDateString(i18n.language.startsWith('th') ? 'th-TH' : 'en-US');
       const end = new Date(endDate).toLocaleDateString(i18n.language.startsWith('th') ? 'th-TH' : 'en-US');
-      return `${userName}\n${leaveType}\n${start} - ${end}\n${duration} ${durationType === 'day' ? 'วัน' : 'ชั่วโมง'}`;
+      const durationText = durationType === 'day' ? 
+        (i18n.language.startsWith('th') ? `${duration} วัน` : `${duration} days`) :
+        (i18n.language.startsWith('th') ? `${duration} ชั่วโมง` : `${duration} hours`);
+      
+      return `${userName}\n${leaveType}\n${i18n.language.startsWith('th') ? 'ช่วงเวลา' : 'Period'}: ${start} - ${end}\n${i18n.language.startsWith('th') ? 'ระยะเวลา' : 'Duration'}: ${durationText}`;
     }
     return event.title;
   };
@@ -327,7 +402,9 @@ const CalendarPage = () => {
               onCheckedChange={setShowEmployeeLeaves}
               className="data-[state=checked]:bg-green-500"
             />
-            <span className="text-sm font-medium text-green-700">{t('calendar.employeeLeaves')}</span>
+            <span className="text-sm font-medium text-green-700">
+              {isAdmin ? t('calendar.employeeLeaves') : t('calendar.myLeaves')}
+            </span>
           </div>
           
           {/* Legend */}
@@ -342,12 +419,11 @@ const CalendarPage = () => {
             </div>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-              <span className="text-xs text-green-700">{t('calendar.legend.employeeLeave')}</span>
+              <span className="text-xs text-green-700">
+                {isAdmin ? t('calendar.legend.employeeLeave') : t('calendar.legend.myLeave')}
+              </span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-purple-500 rounded-full"></div>
-              <span className="text-xs text-purple-700">{t('calendar.legend.dualEvent')}</span>
-            </div>
+
           </div>
         </div>
         
@@ -379,19 +455,9 @@ const CalendarPage = () => {
               const eventMap: Record<string, CalendarEvent> = {};
               const eventCountMap: Record<string, number> = {};
               
-              // First pass: count events per date
+              // Create event map
               events.forEach(e => { 
-                eventCountMap[e.date] = (eventCountMap[e.date] || 0) + 1;
-              });
-              
-              // Second pass: create event map with dual flag
-              events.forEach(e => { 
-                if (eventCountMap[e.date] > 1) {
-                  // If there are multiple events on this date, mark as dual
-                  eventMap[e.date] = { ...e, isDual: true };
-                } else {
-                  eventMap[e.date] = e;
-                }
+                eventMap[e.date] = e;
               });
               
               return (
@@ -470,27 +536,28 @@ const CalendarPage = () => {
                       return (
                         <li key={e.id || `event-${e.date}`} className="flex items-center gap-2 mb-1">
                           <span className={`inline-block w-2 h-2 rounded-full ${
-                            e.isDual 
-                              ? 'bg-purple-500' 
-                              : eventType === 'annual' 
-                                ? 'bg-red-500' 
-                                : eventType === 'employee'
-                                  ? 'bg-green-500'
-                                  : 'bg-blue-500'
+                            eventType === 'annual' 
+                              ? 'bg-red-500' 
+                              : eventType === 'employee'
+                                ? 'bg-green-500'
+                                : 'bg-blue-500'
                           }`}></span>
                           <span className={
-                            e.isDual 
-                              ? 'text-purple-600' 
-                              : eventType === 'annual' 
-                                ? 'text-red-600' 
-                                : eventType === 'employee'
-                                  ? 'text-green-600'
-                                  : 'text-blue-600'
+                            eventType === 'annual' 
+                              ? 'text-red-600' 
+                              : eventType === 'employee'
+                                ? 'text-green-600'
+                                : 'text-blue-600'
                           }>
                             {eventType === 'employee' && e.employeeInfo 
                               ? `${e.employeeInfo.userName} (${e.employeeInfo.leaveType})`
                               : e.title
                             } ({day}/{monthNum})
+                            {eventType === 'employee' && e.employeeInfo && (
+                              <span className="text-gray-500 ml-1">
+                                {new Date(e.employeeInfo.startDate).toLocaleDateString(i18n.language.startsWith('th') ? 'th-TH' : 'en-US')} - {new Date(e.employeeInfo.endDate).toLocaleDateString(i18n.language.startsWith('th') ? 'th-TH' : 'en-US')}
+                              </span>
+                            )}
                           </span>
                         </li>
                       );

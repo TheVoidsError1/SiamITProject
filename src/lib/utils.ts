@@ -1,5 +1,5 @@
-import { type ClassValue, clsx } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { type ClassValue, clsx } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -59,6 +59,95 @@ export function handleImageError(e: React.SyntheticEvent<HTMLImageElement, Event
   } else {
     console.log('All paths failed, using placeholder');
     target.src = '/placeholder.svg';
+  }
+}
+
+/**
+ * Utility function to format date with localization
+ * @param dateStr - The date string to format
+ * @param language - The language code ('th' or 'en')
+ * @param showTime - Whether to show time
+ * @returns Formatted date string
+ */
+export function formatDate(dateStr: string, language: string, showTime: boolean = false): string {
+  if (!dateStr) return '';
+  
+  try {
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return '';
+    
+    const options: Intl.DateTimeFormatOptions = {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+      ...(showTime && {
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    };
+    
+    return date.toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', options);
+  } catch (error) {
+    console.error('Error formatting date:', error);
+    return dateStr;
+  }
+}
+
+/**
+ * Utility function to format date only (without time)
+ * @param dateStr - The date string to format
+ * @param language - The language code ('th' or 'en')
+ * @returns Formatted date string
+ */
+export function formatDateOnly(dateStr: string, language: string): string {
+  return formatDate(dateStr, language, false);
+}
+
+/**
+ * Utility function to format date with localization and time
+ * @param dateStr - The date string to format
+ * @param language - The language code ('th' or 'en')
+ * @param showTime - Whether to show time
+ * @returns Formatted date string
+ */
+export function formatDateLocalized(dateStr: string, language: string, showTime: boolean = false): string {
+  return formatDate(dateStr, language, showTime);
+}
+
+/**
+ * Utility function to handle image click for preview
+ * @param file - The image file to preview
+ * @param setPreviewImage - Function to set preview image state
+ * @param setImageDialogOpen - Function to set dialog open state
+ */
+export function handleImageClick(
+  file: File,
+  setPreviewImage: (preview: { url: string; name: string } | null) => void,
+  setImageDialogOpen: (open: boolean) => void
+): void {
+  const url = URL.createObjectURL(file);
+  setPreviewImage({ url, name: file.name });
+  setImageDialogOpen(true);
+}
+
+/**
+ * Utility function to handle file selection
+ * @param e - The file input change event
+ * @param setFile - Function to set selected file
+ * @param setPreview - Function to set preview URL
+ */
+export function handleFileSelect(
+  e: React.ChangeEvent<HTMLInputElement>,
+  setFile: (file: File | null) => void,
+  setPreview: (url: string | null) => void
+): void {
+  const file = e.target.files?.[0];
+  if (file) {
+    setFile(file);
+    if (file.type.startsWith('image/')) {
+      const url = URL.createObjectURL(file);
+      setPreview(url);
+    }
   }
 }
 
