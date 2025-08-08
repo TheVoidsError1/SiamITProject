@@ -1,5 +1,5 @@
 
-import { Calendar, Home, Clock, Settings, User, LogOut, Users, Building, Newspaper, Rss } from "lucide-react";
+import { Calendar, Home, Clock, Settings, User, LogOut, Users, Building, Newspaper, Rss, MessageSquare } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import {
@@ -64,6 +64,11 @@ const adminItems = [
     title: "navigation.allEmployees",
     url: "/admin/employees",
     icon: Users,
+  },
+  {
+    title: "navigation.lineOASettings",
+    url: "/admin/line-oa-settings",
+    icon: MessageSquare,
   },
 ];
 

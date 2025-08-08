@@ -14,6 +14,13 @@ export default defineConfig({
     host: "::",
     port: 8081,
     open: true,
+    allowedHosts: [
+      "localhost",
+      "127.0.0.1",
+      "tasty-sites-fly.loca.lt",
+      "easy-buckets-pull.loca.lt",
+      "*.loca.lt"
+    ],
     proxy: {
       "/api": {
         target: "http://localhost:3001",

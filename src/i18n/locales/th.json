@@ -62,7 +62,8 @@
     "manageAll": "จัดการทั้งหมด",
     "companyNews": "ข่าวสารทางบริษัท",
     "announcementsFeed": "ฟีดข่าวสาร",
-    "calendar": "ปฏิทิน"
+    "calendar": "ปฏิทิน",
+    "lineOASettings": "ตั้งค่า Line OA"
   },
   "common": {
     "submit": "ส่ง",

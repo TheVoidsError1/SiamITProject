@@ -65,7 +65,8 @@
     "manageAll": "Manage All",
     "companyNews": "Company News",
     "announcementsFeed": "Announcements Feed",
-    "calendar": "Calendar"
+    "calendar": "Calendar",
+    "lineOASettings": "Line OA Settings"
   },
   "common": {
     "submit": "Submit",

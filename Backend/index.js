@@ -1,3 +1,4 @@
+require('dotenv').config();
 require('reflect-metadata');
 const { DataSource } = require('typeorm');
 const express = require('express');
@@ -36,7 +37,8 @@ const AppDataSource = new DataSource({
     require('./EnityTable/department.js'),
     require('./EnityTable/leaveQuota.js'),
     require('./EnityTable/announcements.js'),
-    require('./EnityTable/customHoliday.js')
+    require('./EnityTable/customHoliday.js'),
+    require('./EnityTable/lineUser.js')
   ],
 });
 
@@ -231,6 +233,154 @@ app.use('/api', announcementsController);
 
 const customHolidayController = require('./api/CustomHolidayController')(AppDataSource);
 app.use('/api', customHolidayController);
+
+// Line OA Routes
+const LineOAController = require('./api/LineOAController');
+const LineRichMenuController = require('./api/LineRichMenuController');
+
+// Line OA Webhook endpoint
+app.post('/api/line/webhook', async (req, res) => {
+  try {
+    const { events } = req.body;
+    
+    for (const event of events) {
+      if (event.type === 'message' && event.message.type === 'text') {
+        // จัดการข้อความที่ได้รับจาก Line
+        const { replyToken } = event;
+        const { text } = event.message;
+        const { userId } = event.source;
+        
+        // ส่งข้อความตอบกลับ
+        await LineOAController.sendMessage(userId, `ได้รับข้อความ: ${text}`);
+      }
+    }
+    
+    res.status(200).json({ success: true });
+  } catch (error) {
+    console.error('Line webhook error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Line OA API Routes
+app.post('/api/line/send-message', async (req, res) => {
+  try {
+    const { userId, message } = req.body;
+    const result = await LineOAController.sendMessage(userId, message);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/line/send-leave-approval', async (req, res) => {
+  try {
+    const { userId, leaveData } = req.body;
+    const result = await LineOAController.sendLeaveApprovalNotification(userId, leaveData);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/line/send-leave-rejection', async (req, res) => {
+  try {
+    const { userId, leaveData, reason } = req.body;
+    const result = await LineOAController.sendLeaveRejectionNotification(userId, leaveData, reason);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/line/send-new-leave-request', async (req, res) => {
+  try {
+    const { userId, leaveData } = req.body;
+    const result = await LineOAController.sendNewLeaveRequestNotification(userId, leaveData);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/line/send-announcement', async (req, res) => {
+  try {
+    const { userId, announcement } = req.body;
+    const result = await LineOAController.sendAnnouncementNotification(userId, announcement);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/line/check-connection', async (req, res) => {
+  try {
+    const result = await LineOAController.checkConnection();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/line/profile/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const result = await LineOAController.getProfile(userId);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Rich Menu Routes
+app.post('/api/line/rich-menu/create', async (req, res) => {
+  try {
+    const { baseUrl } = req.body;
+    const result = await LineRichMenuController.createGridRichMenu(baseUrl);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/line/rich-menu/simple', async (req, res) => {
+  try {
+    const { baseUrl } = req.body;
+    const result = await LineRichMenuController.createSimpleRichMenu(baseUrl);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/line/rich-menu/set-default/:richMenuId', async (req, res) => {
+  try {
+    const { richMenuId } = req.params;
+    const result = await LineRichMenuController.setDefaultRichMenu(richMenuId);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/line/rich-menu/list', async (req, res) => {
+  try {
+    const result = await LineRichMenuController.getRichMenuList();
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/line/rich-menu/:richMenuId', async (req, res) => {
+  try {
+    const { richMenuId } = req.params;
+    const result = await LineRichMenuController.deleteRichMenu(richMenuId);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
 app.listen(port, '0.0.0.0', () => {
   console.log(`Server is running on http://localhost:${port}`);

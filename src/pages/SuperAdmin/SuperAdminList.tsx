@@ -127,7 +127,7 @@ const SuperAdminList: React.FC = () => {
     e.preventDefault();
     setError({});
     
-    // Validation
+    // Validation    
     if (!form.full_name.trim()) {
       toast({
         title: 'กรุณากรอกชื่อ-นามสกุล',
