@@ -5,15 +5,16 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useAuth } from '@/contexts/AuthContext';
-import { formatDate, handleFileSelect, getImageUrl, handleImageError } from '../lib/utils';
-import { apiService, apiEndpoints } from '../lib/api';
-import { showToastMessage } from '../lib/toast';
 import { ArrowLeft, Calendar, Clock, Edit, Eye, FileText, Image, Newspaper, Plus, Trash2, User, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { apiEndpoints, apiService } from '../lib/api';
+import { showToastMessage } from '../lib/toast';
+import { formatDate, getImageUrl, handleFileSelect, handleImageError } from '../lib/utils';
 
 // ฟังก์ชันสำหรับจัดการวันที่ให้รองรับ i18n
 const formatTime = (date: Date, locale: string) => {
@@ -221,6 +222,11 @@ export default function ManagePost() {
               </linearGradient>
             </defs>
           </svg>
+        </div>
+        
+        {/* Sidebar Trigger */}
+        <div className="absolute top-4 left-4 z-20">
+          <SidebarTrigger className="bg-white/90 hover:bg-white text-blue-700 border border-blue-200 hover:border-blue-300 shadow-lg backdrop-blur-sm" />
         </div>
         
         {/* Navigation Controls */}

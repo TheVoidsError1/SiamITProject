@@ -686,6 +686,7 @@
     "approvedDesc": "คำขอของคุณได้รับการอนุมัติแล้ว",
     "rejectedDesc": "คำขอของคุณถูกปฏิเสธ",
     "markAsRead": "อ่านแล้ว",
+    "markAllAsRead": "อ่านแล้วทั้งหมด",
 
     "setNewPassword": "ตั้งรหัสผ่านใหม่",
     "name": "ชื่อ",
