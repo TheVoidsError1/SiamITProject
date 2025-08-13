@@ -38,7 +38,7 @@ const Profile = () => {
   });
   const [saving, setSaving] = useState(false);
   const [departments, setDepartments] = useState<any[]>([]);
-  const [positions, setPositions] = useState<any[]>([]);
+  const [positions, setPositions] = useState<{ id: string; position_name_en: string; position_name_th: string; request_quote?: boolean }[]>([]);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [positionsLoaded, setPositionsLoaded] = useState(false);
   const [departmentsLoaded, setDepartmentsLoaded] = useState(false);
@@ -162,7 +162,8 @@ const Profile = () => {
         const pos = posData.data.map((p: any) => ({
           id: p.id,
           position_name_en: p.position_name_en,
-          position_name_th: p.position_name_th
+          position_name_th: p.position_name_th,
+          request_quote: !!p.request_quote
         }));
         setPositions(pos);
         setPositionsLoaded(true);
@@ -298,6 +299,23 @@ const Profile = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
+      // ตรวจสอบว่าตำแหน่งต้องการ End Work Date หรือไม่
+      const selectedPos = positions.find(p => String(p.id) === formData.position);
+      const requiresEndWorkDate = selectedPos ? !!selectedPos.request_quote : false;
+
+      // Validation สำหรับ End Work Date
+      if (requiresEndWorkDate && formData.start_work && formData.end_work) {
+        if (formData.start_work > formData.end_work) {
+          toast({ 
+            title: t('common.error'), 
+            description: t('auth.dateRangeInvalid', 'ช่วงวันที่ไม่ถูกต้อง'), 
+            variant: 'destructive' 
+          });
+          setSaving(false);
+          return;
+        }
+      }
+
       const requestData = {
         name: formData.full_name,
         email: formData.email,
@@ -307,14 +325,19 @@ const Profile = () => {
         dob: formData.dob || null,
         phone_number: formData.phone_number || null,
         start_work: formData.start_work || null,
-        end_work: formData.end_work || null,
+        end_work: requiresEndWorkDate ? (formData.end_work || null) : null,
       };
+      
+      console.log('Sending profile update data:', requestData);
+      
       const res = await apiService.put(apiEndpoints.auth.profile, requestData);
       if (res.success) {
         toast({
           title: t('profile.saveSuccess'),
           description: t('profile.saveSuccessDesc'),
         });
+        
+        // อัปเดตข้อมูลในฟอร์มและ user context
         const updatedData = res.data;
         setFormData({
           full_name: updatedData.name || formData.full_name,
@@ -327,16 +350,20 @@ const Profile = () => {
           start_work: updatedData.start_work || formData.start_work,
           end_work: updatedData.end_work || formData.end_work,
         });
+        
         updateUser({
           full_name: updatedData.name || formData.full_name,
           position: updatedData.position_name || '',
           department: updatedData.department_name || '',
           email: updatedData.email || formData.email,
         });
+        
+        console.log('Profile updated successfully:', updatedData);
       } else {
         throw new Error(res.message || t('profile.saveError'));
       }
     } catch (error: any) {
+      console.error('Profile update error:', error);
       toast({
         title: t('error.title'),
         description: error?.message || t('profile.saveError'),
@@ -529,9 +556,6 @@ const Profile = () => {
                         <SelectValue placeholder={t('positions.selectPosition')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="not_specified" className="text-blue-900">
-                          {t('positions.notSpecified')}
-                        </SelectItem>
                         {positions
                           .filter(pos => (pos.position_name_th || pos.position_name_en) && (pos.position_name_th?.trim() !== '' || pos.position_name_en?.trim() !== ''))
                           .map((pos) => (
@@ -552,9 +576,6 @@ const Profile = () => {
                         <SelectValue placeholder={t('departments.selectDepartment')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="not_specified" className="text-blue-900">
-                          {t('departments.notSpecified')}
-                        </SelectItem>
                         {departments
                           .filter(dept => (dept.department_name_th || dept.department_name_en) && (dept.department_name_th?.trim() !== '' || dept.department_name_en?.trim() !== ''))
                           .map((dept) => (
@@ -575,9 +596,6 @@ const Profile = () => {
                         <SelectValue placeholder={t('employee.selectGender')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="not_specified" className="text-blue-900">
-                          {t('employee.preferNotToSay')}
-                        </SelectItem>
                         <SelectItem value="male" className="text-blue-900">
                           {t('employee.male')}
                         </SelectItem>
@@ -611,26 +629,37 @@ const Profile = () => {
                       className="input-blue"
                     />
                   </div>
-                  <div className="space-y-3">
-                    <Label htmlFor="start_work" className="text-base text-blue-900 font-medium">{t('employee.internshipStartDate')}</Label>
-                    <Input
-                      id="start_work"
-                      type="date"
-                      value={formData.start_work}
-                      onChange={(e) => setFormData(prev => ({ ...prev, start_work: e.target.value }))}
-                      className="input-blue"
-                    />
-                  </div>
-                  <div className="space-y-3">
-                    <Label htmlFor="end_work" className="text-base text-blue-900 font-medium">{t('employee.internshipEndDate')}</Label>
-                    <Input
-                      id="end_work"
-                      type="date"
-                      value={formData.end_work}
-                      onChange={(e) => setFormData(prev => ({ ...prev, end_work: e.target.value }))}
-                      className="input-blue"
-                    />
-                  </div>
+                  {/* Start/End work dates: Start Work Date always shows; End Work Date shows only when position has Request Quote enabled */}
+                  {(() => {
+                    const selectedPos = positions.find(p => String(p.id) === formData.position);
+                    const showEndWorkDate = selectedPos ? !!selectedPos.request_quote : false;
+                    return (
+                      <>
+                        <div className="space-y-3">
+                          <Label htmlFor="start_work" className="text-base text-blue-900 font-medium">{t('employee.startWorkDate')}</Label>
+                          <Input
+                            id="start_work"
+                            type="date"
+                            value={formData.start_work}
+                            onChange={(e) => setFormData(prev => ({ ...prev, start_work: e.target.value }))}
+                            className="input-blue"
+                          />
+                        </div>
+                        {showEndWorkDate && (
+                          <div className="space-y-3">
+                            <Label htmlFor="end_work" className="text-base text-blue-900 font-medium">{t('employee.endWorkDate')}</Label>
+                            <Input
+                              id="end_work"
+                              type="date"
+                              value={formData.end_work}
+                              onChange={(e) => setFormData(prev => ({ ...prev, end_work: e.target.value }))}
+                              className="input-blue"
+                            />
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
                 <div className="flex justify-end">
                   <Button type="submit" disabled={saving || loading} className="btn-blue px-8 py-2 text-lg">

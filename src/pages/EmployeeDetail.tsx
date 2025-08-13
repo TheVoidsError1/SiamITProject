@@ -440,7 +440,7 @@ const EmployeeDetail = () => {
   };
 
   if (loading) return <div>{t('common.loading')}</div>;
-  if (error) return <div>{error}</div>;
+  if (error) return <div>{error}</div>; 
   if (!employee) return <div>{t('employee.notFound')}</div>;
 
   return (
