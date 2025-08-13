@@ -149,6 +149,16 @@
     "leaveRequest": "Leave Request",
     "leaveHistory": "Leave History",
     "leaveType": "Leave Type",
+    "quota": "Quota",
+    "resetByPosition": "Reset leave usage by position",
+    "strategy": "Strategy",
+    "strategyZero": "Set to zero",
+    "strategyDelete": "Delete records",
+    "force": "Force (allow outside Jan 1)",
+    "triggerReset": "Trigger Reset",
+    "note": "Note",
+    "noteDetail": "Positions with will be included when no position is selected.",
+    "allNewYearPositions": "All positions",
     "startDate": "Start Date",
     "endDate": "End Date",
     "reason": "Reason",
@@ -344,7 +354,8 @@
     "notSpecified": "Not specified",
     "noPosition": "No Position",
     "selectPosition": "Select Position",
-    "requestQuote": "Request Quote"
+    "requestQuote": "Request Quote",
+    "newYearQuota": "New Year Reset (0=Reset,1=No)"
   },
   "employeeTypes": {
     "employee": "Employee",

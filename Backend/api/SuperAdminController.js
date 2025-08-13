@@ -473,6 +473,7 @@ module.exports = (AppDataSource) => {
           position_name_en: pos.position_name_en,
           position_name_th: pos.position_name_th,
           request_quote: !!pos.request_quote,
+          new_year_quota: typeof pos.new_year_quota === 'number' ? pos.new_year_quota : (pos.new_year_quota ? 1 : 0),
           quotas: posQuotas
         };
       });
@@ -532,7 +533,7 @@ module.exports = (AppDataSource) => {
    */
   router.put('/positions-with-quotas/:id', async (req, res) => {
     const { id } = req.params;
-    const { position_name_en, position_name_th, quotas, request_quote } = req.body;
+    const { position_name_en, position_name_th, quotas, request_quote, new_year_quota } = req.body;
     if (!position_name_en || !position_name_th || typeof quotas !== 'object') {
       return res.status(400).json({ success: false, message: 'position_name_en, position_name_th, and quotas are required' });
     }
@@ -551,6 +552,10 @@ module.exports = (AppDataSource) => {
       position.position_name_en = position_name_en;
       position.position_name_th = position_name_th;
       position.request_quote = typeof request_quote === 'boolean' ? request_quote : !!position.request_quote;
+      if (new_year_quota !== undefined && new_year_quota !== null) {
+        // Expect 0 = reset, 1 = not reset
+        position.new_year_quota = Number(new_year_quota) === 1 ? 1 : 0;
+      }
       await positionRepo.save(position);
       const leaveTypes = await leaveTypeRepo.find();
       const filteredLeaveTypes = leaveTypes.filter(

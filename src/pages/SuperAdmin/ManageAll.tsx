@@ -16,7 +16,7 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiService, apiEndpoints } from '@/lib/api';
-import { showToastMessage } from '@/lib/toast';
+import { showToastMessage, showToast } from '@/lib/toast';
 
 
 
@@ -51,6 +51,60 @@ const ManageAll: React.FC = () => {
     name_th: string;
     quotas: Record<string, number>;
   }> (null);
+  // Quota tab state
+  const [quotaResetDate, setQuotaResetDate] = useState<string>('');
+  const [quotaResetPositionId, setQuotaResetPositionId] = useState<string>('');
+  const [quotaStrategy, setQuotaStrategy] = useState<'zero' | 'delete'>('zero');
+  const [quotaForce, setQuotaForce] = useState<boolean>(false);
+  const [resetDialogOpen, setResetDialogOpen] = useState<boolean>(false);
+  const [resetSubmitting, setResetSubmitting] = useState<boolean>(false);
+
+  const triggerReset = async () => {
+    try {
+      setResetSubmitting(true);
+      const payload: any = {
+        strategy: quotaStrategy,
+        force: quotaForce,
+      };
+      if (quotaResetPositionId) payload.positionId = quotaResetPositionId;
+      const res = await apiService.post('/api/leave-quota/reset', payload);
+      if (res && (res.success || res.status === 'success')) {
+        showToast.success('Reset leave usage completed');
+      } else {
+        showToast.error(res?.message || 'Reset failed');
+      }
+    } catch (err: any) {
+      showToast.error(err?.message || 'Reset failed');
+    } finally {
+      setResetSubmitting(false);
+      setResetDialogOpen(false);
+    }
+  };
+
+  const handleToggleNewYearQuota = async (pos: any) => {
+    try {
+      // Build quotas payload from current row
+      const quotasForBackend: Record<string, number> = {};
+      pos.quotas.forEach((q: any) => { if (q.leaveTypeId) quotasForBackend[q.leaveTypeId] = q.quota ?? 0; });
+      const nextValue = Number(pos.new_year_quota) === 1 ? 0 : 1; // 0=รี,1=ไม่รี
+      const data = await apiService.put(`/api/positions-with-quotas/${pos.id}`, {
+        position_name_en: pos.position_name_en,
+        position_name_th: pos.position_name_th,
+        quotas: quotasForBackend,
+        new_year_quota: nextValue,
+        request_quote: pos.request_quote,
+      });
+      if (!data || !data.success) throw new Error('Failed to update');
+      // Refresh positions
+      const positionsData = await apiService.get('/api/positions-with-quotas');
+      if (positionsData.success && Array.isArray(positionsData.data)) {
+        setPositions(positionsData.data);
+      }
+      showToastMessage.crud.updateSuccess('position');
+    } catch (err: any) {
+      showToastMessage.crud.updateError('position', err?.message);
+    }
+  };
 
   // Add state for inline editing error
   const [inlineEditError, setInlineEditError] = useState<string | null>(null);
@@ -546,6 +600,9 @@ const ManageAll: React.FC = () => {
               <TabsTrigger value="leaveTypes" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg text-indigo-700 font-bold text-xl py-3 px-6 rounded-2xl transition-all flex items-center gap-2">
                 <span role="img" aria-label="leaveTypes">📝</span> {t('leave.leaveType', 'Leave Types')}
               </TabsTrigger>
+              <TabsTrigger value="quota" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg text-indigo-700 font-bold text-xl py-3 px-6 rounded-2xl transition-all flex items-center gap-2">
+                <span role="img" aria-label="quota">📊</span> {t('leave.quota', 'Quota')}
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="positions">
               <div className="rounded-2xl shadow overflow-hidden mb-8">
@@ -674,6 +731,81 @@ const ManageAll: React.FC = () => {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+            <TabsContent value="quota">
+              <div className="rounded-2xl shadow overflow-hidden mb-8">
+                <div className="bg-blue-600 px-6 py-3">
+                  <h2 className="text-lg font-bold text-white">{t('leave.quota', 'Quota')}</h2>
+                </div>
+                <div className="p-6 space-y-6">
+                  <div className="bg-blue-50 rounded-xl p-4 shadow-sm">
+                    <h3 className="text-blue-900 font-semibold mb-3">{t('leave.resetByPosition', 'Reset leave usage by position')}</h3>
+                    <form className="flex flex-col md:flex-row gap-3 items-end" onSubmit={(e) => { e.preventDefault(); setResetDialogOpen(true); }}>
+                      <div className="flex-1">
+                        <label className="text-sm font-medium text-gray-700 mb-1 block">{t('positions.positions','Position')}</label>
+                        <select className="w-full border rounded-md h-10 px-2" value={quotaResetPositionId} onChange={e => setQuotaResetPositionId(e.target.value)}>
+                          <option value="">{t('leave.allNewYearPositions', 'All positions with new_year_quota=0')}</option>
+                          {positions.map(p => (
+                            <option key={p.id} value={p.id}>{getPositionDisplayName(p, lang)}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-sm font-medium text-gray-700 mb-1 block">{t('leave.strategy', 'Strategy')}</label>
+                        <select className="border rounded-md h-10 px-2" value={quotaStrategy} onChange={e => setQuotaStrategy(e.target.value as any)}>
+                          <option value="zero">{t('leave.strategyZero', 'Set to zero')}</option>
+                          <option value="delete">{t('leave.strategyDelete', 'Delete records')}</option>
+                        </select>
+                      </div>
+                      <label className="flex items-center gap-2 ml-2">
+                        <input type="checkbox" className="h-5 w-5" checked={quotaForce} onChange={e => setQuotaForce(e.target.checked)} />
+                        <span>{t('leave.force', 'Force (allow outside Jan 1)')}</span>
+                      </label>
+                      <Button type="submit" className="btn-primary">{t('leave.triggerReset', 'Trigger Reset')}</Button>
+                    </form>
+                  </div>
+                  <div className="bg-white rounded-xl p-4 shadow-sm">
+                    <h3 className="text-blue-900 font-semibold mb-3">{t('leave.note', 'Note')}</h3>
+                    <p className="text-sm text-gray-700">{t('leave.noteDetail', 'Positions with new_year_quota = 0 will be included when no position is selected.')}</p>
+                  </div>
+                  <div className="bg-white rounded-xl p-4 shadow-sm">
+                    <h3 className="text-blue-900 font-semibold mb-3">{t('positions.positions', 'Positions')}</h3>
+                    <div className="overflow-x-auto rounded-xl">
+                      <table className="w-full table-auto bg-white rounded-xl">
+                        <thead>
+                          <tr className="bg-blue-100 text-blue-900">
+                            <th className="p-3">{t('positions.position', 'Position')} (EN)</th>
+                            <th className="p-3">{t('positions.position', 'Position')} (TH)</th>
+                            <th className="p-3 text-center">{t('positions.newYearQuota', 'New Year Reset (0=Reset,1=No)')}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {positions.map(pos => (
+                            <tr key={pos.id} className="hover:bg-blue-50">
+                              <td className="p-3 font-medium">{pos.position_name_en}</td>
+                              <td className="p-3 font-medium">{pos.position_name_th}</td>
+                              <td className="p-3 font-medium text-center">
+                                <label style={{ display: 'inline-block', position: 'relative', width: 40, height: 24 }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={Number(pos.new_year_quota) === 1}
+                                    onChange={() => handleToggleNewYearQuota(pos)}
+                                    style={{ opacity: 0, width: 0, height: 0 }}
+                                    tabIndex={-1}
+                                  />
+                                  <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, background: Number(pos.new_year_quota) === 1 ? '#64b5f6' : '#ccc', borderRadius: 24, transition: 'background 0.2s', display: 'block' }}>
+                                    <span style={{ position: 'absolute', left: Number(pos.new_year_quota) === 1 ? 20 : 2, top: 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} />
+                                  </span>
+                                </label>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -894,6 +1026,35 @@ const ManageAll: React.FC = () => {
           </Tabs>
         </div>
       </div>
+
+      {/* Confirm Reset Dialog */}
+      <AlertDialog open={resetDialogOpen} onOpenChange={setResetDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('common.confirm', 'Confirm')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('leave.resetByPosition', 'Reset leave usage by position')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-2 text-sm text-gray-700">
+            <div>
+              <span className="font-medium">{t('positions.position', 'Position')}:</span> {quotaResetPositionId ? (positions.find(p => p.id === quotaResetPositionId)?.position_name_th || positions.find(p => p.id === quotaResetPositionId)?.position_name_en) : t('leave.allNewYearPositions', 'All positions')}
+            </div>
+            <div>
+              <span className="font-medium">{t('leave.strategy', 'Strategy')}:</span> {quotaStrategy === 'zero' ? t('leave.strategyZero', 'Set to zero') : t('leave.strategyDelete', 'Delete records')}
+            </div>
+            <div>
+              <span className="font-medium">Force:</span> {quotaForce ? 'Yes' : 'No'}
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={resetSubmitting}>{t('common.cancel', 'Cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={triggerReset} disabled={resetSubmitting} className="bg-red-600 hover:bg-red-700">
+              {resetSubmitting ? t('common.loading', 'Loading...') : t('leave.triggerReset', 'Trigger Reset')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Delete Confirmation Dialogs */}
       
