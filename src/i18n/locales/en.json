@@ -33,6 +33,7 @@
     "checkEmailVerification": "You can now log in with this user.",
     "sessionExpired": "Session expired, please login again",
     "pleaseLoginAgain": "Please login again",
+    "pleaseFillEndWorkDate": "Please select start and end work dates",
     "role": "Role",
     "selectRole": "Select Role",
     "sessionExpiredDesc": "Your session has expired. Please login again.",
@@ -342,7 +343,8 @@
     "intern": "Intern",
     "notSpecified": "Not specified",
     "noPosition": "No Position",
-    "selectPosition": "Select Position"
+    "selectPosition": "Select Position",
+    "requestQuote": "Request Quote"
   },
   "employeeTypes": {
     "employee": "Employee",
@@ -639,6 +641,7 @@
     "gender": "Gender",
     "phone": "Phone Number",
     "startWorkDate": "Start Work Date",
+    "endWorkDate": "End Work Date",
     "selectGender": "Select Gender",
     "male": "Male",
     "female": "Female",
