@@ -134,79 +134,65 @@ const LeaveHistory = () => {
 
 
   const fetchLeaveHistory = useCallback(async () => {
-
     setLoading(true);
-
     setError(null);
-
     try {
-
       let url = `${apiEndpoints.leaveHistory.list}?page=${page}&limit=${limit}`;
-
+      
+      // Debug log เพื่อตรวจสอบค่า filter
+      console.log('Debug - Filter values:', {
+        filterLeaveType,
+        filterMonth,
+        filterYear,
+        filterStatus,
+        filterRetroactive,
+        singleDate
+      });
+      
       if (filterLeaveType && filterLeaveType !== 'all') {
-
         url += `&leaveType=${filterLeaveType}`;
-
       }
-
-      if (filterMonth !== '' && filterMonth !== null) {
-
+      
+      // แก้ไขการส่งค่า month และ year ให้ถูกต้อง
+      if (filterMonth !== '' && filterMonth !== null && filterMonth !== undefined) {
         url += `&month=${filterMonth}`;
-
+        console.log('Debug - Adding month filter:', filterMonth);
       }
-
-      if (filterYear !== '' && filterYear !== null) {
-
+      
+      if (filterYear !== '' && filterYear !== null && filterYear !== undefined) {
         url += `&year=${filterYear}`;
-
+        console.log('Debug - Adding year filter:', filterYear);
       }
-
+      
       if (filterStatus && filterStatus !== 'all') {
-
         url += `&status=${filterStatus}`;
-
       }
-
+      
       if (filterRetroactive && filterRetroactive !== 'all') {
-
         url += `&retroactive=${filterRetroactive}`;
-
       }
-
+      
       if (singleDate) {
-
         url += `&date=${format(singleDate, 'yyyy-MM-dd')}`;
-
       }
-
+      
+      console.log('Debug - Final URL:', url);
+      
       // Use apiService.get
-
       const data = await apiService.get(url, undefined, showSessionExpiredDialog);
-
+      
       if (data && data.status === "success") {
-
         setLeaveHistory(data.data);
-
         setTotalPages(data.totalPages || 1);
-
         setSummary(data.summary || null);
-
       } else {
-
         setError(data?.message || "Unknown error");
-
       }
-
     } catch (err: any) {
-
       setError(err.message || "Unknown error");
-
     } finally {
-
       setLoading(false);
-
     }
-
   }, [page, filterMonth, filterYear, limit, filterLeaveType, filterStatus, filterRetroactive, singleDate, showSessionExpiredDialog]);
 
 
@@ -328,21 +314,14 @@ const LeaveHistory = () => {
   // ฟังก์ชันล้าง filter ทั้งหมด
 
   const clearAllFilters = () => {
-
+    console.log('Debug - Clearing all filters');
     setFilterLeaveType('');
-
     setFilterMonth('');
-
     setFilterYear('');
-
     setFilterStatus('');
-
     setFilterRetroactive('');
-
     setSingleDate(undefined);
-
     setPage(1);
-
   };
 
 
@@ -350,9 +329,17 @@ const LeaveHistory = () => {
   // ฟังก์ชันตรวจสอบว่ามี filter ใช้งานอยู่หรือไม่
 
   const hasActiveFilters = () => {
-
-    return filterLeaveType || filterMonth || filterYear || filterStatus || filterRetroactive || singleDate;
-
+    const hasFilters = filterLeaveType || filterMonth || filterYear || filterStatus || filterRetroactive || singleDate;
+    console.log('Debug - hasActiveFilters:', {
+      filterLeaveType,
+      filterMonth,
+      filterYear,
+      filterStatus,
+      filterRetroactive,
+      singleDate,
+      hasFilters
+    });
+    return hasFilters;
   };
 
 
@@ -1296,7 +1283,15 @@ const LeaveHistory = () => {
 
                     <div className="flex gap-2">
 
-                      <Select value={filterMonth ? filterMonth.toString() : "all"} onValueChange={v => setFilterMonth(v === "all" ? '' : Number(v))} disabled={!!singleDate}>
+                      <Select 
+                        value={filterMonth ? filterMonth.toString() : "all"} 
+                        onValueChange={v => {
+                          const newValue = v === "all" ? '' : Number(v);
+                          console.log('Debug - Setting filterMonth:', { oldValue: filterMonth, newValue, v });
+                          setFilterMonth(newValue);
+                        }} 
+                        disabled={!!singleDate}
+                      >
 
                         <SelectTrigger className="w-20 bg-white/80 backdrop-blur border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-200 rounded-lg h-11 text-sm">
 
@@ -1318,7 +1313,15 @@ const LeaveHistory = () => {
 
                       </Select>
 
-                      <Select value={filterYear ? filterYear.toString() : "all"} onValueChange={v => setFilterYear(v === "all" ? '' : Number(v))} disabled={!!singleDate}>
+                      <Select 
+                        value={filterYear ? filterYear.toString() : "all"} 
+                        onValueChange={v => {
+                          const newValue = v === "all" ? '' : Number(v);
+                          console.log('Debug - Setting filterYear:', { oldValue: filterYear, newValue, v });
+                          setFilterYear(newValue);
+                        }} 
+                        disabled={!!singleDate}
+                      >
 
                         <SelectTrigger className="w-20 bg-white/80 backdrop-blur border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-200 rounded-lg h-11 text-sm">
 
