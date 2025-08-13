@@ -272,7 +272,7 @@ const AnnouncementsFeedPage = () => {
                         placeholder={t('companyNews.detail')}
                         required
                         rows={6}
-                        className="w-full resize-none"
+                        className="w-full resize-none break-all overflow-wrap-anywhere whitespace-pre-wrap"
                       />
                     </div>
                     <div>
@@ -406,7 +406,7 @@ const AnnouncementsFeedPage = () => {
                         {announcement.subject}
                       </h3>
                       <div className="max-h-32 overflow-y-auto">
-                        <p className="text-gray-700 leading-relaxed whitespace-pre-wrap break-words">
+                        <p className="text-gray-700 leading-relaxed whitespace-pre-wrap break-all overflow-wrap-anywhere max-w-full">
                           {announcement.detail}
                         </p>
                       </div>

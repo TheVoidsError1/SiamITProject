@@ -802,7 +802,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
                       placeholder={t('leave.reasonPlaceholder')}
                       value={reason}
                       onChange={(e) => setReason(e.target.value)}
-                      className={`min-h-[100px] resize-none rounded-xl border-2 transition-all ${
+                      className={`min-h-[100px] resize-none rounded-xl border-2 transition-all break-all overflow-wrap-anywhere whitespace-pre-wrap ${
                         errors.reason 
                           ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' 
                           : 'focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20'

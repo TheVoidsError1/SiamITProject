@@ -401,7 +401,9 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                           <Label className="text-sm font-medium text-gray-600">{t('leave.rejectionReason', 'Rejection reason')}</Label>
                           <div className="flex items-start gap-2 p-3 bg-red-50 rounded-lg">
                             <FileText className="w-4 h-4 text-red-500 mt-0.5" />
-                            <span className="text-red-900 leading-relaxed">{leaveDetail.rejectedReason}</span>
+                            <div className="flex-1 min-w-0">
+                              <span className="text-red-900 leading-relaxed break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">{leaveDetail.rejectedReason}</span>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -421,7 +423,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
               </CardHeader>
               <CardContent>
                 <div className="p-4 bg-orange-50 rounded-lg">
-                  <p className="text-orange-900 leading-relaxed">
+                  <p className="text-orange-900 leading-relaxed break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">
                     {leaveDetail.reason || t('leave.noReasonProvided', 'ไม่มีเหตุผล')}
                   </p>
                 </div>
@@ -439,7 +441,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                 </CardHeader>
                 <CardContent>
                   <div className="p-4 bg-teal-50 rounded-lg">
-                    <p className="text-teal-900 font-medium">{leaveDetail.contact}</p>
+                    <p className="text-teal-900 font-medium break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">{leaveDetail.contact}</p>
                   </div>
                 </CardContent>
               </Card>
