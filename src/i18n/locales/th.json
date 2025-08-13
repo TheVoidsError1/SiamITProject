@@ -34,6 +34,7 @@
     "sessionExpiredDesc": "เซสชันการใช้งานของคุณหมดอายุแล้ว กรุณาเข้าสู่ระบบใหม่",
     "pleaseLoginAgain": "กรุณาเข้าสู่ระบบใหม่",
     "passwordRequired": "กรุณากรอกรหัสผ่านใหม่ และ กรุณายืนยันรหัสผ่าน",
+    "pleaseFillEndWorkDate": "กรุณาเลือกวันที่เริ่มและสิ้นสุดการทำงาน",
     "role": "บทบาท",
     "selectRole": "เลือกบทบาท",
     "loginAgain": "กรุณาเข้าสู่ระบบใหม่",
@@ -342,7 +343,8 @@
     "intern": "นักศึกษาฝึกงาน",
     "notSpecified": "ไม่ระบุ",
     "noPosition": "ไม่มีตำแหน่ง",
-    "selectPosition": "เลือกตำแหน่ง"
+    "selectPosition": "เลือกตำแหน่ง",
+    "requestQuote": "ต้องการ End Work Date"
   },
   "employeeTypes": {
     "employee": "พนักงาน",
@@ -660,6 +662,7 @@
     "birthdate": "วันเกิด",
     "gender": "เพศ",
     "startWorkDate": "วันที่เริ่มงาน",
+    "endWorkDate": "วันที่สิ้นสุดงาน",
     "selectGender": "เลือกเพศ",
     "male": "ชาย",
     "female": "หญิง",
