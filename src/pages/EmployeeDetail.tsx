@@ -248,25 +248,27 @@ const EmployeeDetail = () => {
       gender: employee?.gender || '',
       birthdate: employee?.dob || '', // <-- เปลี่ยนจาก birthdate เป็น dob
       phone: employee?.phone_number || '', // <-- เปลี่ยนจาก phone เป็น phone_number
-      startWorkDate: employee?.start_work || '', // <-- เปลี่ยนจาก startWorkDate เป็น start_work
-      internStartDate: employee?.internStartDate || '',
-      internEndDate: employee?.internEndDate || ''
+		startWorkDate: employee?.start_work || '', // <-- ใช้คอลัมน์จริงจาก DB
+		internStartDate: employee?.start_work || '', // Intern ใช้ start_work เป็นวันเริ่มฝึกงาน
+		internEndDate: employee?.end_work || '' // Intern ใช้ end_work เป็นวันสิ้นสุดฝึกงาน
     });
     setIsEditing(true);
   };
 
-  const handleSave = async () => {
+	const handleSave = async () => {
     try {
-      const payload: any = {
-        name: editData.full_name,
-        position_id: editData.position, // id
-        department_id: editData.department, // id
-        email: editData.email,
-        gender: editData.gender,
-        birthdate: editData.birthdate,
-        phone: editData.phone,
-        startWorkDate: editData.startWorkDate,
-      };
+			const payload: any = {
+				name: editData.full_name,
+				position_id: editData.position, // id
+				department_id: editData.department, // id
+				email: editData.email,
+				gender: editData.gender,
+				birthdate: editData.birthdate,
+				phone: editData.phone,
+				// ถ้าเป็น Intern ให้ส่ง startWorkDate จาก internStartDate และแนบ endWorkDate ด้วย
+				startWorkDate: isInternPosition() ? editData.internStartDate : editData.startWorkDate,
+				...(isInternPosition() ? { endWorkDate: editData.internEndDate } : {}),
+			};
       if (editData.password && editData.password.trim() !== '') payload.password = editData.password;
       const data = await apiService.put(apiEndpoints.employees.detail(id), payload);
       if (data.success) {
@@ -406,6 +408,35 @@ const EmployeeDetail = () => {
     return i18n.language.startsWith("th")
       ? found.department_name_th || found.department_name
       : found.department_name_en || found.department_name;
+  };
+
+  // ตรวจสอบว่าเป็น Intern หรือไม่ โดยพิจารณาจาก role และชื่อ/ไอดีของตำแหน่ง (รองรับทั้ง TH/EN และตัวพิมพ์ใหญ่-เล็ก)
+  const isInternPosition = (): boolean => {
+    const roleLower = String(employee?.role || editData.role || '').toLowerCase();
+    if (roleLower === 'intern') return true;
+
+    const positionIdOrName = employee?.position_id || employee?.position || '';
+    if (!positionIdOrName) return false;
+
+    const found = positions.find(
+      (pos) => pos.id === positionIdOrName || pos.position_name === positionIdOrName
+    );
+
+    const namesToCheck = [
+      found?.position_name,
+      found?.position_name_en,
+      found?.position_name_th,
+      typeof positionIdOrName === 'string' ? positionIdOrName : ''
+    ]
+      .filter(Boolean)
+      .map((s) => String(s).toLowerCase());
+
+    const combined = namesToCheck.join(' ');
+    return (
+      combined.includes('intern') ||
+      combined.includes('ฝึกงาน') ||
+      combined.includes('นักศึกษาฝึกงาน')
+    );
   };
 
   if (loading) return <div>{t('common.loading')}</div>;
@@ -625,8 +656,8 @@ const EmployeeDetail = () => {
                         <p className="text-lg text-indigo-700">{employee.phone_number || '-'}</p>
                       )}
                     </div>
-                    {/* Start Work Date (เฉพาะ role ไม่ใช่ intern) */}
-                    {!(employee.role === 'intern' || editData.role === 'intern' || employee.position?.includes('intern') || employee.position?.includes('ฝึกงาน') || employee.position?.includes('นักศึกษาฝึกงาน')) && (
+                    {/* Start Work Date (แสดงเมื่อไม่ใช่ Intern) */}
+                    {!isInternPosition() && (
                       <div>
                         <Label className="text-sm font-semibold text-indigo-700 mb-2 block">{t('employee.startWorkDate')}</Label>
                         {isEditing ? (
@@ -641,8 +672,8 @@ const EmployeeDetail = () => {
                         )}
                       </div>
                     )}
-                    {/* Intern Dates (เฉพาะ role intern) */}
-                    {(employee.role === 'intern' || editData.role === 'intern' || employee.position?.includes('intern') || employee.position?.includes('ฝึกงาน') || employee.position?.includes('นักศึกษาฝึกงาน')) && (
+                    {/* Intern Dates (แสดงเมื่อเป็น Intern) */}
+                    {isInternPosition() && (
                       <div className="space-y-4">
                         <div>
                           <Label className="text-sm font-semibold text-indigo-700 mb-2 block">{t('employee.internStartDate')}</Label>
