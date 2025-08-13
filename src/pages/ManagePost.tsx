@@ -289,14 +289,14 @@ export default function ManagePost() {
                           ({form.detail.length}/500)
                         </span>
                       </label>
-                      <textarea
-                        className="w-full rounded-lg border border-blue-200 px-3 py-2 text-base focus:ring-2 focus:ring-blue-400 resize-none"
-                        value={form.detail}
-                        onChange={e => setForm(f => ({ ...f, detail: e.target.value }))}
-                        rows={6}
-                        maxLength={500}
-                        required
-                      />
+                                          <textarea
+                      className="w-full rounded-lg border border-blue-200 px-3 py-2 text-base focus:ring-2 focus:ring-blue-400 resize-none break-all overflow-wrap-anywhere whitespace-pre-wrap"
+                      value={form.detail}
+                      onChange={e => setForm(f => ({ ...f, detail: e.target.value }))}
+                      rows={6}
+                      maxLength={500}
+                      required
+                    />
                     </div>
                     <div>
                       <label className="block text-blue-800 font-semibold mb-1">
@@ -391,7 +391,7 @@ export default function ManagePost() {
                       </span>
                     </label>
                     <textarea
-                      className="w-full rounded-lg border border-blue-200 px-3 py-2 text-base focus:ring-2 focus:ring-blue-400 resize-none"
+                      className="w-full rounded-lg border border-blue-200 px-3 py-2 text-base focus:ring-2 focus:ring-blue-400 resize-none break-all overflow-wrap-anywhere whitespace-pre-wrap"
                       value={form.detail}
                       onChange={e => setForm(f => ({ ...f, detail: e.target.value }))}
                       rows={6}
@@ -592,7 +592,7 @@ export default function ManagePost() {
                                   </CardHeader>
                                   <CardContent>
                                     <div className="p-4 bg-orange-50 rounded-lg">
-                                      <p className="text-orange-900 leading-relaxed">
+                                      <p className="text-orange-900 leading-relaxed break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">
                                         {news.detail || t('companyNews.noDetailProvided')}
                                       </p>
                                     </div>

@@ -527,7 +527,7 @@ const CompanyMonthDetailPage = () => {
                               : eventType === 'employee'
                                 ? 'text-green-600'
                                 : 'text-blue-600'
-                        }`}>{event.description}</div>
+                        } break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full`}>{event.description}</div>
                       )}
                       <div className={`text-sm mt-1 ${
                         event.isDual
@@ -578,6 +578,7 @@ const CompanyMonthDetailPage = () => {
               placeholder={t('companyEvent.description')} 
               value={newEvent.description} 
               onChange={e => setNewEvent(prev => ({ ...prev, description: e.target.value }))} 
+              className="break-all overflow-wrap-anywhere whitespace-pre-wrap"
             />
             <Input 
               type="date" 
@@ -609,6 +610,7 @@ const CompanyMonthDetailPage = () => {
               placeholder={t('companyEvent.description' )}
               value={editingEvent?.description || ''} 
               onChange={e => setEditingEvent(prev => prev ? { ...prev, description: e.target.value } : null)} 
+              className="break-all overflow-wrap-anywhere whitespace-pre-wrap"
             />
             <Input 
               type="date" 

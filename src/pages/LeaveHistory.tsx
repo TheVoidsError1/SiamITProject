@@ -854,9 +854,31 @@ const LeaveHistory = () => {
                       <div className="space-y-3">
                         <div className="flex items-start gap-3 text-base text-blue-900">
                           <FileText className="w-5 h-5 text-blue-400 mt-0.5" />
-                          <div>
+                          <div className="flex-1 min-w-0">
                             <span className="font-medium">{t('leave.reason')}:</span>
-                            <p className="text-blue-500 text-sm">{leave.reason}</p>
+                            <div className="mt-1">
+                              {leave.reason && leave.reason.length > 100 ? (
+                                <div>
+                                  <p className="text-blue-500 text-sm break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">
+                                    {expandedReason === leave.id 
+                                      ? leave.reason 
+                                      : leave.reason.slice(0, 100) + '...'
+                                    }
+                                  </p>
+                                  <button
+                                    onClick={() => setExpandedReason(expandedReason === leave.id ? null : leave.id)}
+                                    className="text-blue-600 hover:text-blue-800 text-xs font-medium mt-1 transition-colors"
+                                  >
+                                    {expandedReason === leave.id 
+                                      ? t('common.showLess', 'แสดงน้อยลง') 
+                                      : t('common.showMore', 'แสดงเพิ่มเติม')
+                                    }
+                                  </button>
+                                </div>
+                              ) : (
+                                <p className="text-blue-500 text-sm break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">{leave.reason || '-'}</p>
+                              )}
+                            </div>
                           </div>
                         </div>
                         {/* Approved by: และ Rejected by: แยกออกมาอยู่ล่างสุดของ Card */}
@@ -873,7 +895,7 @@ const LeaveHistory = () => {
                               <Label className="text-sm font-medium text-gray-600">{t('leave.rejectedBy')}</Label>
                               <div className="flex items-center gap-3 p-3 bg-red-50 rounded-lg">
                                 <XCircle className="w-4 h-4 text-red-500" />
-                                <span className="font-medium text-red-900 text-sm">{leave.rejectedBy || '-'}</span>
+                                <span className="font-medium text-red-900 text-sm break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">{leave.rejectedBy || '-'}</span>
                               </div>
                             </div>
                             {leave.rejectionReason && (
@@ -881,7 +903,29 @@ const LeaveHistory = () => {
                                 <Label className="text-sm font-medium text-gray-600">{t('leave.rejectionReason')}</Label>
                                 <div className="flex items-start gap-3 p-3 bg-red-50 rounded-lg">
                                   <FileText className="w-4 h-4 text-red-500 mt-0.5" />
-                                  <span className="text-red-900 leading-relaxed text-sm">{leave.rejectionReason}</span>
+                                  <div className="flex-1 min-w-0">
+                                    {leave.rejectionReason && leave.rejectionReason.length > 100 ? (
+                                      <div>
+                                        <span className="text-red-900 leading-relaxed text-sm break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">
+                                          {expandedReject === leave.id 
+                                            ? leave.rejectionReason 
+                                            : leave.rejectionReason.slice(0, 100) + '...'
+                                          }
+                                        </span>
+                                        <button
+                                          onClick={() => setExpandedReject(expandedReject === leave.id ? null : leave.id)}
+                                          className="text-red-600 hover:text-red-800 text-xs font-medium mt-1 transition-colors block"
+                                        >
+                                          {expandedReject === leave.id 
+                                            ? t('common.showLess', 'แสดงน้อยลง') 
+                                            : t('common.showMore', 'แสดงเพิ่มเติม')
+                                          }
+                                        </button>
+                                      </div>
+                                    ) : (
+                                      <span className="text-red-900 leading-relaxed text-sm break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">{leave.rejectionReason}</span>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             )}
@@ -1198,7 +1242,7 @@ const LeaveHistory = () => {
                         <Label className="text-sm font-medium text-gray-600">{t('leave.approvedBy')}</Label>
                         <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
                           <CheckCircle className="w-4 h-4 text-green-500" />
-                          <span className="font-medium text-green-900">{selectedLeave.name}</span>
+                          <span className="font-medium text-green-900 break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">{selectedLeave.name}</span>
                         </div>
                       </div>
                     )}
@@ -1209,7 +1253,7 @@ const LeaveHistory = () => {
                           <Label className="text-sm font-medium text-gray-600">{t('leave.rejectedBy')}</Label>
                           <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
                             <XCircle className="w-4 h-4 text-red-500" />
-                            <span className="font-medium text-red-900">{selectedLeave.rejectedBy || '-'}</span>
+                            <span className="font-medium text-red-900 break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">{selectedLeave.rejectedBy || '-'}</span>
                           </div>
                         </div>
                         {selectedLeave.rejectionReason && (
@@ -1217,7 +1261,9 @@ const LeaveHistory = () => {
                             <Label className="text-sm font-medium text-gray-600">{t('leave.rejectionReason')}</Label>
                             <div className="flex items-start gap-2 p-3 bg-red-50 rounded-lg">
                               <FileText className="w-4 h-4 text-red-500 mt-0.5" />
-                              <span className="text-red-900 leading-relaxed">{selectedLeave.rejectionReason}</span>
+                              <div className="flex-1 min-w-0">
+                                <span className="text-red-900 leading-relaxed break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">{selectedLeave.rejectionReason}</span>
+                              </div>
                             </div>
                           </div>
                         )}
@@ -1237,7 +1283,7 @@ const LeaveHistory = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="p-4 bg-orange-50 rounded-lg">
-                    <p className="text-orange-900 leading-relaxed">
+                    <p className="text-orange-900 leading-relaxed break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">
                       {selectedLeave.reason || t('history.noReasonProvided')}
                     </p>
                   </div>
@@ -1254,9 +1300,9 @@ const LeaveHistory = () => {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="p-4 bg-teal-50 rounded-lg">
-                      <p className="text-teal-900 font-medium">{selectedLeave.contact}</p>
-                    </div>
+                                      <div className="p-4 bg-teal-50 rounded-lg">
+                    <p className="text-teal-900 font-medium break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">{selectedLeave.contact}</p>
+                  </div>
                   </CardContent>
                 </Card>
               )}

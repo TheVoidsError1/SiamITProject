@@ -1467,7 +1467,12 @@ const AdminDashboard = () => {
                                 </Badge>
                               )}
                               <div className="text-sm text-gray-700 mb-1 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>{t('leave.date')}: {startStr} - {endStr} ({leaveDays} {t('leave.days')})</div>
-                              <div className="text-xs text-gray-500 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>{t('leave.reason')}: {request.reason}</div>
+                              <div className="text-xs text-gray-500 animate-fade-in-up break-words" style={{ animationDelay: '0.4s' }}>
+                                {t('leave.reason')}: {request.reason && request.reason.length > 50 
+                                  ? request.reason.slice(0, 50) + '...' 
+                                  : request.reason || '-'
+                                }
+                              </div>
                             </div>
                             {/* ปุ่มดูรายละเอียดและลบ */}
                             <div className="flex gap-2 flex-shrink-0 mt-2 md:mt-0">
@@ -1775,7 +1780,9 @@ const AdminDashboard = () => {
                             <Label className="text-sm font-medium text-gray-600">{t('leave.rejectionReason')}</Label>
                             <div className="flex items-start gap-2 p-3 bg-red-50 rounded-lg">
                               <FileText className="w-4 h-4 text-red-500 mt-0.5" />
-                              <span className="text-red-900 leading-relaxed">{selectedRequest.rejectionReason}</span>
+                              <div className="flex-1 min-w-0">
+                                <span className="text-red-900 leading-relaxed break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">{selectedRequest.rejectionReason}</span>
+                              </div>
                             </div>
                           </div>
                         )}
@@ -1795,7 +1802,7 @@ const AdminDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="p-4 bg-orange-50 rounded-lg">
-                    <p className="text-orange-900 leading-relaxed">
+                    <p className="text-orange-900 leading-relaxed break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">
                       {selectedRequest.reason || t('leave.noReasonProvided')}
                     </p>
                   </div>
@@ -1813,7 +1820,7 @@ const AdminDashboard = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="p-4 bg-teal-50 rounded-lg">
-                      <p className="text-teal-900 font-medium">{selectedRequest.contact || selectedRequest.contactInfo || selectedRequest.user?.contact}</p>
+                      <p className="text-teal-900 font-medium break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">{selectedRequest.contact || selectedRequest.contactInfo || selectedRequest.user?.contact}</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -1912,7 +1919,7 @@ const AdminDashboard = () => {
             <DialogTitle>{t('admin.rejectReasonTitle', 'กรุณาระบุเหตุผลในการไม่อนุมัติ')}</DialogTitle>
           </DialogHeader>
           <textarea
-            className="w-full border rounded p-2 mt-2"
+            className="w-full border rounded p-2 mt-2 break-all overflow-wrap-anywhere whitespace-pre-wrap"
             rows={3}
             placeholder={t('admin.rejectReasonPlaceholder', 'กรอกเหตุผล...')}
             value={rejectReason}
