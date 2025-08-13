@@ -8,6 +8,16 @@ const getAuthToken = (): string | null => {
   return localStorage.getItem('token');
 };
 
+// Helper function to create authenticated file URL
+export const createAuthenticatedFileUrl = (filePath: string): string => {
+  const token = getAuthToken();
+  if (!token) return filePath;
+  
+  const url = new URL(filePath, API_BASE_URL);
+  url.searchParams.set('token', token);
+  return url.toString();
+};
+
 // Helper to join base URL and endpoint safely
 function joinUrl(base: string, endpoint: string): string {
   if (/^https?:\/\//.test(endpoint)) return endpoint;

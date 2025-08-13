@@ -2,7 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -17,7 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useNavigate } from 'react-router-dom';
 import { formatDateLocalized } from '../lib/utils';
 import { monthNames } from '../constants/common';
-import { apiService, apiEndpoints } from '../lib/api';
+import { apiService, apiEndpoints, createAuthenticatedFileUrl } from '../lib/api';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Trash2 } from 'lucide-react';
 
@@ -1065,19 +1065,12 @@ const LeaveHistory = () => {
       <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto animate-scale-in">
           <DialogHeader>
-            <DialogTitle className="flex items-center">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl font-bold text-blue-600">
-                  {t('common.viewDetails')}
-                </span>
-                {selectedLeave && (
-                  <div className="flex flex-wrap gap-2">
-                    {getStatusBadge(selectedLeave.status)}
-                    {getRetroactiveBadge(selectedLeave)}
-                  </div>
-                )}
-              </div>
+            <DialogTitle>
+              {t('common.viewDetails')}
             </DialogTitle>
+            <DialogDescription>
+              {t('leave.detailDescription', 'Detailed information about this leave request.')}
+            </DialogDescription>
           </DialogHeader>
           
           {selectedLeave && (
@@ -1097,6 +1090,11 @@ const LeaveHistory = () => {
                         {formatDateLocalized(selectedLeave.submittedDate || selectedLeave.createdAt, i18n.language)}
                       </div>
                     </div>
+                  </div>
+                  {/* Status badges moved here */}
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    {getStatusBadge(selectedLeave.status)}
+                    {getRetroactiveBadge(selectedLeave)}
                   </div>
                 </CardContent>
               </Card>
@@ -1284,16 +1282,20 @@ const LeaveHistory = () => {
                         const isPDF = fileExtension === 'pdf';
                         const isDocument = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt'].includes(fileExtension || '');
                         
+                        // Construct the correct file path - always prepend /leave-uploads/ if not already present
+                        const filePath = attachment.startsWith('/leave-uploads/') ? attachment : `/leave-uploads/${attachment}`;
+                        const authenticatedFilePath = createAuthenticatedFileUrl(filePath);
+                        
                         return (
                           <div key={index} className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-all duration-300 hover:shadow-md">
                             {isImage ? (
                               <div className="space-y-3">
                                 <div className="relative group cursor-pointer" onClick={() => {
-                                  setSelectedImage(`${API_BASE_URL}/leave-uploads/${attachment}`);
+                                  setSelectedImage(authenticatedFilePath);
                                   setShowImagePreview(true);
                                 }}>
                                   <img 
-                                    src={`${API_BASE_URL}/leave-uploads/${attachment}`} 
+                                    src={authenticatedFilePath} 
                                     alt={fileName}
                                     className="w-full h-32 object-cover rounded-lg border transition-all duration-300 group-hover:scale-105"
                                     onError={(e) => {
@@ -1314,7 +1316,7 @@ const LeaveHistory = () => {
                                       size="sm" 
                                       variant="outline"
                                       onClick={() => {
-                                        setSelectedImage(`${API_BASE_URL}/leave-uploads/${attachment}`);
+                                        setSelectedImage(authenticatedFilePath);
                                         setShowImagePreview(true);
                                       }}
                                       className="text-xs px-2 py-1"
@@ -1326,7 +1328,7 @@ const LeaveHistory = () => {
                                       variant="outline"
                                       onClick={() => {
                                         const link = document.createElement('a');
-                                        link.href = `${API_BASE_URL}/leave-uploads/${attachment}`;
+                                        link.href = authenticatedFilePath;
                                         link.download = fileName;
                                         link.click();
                                       }}
@@ -1354,7 +1356,7 @@ const LeaveHistory = () => {
                                     <Button 
                                       size="sm" 
                                       variant="outline"
-                                      onClick={() => window.open(`${API_BASE_URL}/leave-uploads/${attachment}`, '_blank')}
+                                      onClick={() => window.open(authenticatedFilePath, '_blank')}
                                       className="text-xs px-2 py-1"
                                     >
                                       {t('common.view')}
@@ -1364,7 +1366,7 @@ const LeaveHistory = () => {
                                       variant="outline"
                                       onClick={() => {
                                         const link = document.createElement('a');
-                                        link.href = `${API_BASE_URL}/leave-uploads/${attachment}`;
+                                        link.href = authenticatedFilePath;
                                         link.download = fileName;
                                         link.click();
                                       }}
@@ -1400,6 +1402,7 @@ const LeaveHistory = () => {
       <Dialog open={showImagePreview} onOpenChange={setShowImagePreview}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0 bg-black/95">
           <DialogHeader className="absolute top-4 right-4 z-10">
+            <DialogTitle className="sr-only">Image Preview</DialogTitle>
             <Button
               variant="outline"
               size="sm"

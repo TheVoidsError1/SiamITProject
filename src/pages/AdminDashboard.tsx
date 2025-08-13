@@ -17,7 +17,7 @@ import { AlertCircle, Calendar, CalendarIcon, CheckCircle, ChevronLeft, ChevronR
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatDateLocalized, formatDateOnly } from '../lib/utils';
-import { apiService, apiEndpoints } from '../lib/api';
+import { apiService, apiEndpoints, createAuthenticatedFileUrl } from '../lib/api';
 import { showToastMessage } from '../lib/toast';
 import { monthNames } from '../constants/common';
 
@@ -1619,32 +1619,14 @@ const AdminDashboard = () => {
       <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto animate-scale-in">
           <DialogHeader>
-            <DialogTitle className="flex items-center">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl font-bold text-blue-600">
-                  {t('common.viewDetails')}
-                </span>
-                {selectedRequest && (
-                  <div className="flex flex-wrap gap-2">
-                    {/* Badge สถานะ */}
-                    {selectedRequest.status === 'approved' && (
-                      <Badge className="bg-green-100 text-green-800 border-green-200"><CheckCircle className="w-3 h-3 mr-1" />{t('leave.approved')}</Badge>
-                    )}
-                    {selectedRequest.status === 'pending' && (
-                      <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200"><AlertCircle className="w-3 h-3 mr-1" />{t('history.pendingApproval')}</Badge>
-                    )}
-                    {selectedRequest.status === 'rejected' && (
-                      <Badge className="bg-red-100 text-red-800 border-red-200"><XCircle className="w-3 h-3 mr-1" />{t('leave.rejected')}</Badge>
-                    )}
-                    {/* Badge ลาย้อนหลัง */}
-                    {(selectedRequest.backdated === 1 || selectedRequest.backdated === "1" || selectedRequest.backdated === true) && (
-                      <Badge className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 border-purple-200 shadow-sm hover:shadow-md transition-all duration-200"><History className="w-3 h-3 mr-1" />{t('history.retroactiveLeave', 'การลาย้อนหลัง')}</Badge>
-                    )}
-                  </div>
-                )}
-              </div>
+            <DialogTitle>
+              {t('common.viewDetails')}
             </DialogTitle>
+            <DialogDescription>
+              {t('leave.detailDescription', 'Detailed information about this leave request.')}
+            </DialogDescription>
           </DialogHeader>
+          
           {selectedRequest && (
             <div className="space-y-6">
               {/* Header Section */}
@@ -1663,9 +1645,25 @@ const AdminDashboard = () => {
                       </div>
                     </div>
                   </div>
+                  {/* Status badges moved here */}
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    {/* Badge สถานะ */}
+                    {selectedRequest.status === 'approved' && (
+                      <Badge className="bg-green-100 text-green-800 border-green-200"><CheckCircle className="w-3 h-3 mr-1" />{t('leave.approved')}</Badge>
+                    )}
+                    {selectedRequest.status === 'pending' && (
+                      <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200"><AlertCircle className="w-3 h-3 mr-1" />{t('history.pendingApproval')}</Badge>
+                    )}
+                    {selectedRequest.status === 'rejected' && (
+                      <Badge className="bg-red-100 text-red-800 border-red-200"><XCircle className="w-3 h-3 mr-1" />{t('leave.rejected')}</Badge>
+                    )}
+                    {/* Badge ลาย้อนหลัง */}
+                    {(selectedRequest.backdated === 1 || selectedRequest.backdated === "1" || selectedRequest.backdated === true) && (
+                      <Badge className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 border-purple-200 shadow-sm hover:shadow-md transition-all duration-200"><History className="w-3 h-3 mr-1" />{t('history.retroactiveLeave', 'การลาย้อนหลัง')}</Badge>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
-
               {/* Main Information Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Left Column - Basic Info */}
@@ -1855,13 +1853,15 @@ const AdminDashboard = () => {
                             const fileName = file.split('/').pop() || file;
                             const ext = fileName.split('.').pop()?.toLowerCase();
                             const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext || '');
-                            const fileUrl = `${API_BASE_URL}/leave-uploads/${file}`;
+                            // Construct the correct file path - always prepend /leave-uploads/ if not already present
+                            const fileUrl = file.startsWith('/leave-uploads/') ? file : `/leave-uploads/${file}`;
+                            const authenticatedFileUrl = createAuthenticatedFileUrl(fileUrl);
                             return (
                               <div key={file} className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
                                 {isImage ? (
                                   <div className="space-y-3">
                                     <img
-                                      src={fileUrl}
+                                      src={authenticatedFileUrl}
                                       alt={fileName}
                                       className="w-full h-32 object-cover rounded-lg border"
                                       onError={(e) => {
@@ -1871,7 +1871,7 @@ const AdminDashboard = () => {
                                     />
                                     <div className="flex items-center justify-between">
                                       <span className="text-sm text-gray-600 truncate">{fileName}</span>
-                                      <Button size="sm" variant="outline" onClick={() => window.open(fileUrl, '_blank')}>{t('common.view')}</Button>
+                                      <Button size="sm" variant="outline" onClick={() => window.open(authenticatedFileUrl, '_blank')}>{t('common.view')}</Button>
                                     </div>
                                   </div>
                                 ) : (
@@ -1881,12 +1881,7 @@ const AdminDashboard = () => {
                                     </div>
                                     <div className="flex items-center justify-between">
                                       <span className="text-sm text-gray-600 truncate">{fileName}</span>
-                                      <Button size="sm" variant="outline" onClick={() => {
-                                        const link = document.createElement('a');
-                                        link.href = fileUrl;
-                                        link.download = fileName;
-                                        link.click();
-                                      }}>{t('common.download')}</Button>
+                                      <Button size="sm" variant="outline" onClick={() => window.open(authenticatedFileUrl, '_blank')}>{t('common.view')}</Button>
                                     </div>
                                   </div>
                                 )}
