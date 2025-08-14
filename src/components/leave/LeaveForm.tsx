@@ -1,22 +1,19 @@
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Send, User, ClipboardList, CalendarDays, FileText, Phone, Users, ArrowLeftCircle, Clock } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { enUS, th } from "date-fns/locale";
+import { ArrowLeftCircle, CalendarDays, CalendarIcon, ClipboardList, Clock, FileText, Phone, Send } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useNavigate } from 'react-router-dom';
 import { DateRangePicker } from "./DateRangePicker";
 import { FileUpload } from "./FileUpload";
-import { leaveTypes, personalLeaveOptions, timeSlots } from "@/constants/leaveTypes";
-import { useNavigate } from 'react-router-dom';
-import { useTranslation } from "react-i18next";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { format } from "date-fns";
-import { th, enUS } from "date-fns/locale";
 
 // ฟังก์ชัน validate เวลา HH:mm (24 ชั่วโมง)
 function isValidTimeFormat(timeStr: string): boolean {
