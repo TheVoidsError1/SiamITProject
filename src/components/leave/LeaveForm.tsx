@@ -558,17 +558,24 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
     setStartTime("");
     setEndTime("");
     setLeaveDate(undefined); // เพิ่มการ reset leaveDate
-    // เมื่อเลือกรายชั่วโมง ให้ตั้งค่าวันที่เป็นวันปัจจุบันเท่านั้น
+    // เมื่อเลือกรายชั่วโมง ไม่บังคับเป็นวันปัจจุบัน ให้ผู้ใช้เลือกเอง
     if (value === "hour") {
-      const today = new Date();
-      setStartDate(today);
-      setEndDate(today);
-      setLeaveDate(today); // ตั้งค่าวันที่ลาเป็นวันปัจจุบัน
       // เติมเวลาอัตโนมัติ: เริ่มต้น 09:00 และสิ้นสุด 18:00
       setStartTime("09:00");
       setEndTime("18:00");
+      // เคลียร์ start/end date จนกว่าจะเลือกวันที่ลา เพื่อป้องกันใช้วันที่ปัจจุบันโดยไม่ตั้งใจ
+      setStartDate(undefined);
+      setEndDate(undefined);
     }
   };
+
+  // ซิงก์วันที่สำหรับลาแบบรายชั่วโมง: เมื่อผู้ใช้เลือก leaveDate ให้กำหนด start/end เป็นวันเดียวกัน
+  useEffect(() => {
+    if (durationType === 'hour' && leaveDate) {
+      setStartDate(leaveDate);
+      setEndDate(leaveDate);
+    }
+  }, [durationType, leaveDate]);
 
   return (
     <div className="max-w-2xl mx-auto my-8 animate-fade-in">
