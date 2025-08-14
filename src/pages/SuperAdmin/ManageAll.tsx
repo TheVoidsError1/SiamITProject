@@ -1,23 +1,23 @@
-import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { apiService, apiEndpoints } from '@/lib/api';
-import { showToastMessage, showToast } from '@/lib/toast';
+import { apiEndpoints, apiService } from '@/lib/api';
+import { showToast, showToastMessage } from '@/lib/toast';
 
 
 
@@ -101,9 +101,9 @@ const ManageAll: React.FC = () => {
       if (positionsData.success && Array.isArray(positionsData.data)) {
         setPositions(positionsData.data);
       }
-      showToastMessage.crud.updateSuccess('position');
+      showToastMessage.crud.updateSuccess('position', t);
     } catch (err: any) {
-      showToastMessage.crud.updateError('position', err?.message);
+      showToastMessage.crud.updateError('position', err?.message, t);
     }
   };
 
@@ -150,11 +150,11 @@ const ManageAll: React.FC = () => {
           department_name_th: departmentForm.name_th
         });
         await fetchDepartments();
-        showToastMessage.crud.createSuccess('department');
+        showToastMessage.crud.createSuccess('department', t);
       }
       setDepartmentForm({ name_en: '', name_th: '' });
     } catch (error) {
-      showToastMessage.crud.createError('department');
+      showToastMessage.crud.createError('department', undefined, t);
     }
   };
   const handleEditDepartment = (id: string) => {
@@ -178,9 +178,9 @@ const ManageAll: React.FC = () => {
       await apiService.delete(`${apiEndpoints.departments}/${deleteDepartmentDialog.department.id}`);
       await fetchDepartments();
       setDeleteDepartmentDialog({ open: false, department: null });
-      showToastMessage.crud.deleteSuccess('department');
+      showToastMessage.crud.deleteSuccess('department', t);
     } catch (error) {
-      showToastMessage.crud.deleteError('department');
+      showToastMessage.crud.deleteError('department', undefined, t);
     }
   };
 
@@ -217,9 +217,9 @@ const ManageAll: React.FC = () => {
         setLeaveTypes(data.data);
       }
       setDeleteLeaveTypeDialog({ open: false, leaveType: null });
-      showToastMessage.crud.deleteSuccess('leaveType');
+      showToastMessage.crud.deleteSuccess('leaveType', t);
     } catch (error) {
-      showToastMessage.crud.deleteError('leaveType');
+      showToastMessage.crud.deleteError('leaveType', undefined, t);
     }
   };
   const handleLeaveTypeSubmit = async (e: React.FormEvent) => {
@@ -233,14 +233,14 @@ const ManageAll: React.FC = () => {
           require_attachment: leaveTypeForm.require_attachment
         });
         setEditingLeaveTypeId(null);
-        showToastMessage.crud.updateSuccess('leaveType');
+        showToastMessage.crud.updateSuccess('leaveType', t);
       } else {
         await apiService.post(apiEndpoints.leaveTypes, {
           leave_type_en: leaveTypeForm.name_en,
           leave_type_th: leaveTypeForm.name_th,
           require_attachment: leaveTypeForm.require_attachment
         });
-        showToastMessage.crud.createSuccess('leaveType');
+        showToastMessage.crud.createSuccess('leaveType', t);
       }
       // Refresh leave types
       const data = await apiService.get(apiEndpoints.leaveTypes);
@@ -250,9 +250,9 @@ const ManageAll: React.FC = () => {
       setLeaveTypeForm({ name_en: '', name_th: '', require_attachment: false });
     } catch (error) {
       if (editingLeaveTypeId) {
-        showToastMessage.crud.updateError('leaveType');
+        showToastMessage.crud.updateError('leaveType', undefined, t);
       } else {
-        showToastMessage.crud.createError('leaveType');
+        showToastMessage.crud.createError('leaveType', undefined, t);
       }
     }
   };
@@ -330,9 +330,9 @@ const ManageAll: React.FC = () => {
       if (positionsData.success && Array.isArray(positionsData.data)) {
         setPositions(positionsData.data);
       }
-      showToastMessage.crud.updateSuccess('position');
+      showToastMessage.crud.updateSuccess('position', t);
     } catch (err: any) {
-      showToastMessage.crud.updateError('position', err?.message);
+      showToastMessage.crud.updateError('position', err?.message, t);
     }
   };
 
@@ -358,10 +358,10 @@ const ManageAll: React.FC = () => {
       }
       await fetchDepartments();
       setInlineDepartmentEdit(null);
-      showToastMessage.crud.updateSuccess('department');
+      showToastMessage.crud.updateSuccess('department', t);
     } catch (error) {
       setInlineDepartmentError('Failed to update department');
-      showToastMessage.crud.updateError('department');
+      showToastMessage.crud.updateError('department', undefined, t);
     }
   };
 
@@ -396,10 +396,10 @@ const ManageAll: React.FC = () => {
         setLeaveTypes(leaveTypesData.data);
       }
       setInlineLeaveTypeEdit(null);
-      showToastMessage.crud.updateSuccess('leaveType');
+      showToastMessage.crud.updateSuccess('leaveType', t);
     } catch (error) {
       setInlineLeaveTypeError('Failed to update leave type');
-      showToastMessage.crud.updateError('leaveType');
+      showToastMessage.crud.updateError('leaveType', undefined, t);
     }
   };
 
@@ -487,11 +487,11 @@ const ManageAll: React.FC = () => {
           setPositions(positionsData.data);
         }
         setPositionForm({ name_en: '', name_th: '', quotas: {}, request_quote: false });
-        showToastMessage.crud.createSuccess('position');
+        showToastMessage.crud.createSuccess('position', t);
       }
     } catch (err: any) {
       setPositionError(err.message || 'Unknown error');
-      showToastMessage.crud.createError('position');
+      showToastMessage.crud.createError('position', undefined, t);
     }
   };
   const handleEditPosition = (id: string) => {
@@ -524,9 +524,9 @@ const ManageAll: React.FC = () => {
         setPositions(data.data);
       }
       setDeletePositionDialog({ open: false, position: null });
-      showToastMessage.crud.deleteSuccess('position');
+      showToastMessage.crud.deleteSuccess('position', t);
     } catch (error) {
-      showToastMessage.crud.deleteError('position');
+      showToastMessage.crud.deleteError('position', undefined, t);
     }
   };
 
@@ -541,9 +541,9 @@ const ManageAll: React.FC = () => {
       });
       if (!data || !data.success) throw new Error('Failed to update');
       setLeaveTypes(prev => prev.map(l => l.id === lt.id ? { ...l, require_attachment: newValue } : l));
-      showToastMessage.crud.updateSuccess('leaveType');
+      showToastMessage.crud.updateSuccess('leaveType', t);
     } catch (err: any) {
-      showToastMessage.crud.updateError('leaveType', err.message);
+      showToastMessage.crud.updateError('leaveType', err.message, t);
     }
   };
 

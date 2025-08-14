@@ -111,16 +111,18 @@ export default function ManagePost() {
 
       const data = await apiService.post(apiEndpoints.announcements, formData);
       if (data.status === 'success') {
-        showToastMessage.crud.createSuccess('ข่าวสาร');
+        showToastMessage.crud.createSuccess('ข่าวสาร', t);
         setAddOpen(false);
         setForm({ subject: '', detail: '', Image: '' });
         setSelectedFile(null);
         setImagePreview(null);
         fetchNews();
       } else {
+        showToastMessage.crud.createError('ข่าวสาร', data.message, t);
         setError(data.message || 'บันทึกข่าวสารไม่สำเร็จ');
       }
     } catch (err) {
+      showToastMessage.crud.createError('ข่าวสาร', undefined, t);
       setError('บันทึกข่าวสารไม่สำเร็จ');
     } finally {
       setLoading(false);
@@ -138,11 +140,13 @@ export default function ManagePost() {
         // ลบข่าวสารออกจากรายการและแสดงข้อความสำเร็จ
         setNewsList(prev => prev.filter(news => news.id !== deleteTarget.id));
         setDeleteTarget(null);
-        showToastMessage.crud.deleteSuccess('ข่าวสาร');
+        showToastMessage.crud.deleteSuccess('ข่าวสาร', t);
       } else {
+        showToastMessage.crud.deleteError('ข่าวสาร', data.message, t);
         setError(data.message || 'ลบข่าวสารไม่สำเร็จ');
       }
     } catch (err) {
+      showToastMessage.crud.deleteError('ข่าวสาร', undefined, t);
       setError('ลบข่าวสารไม่สำเร็จ');
     } finally {
       setDeleting(false);
@@ -181,6 +185,7 @@ export default function ManagePost() {
 
       const data = await apiService.put(apiEndpoints.announcement(editingNews.id), formData);
       if (data.status === 'success') {
+        showToastMessage.crud.updateSuccess('ข่าวสาร', t);
         setEditOpen(false);
         setEditingNews(null);
         setForm({ subject: '', detail: '', Image: '' });
@@ -188,9 +193,11 @@ export default function ManagePost() {
         setImagePreview(null);
         fetchNews();
       } else {
+        showToastMessage.crud.updateError('ข่าวสาร', data.message, t);
         setError(data.message || t('companyNews.editNewsError'));
       }
     } catch (err) {
+      showToastMessage.crud.updateError('ข่าวสาร', undefined, t);
       setError(t('companyNews.editNewsError'));
     } finally {
       setLoading(false);

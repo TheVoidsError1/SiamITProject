@@ -668,9 +668,9 @@ const LeaveHistory = () => {
 
         toast({
 
-          title: t('system.deleteSuccess', 'ลบสำเร็จ'),
+          title: t('system.deleteSuccess'),
 
-          description: t('system.deleteSuccessDesc', 'ลบใบลาสำเร็จ'),
+          description: t('system.deleteSuccessDesc'),
 
           className: 'border-green-500 bg-green-50 text-green-900',
 
@@ -688,9 +688,9 @@ const LeaveHistory = () => {
 
         toast({
 
-          title: t('system.deleteFailed', 'ลบไม่สำเร็จ'),
+          title: t('system.deleteError'),
 
-          description: data?.message || t('system.deleteFailedDesc', 'ไม่สามารถลบใบลาได้'),
+          description: data?.message || t('system.deleteErrorDesc'),
 
           variant: 'destructive',
 
@@ -702,9 +702,9 @@ const LeaveHistory = () => {
 
       toast({
 
-        title: t('system.deleteFailed', 'ลบไม่สำเร็จ'),
+        title: t('system.deleteError'),
 
-        description: t('system.deleteFailedDesc', 'ไม่สามารถลบใบลาได้'),
+        description: t('system.deleteErrorDesc'),
 
         variant: 'destructive',
 
@@ -943,9 +943,9 @@ const LeaveHistory = () => {
 
                   <div>
 
-                    <h3 className="text-xl font-bold text-gray-800">{t('history.filters', 'ตัวกรอง')}</h3>
+                                      <h3 className="text-xl font-bold text-gray-800">{t('history.filters')}</h3>
 
-                    <p className="text-sm text-gray-600">{t('history.filterDesc', 'กรองข้อมูลตามเงื่อนไขที่ต้องการ')}</p>
+                  <p className="text-sm text-gray-600">{t('history.filterDesc')}</p>
 
                   </div>
 
@@ -967,27 +967,27 @@ const LeaveHistory = () => {
 
                 >
 
-                  {showFilters ? (
+                                      {showFilters ? (
 
-                    <>
+                      <>
 
-                      <X className="w-4 h-4 mr-2" />
+                        <X className="w-4 h-4 mr-2" />
 
-                      {t('history.hideFilters', 'ซ่อนตัวกรอง')}
+                        {t('history.hideFilters')}
 
-                    </>
+                      </>
 
-                  ) : (
+                    ) : (
 
-                    <>
+                      <>
 
-                      <Filter className="w-4 h-4 mr-2" />
+                        <Filter className="w-4 h-4 mr-2" />
 
-                      {t('history.showFilters', 'แสดงตัวกรอง')}
+                        {t('history.showFilters')}
 
-                    </>
+                      </>
 
-                  )}
+                    )}
 
                 </Button>
 
@@ -1011,13 +1011,13 @@ const LeaveHistory = () => {
 
                   <div className="space-y-3 animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
 
-                    <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                                            <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
 
-                      <Calendar className="w-4 h-4 text-blue-600" />
+                          <Calendar className="w-4 h-4 text-blue-600" />
 
-                      {t('history.singleDate', 'เฉพาะวัน')}
+                          {t('history.singleDate')}
 
-                    </Label>
+                        </Label>
 
                     <Popover>
 
@@ -1033,7 +1033,7 @@ const LeaveHistory = () => {
 
                           <Calendar className="mr-2 h-4 w-4 text-blue-600" />
 
-                          {singleDate ? format(singleDate, "dd/MM/yyyy") : t('history.selectSingleDate', 'เลือกวันเดียว')}
+                          {singleDate ? format(singleDate, "dd/MM/yyyy") : t('history.selectSingleDate')}
 
                         </Button>
 
@@ -1065,13 +1065,13 @@ const LeaveHistory = () => {
 
                   <div className="space-y-3 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
 
-                    <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                                            <Label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
 
-                      <FileText className="w-4 h-4 text-green-600" />
+                          <FileText className="w-4 h-4 text-green-600" />
 
-                      {t('leave.type', 'ประเภทการลา')}
+                          {t('leave.type')}
 
-                    </Label>
+                        </Label>
 
                     <Select value={filterLeaveType || "all"} onValueChange={v => setFilterLeaveType(v === "all" ? "" : v)} disabled={leaveTypesLoading}>
 
@@ -1373,7 +1373,7 @@ const LeaveHistory = () => {
 
                         <X className="w-4 h-4 mr-2" />
 
-                        {t('history.clearAllFilters', 'ล้างตัวกรองทั้งหมด')}
+                        {t('history.clearAllFilters')}
 
                       </Button>
 
@@ -1833,7 +1833,7 @@ const LeaveHistory = () => {
 
                                 <AlertDialogDescription>
 
-                                  {t('leave.deleteConfirmMessage', 'คุณต้องการลบใบลานี้หรือไม่? การดำเนินการนี้ไม่สามารถยกเลิกได้')}
+                                  {t('system.deleteConfirmMessage')}
 
                                 </AlertDialogDescription>
 
@@ -1853,7 +1853,7 @@ const LeaveHistory = () => {
 
                                 >
 
-                                  {deleting ? t('common.deleting', 'กำลังลบ...') : t('common.delete')}
+                                  {deleting ? t('common.deleting') : t('common.delete')}
 
                                 </AlertDialogAction>
 

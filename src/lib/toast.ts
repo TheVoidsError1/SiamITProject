@@ -92,29 +92,29 @@ export const toastMessages = {
 
   // CRUD operations
   crud: {
-    createSuccess: (itemName?: string) => ({
-      title: 'สร้างสำเร็จ',
-      description: itemName ? `สร้าง ${itemName} สำเร็จแล้ว` : 'สร้างข้อมูลสำเร็จแล้ว'
+    createSuccess: (itemName?: string, t?: any) => ({
+      title: t ? t('system.createSuccess', 'สร้างสำเร็จแล้ว') : 'สร้างสำเร็จแล้ว',
+      description: t ? t('system.createSuccessDesc', itemName ? `สร้าง ${itemName} สำเร็จแล้ว` : 'สร้างข้อมูลสำเร็จแล้ว') : (itemName ? `สร้าง ${itemName} สำเร็จแล้ว` : 'สร้างข้อมูลสำเร็จแล้ว')
     }),
-    createError: (itemName?: string, message?: string) => ({
-      title: 'สร้างไม่สำเร็จ',
-      description: message || (itemName ? `ไม่สามารถสร้าง ${itemName} ได้` : 'ไม่สามารถสร้างข้อมูลได้')
+    createError: (itemName?: string, message?: string, t?: any) => ({
+      title: t ? t('system.createError', 'สร้างไม่สำเร็จ') : 'สร้างไม่สำเร็จ',
+      description: t ? t('system.createErrorDesc', message || (itemName ? `ไม่สามารถสร้าง ${itemName} ได้` : 'ไม่สามารถสร้างข้อมูลได้')) : (message || (itemName ? `ไม่สามารถสร้าง ${itemName} ได้` : 'ไม่สามารถสร้างข้อมูลได้'))
     }),
-    updateSuccess: (itemName?: string) => ({
-      title: 'อัปเดตสำเร็จ',
-      description: itemName ? `อัปเดต ${itemName} สำเร็จแล้ว` : 'อัปเดตข้อมูลสำเร็จแล้ว'
+    updateSuccess: (itemName?: string, t?: any) => ({
+      title: t ? t('system.updateSuccess', 'อัปเดตสำเร็จ') : 'อัปเดตสำเร็จ',
+      description: t ? t('system.updateSuccessDesc', itemName ? `อัปเดต ${itemName} สำเร็จแล้ว` : 'อัปเดตข้อมูลสำเร็จแล้ว') : (itemName ? `อัปเดต ${itemName} สำเร็จแล้ว` : 'อัปเดตข้อมูลสำเร็จแล้ว')
     }),
-    updateError: (itemName?: string, message?: string) => ({
-      title: 'อัปเดตไม่สำเร็จ',
-      description: message || (itemName ? `ไม่สามารถอัปเดต ${itemName} ได้` : 'ไม่สามารถอัปเดตข้อมูลได้')
+    updateError: (itemName?: string, message?: string, t?: any) => ({
+      title: t ? t('system.updateError', 'อัปเดตไม่สำเร็จ') : 'อัปเดตไม่สำเร็จ',
+      description: t ? t('system.updateErrorDesc', message || (itemName ? `ไม่สามารถอัปเดต ${itemName} ได้` : 'ไม่สามารถอัปเดตข้อมูลได้')) : (message || (itemName ? `ไม่สามารถอัปเดต ${itemName} ได้` : 'ไม่สามารถอัปเดตข้อมูลได้'))
     }),
-    deleteSuccess: (itemName?: string) => ({
-      title: 'ลบสำเร็จ',
-      description: itemName ? `ลบ ${itemName} สำเร็จแล้ว` : 'ลบข้อมูลสำเร็จแล้ว'
+    deleteSuccess: (itemName?: string, t?: any) => ({
+      title: t ? t('system.deleteSuccess', 'ลบสำเร็จ') : 'ลบสำเร็จ',
+      description: t ? t('system.deleteSuccessDesc', itemName ? `ลบ ${itemName} สำเร็จแล้ว` : 'ลบข้อมูลสำเร็จแล้ว') : (itemName ? `ลบ ${itemName} สำเร็จแล้ว` : 'ลบข้อมูลสำเร็จแล้ว')
     }),
-    deleteError: (itemName?: string, message?: string) => ({
-      title: 'ลบไม่สำเร็จ',
-      description: message || (itemName ? `ไม่สามารถลบ ${itemName} ได้` : 'ไม่สามารถลบข้อมูลได้')
+    deleteError: (itemName?: string, message?: string, t?: any) => ({
+      title: t ? t('system.deleteError', 'ลบไม่สำเร็จ') : 'ลบไม่สำเร็จ',
+      description: t ? t('system.deleteFailedDesc', message || (itemName ? `ไม่สามารถลบ ${itemName} ได้` : 'ไม่สามารถลบข้อมูลได้')) : (message || (itemName ? `ไม่สามารถลบ ${itemName} ได้` : 'ไม่สามารถลบข้อมูลได้'))
     }),
     loadSuccess: (itemName?: string) => ({
       title: 'โหลดสำเร็จ',
@@ -235,28 +235,28 @@ export const showToastMessage = {
 
   // Show CRUD related toasts
   crud: {
-    createSuccess: (itemName?: string) => {
-      const { title, description } = toastMessages.crud.createSuccess(itemName);
+    createSuccess: (itemName?: string, t?: any) => {
+      const { title, description } = toastMessages.crud.createSuccess(itemName, t);
       return showToast.success(title, description);
     },
-    createError: (itemName?: string, message?: string) => {
-      const { title, description } = toastMessages.crud.createError(itemName, message);
+    createError: (itemName?: string, message?: string, t?: any) => {
+      const { title, description } = toastMessages.crud.createError(itemName, message, t);
       return showToast.error(title, description);
     },
-    updateSuccess: (itemName?: string) => {
-      const { title, description } = toastMessages.crud.updateSuccess(itemName);
+    updateSuccess: (itemName?: string, t?: any) => {
+      const { title, description } = toastMessages.crud.updateSuccess(itemName, t);
       return showToast.success(title, description);
     },
-    updateError: (itemName?: string, message?: string) => {
-      const { title, description } = toastMessages.crud.updateError(itemName, message);
+    updateError: (itemName?: string, message?: string, t?: any) => {
+      const { title, description } = toastMessages.crud.updateError(itemName, message, t);
       return showToast.error(title, description);
     },
-    deleteSuccess: (itemName?: string) => {
-      const { title, description } = toastMessages.crud.deleteSuccess(itemName);
+    deleteSuccess: (itemName?: string, t?: any) => {
+      const { title, description } = toastMessages.crud.deleteSuccess(itemName, t);
       return showToast.success(title, description);
     },
-    deleteError: (itemName?: string, message?: string) => {
-      const { title, description } = toastMessages.crud.deleteError(itemName, message);
+    deleteError: (itemName?: string, message?: string, t?: any) => {
+      const { title, description } = toastMessages.crud.deleteError(itemName, message, t);
       return showToast.error(title, description);
     },
     loadSuccess: (itemName?: string) => {
@@ -351,4 +351,5 @@ export const showToastMessage = {
 };
 
 // Export the original toast function for backward compatibility
-export { toast }; 
+export { toast };
+

@@ -12,14 +12,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSocket } from '@/contexts/SocketContext';
 import { useToast } from "@/hooks/use-toast";
 import { differenceInCalendarDays, format } from "date-fns";
-import { enUS, th } from "date-fns/locale";
 import { AlertCircle, Calendar, CalendarIcon, CheckCircle, ChevronLeft, ChevronRight, Clock, Eye, FileText, History, User, Users, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { formatDateLocalized, formatDateOnly } from '../lib/utils';
-import { apiService, apiEndpoints, createAuthenticatedFileUrl } from '../lib/api';
-import { showToastMessage } from '../lib/toast';
 import { monthNames } from '../constants/common';
+import { apiEndpoints, apiService, createAuthenticatedFileUrl } from '../lib/api';
+import { showToastMessage } from '../lib/toast';
+import { formatDateLocalized, formatDateOnly } from '../lib/utils';
 
 type LeaveRequest = {
   id: number;
@@ -626,16 +625,16 @@ const AdminDashboard = () => {
     try {
       const data = await apiService.delete(apiEndpoints.leave.delete(deletingRequest.id), undefined, showSessionExpiredDialog);
       if (data.success || data.status === 'success') {
-        showToastMessage.crud.deleteSuccess('ใบลา');
+        showToastMessage.crud.deleteSuccess('ใบลา', t);
         setShowDeleteDialog(false);
         setDeletingRequest(null);
         refreshLeaveRequests();
         fetchHistoryRequests();
       } else {
-        showToastMessage.crud.deleteError('ใบลา', data.message);
+        showToastMessage.crud.deleteError('ใบลา', data.message, t);
       }
     } catch (e) {
-      showToastMessage.crud.deleteError('ใบลา');
+      showToastMessage.crud.deleteError('ใบลา', undefined, t);
     }
   };
 
