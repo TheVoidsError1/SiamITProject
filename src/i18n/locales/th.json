@@ -123,8 +123,7 @@
     "confirmDeletePosition": "คุณต้องการลบตำแหน่ง",
     "confirmDeleteDepartment": "คุณต้องการลบแผนก",
     "confirmDeleteLeaveType": "คุณต้องการลบประเภทการลา",
-    "confirmDeleteQuestion": "หรือไม่?",
-    "deleteSuccess": "ลบสำเร็จ",
+    "ห": "ลบสำเร็จ",
     "deleteError": "ลบไม่สำเร็จ"
   },
           "line": {
@@ -872,5 +871,11 @@
   "footer": {
     "systemName": "ระบบจัดการการลา สยาม ไอที",
     "copyright": "© 2025 สงวนลิขสิทธิ์ พัฒนาด้วย ❤️ โดยทีมสยาม ไอที"
+  },
+  "avatarCropDialog": {
+    "title": "ปรับครอปรูปโปรไฟล์",
+    "description": "ปรับครอปรูปโปรไฟล์ของคุณให้เหมาะสม",
+    "crop": "ปรับครอป",
+    "cancel": "ยกเลิก"
   }
 }

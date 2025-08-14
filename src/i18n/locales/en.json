@@ -856,5 +856,11 @@
   "footer": {
     "systemName": "Siam IT Leave Management System",
     "copyright": "© 2025 All rights reserved. Developed with ❤️ by Siam IT Team"
+  },
+  "avatarCropDialog": {
+    "title": "Crop Avatar",
+    "description": "Crop your avatar to the desired size",
+    "crop": "Crop",
+    "cancel": "Cancel"
   }
 }

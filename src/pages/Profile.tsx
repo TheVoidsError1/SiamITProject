@@ -15,6 +15,8 @@ import { Bell, Building, Camera, Crown, Lock, Mail, Save, Shield } from 'lucide-
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import AvatarCropDialog from '@/components/dialogs/AvatarCropDialog';
+import { useSocket } from '@/contexts/SocketContext';
 
 const Profile = () => {
   const { t, i18n } = useTranslation();
@@ -25,6 +27,9 @@ const Profile = () => {
   const [error, setError] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null);
+  const { socket, isConnected } = useSocket();
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
@@ -46,6 +51,7 @@ const Profile = () => {
   const [leaveQuota, setLeaveQuota] = useState<any[]>([]);
   const [leaveLoading, setLeaveLoading] = useState(false);
   const [allLeaveTypes, setAllLeaveTypes] = useState<any[]>([]);
+  const withCacheBust = (url: string) => `${url}${url.includes('?') ? '&' : '?'}v=${Date.now()}`;
 
   const getKeyByLabel = (label: string, options: string[], tPrefix: string) => {
     for (const key of options) {
@@ -141,7 +147,7 @@ const Profile = () => {
       try {
         const res = await apiService.get(apiEndpoints.auth.avatar);
         if (res.success && res.avatar_url) {
-          setAvatarUrl(`${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}`);
+          setAvatarUrl(withCacheBust(`${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}`));
           if (!user?.avatar_url) {
             updateUser({ avatar_url: res.avatar_url });
           }
@@ -273,28 +279,115 @@ const Profile = () => {
     fileInputRef.current?.click();
   };
 
+  // Upload avatar utility with optional optimistic preview URL and realtime fan-out
+  const uploadAvatar = async (file: File, localUrl?: string) => {
+    const previousUrl = avatarUrl;
+    if (localUrl) setAvatarUrl(localUrl);
+    const formData = new FormData();
+    formData.append('avatar', file);
+    try {
+      const res = await apiService.post(apiEndpoints.auth.avatar, formData);
+      if (res?.success) {
+        const finalUrl = withCacheBust(`${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}`);
+        setAvatarUrl(finalUrl);
+        updateUser({ avatar_url: res.avatar_url });
+        toast({ title: t('profile.uploadSuccess') });
+
+        // Broadcast via socket and localStorage to update other tabs/clients
+        if (socket && isConnected && user?.id) {
+          socket.emit('avatarUpdated', { userId: user.id, avatar_url: res.avatar_url });
+        }
+        try {
+          if (user?.id) {
+            localStorage.setItem('avatarUpdated', JSON.stringify({ userId: user.id, avatar_url: res.avatar_url, ts: Date.now() }));
+          }
+        } catch {}
+
+        if (localUrl) URL.revokeObjectURL(localUrl);
+      } else {
+        throw new Error(res?.message || t('profile.uploadError'));
+      }
+    } catch (err: any) {
+      if (previousUrl) setAvatarUrl(previousUrl);
+      toast({ title: t('profile.uploadError'), description: err?.message, variant: 'destructive' });
+      if (localUrl) URL.revokeObjectURL(localUrl);
+    }
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const file = e.target.files[0];
+    // Show cropper UI for both GIF and other images. For GIF we only preview crop and upload original to preserve animation.
+    const url = URL.createObjectURL(file);
+    setSelectedImageSrc(url);
+    setCropDialogOpen(true);
+    // Keep a ref of original file for GIF to upload later untouched
+    if (file.type === 'image/gif') {
+      // @ts-ignore - attach to window scoped var to avoid adding more state variables
+      (window as any).__avatarOriginalGifFile = file;
+    } else {
+      (window as any).__avatarOriginalGifFile = null;
+    }
+  };
+
+  const handleCropped = async (file: File) => {
     const formData = new FormData();
     formData.append('avatar', file);
     try {
       const res = await apiService.post(apiEndpoints.auth.avatar, formData);
       if (res.success) {
-        setAvatarUrl(`${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}`);
+        setAvatarUrl(withCacheBust(`${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}`));
         updateUser({ avatar_url: res.avatar_url });
         toast({ title: t('profile.uploadSuccess') });
+        if (socket && isConnected && user?.id) {
+          socket.emit('avatarUpdated', { userId: user.id, avatar_url: res.avatar_url });
+        }
+        try {
+          if (user?.id) {
+            localStorage.setItem('avatarUpdated', JSON.stringify({ userId: user.id, avatar_url: res.avatar_url, ts: Date.now() }));
+          }
+        } catch {}
       } else {
         throw new Error(res.message || t('profile.uploadError'));
       }
     } catch (err: any) {
-      toast({ 
-        title: t('profile.uploadError'), 
+      toast({
+        title: t('profile.uploadError'),
         description: err?.message,
-        variant: 'destructive' 
+        variant: 'destructive'
       });
     }
   };
+
+  // Listen to avatar updates via socket and localStorage for realtime self/other-tab refresh
+  useEffect(() => {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL as string;
+    const onSocketUpdate = (data: { userId: string; avatar_url: string }) => {
+      if (!data) return;
+      if (user?.id && String(data.userId) === String(user.id)) {
+        setAvatarUrl(withCacheBust(`${baseUrl}${data.avatar_url}`));
+        updateUser({ avatar_url: data.avatar_url });
+      }
+    };
+    if (socket && isConnected) {
+      socket.on('avatarUpdated', onSocketUpdate);
+    }
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== 'avatarUpdated' || !e.newValue) return;
+      try {
+        const data = JSON.parse(e.newValue);
+        if (user?.id && String(data.userId) === String(user.id)) {
+          setAvatarUrl(withCacheBust(`${baseUrl}${data.avatar_url}`));
+          updateUser({ avatar_url: data.avatar_url });
+        }
+      } catch {}
+    };
+    window.addEventListener('storage', onStorage);
+    return () => {
+      if (socket) socket.off('avatarUpdated', onSocketUpdate);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, [socket, isConnected, user, updateUser]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -458,6 +551,14 @@ const Profile = () => {
               onChange={handleFileChange}
             />
           </div>
+          <AvatarCropDialog
+            open={cropDialogOpen}
+            imageSrc={selectedImageSrc}
+            isGif={(window as any).__avatarOriginalGifFile ? true : false}
+            originalFile={(window as any).__avatarOriginalGifFile || null}
+            onOpenChange={setCropDialogOpen}
+            onCropped={handleCropped}
+          />
           <div className="mt-4 text-center">
             <h2 className="text-2xl font-bold text-blue-900 tracking-tight">{user?.full_name}</h2>
             <p className="text-gray-500 mb-2 text-base">
