@@ -231,14 +231,10 @@ export default function ManagePost() {
           </svg>
         </div>
         
-        {/* Sidebar Trigger */}
-        <div className="absolute top-4 left-4 z-20">
-          <SidebarTrigger className="bg-white/90 hover:bg-white text-blue-700 border border-blue-200 hover:border-blue-300 shadow-lg backdrop-blur-sm" />
-        </div>
-        
-        {/* Navigation Controls */}
+        {/* Navigation Controls with Sidebar Trigger */}
         <div className="relative z-20 flex justify-start items-center px-6 py-4">
           <div className="flex items-center gap-4">
+            <SidebarTrigger className="bg-white/90 hover:bg-white text-blue-700 border border-blue-200 hover:border-blue-300 shadow-lg backdrop-blur-sm" />
             <button
               onClick={() => navigate(-1)}
               className="flex items-center gap-2 px-4 py-2 bg-white/90 hover:bg-white text-blue-700 font-semibold rounded-xl shadow-lg transition-all duration-200 backdrop-blur-sm border border-blue-200 hover:border-blue-300"
