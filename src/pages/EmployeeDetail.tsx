@@ -19,11 +19,12 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns';
 import { th } from 'date-fns/locale';
-import { ArrowLeft, Calendar, Edit, Eye, Mail, Trash2, User } from "lucide-react";
+import { ArrowLeft, Calendar, Edit, Eye, Mail, Trash2, User, Camera } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation, useParams } from 'react-router-dom';
 import { API_BASE_URL, apiEndpoints, apiService } from '../lib/api';
+import AvatarCropDialog from '@/components/dialogs/AvatarCropDialog';
 
 const EmployeeDetail = () => {
   const { id } = useParams();
@@ -85,6 +86,12 @@ const EmployeeDetail = () => {
   const [showStatusError, setShowStatusError] = useState(false);
   // state สำหรับข้อความแจ้งเตือน filter
   const [filterWarning, setFilterWarning] = useState("");
+
+  // Avatar edit states
+  const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
+  const [avatarPreviewSrc, setAvatarPreviewSrc] = useState<string | null>(null);
+  const [avatarLocalGif, setAvatarLocalGif] = useState<File | null>(null);
+  const withCacheBust = (url: string) => `${url}${url.includes('?') ? '&' : '?'}v=${Date.now()}`;
 
   // เพิ่ม state สำหรับ force render เมื่อเปลี่ยนภาษา
   const [langVersion, setLangVersion] = useState(0);
@@ -486,7 +493,7 @@ const EmployeeDetail = () => {
                 <div className="relative w-36 h-36 mb-10">
                   {employee.avatar ? (
                     <img
-                      src={`${API_BASE_URL}${employee.avatar}`}
+                      src={withCacheBust(`${API_BASE_URL}${employee.avatar}`)}
                       alt={employee.name}
                       className="w-full h-full rounded-full object-cover shadow-2xl border-4 border-white"
                       onError={(e) => {
@@ -500,7 +507,46 @@ const EmployeeDetail = () => {
                   <div className={`w-full h-full rounded-full bg-gradient-to-br from-blue-200 via-indigo-200 to-purple-200 flex items-center justify-center text-blue-900 font-bold text-5xl shadow-2xl border-4 border-white ${employee.avatar ? 'hidden' : ''}`}>
                     {employee.name ? employee.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : '?'}
                   </div>
+                  {isEditing && (
+                    <button
+                      type="button"
+                      className="absolute -bottom-3 right-1 p-2 bg-blue-500 text-white rounded-full shadow-md border-2 border-white hover:bg-blue-600"
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/*';
+                        input.onchange = (e: any) => {
+                          const file: File = e.target.files?.[0];
+                          if (!file) return;
+                          const url = URL.createObjectURL(file);
+                          setAvatarPreviewSrc(url);
+                          if (file.type === 'image/gif') setAvatarLocalGif(file); else setAvatarLocalGif(null);
+                          setAvatarDialogOpen(true);
+                        };
+                        input.click();
+                      }}
+                    >
+                      <Camera className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
+                <AvatarCropDialog
+                  open={avatarDialogOpen}
+                  imageSrc={avatarPreviewSrc}
+                  isGif={!!avatarLocalGif}
+                  originalFile={avatarLocalGif}
+                  onOpenChange={setAvatarDialogOpen}
+                  onCropped={async (file) => {
+                    const form = new FormData();
+                    form.append('avatar', file);
+                    const res = await apiService.post(apiEndpoints.employees.avatar(String(id)), form);
+                    if (res?.success) {
+                      setEmployee((prev: any) => prev ? ({ ...prev, avatar: res.avatar_url }) : prev);
+                    }
+                    setAvatarPreviewSrc(null);
+                    setAvatarLocalGif(null);
+                  }}
+                />
                 
                 {/* Information Grid - Enhanced 2 columns for better usability */}
                 <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl">

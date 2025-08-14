@@ -154,7 +154,8 @@ export const apiEndpoints = {
   employees: {
     list: '/api/employees',
     detail: (id: string) => `/api/employee/${id}`,
-    leaveHistory: (id: string, query?: string) => `/api/employee/${id}/leave-history${query || ''}`
+    leaveHistory: (id: string, query?: string) => `/api/employee/${id}/leave-history${query || ''}`,
+    avatar: (id: string) => `/api/employee/${id}/avatar`
   },
 
   // Departments and positions
