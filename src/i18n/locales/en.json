@@ -679,6 +679,7 @@
     "approvedDesc": "Your request has been approved.",
     "rejectedDesc": "Your request was rejected.",
     "markAsRead": "Mark as Read",
+    "markAllAsRead": "Mark All as Read",
 
     "unread": "Unread",
     "read": "Read",
