@@ -140,13 +140,13 @@ export default function ManagePost() {
         // ลบข่าวสารออกจากรายการและแสดงข้อความสำเร็จ
         setNewsList(prev => prev.filter(news => news.id !== deleteTarget.id));
         setDeleteTarget(null);
-        showToastMessage.crud.deleteSuccess('ข่าวสาร', t);
+        showToastMessage.crud.deleteSuccess('announcement', t);
       } else {
-        showToastMessage.crud.deleteError('ข่าวสาร', data.message, t);
+        showToastMessage.crud.deleteError('announcement', data.message, t);
         setError(data.message || 'ลบข่าวสารไม่สำเร็จ');
       }
     } catch (err) {
-      showToastMessage.crud.deleteError('ข่าวสาร', undefined, t);
+      showToastMessage.crud.deleteError('announcement', undefined, t);
       setError('ลบข่าวสารไม่สำเร็จ');
     } finally {
       setDeleting(false);

@@ -65,6 +65,25 @@ export const showToast = {
 };
 
 // Predefined toast messages for common scenarios with i18n support
+// Helper: map canonical item keys to localized labels
+const resolveItemName = (itemName?: string, t?: any): string | undefined => {
+  if (!itemName) return undefined;
+  if (!t) return itemName;
+  switch (itemName) {
+    case 'position':
+      return t('positions.position');
+    case 'department':
+      return t('departments.departments');
+    case 'leaveType':
+      return t('leave.leaveType');
+    case 'announcement':
+      return t('companyNews.news');
+    case 'user':
+      return t('common.user');
+    default:
+      return itemName; // already localized or custom
+  }
+};
 export const toastMessages = {
   // Authentication
   auth: {
@@ -92,38 +111,62 @@ export const toastMessages = {
 
   // CRUD operations
   crud: {
-    createSuccess: (itemName?: string, t?: any) => ({
-      title: t ? t('system.createSuccess') : 'สร้างสำเร็จแล้ว',
-      description: t ? t('system.createSuccessDesc', { itemName: itemName || t('common.user') }) : (itemName ? `สร้าง ${itemName} สำเร็จแล้ว` : 'สร้างข้อมูลสำเร็จแล้ว')
-    }),
-    createError: (itemName?: string, message?: string, t?: any) => ({
-      title: t ? t('system.createError') : 'สร้างไม่สำเร็จ',
-      description: t ? t('system.createErrorDesc', { itemName: itemName || t('common.user'), message: message || '' }) : (message || (itemName ? `ไม่สามารถสร้าง ${itemName} ได้` : 'ไม่สามารถสร้างข้อมูลได้'))
-    }),
-    updateSuccess: (itemName?: string, t?: any) => ({
-      title: t ? t('system.updateSuccess') : 'อัปเดตสำเร็จ',
-      description: t ? t('system.updateSuccessDesc', { itemName: itemName || t('common.user') }) : (itemName ? `อัปเดต ${itemName} สำเร็จแล้ว` : 'อัปเดตข้อมูลสำเร็จแล้ว')
-    }),
-    updateError: (itemName?: string, message?: string, t?: any) => ({
-      title: t ? t('system.updateError') : 'อัปเดตไม่สำเร็จ',
-      description: t ? t('system.updateErrorDesc', { itemName: itemName || t('common.user'), message: message || '' }) : (message || (itemName ? `ไม่สามารถอัปเดต ${itemName} ได้` : 'ไม่สามารถอัปเดตข้อมูลได้'))
-    }),
-    deleteSuccess: (itemName?: string, t?: any) => ({
-      title: t ? t('system.deleteSuccess') : 'ลบสำเร็จ',
-      description: t ? t('system.deleteSuccessDesc', { itemName: itemName || t('common.user') }) : (itemName ? `ลบ ${itemName} สำเร็จแล้ว` : 'ลบข้อมูลสำเร็จแล้ว')
-    }),
-    deleteError: (itemName?: string, message?: string, t?: any) => ({
-      title: t ? t('system.deleteError') : 'ลบไม่สำเร็จ',
-      description: t ? t('system.deleteFailedDesc', { itemName: itemName || t('common.user'), message: message || '' }) : (message || (itemName ? `ไม่สามารถลบ ${itemName} ได้` : 'ไม่สามารถลบข้อมูลได้'))
-    }),
-    loadSuccess: (itemName?: string, t?: any) => ({
-      title: t ? t('system.loadSuccess') : 'โหลดสำเร็จ',
-      description: itemName ? (t ? t('system.loadSuccessDesc', { itemName }) : `โหลด ${itemName} สำเร็จแล้ว`) : (t ? t('system.loadSuccessDesc') : 'โหลดข้อมูลสำเร็จแล้ว')
-    }),
-    loadError: (itemName?: string, message?: string, t?: any) => ({
-      title: t ? t('system.loadError') : 'โหลดไม่สำเร็จ',
-      description: message || (itemName ? (t ? t('system.loadErrorDesc', { itemName }) : `ไม่สามารถโหลด ${itemName} ได้`) : (t ? t('system.loadErrorDesc') : 'ไม่สามารถโหลดข้อมูลได้'))
-    })
+    createSuccess: (itemName?: string, t?: any) => {
+      const item = resolveItemName(itemName, t) || (t ? t('common.user') : 'ผู้ใช้');
+      return {
+        title: t ? t('system.createSuccess') : 'สร้างสำเร็จแล้ว',
+        description: t ? t('system.createSuccessDesc', { itemName: item }) : `สร้าง ${item} สำเร็จแล้ว`
+      };
+    },
+    createError: (itemName?: string, message?: string, t?: any) => {
+      const item = resolveItemName(itemName, t) || (t ? t('common.user') : 'ผู้ใช้');
+      return {
+        title: t ? t('system.createError') : 'สร้างไม่สำเร็จ',
+        description: message || (t ? t('system.createErrorDesc', { itemName: item, message: '' }) : `ไม่สามารถสร้าง ${item} ได้`)
+      };
+    },
+    updateSuccess: (itemName?: string, t?: any) => {
+      const item = resolveItemName(itemName, t) || (t ? t('common.user') : 'ผู้ใช้');
+      return {
+        title: t ? t('system.updateSuccess') : 'อัปเดตสำเร็จ',
+        description: t ? t('system.updateSuccessDesc', { itemName: item }) : `อัปเดต ${item} สำเร็จแล้ว`
+      };
+    },
+    updateError: (itemName?: string, message?: string, t?: any) => {
+      const item = resolveItemName(itemName, t) || (t ? t('common.user') : 'ผู้ใช้');
+      return {
+        title: t ? t('system.updateError') : 'อัปเดตไม่สำเร็จ',
+        description: message || (t ? t('system.updateErrorDesc', { itemName: item, message: '' }) : `ไม่สามารถอัปเดต ${item} ได้`)
+      };
+    },
+    deleteSuccess: (itemName?: string, t?: any) => {
+      const item = resolveItemName(itemName, t) || (t ? t('common.user') : 'ผู้ใช้');
+      return {
+        title: t ? t('system.deleteSuccess') : 'ลบสำเร็จ',
+        description: t ? `${t('common.delete')} ${item} ${t('common.success')}` : `ลบ ${item} สำเร็จ`
+      };
+    },
+    deleteError: (itemName?: string, message?: string, t?: any) => {
+      const item = resolveItemName(itemName, t) || (t ? t('common.user') : 'ผู้ใช้');
+      return {
+        title: t ? t('system.deleteError') : 'ลบไม่สำเร็จ',
+        description: message || (t ? `${t('common.delete')} ${item} ${t('common.error')}` : `ไม่สามารถลบ ${item} ได้`)
+      };
+    },
+    loadSuccess: (itemName?: string, t?: any) => {
+      const item = itemName ? resolveItemName(itemName, t) : undefined;
+      return {
+        title: t ? t('system.loadSuccess') : 'โหลดสำเร็จ',
+        description: item ? (t ? t('system.loadSuccessDesc', { itemName: item }) : `โหลด ${item} สำเร็จแล้ว`) : (t ? t('system.loadSuccessDesc') : 'โหลดข้อมูลสำเร็จแล้ว')
+      };
+    },
+    loadError: (itemName?: string, message?: string, t?: any) => {
+      const item = itemName ? resolveItemName(itemName, t) : undefined;
+      return {
+        title: t ? t('system.loadError') : 'โหลดไม่สำเร็จ',
+        description: message || (item ? (t ? t('system.loadErrorDesc', { itemName: item }) : `ไม่สามารถโหลด ${item} ได้`) : (t ? t('system.loadErrorDesc') : 'ไม่สามารถโหลดข้อมูลได้'))
+      };
+    }
   },
 
   // Leave management
