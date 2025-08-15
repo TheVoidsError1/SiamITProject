@@ -52,6 +52,7 @@ export const ApprovalConfirmDialog = ({ open, onOpenChange, onConfirm, action, e
               placeholder={t('admin.rejectReasonPlaceholder')}
               value={rejectionReason}
               onChange={(e) => setRejectionReason(e.target.value)}
+              className="break-all overflow-wrap-anywhere whitespace-pre-wrap"
               required
             />
           </div>

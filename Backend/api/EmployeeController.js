@@ -2,6 +2,8 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const config = require('../config');
 const { calculateDaysBetween, sendSuccess, sendError, sendNotFound } = require('../utils');
+const { avatarUpload, handleUploadError } = require('../middleware/fileUploadMiddleware');
+const fs = require('fs');
 
 /**
  * @swagger
@@ -344,8 +346,10 @@ module.exports = (AppDataSource) => {
           dob: profile.dob || null,
           phone_number: profile.phone_number || null,
           start_work: profile.start_work || null,
-          internStartDate: profile.internStartDate || null,
-          internEndDate: profile.internEndDate || null,
+          end_work: profile.end_work || null,
+          // สำหรับฝั่ง frontend ที่ใช้ชื่อ intern*
+          internStartDate: profile.start_work || profile.internStartDate || null,
+          internEndDate: profile.end_work || profile.internEndDate || null,
           usedLeaveDays,
           totalLeaveDays,
           avatar: processCheck ? processCheck.avatar_url || null : null
@@ -398,8 +402,9 @@ module.exports = (AppDataSource) => {
         if (req.body.birthdate !== undefined) profile.dob = req.body.birthdate;
         if (req.body.phone !== undefined) profile.phone_number = req.body.phone;
         if (req.body.startWorkDate !== undefined) profile.start_work = req.body.startWorkDate;
-        if (req.body.internStartDate !== undefined) profile.internStartDate = req.body.internStartDate;
-        if (req.body.internEndDate !== undefined) profile.internEndDate = req.body.internEndDate;
+        if (req.body.endWorkDate !== undefined) profile.end_work = req.body.endWorkDate;
+        if (req.body.internStartDate !== undefined) profile.start_work = req.body.internStartDate;
+        if (req.body.internEndDate !== undefined) profile.end_work = req.body.internEndDate;
         await adminRepo.save(profile);
       } else if (role === 'superadmin') {
         if (name !== undefined) profile.superadmin_name = name;
@@ -409,8 +414,9 @@ module.exports = (AppDataSource) => {
         if (req.body.birthdate !== undefined) profile.dob = req.body.birthdate;
         if (req.body.phone !== undefined) profile.phone_number = req.body.phone;
         if (req.body.startWorkDate !== undefined) profile.start_work = req.body.startWorkDate;
-        if (req.body.internStartDate !== undefined) profile.internStartDate = req.body.internStartDate;
-        if (req.body.internEndDate !== undefined) profile.internEndDate = req.body.internEndDate;
+        if (req.body.endWorkDate !== undefined) profile.end_work = req.body.endWorkDate;
+        if (req.body.internStartDate !== undefined) profile.start_work = req.body.internStartDate;
+        if (req.body.internEndDate !== undefined) profile.end_work = req.body.internEndDate;
         await superadminRepo.save(profile);
       } else {
         if (name !== undefined) profile.User_name = name;
@@ -420,8 +426,9 @@ module.exports = (AppDataSource) => {
         if (req.body.birthdate !== undefined) profile.dob = req.body.birthdate;
         if (req.body.phone !== undefined) profile.phone_number = req.body.phone;
         if (req.body.startWorkDate !== undefined) profile.start_work = req.body.startWorkDate;
-        if (req.body.internStartDate !== undefined) profile.internStartDate = req.body.internStartDate;
-        if (req.body.internEndDate !== undefined) profile.internEndDate = req.body.internEndDate;
+        if (req.body.endWorkDate !== undefined) profile.end_work = req.body.endWorkDate;
+        if (req.body.internStartDate !== undefined) profile.start_work = req.body.internStartDate;
+        if (req.body.internEndDate !== undefined) profile.end_work = req.body.internEndDate;
         await userRepo.save(profile);
       }
 
@@ -461,6 +468,49 @@ module.exports = (AppDataSource) => {
       }, 'Employee profile updated successfully');
     } catch (err) {
       sendError(res, err.message, 500);
+    }
+  });
+
+  // Upload avatar for employee/admin/superadmin by ID (admin/superadmin only)
+  router.post('/employee/:id/avatar', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const processRepo = AppDataSource.getRepository('ProcessCheck');
+      const adminRepo = AppDataSource.getRepository('Admin');
+      const userRepo = AppDataSource.getRepository('User');
+      const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+
+      // Validate target profile exists
+      let profile = await adminRepo.findOne({ where: { id } })
+        || await userRepo.findOne({ where: { id } })
+        || await superadminRepo.findOne({ where: { id } });
+      if (!profile) return sendNotFound(res, 'User/Admin/SuperAdmin not found');
+
+      // Handle upload
+      avatarUpload.single('avatar')(req, res, async function (err) {
+        if (err) return handleUploadError(err, req, res, () => {});
+        if (!req.file) return sendError(res, 'No file uploaded', 400);
+        try {
+          const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+          const proc = await processRepo.findOne({ where: { Repid: id } });
+          if (!proc) return sendNotFound(res, 'ProcessCheck not found');
+          // delete old avatar file if any
+          if (proc.avatar_url) {
+            try {
+              const oldPath = require('path').join(config.getAvatarsUploadPath(), require('path').basename(proc.avatar_url));
+              if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
+            } catch {}
+          }
+          proc.avatar_url = avatarUrl;
+          await processRepo.save(proc);
+          return sendSuccess(res, { avatar_url: avatarUrl }, 'Avatar uploaded successfully');
+        } catch (updateErr) {
+          if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+          return sendError(res, 'Failed to update avatar URL', 500);
+        }
+      });
+    } catch (err) {
+      return sendError(res, err.message || 'Upload failed', 500);
     }
   });
 

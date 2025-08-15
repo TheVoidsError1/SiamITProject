@@ -1,18 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronLeft, Calendar, Building2, Plus, Trash2, Edit2, Users } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import { useAuth } from '@/contexts/AuthContext';
-import { useNavigate, useParams } from 'react-router-dom';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getThaiHolidaysByMonth } from '@/constants/getThaiHolidays';
+import { Textarea } from '@/components/ui/textarea';
 import { monthNames } from '@/constants/common';
-import { apiService, apiEndpoints } from '@/lib/api';
+import { getThaiHolidaysByMonth } from '@/constants/getThaiHolidays';
+import { useAuth } from '@/contexts/AuthContext';
+import { apiEndpoints, apiService } from '@/lib/api';
 import { showToastMessage } from '@/lib/toast';
+import { Building2, ChevronLeft, Edit2, Plus, Trash2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useNavigate, useParams } from 'react-router-dom';
 
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
@@ -527,7 +526,7 @@ const CompanyMonthDetailPage = () => {
                               : eventType === 'employee'
                                 ? 'text-green-600'
                                 : 'text-blue-600'
-                        }`}>{event.description}</div>
+                        } break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full`}>{event.description}</div>
                       )}
                       <div className={`text-sm mt-1 ${
                         event.isDual
@@ -578,6 +577,7 @@ const CompanyMonthDetailPage = () => {
               placeholder={t('companyEvent.description')} 
               value={newEvent.description} 
               onChange={e => setNewEvent(prev => ({ ...prev, description: e.target.value }))} 
+              className="break-all overflow-wrap-anywhere whitespace-pre-wrap"
             />
             <Input 
               type="date" 
@@ -609,6 +609,7 @@ const CompanyMonthDetailPage = () => {
               placeholder={t('companyEvent.description' )}
               value={editingEvent?.description || ''} 
               onChange={e => setEditingEvent(prev => prev ? { ...prev, description: e.target.value } : null)} 
+              className="break-all overflow-wrap-anywhere whitespace-pre-wrap"
             />
             <Input 
               type="date" 

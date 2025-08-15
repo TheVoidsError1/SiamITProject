@@ -99,47 +99,8 @@ module.exports = (AppDataSource) => {
     }
   });
 
-  // ดึงข้อมูล department ทั้งหมด
-  router.get('/departments', async (req, res) => {
-    try {
-      const departments = await departmentController.findAll(AppDataSource);
-      sendSuccess(res, departments, 'ดึงข้อมูล department สำเร็จ');
-    } catch (err) {
-      sendError(res, err.message, 500);
-    }
-  });
-
-  // ดึงข้อมูล position ทั้งหมด
-  router.get('/positions', async (req, res) => {
-    try {
-      const positions = await positionController.findAll(AppDataSource);
-      sendSuccess(res, positions, 'ดึงข้อมูล position สำเร็จ');
-    } catch (err) {
-      sendError(res, err.message, 500);
-    }
-  });
-
-  // เพิ่ม department
-  router.post('/departments', async (req, res) => {
-    try {
-      const { department } = req.body;
-      const newDept = await departmentController.create(AppDataSource, { department_name_th: department });
-      sendSuccess(res, newDept, 'เพิ่ม department สำเร็จ', 201);
-    } catch (err) {
-      sendError(res, err.message, 500);
-    }
-  });
-
-  // เพิ่ม position
-  router.post('/positions', async (req, res) => {
-    try {
-      const { position } = req.body;
-      const newPos = await positionController.create(AppDataSource, { position_name_th: position });
-      sendSuccess(res, newPos, 'เพิ่ม position สำเร็จ', 201);
-    } catch (err) {
-      sendError(res, err.message, 500);
-    }
-  });
+  // หมายเหตุ: เส้นทาง /departments และ /positions ถูกย้ายให้ใช้ที่ DepartmentController/PositionController เท่านั้น
+  // เพื่อลดความซ้ำซ้อนและให้โครงสร้างข้อมูลสอดคล้องกันทั้งระบบ
 
   return router;
 };

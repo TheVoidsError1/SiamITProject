@@ -129,6 +129,18 @@
       transform: scale(1);
     }
   }
+
+  /* Text overflow utilities for long continuous text */
+  .overflow-wrap-anywhere {
+    overflow-wrap: anywhere;
+    word-break: break-all;
+  }
+
+  .text-wrap-anywhere {
+    overflow-wrap: anywhere;
+    word-break: break-all;
+    hyphens: auto;
+  }
 }
 
 /* Custom animations */

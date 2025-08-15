@@ -5,15 +5,16 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useAuth } from '@/contexts/AuthContext';
-import { formatDate, handleFileSelect, getImageUrl, handleImageError } from '../lib/utils';
-import { apiService, apiEndpoints } from '../lib/api';
-import { showToastMessage } from '../lib/toast';
 import { ArrowLeft, Calendar, Clock, Edit, Eye, FileText, Image, Newspaper, Plus, Trash2, User, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
+import { apiEndpoints, apiService } from '../lib/api';
+import { showToastMessage } from '../lib/toast';
+import { formatDate, getImageUrl, handleFileSelect, handleImageError } from '../lib/utils';
 
 // ฟังก์ชันสำหรับจัดการวันที่ให้รองรับ i18n
 const formatTime = (date: Date, locale: string) => {
@@ -110,16 +111,18 @@ export default function ManagePost() {
 
       const data = await apiService.post(apiEndpoints.announcements, formData);
       if (data.status === 'success') {
-        showToastMessage.crud.createSuccess('ข่าวสาร');
+        showToastMessage.crud.createSuccess('ข่าวสาร', t);
         setAddOpen(false);
         setForm({ subject: '', detail: '', Image: '' });
         setSelectedFile(null);
         setImagePreview(null);
         fetchNews();
       } else {
+        showToastMessage.crud.createError('ข่าวสาร', data.message, t);
         setError(data.message || 'บันทึกข่าวสารไม่สำเร็จ');
       }
     } catch (err) {
+      showToastMessage.crud.createError('ข่าวสาร', undefined, t);
       setError('บันทึกข่าวสารไม่สำเร็จ');
     } finally {
       setLoading(false);
@@ -137,11 +140,13 @@ export default function ManagePost() {
         // ลบข่าวสารออกจากรายการและแสดงข้อความสำเร็จ
         setNewsList(prev => prev.filter(news => news.id !== deleteTarget.id));
         setDeleteTarget(null);
-        showToastMessage.crud.deleteSuccess('ข่าวสาร');
+        showToastMessage.crud.deleteSuccess('ข่าวสาร', t);
       } else {
+        showToastMessage.crud.deleteError('ข่าวสาร', data.message, t);
         setError(data.message || 'ลบข่าวสารไม่สำเร็จ');
       }
     } catch (err) {
+      showToastMessage.crud.deleteError('ข่าวสาร', undefined, t);
       setError('ลบข่าวสารไม่สำเร็จ');
     } finally {
       setDeleting(false);
@@ -180,6 +185,7 @@ export default function ManagePost() {
 
       const data = await apiService.put(apiEndpoints.announcement(editingNews.id), formData);
       if (data.status === 'success') {
+        showToastMessage.crud.updateSuccess('ข่าวสาร', t);
         setEditOpen(false);
         setEditingNews(null);
         setForm({ subject: '', detail: '', Image: '' });
@@ -187,9 +193,11 @@ export default function ManagePost() {
         setImagePreview(null);
         fetchNews();
       } else {
+        showToastMessage.crud.updateError('ข่าวสาร', data.message, t);
         setError(data.message || t('companyNews.editNewsError'));
       }
     } catch (err) {
+      showToastMessage.crud.updateError('ข่าวสาร', undefined, t);
       setError(t('companyNews.editNewsError'));
     } finally {
       setLoading(false);
@@ -223,9 +231,10 @@ export default function ManagePost() {
           </svg>
         </div>
         
-        {/* Navigation Controls */}
+        {/* Navigation Controls with Sidebar Trigger */}
         <div className="relative z-20 flex justify-start items-center px-6 py-4">
           <div className="flex items-center gap-4">
+            <SidebarTrigger className="bg-white/90 hover:bg-white text-blue-700 border border-blue-200 hover:border-blue-300 shadow-lg backdrop-blur-sm" />
             <button
               onClick={() => navigate(-1)}
               className="flex items-center gap-2 px-4 py-2 bg-white/90 hover:bg-white text-blue-700 font-semibold rounded-xl shadow-lg transition-all duration-200 backdrop-blur-sm border border-blue-200 hover:border-blue-300"
@@ -289,14 +298,14 @@ export default function ManagePost() {
                           ({form.detail.length}/500)
                         </span>
                       </label>
-                      <textarea
-                        className="w-full rounded-lg border border-blue-200 px-3 py-2 text-base focus:ring-2 focus:ring-blue-400 resize-none"
-                        value={form.detail}
-                        onChange={e => setForm(f => ({ ...f, detail: e.target.value }))}
-                        rows={6}
-                        maxLength={500}
-                        required
-                      />
+                                          <textarea
+                      className="w-full rounded-lg border border-blue-200 px-3 py-2 text-base focus:ring-2 focus:ring-blue-400 resize-none break-all overflow-wrap-anywhere whitespace-pre-wrap"
+                      value={form.detail}
+                      onChange={e => setForm(f => ({ ...f, detail: e.target.value }))}
+                      rows={6}
+                      maxLength={500}
+                      required
+                    />
                     </div>
                     <div>
                       <label className="block text-blue-800 font-semibold mb-1">
@@ -391,7 +400,7 @@ export default function ManagePost() {
                       </span>
                     </label>
                     <textarea
-                      className="w-full rounded-lg border border-blue-200 px-3 py-2 text-base focus:ring-2 focus:ring-blue-400 resize-none"
+                      className="w-full rounded-lg border border-blue-200 px-3 py-2 text-base focus:ring-2 focus:ring-blue-400 resize-none break-all overflow-wrap-anywhere whitespace-pre-wrap"
                       value={form.detail}
                       onChange={e => setForm(f => ({ ...f, detail: e.target.value }))}
                       rows={6}
@@ -592,7 +601,7 @@ export default function ManagePost() {
                                   </CardHeader>
                                   <CardContent>
                                     <div className="p-4 bg-orange-50 rounded-lg">
-                                      <p className="text-orange-900 leading-relaxed">
+                                      <p className="text-orange-900 leading-relaxed break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">
                                         {news.detail || t('companyNews.noDetailProvided')}
                                       </p>
                                     </div>

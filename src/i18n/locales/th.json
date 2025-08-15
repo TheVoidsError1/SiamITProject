@@ -39,6 +39,7 @@
     "sessionExpiredDesc": "เซสชันการใช้งานของคุณหมดอายุแล้ว กรุณาเข้าสู่ระบบใหม่",
     "pleaseLoginAgain": "กรุณาเข้าสู่ระบบใหม่",
     "passwordRequired": "กรุณากรอกรหัสผ่านใหม่ และ กรุณายืนยันรหัสผ่าน",
+    "pleaseFillEndWorkDate": "กรุณาเลือกวันที่เริ่มและสิ้นสุดการทำงาน",
     "role": "บทบาท",
     "selectRole": "เลือกบทบาท",
     "loginAgain": "กรุณาเข้าสู่ระบบใหม่",
@@ -128,8 +129,7 @@
     "confirmDeletePosition": "คุณต้องการลบตำแหน่ง",
     "confirmDeleteDepartment": "คุณต้องการลบแผนก",
     "confirmDeleteLeaveType": "คุณต้องการลบประเภทการลา",
-    "confirmDeleteQuestion": "หรือไม่?",
-    "deleteSuccess": "ลบสำเร็จ",
+    "ห": "ลบสำเร็จ",
     "deleteError": "ลบไม่สำเร็จ"
   },
           "line": {
@@ -154,6 +154,16 @@
     "leaveRequest": "ขอลา",
     "leaveHistory": "ประวัติการลา",
     "leaveType": "ประเภทการลา",
+    "quota": "โควตา",
+    "resetByPosition": "รีเซ็ตการใช้สิทธิ์ลา ตามตำแหน่ง",
+    "strategy": "กลยุทธ์",
+    "strategyZero": "ตั้งค่าเป็นศูนย์",
+    "strategyDelete": "ลบระเบียน",
+    "force": "บังคับ (อนุญาตนอกวัน 1 ม.ค.)",
+    "triggerReset": "สั่งรีเซ็ต",
+    "note": "หมายเหตุ",
+    "noteDetail": "หากไม่เลือกตำแหน่ง จะรวมตำแหน่งที่  ทั้งหมด",
+    "allNewYearPositions": "ทุกตำแหน่งที่ ",
     "type": "ประเภทการลา",
     "date": "วันที่ลา",
     "duration": "ระยะเวลา",
@@ -348,7 +358,9 @@
     "intern": "นักศึกษาฝึกงาน",
     "notSpecified": "ไม่ระบุ",
     "noPosition": "ไม่มีตำแหน่ง",
-    "selectPosition": "เลือกตำแหน่ง"
+    "selectPosition": "เลือกตำแหน่ง",
+    "requestQuote": "ต้องการ End Work Date",
+    "newYearQuota": "รีเซ็ตต้นปี (0=รี,1=ไม่รี)"
   },
   "employeeTypes": {
     "employee": "พนักงาน",
@@ -605,6 +617,14 @@
     "deleteConfirmMessage": "คุณต้องการลบใบลานี้หรือไม่? การดำเนินการนี้ไม่สามารถยกเลิกได้",
     "deleteError": "ลบไม่สำเร็จ",
     "deleteFailedDesc": "ไม่สามารถลบใบลาได้",
+    "updateSuccess": "อัปเดตสำเร็จแล้ว",
+    "updateSuccessDesc": "อัปเดตข้อมูลสำเร็จแล้ว",
+    "updateError": "อัปเดตไม่สำเร็จ",
+    "updateErrorDesc": "ไม่สามารถอัปเดตข้อมูลได้",
+    "createSuccess": "สร้างสำเร็จแล้ว",
+    "createSuccessDesc": "สร้างข้อมูลสำเร็จแล้ว",
+    "createError": "สร้างไม่สำเร็จ",
+    "createErrorDesc": "ไม่สามารถสร้างข้อมูลได้",
     "allPositions": "ทุกตำแหน่ง",
     "allDepartments": "ทุกแผนก",
     "allRoles": "ทุกบทบาท",
@@ -671,6 +691,7 @@
     "birthdate": "วันเกิด",
     "gender": "เพศ",
     "startWorkDate": "วันที่เริ่มงาน",
+    "endWorkDate": "วันที่สิ้นสุดงาน",
     "selectGender": "เลือกเพศ",
     "male": "ชาย",
     "female": "หญิง",
@@ -697,6 +718,7 @@
     "approvedDesc": "คำขอของคุณได้รับการอนุมัติแล้ว",
     "rejectedDesc": "คำขอของคุณถูกปฏิเสธ",
     "markAsRead": "อ่านแล้ว",
+    "markAllAsRead": "อ่านแล้วทั้งหมด",
 
     "setNewPassword": "ตั้งรหัสผ่านใหม่",
     "name": "ชื่อ",
@@ -868,5 +890,11 @@
   "footer": {
     "systemName": "ระบบจัดการการลา สยาม ไอที",
     "copyright": "© 2025 สงวนลิขสิทธิ์ พัฒนาด้วย ❤️ โดยทีมสยาม ไอที"
+  },
+  "avatarCropDialog": {
+    "title": "ปรับครอปรูปโปรไฟล์",
+    "description": "ปรับครอปรูปโปรไฟล์ของคุณให้เหมาะสม",
+    "crop": "ปรับครอป",
+    "cancel": "ยกเลิก"
   }
 }

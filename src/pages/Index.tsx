@@ -7,13 +7,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSocket } from '@/contexts/SocketContext';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { Bell, Calendar, Clock, TrendingUp, Users, MessageCircle, Smartphone } from 'lucide-react';
+import { Bell, Calendar, Clock, TrendingUp, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
-import { apiService, apiEndpoints } from '../lib/api';
+import { apiEndpoints, apiService } from '../lib/api';
 import { showToastMessage } from '../lib/toast';
-import { getImageUrl } from '../lib/utils';
 
 
 const Index = () => {

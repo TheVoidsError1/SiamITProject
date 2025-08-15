@@ -38,6 +38,7 @@
     "checkEmailVerification": "You can now log in with this user.",
     "sessionExpired": "Session expired, please login again",
     "pleaseLoginAgain": "Please login again",
+    "pleaseFillEndWorkDate": "Please select start and end work dates",
     "role": "Role",
     "selectRole": "Select Role",
     "sessionExpiredDesc": "Your session has expired. Please login again.",
@@ -154,6 +155,16 @@
     "leaveRequest": "Leave Request",
     "leaveHistory": "Leave History",
     "leaveType": "Leave Type",
+    "quota": "Quota",
+    "resetByPosition": "Reset leave usage by position",
+    "strategy": "Strategy",
+    "strategyZero": "Set to zero",
+    "strategyDelete": "Delete records",
+    "force": "Force (allow outside Jan 1)",
+    "triggerReset": "Trigger Reset",
+    "note": "Note",
+    "noteDetail": "Positions with will be included when no position is selected.",
+    "allNewYearPositions": "All positions",
     "startDate": "Start Date",
     "endDate": "End Date",
     "reason": "Reason",
@@ -348,7 +359,9 @@
     "intern": "Intern",
     "notSpecified": "Not specified",
     "noPosition": "No Position",
-    "selectPosition": "Select Position"
+    "selectPosition": "Select Position",
+    "requestQuote": "Request Quote",
+    "newYearQuota": "New Year Reset (0=Reset,1=No)"
   },
   "employeeTypes": {
     "employee": "Employee",
@@ -601,6 +614,14 @@
     "deleteConfirmMessage": "Are you sure you want to delete this leave request? This action cannot be undone.",
     "deleteError": "Delete failed",
     "deleteFailedDesc": "Unable to delete leave request",
+    "updateSuccess": "Updated successfully",
+    "updateSuccessDesc": "Data updated successfully",
+    "updateError": "Update failed",
+    "updateErrorDesc": "Unable to update data",
+    "createSuccess": "Created successfully",
+    "createSuccessDesc": "Data created successfully",
+    "createError": "Create failed",
+    "createErrorDesc": "Unable to create data",
     "allPositions": "All Positions",
     "allDepartments": "All Departments",
     "allRoles": "All Roles",
@@ -650,17 +671,18 @@
     "gender": "Gender",
     "phone": "Phone Number",
     "startWorkDate": "Start Work Date",
+    "endWorkDate": "End Work Date",
     "selectGender": "Select Gender",
     "male": "Male",
     "female": "Female",
     "birthday": "Birthday",
     "phoneNumber": "Phone Number",
-    "internshipStartDate": "Internship Start Date",
-    "internshipEndDate": "Internship End Date",
+    "internshipStartDate": "Start Work Date",
+    "internshipEndDate": "End Work Date",
     "selectBirthday": "Select Birthday",
     "enterPhoneNumber": "Enter Phone Number",
-    "selectInternshipStartDate": "Select Internship Start Date",
-    "selectInternshipEndDate": "Select Internship End Date",
+    "selectInternshipStartDate": "Select Start Work Date",
+    "selectInternshipEndDate": "Select End Work Date",
     "other": "Other",
     "preferNotToSay": "Prefer not to say"
   },
@@ -676,6 +698,7 @@
     "approvedDesc": "Your request has been approved.",
     "rejectedDesc": "Your request was rejected.",
     "markAsRead": "Mark as Read",
+    "markAllAsRead": "Mark All as Read",
 
     "unread": "Unread",
     "read": "Read",
@@ -852,5 +875,11 @@
   "footer": {
     "systemName": "Siam IT Leave Management System",
     "copyright": "© 2025 All rights reserved. Developed with ❤️ by Siam IT Team"
+  },
+  "avatarCropDialog": {
+    "title": "Crop Avatar",
+    "description": "Crop your avatar to the desired size",
+    "crop": "Crop",
+    "cancel": "Cancel"
   }
 }

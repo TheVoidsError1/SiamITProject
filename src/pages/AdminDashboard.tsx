@@ -12,14 +12,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useSocket } from '@/contexts/SocketContext';
 import { useToast } from "@/hooks/use-toast";
 import { differenceInCalendarDays, format } from "date-fns";
-import { enUS, th } from "date-fns/locale";
 import { AlertCircle, Calendar, CalendarIcon, CheckCircle, ChevronLeft, ChevronRight, Clock, Eye, FileText, History, User, Users, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { formatDateLocalized, formatDateOnly } from '../lib/utils';
-import { apiService, apiEndpoints } from '../lib/api';
-import { showToastMessage } from '../lib/toast';
 import { monthNames } from '../constants/common';
+import { apiEndpoints, apiService, createAuthenticatedFileUrl } from '../lib/api';
+import { showToastMessage } from '../lib/toast';
+import { formatDateLocalized, formatDateOnly } from '../lib/utils';
 
 type LeaveRequest = {
   id: number;
@@ -626,16 +625,16 @@ const AdminDashboard = () => {
     try {
       const data = await apiService.delete(apiEndpoints.leave.delete(deletingRequest.id), undefined, showSessionExpiredDialog);
       if (data.success || data.status === 'success') {
-        showToastMessage.crud.deleteSuccess('ใบลา');
+        showToastMessage.crud.deleteSuccess('ใบลา', t);
         setShowDeleteDialog(false);
         setDeletingRequest(null);
         refreshLeaveRequests();
         fetchHistoryRequests();
       } else {
-        showToastMessage.crud.deleteError('ใบลา', data.message);
+        showToastMessage.crud.deleteError('ใบลา', data.message, t);
       }
     } catch (e) {
-      showToastMessage.crud.deleteError('ใบลา');
+      showToastMessage.crud.deleteError('ใบลา', undefined, t);
     }
   };
 
@@ -1467,7 +1466,12 @@ const AdminDashboard = () => {
                                 </Badge>
                               )}
                               <div className="text-sm text-gray-700 mb-1 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>{t('leave.date')}: {startStr} - {endStr} ({leaveDays} {t('leave.days')})</div>
-                              <div className="text-xs text-gray-500 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>{t('leave.reason')}: {request.reason}</div>
+                              <div className="text-xs text-gray-500 animate-fade-in-up break-words" style={{ animationDelay: '0.4s' }}>
+                                {t('leave.reason')}: {request.reason && request.reason.length > 50 
+                                  ? request.reason.slice(0, 50) + '...' 
+                                  : request.reason || '-'
+                                }
+                              </div>
                             </div>
                             {/* ปุ่มดูรายละเอียดและลบ */}
                             <div className="flex gap-2 flex-shrink-0 mt-2 md:mt-0">
@@ -1619,32 +1623,14 @@ const AdminDashboard = () => {
       <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto animate-scale-in">
           <DialogHeader>
-            <DialogTitle className="flex items-center">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl font-bold text-blue-600">
-                  {t('common.viewDetails')}
-                </span>
-                {selectedRequest && (
-                  <div className="flex flex-wrap gap-2">
-                    {/* Badge สถานะ */}
-                    {selectedRequest.status === 'approved' && (
-                      <Badge className="bg-green-100 text-green-800 border-green-200"><CheckCircle className="w-3 h-3 mr-1" />{t('leave.approved')}</Badge>
-                    )}
-                    {selectedRequest.status === 'pending' && (
-                      <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200"><AlertCircle className="w-3 h-3 mr-1" />{t('history.pendingApproval')}</Badge>
-                    )}
-                    {selectedRequest.status === 'rejected' && (
-                      <Badge className="bg-red-100 text-red-800 border-red-200"><XCircle className="w-3 h-3 mr-1" />{t('leave.rejected')}</Badge>
-                    )}
-                    {/* Badge ลาย้อนหลัง */}
-                    {(selectedRequest.backdated === 1 || selectedRequest.backdated === "1" || selectedRequest.backdated === true) && (
-                      <Badge className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 border-purple-200 shadow-sm hover:shadow-md transition-all duration-200"><History className="w-3 h-3 mr-1" />{t('history.retroactiveLeave', 'การลาย้อนหลัง')}</Badge>
-                    )}
-                  </div>
-                )}
-              </div>
+            <DialogTitle>
+              {t('common.viewDetails')}
             </DialogTitle>
+            <DialogDescription>
+              {t('leave.detailDescription', 'Detailed information about this leave request.')}
+            </DialogDescription>
           </DialogHeader>
+          
           {selectedRequest && (
             <div className="space-y-6">
               {/* Header Section */}
@@ -1663,9 +1649,25 @@ const AdminDashboard = () => {
                       </div>
                     </div>
                   </div>
+                  {/* Status badges moved here */}
+                  <div className="flex flex-wrap gap-2 mt-4">
+                    {/* Badge สถานะ */}
+                    {selectedRequest.status === 'approved' && (
+                      <Badge className="bg-green-100 text-green-800 border-green-200"><CheckCircle className="w-3 h-3 mr-1" />{t('leave.approved')}</Badge>
+                    )}
+                    {selectedRequest.status === 'pending' && (
+                      <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200"><AlertCircle className="w-3 h-3 mr-1" />{t('history.pendingApproval')}</Badge>
+                    )}
+                    {selectedRequest.status === 'rejected' && (
+                      <Badge className="bg-red-100 text-red-800 border-red-200"><XCircle className="w-3 h-3 mr-1" />{t('leave.rejected')}</Badge>
+                    )}
+                    {/* Badge ลาย้อนหลัง */}
+                    {(selectedRequest.backdated === 1 || selectedRequest.backdated === "1" || selectedRequest.backdated === true) && (
+                      <Badge className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 border-purple-200 shadow-sm hover:shadow-md transition-all duration-200"><History className="w-3 h-3 mr-1" />{t('history.retroactiveLeave', 'การลาย้อนหลัง')}</Badge>
+                    )}
+                  </div>
                 </CardContent>
               </Card>
-
               {/* Main Information Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Left Column - Basic Info */}
@@ -1777,7 +1779,9 @@ const AdminDashboard = () => {
                             <Label className="text-sm font-medium text-gray-600">{t('leave.rejectionReason')}</Label>
                             <div className="flex items-start gap-2 p-3 bg-red-50 rounded-lg">
                               <FileText className="w-4 h-4 text-red-500 mt-0.5" />
-                              <span className="text-red-900 leading-relaxed">{selectedRequest.rejectionReason}</span>
+                              <div className="flex-1 min-w-0">
+                                <span className="text-red-900 leading-relaxed break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">{selectedRequest.rejectionReason}</span>
+                              </div>
                             </div>
                           </div>
                         )}
@@ -1797,7 +1801,7 @@ const AdminDashboard = () => {
                 </CardHeader>
                 <CardContent>
                   <div className="p-4 bg-orange-50 rounded-lg">
-                    <p className="text-orange-900 leading-relaxed">
+                    <p className="text-orange-900 leading-relaxed break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">
                       {selectedRequest.reason || t('leave.noReasonProvided')}
                     </p>
                   </div>
@@ -1815,7 +1819,7 @@ const AdminDashboard = () => {
                   </CardHeader>
                   <CardContent>
                     <div className="p-4 bg-teal-50 rounded-lg">
-                      <p className="text-teal-900 font-medium">{selectedRequest.contact || selectedRequest.contactInfo || selectedRequest.user?.contact}</p>
+                      <p className="text-teal-900 font-medium break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">{selectedRequest.contact || selectedRequest.contactInfo || selectedRequest.user?.contact}</p>
                     </div>
                   </CardContent>
                 </Card>
@@ -1855,13 +1859,15 @@ const AdminDashboard = () => {
                             const fileName = file.split('/').pop() || file;
                             const ext = fileName.split('.').pop()?.toLowerCase();
                             const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext || '');
-                            const fileUrl = `${API_BASE_URL}/leave-uploads/${file}`;
+                            // Construct the correct file path - always prepend /leave-uploads/ if not already present
+                            const fileUrl = file.startsWith('/leave-uploads/') ? file : `/leave-uploads/${file}`;
+                            const authenticatedFileUrl = createAuthenticatedFileUrl(fileUrl);
                             return (
                               <div key={file} className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
                                 {isImage ? (
                                   <div className="space-y-3">
                                     <img
-                                      src={fileUrl}
+                                      src={authenticatedFileUrl}
                                       alt={fileName}
                                       className="w-full h-32 object-cover rounded-lg border"
                                       onError={(e) => {
@@ -1871,7 +1877,7 @@ const AdminDashboard = () => {
                                     />
                                     <div className="flex items-center justify-between">
                                       <span className="text-sm text-gray-600 truncate">{fileName}</span>
-                                      <Button size="sm" variant="outline" onClick={() => window.open(fileUrl, '_blank')}>{t('common.view')}</Button>
+                                      <Button size="sm" variant="outline" onClick={() => window.open(authenticatedFileUrl, '_blank')}>{t('common.view')}</Button>
                                     </div>
                                   </div>
                                 ) : (
@@ -1881,12 +1887,7 @@ const AdminDashboard = () => {
                                     </div>
                                     <div className="flex items-center justify-between">
                                       <span className="text-sm text-gray-600 truncate">{fileName}</span>
-                                      <Button size="sm" variant="outline" onClick={() => {
-                                        const link = document.createElement('a');
-                                        link.href = fileUrl;
-                                        link.download = fileName;
-                                        link.click();
-                                      }}>{t('common.download')}</Button>
+                                      <Button size="sm" variant="outline" onClick={() => window.open(authenticatedFileUrl, '_blank')}>{t('common.view')}</Button>
                                     </div>
                                   </div>
                                 )}
@@ -1917,7 +1918,7 @@ const AdminDashboard = () => {
             <DialogTitle>{t('admin.rejectReasonTitle', 'กรุณาระบุเหตุผลในการไม่อนุมัติ')}</DialogTitle>
           </DialogHeader>
           <textarea
-            className="w-full border rounded p-2 mt-2"
+            className="w-full border rounded p-2 mt-2 break-all overflow-wrap-anywhere whitespace-pre-wrap"
             rows={3}
             placeholder={t('admin.rejectReasonPlaceholder', 'กรอกเหตุผล...')}
             value={rejectReason}

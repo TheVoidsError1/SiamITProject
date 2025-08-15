@@ -4,17 +4,19 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePushNotification } from '@/contexts/PushNotificationContext';
 import { useToast } from '@/hooks/use-toast';
-import { apiService, apiEndpoints } from '@/lib/api';
-import { showToastMessage } from '@/lib/toast';
+import { apiEndpoints, apiService } from '@/lib/api';
 import { Bell, Building, Camera, Crown, Lock, Mail, Save, Shield } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
+import AvatarCropDialog from '@/components/dialogs/AvatarCropDialog';
+import { useSocket } from '@/contexts/SocketContext';
 
 const Profile = () => {
   const { t, i18n } = useTranslation();
@@ -25,6 +27,9 @@ const Profile = () => {
   const [error, setError] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null);
+  const { socket, isConnected } = useSocket();
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
@@ -38,7 +43,7 @@ const Profile = () => {
   });
   const [saving, setSaving] = useState(false);
   const [departments, setDepartments] = useState<any[]>([]);
-  const [positions, setPositions] = useState<any[]>([]);
+  const [positions, setPositions] = useState<{ id: string; position_name_en: string; position_name_th: string; request_quote?: boolean }[]>([]);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [positionsLoaded, setPositionsLoaded] = useState(false);
   const [departmentsLoaded, setDepartmentsLoaded] = useState(false);
@@ -46,6 +51,7 @@ const Profile = () => {
   const [leaveQuota, setLeaveQuota] = useState<any[]>([]);
   const [leaveLoading, setLeaveLoading] = useState(false);
   const [allLeaveTypes, setAllLeaveTypes] = useState<any[]>([]);
+  const withCacheBust = (url: string) => `${url}${url.includes('?') ? '&' : '?'}v=${Date.now()}`;
 
   const getKeyByLabel = (label: string, options: string[], tPrefix: string) => {
     for (const key of options) {
@@ -141,7 +147,7 @@ const Profile = () => {
       try {
         const res = await apiService.get(apiEndpoints.auth.avatar);
         if (res.success && res.avatar_url) {
-          setAvatarUrl(`${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}`);
+          setAvatarUrl(withCacheBust(`${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}`));
           if (!user?.avatar_url) {
             updateUser({ avatar_url: res.avatar_url });
           }
@@ -162,7 +168,8 @@ const Profile = () => {
         const pos = posData.data.map((p: any) => ({
           id: p.id,
           position_name_en: p.position_name_en,
-          position_name_th: p.position_name_th
+          position_name_th: p.position_name_th,
+          request_quote: !!p.request_quote
         }));
         setPositions(pos);
         setPositionsLoaded(true);
@@ -272,32 +279,136 @@ const Profile = () => {
     fileInputRef.current?.click();
   };
 
+  // Upload avatar utility with optional optimistic preview URL and realtime fan-out
+  const uploadAvatar = async (file: File, localUrl?: string) => {
+    const previousUrl = avatarUrl;
+    if (localUrl) setAvatarUrl(localUrl);
+    const formData = new FormData();
+    formData.append('avatar', file);
+    try {
+      const res = await apiService.post(apiEndpoints.auth.avatar, formData);
+      if (res?.success) {
+        const finalUrl = withCacheBust(`${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}`);
+        setAvatarUrl(finalUrl);
+        updateUser({ avatar_url: res.avatar_url });
+        toast({ title: t('profile.uploadSuccess') });
+
+        // Broadcast via socket and localStorage to update other tabs/clients
+        if (socket && isConnected && user?.id) {
+          socket.emit('avatarUpdated', { userId: user.id, avatar_url: res.avatar_url });
+        }
+        try {
+          if (user?.id) {
+            localStorage.setItem('avatarUpdated', JSON.stringify({ userId: user.id, avatar_url: res.avatar_url, ts: Date.now() }));
+          }
+        } catch {}
+
+        if (localUrl) URL.revokeObjectURL(localUrl);
+      } else {
+        throw new Error(res?.message || t('profile.uploadError'));
+      }
+    } catch (err: any) {
+      if (previousUrl) setAvatarUrl(previousUrl);
+      toast({ title: t('profile.uploadError'), description: err?.message, variant: 'destructive' });
+      if (localUrl) URL.revokeObjectURL(localUrl);
+    }
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const file = e.target.files[0];
+    // Show cropper UI for both GIF and other images. For GIF we only preview crop and upload original to preserve animation.
+    const url = URL.createObjectURL(file);
+    setSelectedImageSrc(url);
+    setCropDialogOpen(true);
+    // Keep a ref of original file for GIF to upload later untouched
+    if (file.type === 'image/gif') {
+      // @ts-ignore - attach to window scoped var to avoid adding more state variables
+      (window as any).__avatarOriginalGifFile = file;
+    } else {
+      (window as any).__avatarOriginalGifFile = null;
+    }
+  };
+
+  const handleCropped = async (file: File) => {
     const formData = new FormData();
     formData.append('avatar', file);
     try {
       const res = await apiService.post(apiEndpoints.auth.avatar, formData);
       if (res.success) {
-        setAvatarUrl(`${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}`);
+        setAvatarUrl(withCacheBust(`${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}`));
         updateUser({ avatar_url: res.avatar_url });
         toast({ title: t('profile.uploadSuccess') });
+        if (socket && isConnected && user?.id) {
+          socket.emit('avatarUpdated', { userId: user.id, avatar_url: res.avatar_url });
+        }
+        try {
+          if (user?.id) {
+            localStorage.setItem('avatarUpdated', JSON.stringify({ userId: user.id, avatar_url: res.avatar_url, ts: Date.now() }));
+          }
+        } catch {}
       } else {
         throw new Error(res.message || t('profile.uploadError'));
       }
     } catch (err: any) {
-      toast({ 
-        title: t('profile.uploadError'), 
+      toast({
+        title: t('profile.uploadError'),
         description: err?.message,
-        variant: 'destructive' 
+        variant: 'destructive'
       });
     }
   };
 
+  // Listen to avatar updates via socket and localStorage for realtime self/other-tab refresh
+  useEffect(() => {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL as string;
+    const onSocketUpdate = (data: { userId: string; avatar_url: string }) => {
+      if (!data) return;
+      if (user?.id && String(data.userId) === String(user.id)) {
+        setAvatarUrl(withCacheBust(`${baseUrl}${data.avatar_url}`));
+        updateUser({ avatar_url: data.avatar_url });
+      }
+    };
+    if (socket && isConnected) {
+      socket.on('avatarUpdated', onSocketUpdate);
+    }
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== 'avatarUpdated' || !e.newValue) return;
+      try {
+        const data = JSON.parse(e.newValue);
+        if (user?.id && String(data.userId) === String(user.id)) {
+          setAvatarUrl(withCacheBust(`${baseUrl}${data.avatar_url}`));
+          updateUser({ avatar_url: data.avatar_url });
+        }
+      } catch {}
+    };
+    window.addEventListener('storage', onStorage);
+    return () => {
+      if (socket) socket.off('avatarUpdated', onSocketUpdate);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, [socket, isConnected, user, updateUser]);
+
   const handleSave = async () => {
     setSaving(true);
     try {
+      // ตรวจสอบว่าตำแหน่งต้องการ End Work Date หรือไม่
+      const selectedPos = positions.find(p => String(p.id) === formData.position);
+      const requiresEndWorkDate = selectedPos ? !!selectedPos.request_quote : false;
+
+      // Validation สำหรับ End Work Date
+      if (requiresEndWorkDate && formData.start_work && formData.end_work) {
+        if (formData.start_work > formData.end_work) {
+          toast({ 
+            title: t('common.error'), 
+            description: t('auth.dateRangeInvalid', 'ช่วงวันที่ไม่ถูกต้อง'), 
+            variant: 'destructive' 
+          });
+          setSaving(false);
+          return;
+        }
+      }
+
       const requestData = {
         name: formData.full_name,
         email: formData.email,
@@ -307,14 +418,19 @@ const Profile = () => {
         dob: formData.dob || null,
         phone_number: formData.phone_number || null,
         start_work: formData.start_work || null,
-        end_work: formData.end_work || null,
+        end_work: requiresEndWorkDate ? (formData.end_work || null) : null,
       };
+      
+      console.log('Sending profile update data:', requestData);
+      
       const res = await apiService.put(apiEndpoints.auth.profile, requestData);
       if (res.success) {
         toast({
           title: t('profile.saveSuccess'),
           description: t('profile.saveSuccessDesc'),
         });
+        
+        // อัปเดตข้อมูลในฟอร์มและ user context
         const updatedData = res.data;
         setFormData({
           full_name: updatedData.name || formData.full_name,
@@ -327,16 +443,20 @@ const Profile = () => {
           start_work: updatedData.start_work || formData.start_work,
           end_work: updatedData.end_work || formData.end_work,
         });
+        
         updateUser({
           full_name: updatedData.name || formData.full_name,
           position: updatedData.position_name || '',
           department: updatedData.department_name || '',
           email: updatedData.email || formData.email,
         });
+        
+        console.log('Profile updated successfully:', updatedData);
       } else {
         throw new Error(res.message || t('profile.saveError'));
       }
     } catch (error: any) {
+      console.error('Profile update error:', error);
       toast({
         title: t('error.title'),
         description: error?.message || t('profile.saveError'),
@@ -389,6 +509,12 @@ const Profile = () => {
             </defs>
           </svg>
         </div>
+        
+        {/* Sidebar Trigger */}
+        <div className="absolute top-4 left-4 z-20">
+          <SidebarTrigger className="bg-white/90 hover:bg-white text-blue-700 border border-blue-200 hover:border-blue-300 shadow-lg backdrop-blur-sm" />
+        </div>
+        
         <div className="relative z-10 flex flex-col items-center justify-center py-10 md:py-16">
           <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-24 h-24 rounded-full bg-white/80 shadow-2xl border-4 border-white mb-4" />
           <h1 className="text-4xl md:text-5xl font-extrabold text-indigo-900 drop-shadow mb-2 flex items-center gap-3">
@@ -425,6 +551,14 @@ const Profile = () => {
               onChange={handleFileChange}
             />
           </div>
+          <AvatarCropDialog
+            open={cropDialogOpen}
+            imageSrc={selectedImageSrc}
+            isGif={(window as any).__avatarOriginalGifFile ? true : false}
+            originalFile={(window as any).__avatarOriginalGifFile || null}
+            onOpenChange={setCropDialogOpen}
+            onCropped={handleCropped}
+          />
           <div className="mt-4 text-center">
             <h2 className="text-2xl font-bold text-blue-900 tracking-tight">{user?.full_name}</h2>
             <p className="text-gray-500 mb-2 text-base">
@@ -523,9 +657,6 @@ const Profile = () => {
                         <SelectValue placeholder={t('positions.selectPosition')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="not_specified" className="text-blue-900">
-                          {t('positions.notSpecified')}
-                        </SelectItem>
                         {positions
                           .filter(pos => (pos.position_name_th || pos.position_name_en) && (pos.position_name_th?.trim() !== '' || pos.position_name_en?.trim() !== ''))
                           .map((pos) => (
@@ -546,9 +677,6 @@ const Profile = () => {
                         <SelectValue placeholder={t('departments.selectDepartment')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="not_specified" className="text-blue-900">
-                          {t('departments.notSpecified')}
-                        </SelectItem>
                         {departments
                           .filter(dept => (dept.department_name_th || dept.department_name_en) && (dept.department_name_th?.trim() !== '' || dept.department_name_en?.trim() !== ''))
                           .map((dept) => (
@@ -569,9 +697,6 @@ const Profile = () => {
                         <SelectValue placeholder={t('employee.selectGender')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="not_specified" className="text-blue-900">
-                          {t('employee.preferNotToSay')}
-                        </SelectItem>
                         <SelectItem value="male" className="text-blue-900">
                           {t('employee.male')}
                         </SelectItem>
@@ -605,26 +730,37 @@ const Profile = () => {
                       className="input-blue"
                     />
                   </div>
-                  <div className="space-y-3">
-                    <Label htmlFor="start_work" className="text-base text-blue-900 font-medium">{t('employee.internshipStartDate')}</Label>
-                    <Input
-                      id="start_work"
-                      type="date"
-                      value={formData.start_work}
-                      onChange={(e) => setFormData(prev => ({ ...prev, start_work: e.target.value }))}
-                      className="input-blue"
-                    />
-                  </div>
-                  <div className="space-y-3">
-                    <Label htmlFor="end_work" className="text-base text-blue-900 font-medium">{t('employee.internshipEndDate')}</Label>
-                    <Input
-                      id="end_work"
-                      type="date"
-                      value={formData.end_work}
-                      onChange={(e) => setFormData(prev => ({ ...prev, end_work: e.target.value }))}
-                      className="input-blue"
-                    />
-                  </div>
+                  {/* Start/End work dates: Start Work Date always shows; End Work Date shows only when position has Request Quote enabled */}
+                  {(() => {
+                    const selectedPos = positions.find(p => String(p.id) === formData.position);
+                    const showEndWorkDate = selectedPos ? !!selectedPos.request_quote : false;
+                    return (
+                      <>
+                        <div className="space-y-3">
+                          <Label htmlFor="start_work" className="text-base text-blue-900 font-medium">{t('employee.startWorkDate')}</Label>
+                          <Input
+                            id="start_work"
+                            type="date"
+                            value={formData.start_work}
+                            onChange={(e) => setFormData(prev => ({ ...prev, start_work: e.target.value }))}
+                            className="input-blue"
+                          />
+                        </div>
+                        {showEndWorkDate && (
+                          <div className="space-y-3">
+                            <Label htmlFor="end_work" className="text-base text-blue-900 font-medium">{t('employee.endWorkDate')}</Label>
+                            <Input
+                              id="end_work"
+                              type="date"
+                              value={formData.end_work}
+                              onChange={(e) => setFormData(prev => ({ ...prev, end_work: e.target.value }))}
+                              className="input-blue"
+                            />
+                          </div>
+                        )}
+                      </>
+                    );
+                  })()}
                 </div>
                 <div className="flex justify-end">
                   <Button type="submit" disabled={saving || loading} className="btn-blue px-8 py-2 text-lg">

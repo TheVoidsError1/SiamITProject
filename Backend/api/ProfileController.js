@@ -296,6 +296,11 @@ module.exports = (AppDataSource) => {
         userEntity.email = newEmail || userEntity.email;
         userEntity.department = department_id || userEntity.department;
         userEntity.position = position_id || userEntity.position;
+        userEntity.gender = gender !== undefined ? gender : userEntity.gender;
+        userEntity.dob = dob !== undefined ? dob : userEntity.dob;
+        userEntity.phone_number = phone_number !== undefined ? phone_number : userEntity.phone_number;
+        userEntity.start_work = start_work !== undefined ? start_work : userEntity.start_work;
+        userEntity.end_work = end_work !== undefined ? end_work : userEntity.end_work;
         if (hashedPassword) userEntity.password = hashedPassword;
         updated = await adminRepo.save(userEntity);
       } else if (role === 'superadmin') {
@@ -306,6 +311,11 @@ module.exports = (AppDataSource) => {
         userEntity.email = newEmail || userEntity.email;
         userEntity.department = department_id || userEntity.department;
         userEntity.position = position_id || userEntity.position;
+        userEntity.gender = gender !== undefined ? gender : userEntity.gender;
+        userEntity.dob = dob !== undefined ? dob : userEntity.dob;
+        userEntity.phone_number = phone_number !== undefined ? phone_number : userEntity.phone_number;
+        userEntity.start_work = start_work !== undefined ? start_work : userEntity.start_work;
+        userEntity.end_work = end_work !== undefined ? end_work : userEntity.end_work;
         if (hashedPassword) userEntity.password = hashedPassword;
         updated = await superadminRepo.save(userEntity);
       } else {
@@ -362,6 +372,11 @@ module.exports = (AppDataSource) => {
         profile.start_work = updated.start_work || null;
         profile.end_work = updated.end_work || null;
       }
+      
+      // Add debug logging
+      console.log('Profile update request body:', req.body);
+      console.log('Updated user entity:', updated);
+      console.log('Response profile data:', profile);
       
       return res.json({ success: true, data: profile });
     } catch (err) {

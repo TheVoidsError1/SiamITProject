@@ -2,12 +2,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 
+import { apiEndpoints, apiService } from '@/lib/api';
+import { showToastMessage } from '@/lib/toast';
 import { AlertCircle, Building, CheckCircle, Crown, Eye, EyeOff, Info, Lock, Mail, Plus, Shield, User, Users } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { apiService, apiEndpoints } from '@/lib/api';
-import { showToastMessage } from '@/lib/toast';
 
 const SuperAdminList: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -266,6 +267,12 @@ const SuperAdminList: React.FC = () => {
             </defs>
           </svg>
         </div>
+        
+        {/* Sidebar Trigger */}
+        <div className="absolute top-4 left-4 z-20">
+          <SidebarTrigger className="bg-white/90 hover:bg-white text-blue-700 border border-blue-200 hover:border-blue-300 shadow-lg backdrop-blur-sm" />
+        </div>
+        
         <div className="relative z-10 flex flex-col items-center justify-center py-12 md:py-20 animate-slide-down">
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full blur-xl opacity-30 animate-pulse-slow"></div>

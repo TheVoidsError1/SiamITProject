@@ -7,6 +7,17 @@ const { calculateDaysBetween } = require('../utils');
 module.exports = (AppDataSource) => {
   const router = express.Router();
 
+  // ใช้ฟังก์ชัน parseAttachments ปลอดภัย (same as LeaveRequestController)
+  function parseAttachments(val) {
+    if (!val) return [];
+    try {
+      return JSON.parse(val);
+    } catch (e) {
+      console.error('Invalid attachments JSON:', val, e);
+      return [];
+    }
+  }
+
   // GET /api/leave-history (ต้องแนบ JWT)
   router.get('/', authMiddleware, async (req, res) => {
     try {
@@ -39,6 +50,19 @@ module.exports = (AppDataSource) => {
       const endDate = req.query.endDate ? new Date(req.query.endDate) : null;
       const date = req.query.date ? new Date(req.query.date) : null;
       
+      // Debug log เพื่อตรวจสอบค่า filter ที่ได้รับ
+      console.log('Debug - Received filter values:', {
+        month,
+        year,
+        leaveType,
+        status,
+        retroactive,
+        startDate,
+        endDate,
+        date,
+        query: req.query
+      });
+      
       // ดึง leave request ของ user (paging) พร้อม filter เดือน/ปี (ใช้ createdAt)
       let where = { Repid: userId };
       
@@ -51,6 +75,12 @@ module.exports = (AppDataSource) => {
           ...where,
           createdAt: Between(startOfMonth, endOfMonth)
         };
+        console.log('Debug - Filtering by month and year:', {
+          month,
+          year,
+          startOfMonth: startOfMonth.toISOString(),
+          endOfMonth: endOfMonth.toISOString()
+        });
       } else if (year) {
         // ถ้าเลือกแค่ปี
         const startOfYear = new Date(year, 0, 1);
@@ -59,6 +89,26 @@ module.exports = (AppDataSource) => {
           ...where,
           createdAt: Between(startOfYear, endOfYear)
         };
+        console.log('Debug - Filtering by year only:', {
+          year,
+          startOfYear: startOfYear.toISOString(),
+          endOfYear: endOfYear.toISOString()
+        });
+      } else if (month) {
+        // ถ้าเลือกแค่เดือน (ใช้ปีปัจจุบัน)
+        const currentYear = new Date().getFullYear();
+        const startOfMonth = new Date(currentYear, month - 1, 1);
+        const endOfMonth = new Date(currentYear, month, 0, 23, 59, 59, 999);
+        where = {
+          ...where,
+          createdAt: Between(startOfMonth, endOfMonth)
+        };
+        console.log('Debug - Filtering by month only (current year):', {
+          month,
+          currentYear,
+          startOfMonth: startOfMonth.toISOString(),
+          endOfMonth: endOfMonth.toISOString()
+        });
       }
       
       // Filter ตามประเภทการลา
@@ -97,13 +147,48 @@ module.exports = (AppDataSource) => {
       }
 
       // Debug log สำหรับ where clause
-      console.log('Debug - Where clause:', JSON.stringify(where, null, 2));
+      console.log('Debug - Final where clause:', JSON.stringify(where, null, 2));
+      console.log('Debug - Where clause summary:', {
+        hasMonthFilter: !!month,
+        hasYearFilter: !!year,
+        hasLeaveTypeFilter: !!leaveType,
+        hasStatusFilter: !!status,
+        hasRetroactiveFilter: !!retroactive,
+        hasDateFilter: !!date,
+        totalFilters: Object.keys(where).length
+      });
 
       // ดึง leave request ของ user (paging)
       const [leaves, total] = await Promise.all([
         leaveRepo.find({ where, order: { createdAt: 'DESC' }, skip, take: limit }),
         leaveRepo.count({ where })
       ]);
+      
+      console.log('Debug - Database query results:', {
+        totalLeaves: total,
+        returnedLeaves: leaves.length,
+        page,
+        limit,
+        skip
+      });
+      
+      // Debug log สำหรับตรวจสอบข้อมูลที่ได้
+      if (leaves.length > 0) {
+        console.log('Debug - Sample leave data:', {
+          firstLeave: {
+            id: leaves[0].id,
+            createdAt: leaves[0].createdAt,
+            startDate: leaves[0].startDate,
+            status: leaves[0].status
+          },
+          lastLeave: {
+            id: leaves[leaves.length - 1].id,
+            createdAt: leaves[leaves.length - 1].createdAt,
+            startDate: leaves[leaves.length - 1].startDate,
+            status: leaves[leaves.length - 1].status
+          }
+        });
+      }
 
       // --- ดึง leave request ทั้งหมดของ user เพื่อคำนวณ summary (ไม่สนใจ filter) ---
       const allLeavesForSummary = await leaveRepo.find({ where: { Repid: userId } });
@@ -268,14 +353,7 @@ module.exports = (AppDataSource) => {
           rejectionReason: leave.rejectedReason,
           submittedDate: leave.createdAt,
           backdated: Boolean(leave.backdated), // แปลงเป็น boolean เพื่อให้แน่ใจ
-          attachments: leave.attachments ? (() => {
-            try {
-              return JSON.parse(leave.attachments);
-            } catch (error) {
-              console.error('Error parsing attachments JSON:', error);
-              return [];
-            }
-          })() : [], // แปลง JSON string เป็น array พร้อม error handling
+          attachments: parseAttachments(leave.attachments), // แปลง JSON string เป็น array พร้อม error handling
           contact: leave.contact || null, // เพิ่มข้อมูลการติดต่อ
         };
       }));

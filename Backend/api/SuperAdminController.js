@@ -383,7 +383,7 @@ module.exports = (AppDataSource) => {
    *         description: Internal server error
    */
   router.post('/positions-with-quotas', async (req, res) => {
-    const { position_name_en, position_name_th, quotas } = req.body;
+    const { position_name_en, position_name_th, quotas, request_quote = false } = req.body;
     console.log('Received quotas:', quotas);
     if (!position_name_en || !position_name_th || typeof quotas !== 'object') {
       return sendValidationError(res, 'position_name_en, position_name_th, and quotas are required');
@@ -396,7 +396,7 @@ module.exports = (AppDataSource) => {
       const leaveTypeRepo = queryRunner.manager.getRepository('LeaveType');
       const leaveQuotaRepo = queryRunner.manager.getRepository('LeaveQuota');
       // 1. Create position with both languages
-      const position = positionRepo.create({ position_name_en, position_name_th });
+      const position = positionRepo.create({ position_name_en, position_name_th, request_quote: !!request_quote });
       await positionRepo.save(position);
       // 2. Get all leave types except 'emergency'
       const leaveTypes = await leaveTypeRepo.find();
@@ -472,6 +472,8 @@ module.exports = (AppDataSource) => {
           id: pos.id,
           position_name_en: pos.position_name_en,
           position_name_th: pos.position_name_th,
+          request_quote: !!pos.request_quote,
+          new_year_quota: typeof pos.new_year_quota === 'number' ? pos.new_year_quota : (pos.new_year_quota ? 1 : 0),
           quotas: posQuotas
         };
       });
@@ -531,7 +533,7 @@ module.exports = (AppDataSource) => {
    */
   router.put('/positions-with-quotas/:id', async (req, res) => {
     const { id } = req.params;
-    const { position_name_en, position_name_th, quotas } = req.body;
+    const { position_name_en, position_name_th, quotas, request_quote, new_year_quota } = req.body;
     if (!position_name_en || !position_name_th || typeof quotas !== 'object') {
       return res.status(400).json({ success: false, message: 'position_name_en, position_name_th, and quotas are required' });
     }
@@ -549,6 +551,11 @@ module.exports = (AppDataSource) => {
       }
       position.position_name_en = position_name_en;
       position.position_name_th = position_name_th;
+      position.request_quote = typeof request_quote === 'boolean' ? request_quote : !!position.request_quote;
+      if (new_year_quota !== undefined && new_year_quota !== null) {
+        // Expect 0 = reset, 1 = not reset
+        position.new_year_quota = Number(new_year_quota) === 1 ? 1 : 0;
+      }
       await positionRepo.save(position);
       const leaveTypes = await leaveTypeRepo.find();
       const filteredLeaveTypes = leaveTypes.filter(
@@ -637,17 +644,15 @@ module.exports = (AppDataSource) => {
     try {
       const { id } = req.params;
       const superadminRepo = AppDataSource.getRepository('SuperAdmin');
-      const processRepo = AppDataSource.getRepository('ProcessCheck');
+      const { deleteUserComprehensive } = require('../utils/userDeletionUtils');
 
-      // Delete from process_check
-      await processRepo.delete({ Repid: id, Role: 'superadmin' });
-      // Delete from superadmin table
-      const result = await superadminRepo.delete({ id });
-      if (result.affected === 0) {
+      const result = await deleteUserComprehensive(AppDataSource, id, 'superadmin', superadminRepo);
+      
+      sendSuccess(res, result.deletionSummary, result.message);
+    } catch (err) {
+      if (err.message === 'superadmin not found') {
         return sendNotFound(res, 'Superadmin not found');
       }
-      sendSuccess(res, null, 'Superadmin deleted successfully');
-    } catch (err) {
       sendError(res, err.message, 500);
     }
   });

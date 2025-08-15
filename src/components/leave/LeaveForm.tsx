@@ -1,22 +1,19 @@
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Send, User, ClipboardList, CalendarDays, FileText, Phone, Users, ArrowLeftCircle, Clock } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
+import { Textarea } from "@/components/ui/textarea";
+import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { enUS, th } from "date-fns/locale";
+import { ArrowLeftCircle, CalendarDays, CalendarIcon, ClipboardList, Clock, FileText, Phone, Send } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { useNavigate } from 'react-router-dom';
 import { DateRangePicker } from "./DateRangePicker";
 import { FileUpload } from "./FileUpload";
-import { leaveTypes, personalLeaveOptions, timeSlots } from "@/constants/leaveTypes";
-import { useNavigate } from 'react-router-dom';
-import { useTranslation } from "react-i18next";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar } from "@/components/ui/calendar";
-import { CalendarIcon } from "lucide-react";
-import { useAuth } from "@/contexts/AuthContext";
-import { format } from "date-fns";
-import { th, enUS } from "date-fns/locale";
 
 // ฟังก์ชัน validate เวลา HH:mm (24 ชั่วโมง)
 function isValidTimeFormat(timeStr: string): boolean {
@@ -558,17 +555,24 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
     setStartTime("");
     setEndTime("");
     setLeaveDate(undefined); // เพิ่มการ reset leaveDate
-    // เมื่อเลือกรายชั่วโมง ให้ตั้งค่าวันที่เป็นวันปัจจุบันเท่านั้น
+    // เมื่อเลือกรายชั่วโมง ไม่บังคับเป็นวันปัจจุบัน ให้ผู้ใช้เลือกเอง
     if (value === "hour") {
-      const today = new Date();
-      setStartDate(today);
-      setEndDate(today);
-      setLeaveDate(today); // ตั้งค่าวันที่ลาเป็นวันปัจจุบัน
       // เติมเวลาอัตโนมัติ: เริ่มต้น 09:00 และสิ้นสุด 18:00
       setStartTime("09:00");
       setEndTime("18:00");
+      // เคลียร์ start/end date จนกว่าจะเลือกวันที่ลา เพื่อป้องกันใช้วันที่ปัจจุบันโดยไม่ตั้งใจ
+      setStartDate(undefined);
+      setEndDate(undefined);
     }
   };
+
+  // ซิงก์วันที่สำหรับลาแบบรายชั่วโมง: เมื่อผู้ใช้เลือก leaveDate ให้กำหนด start/end เป็นวันเดียวกัน
+  useEffect(() => {
+    if (durationType === 'hour' && leaveDate) {
+      setStartDate(leaveDate);
+      setEndDate(leaveDate);
+    }
+  }, [durationType, leaveDate]);
 
   return (
     <div className="max-w-2xl mx-auto my-8 animate-fade-in">
@@ -802,7 +806,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
                       placeholder={t('leave.reasonPlaceholder')}
                       value={reason}
                       onChange={(e) => setReason(e.target.value)}
-                      className={`min-h-[100px] resize-none rounded-xl border-2 transition-all ${
+                      className={`min-h-[100px] resize-none rounded-xl border-2 transition-all break-all overflow-wrap-anywhere whitespace-pre-wrap ${
                         errors.reason 
                           ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' 
                           : 'focus:border-orange-500 focus:ring-2 focus:ring-orange-500/20'

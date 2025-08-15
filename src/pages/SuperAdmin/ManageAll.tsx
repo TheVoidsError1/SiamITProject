@@ -1,22 +1,23 @@
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+
 import { useAuth } from '@/contexts/AuthContext';
-import { apiService, apiEndpoints } from '@/lib/api';
-import { showToastMessage } from '@/lib/toast';
+import { apiEndpoints, apiService } from '@/lib/api';
+import { showToast, showToastMessage } from '@/lib/toast';
 
 
 
@@ -30,7 +31,7 @@ const ManageAll: React.FC = () => {
   const lang = i18n.language.startsWith('th') ? 'th' : 'en';
   // Position state
   const [positions, setPositions] = useState<any[]>([]);
-  const [positionForm, setPositionForm] = useState<{ name_en: string; name_th: string; quotas: Record<string, number> }>({ name_en: '', name_th: '', quotas: {} });
+  const [positionForm, setPositionForm] = useState<{ name_en: string; name_th: string; quotas: Record<string, number>; request_quote: boolean }>({ name_en: '', name_th: '', quotas: {}, request_quote: false });
   const [editingPositionId, setEditingPositionId] = useState<string | null>(null);
   const [positionError, setPositionError] = useState<string | null>(null);
 
@@ -51,6 +52,32 @@ const ManageAll: React.FC = () => {
     name_th: string;
     quotas: Record<string, number>;
   }> (null);
+  // Quota tab state removed along with reset functionality
+
+  const handleToggleNewYearQuota = async (pos: any) => {
+    try {
+      // Build quotas payload from current row
+      const quotasForBackend: Record<string, number> = {};
+      pos.quotas.forEach((q: any) => { if (q.leaveTypeId) quotasForBackend[q.leaveTypeId] = q.quota ?? 0; });
+      const nextValue = Number(pos.new_year_quota) === 1 ? 0 : 1; // 0=รี,1=ไม่รี
+      const data = await apiService.put(`/api/positions-with-quotas/${pos.id}`, {
+        position_name_en: pos.position_name_en,
+        position_name_th: pos.position_name_th,
+        quotas: quotasForBackend,
+        new_year_quota: nextValue,
+        request_quote: pos.request_quote,
+      });
+      if (!data || !data.success) throw new Error('Failed to update');
+      // Refresh positions
+      const positionsData = await apiService.get('/api/positions-with-quotas');
+      if (positionsData.success && Array.isArray(positionsData.data)) {
+        setPositions(positionsData.data);
+      }
+      showToastMessage.crud.updateSuccess('position', t);
+    } catch (err: any) {
+      showToastMessage.crud.updateError('position', err?.message, t);
+    }
+  };
 
   // Add state for inline editing error
   const [inlineEditError, setInlineEditError] = useState<string | null>(null);
@@ -95,11 +122,11 @@ const ManageAll: React.FC = () => {
           department_name_th: departmentForm.name_th
         });
         await fetchDepartments();
-        showToastMessage.crud.createSuccess('department');
+        showToastMessage.crud.createSuccess('department', t);
       }
       setDepartmentForm({ name_en: '', name_th: '' });
     } catch (error) {
-      showToastMessage.crud.createError('department');
+      showToastMessage.crud.createError('department', undefined, t);
     }
   };
   const handleEditDepartment = (id: string) => {
@@ -123,9 +150,9 @@ const ManageAll: React.FC = () => {
       await apiService.delete(`${apiEndpoints.departments}/${deleteDepartmentDialog.department.id}`);
       await fetchDepartments();
       setDeleteDepartmentDialog({ open: false, department: null });
-      showToastMessage.crud.deleteSuccess('department');
+      showToastMessage.crud.deleteSuccess('department', t);
     } catch (error) {
-      showToastMessage.crud.deleteError('department');
+      showToastMessage.crud.deleteError('department', undefined, t);
     }
   };
 
@@ -162,9 +189,9 @@ const ManageAll: React.FC = () => {
         setLeaveTypes(data.data);
       }
       setDeleteLeaveTypeDialog({ open: false, leaveType: null });
-      showToastMessage.crud.deleteSuccess('leaveType');
+      showToastMessage.crud.deleteSuccess('leaveType', t);
     } catch (error) {
-      showToastMessage.crud.deleteError('leaveType');
+      showToastMessage.crud.deleteError('leaveType', undefined, t);
     }
   };
   const handleLeaveTypeSubmit = async (e: React.FormEvent) => {
@@ -178,14 +205,14 @@ const ManageAll: React.FC = () => {
           require_attachment: leaveTypeForm.require_attachment
         });
         setEditingLeaveTypeId(null);
-        showToastMessage.crud.updateSuccess('leaveType');
+        showToastMessage.crud.updateSuccess('leaveType', t);
       } else {
         await apiService.post(apiEndpoints.leaveTypes, {
           leave_type_en: leaveTypeForm.name_en,
           leave_type_th: leaveTypeForm.name_th,
           require_attachment: leaveTypeForm.require_attachment
         });
-        showToastMessage.crud.createSuccess('leaveType');
+        showToastMessage.crud.createSuccess('leaveType', t);
       }
       // Refresh leave types
       const data = await apiService.get(apiEndpoints.leaveTypes);
@@ -195,9 +222,9 @@ const ManageAll: React.FC = () => {
       setLeaveTypeForm({ name_en: '', name_th: '', require_attachment: false });
     } catch (error) {
       if (editingLeaveTypeId) {
-        showToastMessage.crud.updateError('leaveType');
+        showToastMessage.crud.updateError('leaveType', undefined, t);
       } else {
-        showToastMessage.crud.createError('leaveType');
+        showToastMessage.crud.createError('leaveType', undefined, t);
       }
     }
   };
@@ -256,6 +283,31 @@ const ManageAll: React.FC = () => {
     }
   };
 
+  // Toggle Request Quote switch for a position
+  const handleToggleRequestQuote = async (pos: any) => {
+    const newValue = !pos.request_quote;
+    try {
+      // Build quotas payload from current row
+      const quotasForBackend: Record<string, number> = {};
+      pos.quotas.forEach((q: any) => { if (q.leaveTypeId) quotasForBackend[q.leaveTypeId] = q.quota ?? 0; });
+      const data = await apiService.put(`/api/positions-with-quotas/${pos.id}`, {
+        position_name_en: pos.position_name_en,
+        position_name_th: pos.position_name_th,
+        quotas: quotasForBackend,
+        request_quote: newValue
+      });
+      if (!data || !data.success) throw new Error('Failed to update');
+      // Refresh positions
+      const positionsData = await apiService.get('/api/positions-with-quotas');
+      if (positionsData.success && Array.isArray(positionsData.data)) {
+        setPositions(positionsData.data);
+      }
+      showToastMessage.crud.updateSuccess('position', t);
+    } catch (err: any) {
+      showToastMessage.crud.updateError('position', err?.message, t);
+    }
+  };
+
   const startInlineDepartmentEdit = (dep: any) => {
     setInlineDepartmentEdit({ id: dep.id, name_en: dep.department_name_en, name_th: dep.department_name_th });
   };
@@ -278,10 +330,10 @@ const ManageAll: React.FC = () => {
       }
       await fetchDepartments();
       setInlineDepartmentEdit(null);
-      showToastMessage.crud.updateSuccess('department');
+      showToastMessage.crud.updateSuccess('department', t);
     } catch (error) {
       setInlineDepartmentError('Failed to update department');
-      showToastMessage.crud.updateError('department');
+      showToastMessage.crud.updateError('department', undefined, t);
     }
   };
 
@@ -316,10 +368,10 @@ const ManageAll: React.FC = () => {
         setLeaveTypes(leaveTypesData.data);
       }
       setInlineLeaveTypeEdit(null);
-      showToastMessage.crud.updateSuccess('leaveType');
+      showToastMessage.crud.updateSuccess('leaveType', t);
     } catch (error) {
       setInlineLeaveTypeError('Failed to update leave type');
-      showToastMessage.crud.updateError('leaveType');
+      showToastMessage.crud.updateError('leaveType', undefined, t);
     }
   };
 
@@ -362,7 +414,8 @@ const ManageAll: React.FC = () => {
 
   // Position handlers
   const handlePositionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPositionForm({ ...positionForm, [e.target.name]: e.target.value });
+    const { name, type, checked, value } = e.target;
+    setPositionForm({ ...positionForm, [name]: type === 'checkbox' ? checked : value });
   };
   // Change how quotas are built and handled for positions
   const handleQuotaChange = (leaveTypeId: string, value: string) => {
@@ -393,7 +446,8 @@ const ManageAll: React.FC = () => {
         const data = await apiService.post('/api/positions-with-quotas', {
           position_name_en: positionForm.name_en,
           position_name_th: positionForm.name_th,
-          quotas: quotasForBackend
+          quotas: quotasForBackend,
+          request_quote: positionForm.request_quote
         });
         if (!data || !data.success) {
           setPositionError(data?.message || 'Unknown error');
@@ -404,12 +458,12 @@ const ManageAll: React.FC = () => {
         if (positionsData.success && Array.isArray(positionsData.data)) {
           setPositions(positionsData.data);
         }
-        setPositionForm({ name_en: '', name_th: '', quotas: {} });
-        showToastMessage.crud.createSuccess('position');
+        setPositionForm({ name_en: '', name_th: '', quotas: {}, request_quote: false });
+        showToastMessage.crud.createSuccess('position', t);
       }
     } catch (err: any) {
       setPositionError(err.message || 'Unknown error');
-      showToastMessage.crud.createError('position');
+      showToastMessage.crud.createError('position', undefined, t);
     }
   };
   const handleEditPosition = (id: string) => {
@@ -418,7 +472,8 @@ const ManageAll: React.FC = () => {
       setPositionForm({
         name_en: pos.position_name_en,
         name_th: pos.position_name_th,
-        quotas: pos.quotas
+        quotas: pos.quotas,
+        request_quote: !!pos.request_quote
       });
       setEditingPositionId(id);
     }
@@ -441,9 +496,9 @@ const ManageAll: React.FC = () => {
         setPositions(data.data);
       }
       setDeletePositionDialog({ open: false, position: null });
-      showToastMessage.crud.deleteSuccess('position');
+      showToastMessage.crud.deleteSuccess('position', t);
     } catch (error) {
-      showToastMessage.crud.deleteError('position');
+      showToastMessage.crud.deleteError('position', undefined, t);
     }
   };
 
@@ -458,9 +513,9 @@ const ManageAll: React.FC = () => {
       });
       if (!data || !data.success) throw new Error('Failed to update');
       setLeaveTypes(prev => prev.map(l => l.id === lt.id ? { ...l, require_attachment: newValue } : l));
-      showToastMessage.crud.updateSuccess('leaveType');
+      showToastMessage.crud.updateSuccess('leaveType', t);
     } catch (err: any) {
-      showToastMessage.crud.updateError('leaveType', err.message);
+      showToastMessage.crud.updateError('leaveType', err.message, t);
     }
   };
 
@@ -495,6 +550,12 @@ const ManageAll: React.FC = () => {
             </defs>
           </svg>
         </div>
+        
+        {/* Sidebar Trigger */}
+        <div className="absolute top-4 left-4 z-20">
+          <SidebarTrigger className="bg-white/90 hover:bg-white text-blue-700 border border-blue-200 hover:border-blue-300 shadow-lg backdrop-blur-sm" />
+        </div>
+        
         <div className="relative z-10 flex flex-col items-center justify-center py-10 md:py-16">
           <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-24 h-24 rounded-full bg-white/80 shadow-2xl border-4 border-white mb-4" />
           <h1 className="text-4xl md:text-5xl font-extrabold text-indigo-900 drop-shadow mb-2 flex items-center gap-3">
@@ -517,6 +578,9 @@ const ManageAll: React.FC = () => {
               </TabsTrigger>
               <TabsTrigger value="leaveTypes" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg text-indigo-700 font-bold text-xl py-3 px-6 rounded-2xl transition-all flex items-center gap-2">
                 <span role="img" aria-label="leaveTypes">📝</span> {t('leave.leaveType', 'Leave Types')}
+              </TabsTrigger>
+              <TabsTrigger value="quota" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg text-indigo-700 font-bold text-xl py-3 px-6 rounded-2xl transition-all flex items-center gap-2">
+                <span role="img" aria-label="quota">📊</span> {t('leave.quota', 'Quota')}
               </TabsTrigger>
             </TabsList>
             <TabsContent value="positions">
@@ -545,7 +609,20 @@ const ManageAll: React.FC = () => {
                         </div>
                       ))}
                     </div>
-                    <div className="flex justify-end mt-2">
+                    <div className="flex items-center justify-between mt-2">
+                      <label className="flex items-center gap-3 ml-1">
+                        <input
+                          type="checkbox"
+                          name="request_quote"
+                          checked={positionForm.request_quote}
+                          onChange={handlePositionChange}
+                          className="accent-blue-600 h-5 w-5 rounded border-gray-300 focus:ring-2 focus:ring-blue-400 transition-all"
+                        />
+                        <span className="text-base font-medium select-none cursor-pointer whitespace-nowrap">
+                          {t('positions.requestQuote', 'Request Quote')}
+                        </span>
+                      </label>
+                      
                       <Button type="submit" className="btn-primary w-24">{editingPositionId ? t('common.update', 'Update') : t('common.add', 'Add')}</Button>
                     </div>
                     {positionError && (
@@ -558,6 +635,7 @@ const ManageAll: React.FC = () => {
                         <tr className="bg-blue-100 text-blue-900">
                           <th className="p-3">{t('positions.position', 'ตำแหน่ง')} (EN)</th>
                           <th className="p-3">{t('positions.position', 'ตำแหน่ง')} (TH)</th>
+                          <th className="p-3">{t('positions.requestQuote', 'Request Quote')}</th>
                           {filteredLeaveTypes.map(lt => (
                             <th key={lt.id} className="p-3">{lang === 'th' ? lt.leave_type_th : lt.leave_type_en}</th>
                           ))}
@@ -574,6 +652,14 @@ const ManageAll: React.FC = () => {
                                 </td>
                                 <td className="p-3 font-medium">
                                   <Input value={inlineEdit.name_th} onChange={e => handleInlineEditChange('name_th', e.target.value)} className="w-32" />
+                                </td>
+                                <td className="p-3 font-medium text-center">
+                                  <label style={{ display: 'inline-block', position: 'relative', width: 40, height: 24 }}>
+                                    <input type="checkbox" checked={!!pos.request_quote} style={{ opacity: 0, width: 0, height: 0 }} tabIndex={-1} readOnly />
+                                    <span style={{ position: 'absolute', cursor: 'not-allowed', top: 0, left: 0, right: 0, bottom: 0, background: !!pos.request_quote ? '#64b5f6' : '#ccc', borderRadius: 24, transition: 'background 0.2s', display: 'block' }}>
+                                      <span style={{ position: 'absolute', left: !!pos.request_quote ? 20 : 2, top: 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} />
+                                    </span>
+                                  </label>
                                 </td>
                                 {filteredLeaveTypes.map(lt => (
                                   <td key={lt.id} className="p-3">
@@ -595,6 +681,20 @@ const ManageAll: React.FC = () => {
                               <>
                                 <td className="p-3 font-medium">{pos.position_name_en}</td>
                                 <td className="p-3 font-medium">{pos.position_name_th}</td>
+                                <td className="p-3 font-medium text-center">
+                                  <label style={{ display: 'inline-block', position: 'relative', width: 40, height: 24 }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={!!pos.request_quote}
+                                      onChange={() => handleToggleRequestQuote(pos)}
+                                      style={{ opacity: 0, width: 0, height: 0 }}
+                                      tabIndex={-1}
+                                    />
+                                    <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, background: !!pos.request_quote ? '#64b5f6' : '#ccc', borderRadius: 24, transition: 'background 0.2s', display: 'block' }}>
+                                      <span style={{ position: 'absolute', left: !!pos.request_quote ? 20 : 2, top: 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} />
+                                    </span>
+                                  </label>
+                                </td>
                                 {filteredLeaveTypes.map(lt => (
                                   <td key={lt.id} className="p-3">
                                     {pos.quotas.find((q: any) => q.leaveTypeId === lt.id)?.quota ?? ''}
@@ -610,6 +710,55 @@ const ManageAll: React.FC = () => {
                         ))}
                       </tbody>
                     </table>
+                  </div>
+                </div>
+              </div>
+            </TabsContent>
+            <TabsContent value="quota">
+              <div className="rounded-2xl shadow overflow-hidden mb-8">
+                <div className="bg-blue-600 px-6 py-3">
+                  <h2 className="text-lg font-bold text-white">{t('leave.quota', 'Quota')}</h2>
+                </div>
+                <div className="p-6 space-y-6">
+                  <div className="bg-white rounded-xl p-4 shadow-sm">
+                    <h3 className="text-blue-900 font-semibold mb-3">{t('leave.note', 'Note')}</h3>
+                    <p className="text-sm text-gray-700">{t('leave.noteDetail', 'Positions with new_year_quota = 0 will be included when no position is selected.')}</p>
+                  </div>
+                  <div className="bg-white rounded-xl p-4 shadow-sm">
+                    <h3 className="text-blue-900 font-semibold mb-3">{t('positions.positions', 'Positions')}</h3>
+                    <div className="overflow-x-auto rounded-xl">
+                      <table className="w-full table-auto bg-white rounded-xl">
+                        <thead>
+                          <tr className="bg-blue-100 text-blue-900">
+                            <th className="p-3">{t('positions.position', 'Position')} (EN)</th>
+                            <th className="p-3">{t('positions.position', 'Position')} (TH)</th>
+                            <th className="p-3 text-center">{t('positions.newYearQuota', 'New Year Reset (0=Reset,1=No)')}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {positions.map(pos => (
+                            <tr key={pos.id} className="hover:bg-blue-50">
+                              <td className="p-3 font-medium">{pos.position_name_en}</td>
+                              <td className="p-3 font-medium">{pos.position_name_th}</td>
+                              <td className="p-3 font-medium text-center">
+                                <label style={{ display: 'inline-block', position: 'relative', width: 40, height: 24 }}>
+                                  <input
+                                    type="checkbox"
+                                    checked={Number(pos.new_year_quota) === 1}
+                                    onChange={() => handleToggleNewYearQuota(pos)}
+                                    style={{ opacity: 0, width: 0, height: 0 }}
+                                    tabIndex={-1}
+                                  />
+                                  <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, background: Number(pos.new_year_quota) === 1 ? '#64b5f6' : '#ccc', borderRadius: 24, transition: 'background 0.2s', display: 'block' }}>
+                                    <span style={{ position: 'absolute', left: Number(pos.new_year_quota) === 1 ? 20 : 2, top: 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} />
+                                  </span>
+                                </label>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -830,6 +979,8 @@ const ManageAll: React.FC = () => {
           </Tabs>
         </div>
       </div>
+
+      
 
       {/* Delete Confirmation Dialogs */}
       
