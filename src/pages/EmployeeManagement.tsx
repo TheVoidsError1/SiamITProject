@@ -556,12 +556,12 @@ const EmployeeManagement = () => {
                                   </span>
                                 )}
                               </td>
-                              <td className="px-3 py-3 text-center flex gap-1.5 justify-center">
+                              <td className="px-3 py-3 text-center flex gap-1.5 justify-start">
                                 <Button 
                                   asChild 
                                   size="sm" 
                                   variant="secondary"
-                                  className="rounded-lg px-3 py-1.5 font-medium bg-gradient-to-r from-blue-500 to-indigo-400 text-white shadow hover:scale-105 transition text-xs"
+                                  className="min-w-[120px] rounded-lg px-3 py-1.5 font-medium bg-gradient-to-r from-blue-500 to-indigo-400 text-white shadow hover:scale-105 transition text-xs"
                                 >
                                   <Link to={`/admin/employees/${employee.id}?role=${employee.role}`}> 
                                     <Eye className="w-3.5 h-3.5 mr-1" />
