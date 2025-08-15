@@ -626,7 +626,8 @@
     "noEmployeesFoundDesc": "No employees match the selected filter criteria. Please try changing the criteria or reset the filter",
     "confirmDelete": "Confirm Delete",
     "confirmDeleteNewsDesc": "Are you sure you want to delete this news?",
-    "confirmDeleteDesc": "Are you sure you want to delete this user?"
+    "confirmDeleteDesc": "Are you sure you want to delete this user?",
+    "noPermissionToDelete": "No permission to delete this user"
   },
   "error": {
     "apiConnectionError": "API Connection Error",
