@@ -231,9 +231,49 @@ const EmployeeManagement = () => {
     },
   ];
 
+  // ฟังก์ชันตรวจสอบสิทธิ์ในการลบพนักงาน
+  const canDeleteEmployee = (targetEmployee: Employee): boolean => {
+    if (!user) return false;
+    
+    // Admin ไม่สามารถลบ Superadmin ได้
+    if (user.role === 'admin' && targetEmployee.role === 'superadmin') {
+      return false;
+    }
+    
+    // ไม่สามารถลบตัวเองได้
+    if (user.id === targetEmployee.id) {
+      return false;
+    }
+    
+    // Superadmin สามารถลบได้ทุกคน (ยกเว้นตัวเอง)
+    if (user.role === 'superadmin') {
+      return true;
+    }
+    
+    // Admin สามารถลบได้เฉพาะ user และ admin อื่นๆ (ยกเว้น superadmin และตัวเอง)
+    if (user.role === 'admin') {
+      return targetEmployee.role === 'user' || targetEmployee.role === 'admin';
+    }
+    
+    // User ไม่สามารถลบใครได้
+    return false;
+  };
+
   // ฟังก์ชันลบพนักงาน - จัดการการลบพนักงานตามบทบาท (superadmin, admin, user)
   const handleDelete = async () => {
     if (!deleteTarget || !user) return;
+    
+    // ตรวจสอบสิทธิ์ก่อนลบ
+    if (!canDeleteEmployee(deleteTarget)) {
+      toast({
+        title: t('system.deleteFailed', 'ลบไม่สำเร็จ'),
+        description: t('system.noPermissionToDelete', 'ไม่มีสิทธิ์ในการลบผู้ใช้นี้'),
+        variant: "destructive",
+      });
+      setDeleteTarget(null);
+      return;
+    }
+    
     setDeleting(true);
     let url = '';
     if (deleteTarget.role === 'superadmin') {
@@ -528,33 +568,35 @@ const EmployeeManagement = () => {
                                     {t('common.viewDetails')}
                                   </Link>
                                 </Button>
-                                {/* ปุ่มลบพนักงาน - เปิด Dialog ยืนยันการลบ */}
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button
-                                      size="sm"
-                                      variant="destructive"
-                                      className="rounded-lg px-3 py-1.5 font-medium bg-gradient-to-r from-red-500 to-red-600 text-white shadow hover:scale-105 transition text-xs"
-                                      onClick={() => setDeleteTarget(employee)}
-                                    >
-                                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m5 0H6" /></svg>
-                                      {t('common.delete')}
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>{t('system.confirmDelete')}</AlertDialogTitle>
-                                      <AlertDialogDescription>{t('system.confirmDeleteDesc')}</AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                                      {/* ปุ่มยืนยันการลบใน Dialog */}
-                                      <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-gradient-to-r from-red-500 to-pink-400 text-white">
-                                        {deleting ? t('common.loading') : t('common.delete')}
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
+                                {/* ปุ่มลบพนักงาน - แสดงเฉพาะเมื่อมีสิทธิ์ลบ */}
+                                {canDeleteEmployee(employee) && (
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        className="rounded-lg px-3 py-1.5 font-medium bg-gradient-to-r from-red-500 to-red-600 text-white shadow hover:scale-105 transition text-xs"
+                                        onClick={() => setDeleteTarget(employee)}
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m5 0H6" /></svg>
+                                        {t('common.delete')}
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>{t('system.confirmDelete')}</AlertDialogTitle>
+                                        <AlertDialogDescription>{t('system.confirmDeleteDesc')}</AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                                        {/* ปุ่มยืนยันการลบใน Dialog */}
+                                        <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-gradient-to-r from-red-500 to-pink-400 text-white">
+                                          {deleting ? t('common.loading') : t('common.delete')}
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                )}
                               </td>
                             </tr>
                           ))}

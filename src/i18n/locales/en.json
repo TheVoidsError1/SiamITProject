@@ -539,9 +539,9 @@
     "noDataForSelectedMonthYear": "No data for the selected month/year",
     "approveConfirmTitle": "Confirm Approval",
     "rejectConfirmTitle": "Confirm Rejection",
-    "approveConfirmDesc": "Do you want to approve {{name}}'s leave request?",
-    "rejectConfirmDesc": "Do you want to reject {name}'s leave request?",
-    "rejectConfirmDescTh": "Do you want to reject {name}'s leave request?",
+    "approveConfirmDesc": "Do you want to approve {{name}} leave request?",
+    "rejectConfirmDesc": "Do you want to reject {name} leave request?",
+    "rejectConfirmDescTh": "Do you want to reject {name} leave request?",
     "createUserTitle": "Create User",
     "createUserDesc": "Create a new user in the system",
     "selectUserType": "Select user type to create",
@@ -622,7 +622,8 @@
     "noEmployeesFoundDesc": "No employees match the selected filter criteria. Please try changing the criteria or reset the filter",
     "confirmDelete": "Confirm Delete",
     "confirmDeleteNewsDesc": "Are you sure you want to delete this news?",
-    "confirmDeleteDesc": "Are you sure you want to delete this user?"
+    "confirmDeleteDesc": "Are you sure you want to delete this user?",
+    "noPermissionToDelete": "No permission to delete this user"
   },
   "error": {
     "apiConnectionError": "API Connection Error",
