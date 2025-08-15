@@ -611,6 +611,10 @@
     "createSuccessDesc": "Data created successfully",
     "createError": "Create failed",
     "createErrorDesc": "Unable to create data",
+    "loadSuccess": "Load successful",
+    "loadSuccessDesc": "Data loaded successfully",
+    "loadError": "Load failed",
+    "loadErrorDesc": "Unable to load data",
     "allPositions": "All Positions",
     "allDepartments": "All Departments",
     "allRoles": "All Roles",
@@ -870,5 +874,25 @@
     "description": "Crop your avatar to the desired size",
     "crop": "Crop",
     "cancel": "Cancel"
+  },
+  "validation": {
+    "requiredField": "Incomplete Information",
+    "requiredFieldDesc": "Please fill in all required information",
+    "invalidFormat": "Invalid Format",
+    "invalidFormatDesc": "Data format is invalid",
+    "invalidEmail": "Invalid Email",
+    "invalidEmailDesc": "Please enter a valid email address"
+  },
+  "network": {
+    "timeoutError": "Connection Timeout",
+    "timeoutErrorDesc": "Connection took too long",
+    "serverError": "Server Error",
+    "serverErrorDesc": "An error occurred on the server"
+  },
+  "file": {
+    "downloadSuccess": "Download Successful",
+    "downloadSuccessDesc": "File downloaded successfully",
+    "downloadError": "Download Failed",
+    "downloadErrorDesc": "Unable to download file"
   }
 }

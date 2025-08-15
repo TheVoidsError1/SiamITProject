@@ -614,6 +614,10 @@
     "createSuccessDesc": "สร้างข้อมูลสำเร็จแล้ว",
     "createError": "สร้างไม่สำเร็จ",
     "createErrorDesc": "ไม่สามารถสร้างข้อมูลได้",
+    "loadSuccess": "โหลดสำเร็จ",
+    "loadSuccessDesc": "โหลดข้อมูลสำเร็จแล้ว",
+    "loadError": "โหลดไม่สำเร็จ",
+    "loadErrorDesc": "ไม่สามารถโหลดข้อมูลได้",
     "allPositions": "ทุกตำแหน่ง",
     "allDepartments": "ทุกแผนก",
     "allRoles": "ทุกบทบาท",
@@ -885,5 +889,25 @@
     "description": "ปรับครอปรูปโปรไฟล์ของคุณให้เหมาะสม",
     "crop": "ปรับครอป",
     "cancel": "ยกเลิก"
+  },
+  "validation": {
+    "requiredField": "ข้อมูลไม่ครบถ้วน",
+    "requiredFieldDesc": "กรุณากรอกข้อมูลให้ครบถ้วน",
+    "invalidFormat": "รูปแบบไม่ถูกต้อง",
+    "invalidFormatDesc": "รูปแบบข้อมูลไม่ถูกต้อง",
+    "invalidEmail": "อีเมลไม่ถูกต้อง",
+    "invalidEmailDesc": "กรุณากรอกอีเมลให้ถูกต้อง"
+  },
+  "network": {
+    "timeoutError": "หมดเวลาการเชื่อมต่อ",
+    "timeoutErrorDesc": "การเชื่อมต่อใช้เวลานานเกินไป",
+    "serverError": "ข้อผิดพลาดเซิร์ฟเวอร์",
+    "serverErrorDesc": "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์"
+  },
+  "file": {
+    "downloadSuccess": "ดาวน์โหลดสำเร็จ",
+    "downloadSuccessDesc": "ดาวน์โหลดไฟล์สำเร็จแล้ว",
+    "downloadError": "ดาวน์โหลดไม่สำเร็จ",
+    "downloadErrorDesc": "ไม่สามารถดาวน์โหลดไฟล์ได้"
   }
 }
