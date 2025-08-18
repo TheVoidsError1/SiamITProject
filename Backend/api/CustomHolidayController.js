@@ -7,6 +7,53 @@ module.exports = (AppDataSource) => {
   // Create base controller instance for CustomHoliday
   const customHolidayController = new BaseController('CustomHoliday');
 
+  // Helper function to get user name by ID
+  const getUserNameById = async (userId) => {
+    if (!userId) return 'Unknown User';
+    
+    try {
+      // Find the user by ID in User, Admin, and SuperAdmin tables
+      const userRepo = AppDataSource.getRepository('User');
+      const adminRepo = AppDataSource.getRepository('Admin');
+      const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+      
+      // Try to find user in User table
+      let user = await userRepo.findOne({
+        where: { id: userId }
+      });
+      
+      // If not found in User table, try Admin table
+      if (!user) {
+        user = await adminRepo.findOne({
+          where: { id: userId }
+        });
+      }
+      
+      // If not found in Admin table, try SuperAdmin table
+      if (!user) {
+        user = await superadminRepo.findOne({
+          where: { id: userId }
+        });
+      }
+      
+      // If user found, get their name
+      if (user) {
+        if (user.User_name) {
+          return user.User_name;
+        } else if (user.admin_name) {
+          return user.admin_name;
+        } else if (user.superadmin_name) {
+          return user.superadmin_name;
+        }
+      }
+      
+      return 'Unknown User';
+    } catch (error) {
+      console.error('Error getting user name by ID:', error);
+      return 'Unknown User';
+    }
+  };
+
   // GET all custom holidays
   router.get('/custom-holidays', async (req, res) => {
       try {
@@ -16,7 +63,18 @@ module.exports = (AppDataSource) => {
               }
           });
           
-          sendSuccess(res, holidays, 'Custom holidays fetched successfully');
+          // Get user names for each holiday
+          const holidaysWithUserNames = await Promise.all(
+              holidays.map(async (holiday) => {
+                  const createdByName = await getUserNameById(holiday.createdBy);
+                  return {
+                      ...holiday,
+                      createdByName
+                  };
+              })
+          );
+          
+          sendSuccess(res, holidaysWithUserNames, 'Custom holidays fetched successfully');
       } catch (error) {
           console.error('Error fetching custom holidays:', error);
           sendError(res, 'Failed to fetch custom holidays', 500);
@@ -32,7 +90,15 @@ module.exports = (AppDataSource) => {
               return sendNotFound(res, 'Custom holiday not found');
           }
           
-          sendSuccess(res, holiday, 'Custom holiday fetched successfully');
+          // Get user name for the holiday
+          const createdByName = await getUserNameById(holiday.createdBy);
+          
+          const holidayWithUserName = {
+              ...holiday,
+              createdByName
+          };
+          
+          sendSuccess(res, holidayWithUserName, 'Custom holiday fetched successfully');
       } catch (error) {
           console.error('Error fetching custom holiday:', error);
           sendError(res, 'Failed to fetch custom holiday', 500);
@@ -40,10 +106,10 @@ module.exports = (AppDataSource) => {
   });
 
   // Create new custom holiday
-  router.post('/custom-holidays', async (req, res) => {
+  router.post('/custom-holidays', authMiddleware, async (req, res) => {
     try {
       const { title, description, date } = req.body;
-      const createdBy = req.user?.userId || 'system';
+      const createdBy = req.user?.userId || null;
       
       const savedHoliday = await customHolidayController.create(AppDataSource, {
         title,
@@ -73,7 +139,7 @@ module.exports = (AppDataSource) => {
   });
 
   // Update custom holiday
-  router.put('/custom-holidays/:id', async (req, res) => {
+  router.put('/custom-holidays/:id', authMiddleware, async (req, res) => {
     try {
       const { title, description, date } = req.body;
       
@@ -108,7 +174,7 @@ module.exports = (AppDataSource) => {
   });
 
   // Delete custom holiday
-  router.delete('/custom-holidays/:id', async (req, res) => {
+  router.delete('/custom-holidays/:id', authMiddleware, async (req, res) => {
     try {
       const holiday = await customHolidayController.findOne(AppDataSource, req.params.id);
       
@@ -158,7 +224,18 @@ module.exports = (AppDataSource) => {
             .orderBy('holiday.date', 'ASC')
             .getMany();
         
-        sendSuccess(res, holidays, 'Custom holidays fetched successfully');
+        // Get user names for each holiday
+        const holidaysWithUserNames = await Promise.all(
+            holidays.map(async (holiday) => {
+                const createdByName = await getUserNameById(holiday.createdBy);
+                return {
+                    ...holiday,
+                    createdByName
+                };
+            })
+        );
+        
+        sendSuccess(res, holidaysWithUserNames, 'Custom holidays fetched successfully');
     } catch (error) {
         console.error('Error fetching custom holidays by range:', error);
         sendError(res, 'Failed to fetch custom holidays by range', 500);
@@ -185,7 +262,18 @@ module.exports = (AppDataSource) => {
             .orderBy('holiday.date', 'ASC')
             .getMany();
         
-        sendSuccess(res, holidays, 'Custom holidays fetched successfully');
+        // Get user names for each holiday
+        const holidaysWithUserNames = await Promise.all(
+            holidays.map(async (holiday) => {
+                const createdByName = await getUserNameById(holiday.createdBy);
+                return {
+                    ...holiday,
+                    createdByName
+                };
+            })
+        );
+        
+        sendSuccess(res, holidaysWithUserNames, 'Custom holidays fetched successfully');
     } catch (error) {
         console.error('Error fetching custom holidays by year:', error);
         sendError(res, 'Failed to fetch custom holidays by year', 500);
@@ -217,7 +305,18 @@ module.exports = (AppDataSource) => {
             .orderBy('holiday.date', 'ASC')
             .getMany();
         
-        sendSuccess(res, holidays, 'Custom holidays fetched successfully');
+        // Get user names for each holiday
+        const holidaysWithUserNames = await Promise.all(
+            holidays.map(async (holiday) => {
+                const createdByName = await getUserNameById(holiday.createdBy);
+                return {
+                    ...holiday,
+                    createdByName
+                };
+            })
+        );
+        
+        sendSuccess(res, holidaysWithUserNames, 'Custom holidays fetched successfully');
     } catch (error) {
         console.error('Error fetching custom holidays by year and month:', error);
         sendError(res, 'Failed to fetch custom holidays by year and month', 500);

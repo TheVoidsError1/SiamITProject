@@ -287,7 +287,7 @@ module.exports = (AppDataSource) => {
         subject,
         detail,
         Image: req.file ? req.file.filename : null,
-        createdBy: createdBy || 'system' // This should now be a user ID
+        createdBy: createdBy || null // This should now be a user ID
       });
       
       const savedAnnouncement = await announcementRepo.save(newAnnouncement);
