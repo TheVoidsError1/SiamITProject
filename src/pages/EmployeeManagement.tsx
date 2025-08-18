@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, User, Users } from "lucide-react";
+import { Eye, User, Users, ChevronUp, ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
@@ -57,6 +57,8 @@ const EmployeeManagement = () => {
   const [positionFilter, setPositionFilter] = useState<string>("");
   const [departmentFilter, setDepartmentFilter] = useState<string>("");
   const [roleFilter, setRoleFilter] = useState<string>("");
+  const [sortField, setSortField] = useState<string>("full_name");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -193,12 +195,62 @@ const EmployeeManagement = () => {
     return positionMatch && departmentMatch && roleMatch;
   });
 
+  // ฟังก์ชันเรียงลำดับข้อมูล
+  const sortedEmployees = [...filteredEmployees].sort((a, b) => {
+    let aValue: string | number;
+    let bValue: string | number;
+
+    switch (sortField) {
+      case "full_name":
+        aValue = a.full_name.toLowerCase();
+        bValue = b.full_name.toLowerCase();
+        break;
+      case "email":
+        aValue = a.email.toLowerCase();
+        bValue = b.email.toLowerCase();
+        break;
+      case "position":
+        aValue = getDisplayPositionName(a).toLowerCase();
+        bValue = getDisplayPositionName(b).toLowerCase();
+        break;
+      case "department":
+        aValue = getDisplayDepartmentName(a).toLowerCase();
+        bValue = getDisplayDepartmentName(b).toLowerCase();
+        break;
+      case "role":
+        aValue = a.role.toLowerCase();
+        bValue = b.role.toLowerCase();
+        break;
+      default:
+        aValue = a.full_name.toLowerCase();
+        bValue = b.full_name.toLowerCase();
+    }
+
+    if (aValue < bValue) {
+      return sortDirection === "asc" ? -1 : 1;
+    }
+    if (aValue > bValue) {
+      return sortDirection === "asc" ? 1 : -1;
+    }
+    return 0;
+  });
+
+  // ฟังก์ชันเปลี่ยนการเรียงลำดับ
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [positionFilter, departmentFilter, roleFilter]);
-  const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
-  const paginatedEmployees = filteredEmployees.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const totalPages = Math.ceil(sortedEmployees.length / itemsPerPage);
+  const paginatedEmployees = sortedEmployees.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const REGULAR_EMPLOYEE_POSITION_ID = '354653a2-123a-48f4-86fd-22412c25c50e';
   const stats = [
@@ -288,6 +340,22 @@ const EmployeeManagement = () => {
       if (data.success) {
         setEmployees((prev) => prev.filter((e) => e.id !== deleteTarget.id));
         setDeleteTarget(null);
+        
+        // ตรวจสอบว่าหลังจากลบแล้ว pagination จะเป็น 0 หรือไม่
+        const remainingEmployees = employees.filter((e) => e.id !== deleteTarget.id);
+        const filteredRemaining = remainingEmployees.filter(emp => {
+          const positionMatch = positionFilter === "" || emp.position === positionFilter;
+          const departmentMatch = departmentFilter === "" || emp.department === departmentFilter;
+          const roleMatch = roleFilter === "" || emp.role === roleFilter;
+          return positionMatch && departmentMatch && roleMatch;
+        });
+        const newTotalPages = Math.ceil(filteredRemaining.length / itemsPerPage);
+        
+        // ถ้า pagination เป็น 0 หรือหน้าปัจจุบันไม่มีข้อมูล ให้รีเฟรชหน้า
+        if (newTotalPages === 0 || (currentPage > newTotalPages && newTotalPages > 0)) {
+          window.location.reload();
+        }
+        
         toast({
           title: t('system.deleteSuccess', 'ลบสำเร็จ'),
           description: t('system.deleteUserSuccessDesc', 'ลบผู้ใช้งานสำเร็จ'),
@@ -489,17 +557,67 @@ const EmployeeManagement = () => {
                         </button>
                       </div>
                     ) : (
-                      <table className="w-full">
-                        <thead className="sticky top-0 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 z-10">
-                          <tr className="text-sm">
-                            <th className="px-3 py-2 text-left font-bold text-blue-900">{t('auth.fullName')}</th>
-                            <th className="px-3 py-2 text-left font-bold text-blue-900">{t('auth.email')}</th>
-                            <th className="px-3 py-2 text-left font-bold text-blue-900">{t('auth.position')}</th>
-                            <th className="px-3 py-2 text-left font-bold text-blue-900">{t('auth.department')}</th>
-                            <th className="px-3 py-2 text-left font-bold text-blue-900">{t('common.status')}</th>
-                            <th className="px-3 py-2 text-center font-bold text-blue-900">{t('system.management')}</th>
-                          </tr>
-                        </thead>
+                                             <table className="w-full">
+                         <thead className="sticky top-0 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 z-10">
+                           <tr className="text-sm">
+                             <th 
+                               className="px-3 py-2 text-left font-bold text-blue-900 cursor-pointer hover:bg-blue-100 transition-colors select-none"
+                               onClick={() => handleSort("full_name")}
+                             >
+                               <div className="flex items-center gap-1">
+                                 {t('auth.fullName')}
+                                 {sortField === "full_name" && (
+                                   sortDirection === "asc" ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                                 )}
+                               </div>
+                             </th>
+                             <th 
+                               className="px-3 py-2 text-left font-bold text-blue-900 cursor-pointer hover:bg-blue-100 transition-colors select-none"
+                               onClick={() => handleSort("email")}
+                             >
+                               <div className="flex items-center gap-1">
+                                 {t('auth.email')}
+                                 {sortField === "email" && (
+                                   sortDirection === "asc" ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                                 )}
+                               </div>
+                             </th>
+                             <th 
+                               className="px-3 py-2 text-left font-bold text-blue-900 cursor-pointer hover:bg-blue-100 transition-colors select-none"
+                               onClick={() => handleSort("position")}
+                             >
+                               <div className="flex items-center gap-1">
+                                 {t('auth.position')}
+                                 {sortField === "position" && (
+                                   sortDirection === "asc" ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                                 )}
+                               </div>
+                             </th>
+                             <th 
+                               className="px-3 py-2 text-left font-bold text-blue-900 cursor-pointer hover:bg-blue-100 transition-colors select-none"
+                               onClick={() => handleSort("department")}
+                             >
+                               <div className="flex items-center gap-1">
+                                 {t('auth.department')}
+                                 {sortField === "department" && (
+                                   sortDirection === "asc" ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                                 )}
+                               </div>
+                             </th>
+                             <th 
+                               className="px-3 py-2 text-left font-bold text-blue-900 cursor-pointer hover:bg-blue-100 transition-colors select-none"
+                               onClick={() => handleSort("role")}
+                             >
+                               <div className="flex items-center gap-1">
+                                 {t('common.status')}
+                                 {sortField === "role" && (
+                                   sortDirection === "asc" ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                                 )}
+                               </div>
+                             </th>
+                             <th className="px-3 py-2 text-center font-bold text-blue-900">{t('system.management')}</th>
+                           </tr>
+                         </thead>
                         <tbody>
                           {paginatedEmployees.map((employee, idx) => (
                             <tr
