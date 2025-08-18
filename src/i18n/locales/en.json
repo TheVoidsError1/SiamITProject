@@ -677,6 +677,7 @@
     "enterPhoneNumber": "Enter Phone Number",
     "selectInternshipStartDate": "Select Start Work Date",
     "selectInternshipEndDate": "Select End Work Date",
+    "selectDate": "Select Date",
     "other": "Other",
     "preferNotToSay": "Prefer not to say"
   },

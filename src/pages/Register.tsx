@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DatePicker } from '@/components/ui/date-picker';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { apiService, apiEndpoints } from '@/lib/api';
@@ -252,7 +253,11 @@ const Register = () => {
               {/* Date of Birth */}
               <div className="space-y-2 mb-4">
                 <Label htmlFor="dob" className="mb-2 block">{t('employee.birthdate')}</Label>
-                <Input id="dob" type="date" value={formData.dob} onChange={(e) => setFormData(prev => ({ ...prev, dob: e.target.value }))} />
+                <DatePicker 
+                  date={formData.dob} 
+                  onDateChange={(date) => setFormData(prev => ({ ...prev, dob: date }))}
+                  placeholder={t('employee.selectDate')}
+                />
               </div>
 
               <div className="space-y-2 mb-4">
@@ -305,12 +310,20 @@ const Register = () => {
                   <div className={`grid grid-cols-1 ${showEndWorkDate ? 'md:grid-cols-2' : ''} gap-4`}>
                     <div className="space-y-2">
                       <Label htmlFor="start_work" className="mb-2 block">{t('employee.startWorkDate')}</Label>
-                      <Input id="start_work" type="date" value={formData.start_work} onChange={(e) => setFormData(prev => ({ ...prev, start_work: e.target.value }))} />
+                      <DatePicker 
+                        date={formData.start_work} 
+                        onDateChange={(date) => setFormData(prev => ({ ...prev, start_work: date }))}
+                        placeholder={t('employee.selectDate')}
+                      />
                     </div>
                     {showEndWorkDate && (
                       <div className="space-y-2">
                         <Label htmlFor="end_work" className="mb-2 block">{t('employee.endWorkDate', 'End Work Date')}</Label>
-                        <Input id="end_work" type="date" value={formData.end_work} onChange={(e) => setFormData(prev => ({ ...prev, end_work: e.target.value }))} />
+                        <DatePicker 
+                          date={formData.end_work} 
+                          onDateChange={(date) => setFormData(prev => ({ ...prev, end_work: date }))}
+                          placeholder={t('employee.selectDate')}
+                        />
                       </div>
                     )}
                   </div>
