@@ -16,6 +16,20 @@ import { apiEndpoints, apiService } from '../lib/api';
 import { showToastMessage } from '../lib/toast';
 import { formatDate, getImageUrl, handleFileSelect, handleImageError } from '../lib/utils';
 
+// Interface for news items
+interface NewsItem {
+  id: string;
+  subject: string;
+  detail: string;
+  createdAt: string;
+  createdBy: string; // User ID
+  createdByName: string; // User display name
+  Image?: string;
+  avatar?: string;
+  contact?: string; // Optional contact info
+  attachments?: any[]; // Optional attachments array
+}
+
 // ฟังก์ชันสำหรับจัดการวันที่ให้รองรับ i18n
 const formatTime = (date: Date, locale: string) => {
   return date.toLocaleTimeString(locale, {
@@ -29,13 +43,13 @@ export default function ManagePost() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
-  const [newsList, setNewsList] = useState<any[]>([]);
+  const [newsList, setNewsList] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [openIdx, setOpenIdx] = useState<number | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [editingNews, setEditingNews] = useState<any>(null);
+  const [editingNews, setEditingNews] = useState<NewsItem | null>(null);
   const [form, setForm] = useState({
     subject: '',
     detail: '',
@@ -54,7 +68,7 @@ export default function ManagePost() {
   const [previewImageName, setPreviewImageName] = useState<string>('');
   
   // State สำหรับจัดการการลบข่าวสาร
-  const [deleteTarget, setDeleteTarget] = useState<any | null>(null); 
+  const [deleteTarget, setDeleteTarget] = useState<NewsItem | null>(null); 
   const [deleting, setDeleting] = useState(false);
 
 
@@ -63,12 +77,15 @@ export default function ManagePost() {
     setLoading(true);
     setError('');
     try {
-      const data = await apiService.get(apiEndpoints.announcements);
+      // Use the feed endpoint to get announcements with user names
+      const data = await apiService.get(apiEndpoints.announcements + '/feed');
       console.log('=== Fetch News Response ===');
       console.log('API Response:', data);
       if (data.data && data.data.length > 0) {
         console.log('First news item:', data.data[0]);
         console.log('Image field:', data.data[0].Image);
+        console.log('Created by ID:', data.data[0].createdBy);
+        console.log('Created by name:', data.data[0].createdByName);
       }
       console.log('==========================');
       
@@ -97,13 +114,20 @@ export default function ManagePost() {
   // เพิ่มข่าวสารใหม่
   const handleAddNews = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check if user has an ID
+    if (!user?.id) {
+      setError('ไม่สามารถระบุตัวตนผู้ใช้ได้ กรุณาเข้าสู่ระบบใหม่');
+      return;
+    }
+    
     setLoading(true);
     setError('');
     try {
       const formData = new FormData();
       formData.append('subject', form.subject);
       formData.append('detail', form.detail);
-      formData.append('createdBy', user?.full_name || '');
+      formData.append('createdBy', user.id); // Use user ID
       
       if (selectedFile) {
         formData.append('Image', selectedFile);
@@ -154,7 +178,7 @@ export default function ManagePost() {
   };
 
   // เปิดฟอร์มแก้ไขข่าวสาร
-  const handleEditNews = (news: any) => {
+  const handleEditNews = (news: NewsItem) => {
     setEditingNews(news);
     setForm({
       subject: news.subject,
@@ -171,13 +195,19 @@ export default function ManagePost() {
     e.preventDefault();
     if (!editingNews) return;
     
+    // Check if user has an ID
+    if (!user?.id) {
+      setError('ไม่สามารถระบุตัวตนผู้ใช้ได้ กรุณาเข้าสู่ระบบใหม่');
+      return;
+    }
+    
     setLoading(true);
     setError('');
     try {
       const formData = new FormData();
       formData.append('subject', form.subject);
       formData.append('detail', form.detail);
-      formData.append('createdBy', user?.full_name || '');
+      formData.append('createdBy', user.id); // Use user ID instead of name
       
       if (selectedFile) {
         formData.append('Image', selectedFile);
@@ -497,7 +527,7 @@ export default function ManagePost() {
                         : news.detail
                       }
                     </TableCell>
-                    <TableCell className="p-4 text-center">{news.createdBy}</TableCell>
+                    <TableCell className="p-4 text-center">{news.createdByName || news.createdBy || 'Unknown User'}</TableCell>
                     {isAdmin && (
                       <TableCell className="p-4 text-center">
                         <button
@@ -621,7 +651,7 @@ export default function ManagePost() {
                                       <Label className="text-sm font-medium text-gray-600">{t('companyNews.publishedBy')}</Label>
                                       <div className="flex items-center gap-2 p-3 bg-indigo-50 rounded-lg">
                                         <User className="w-4 h-4 text-indigo-500" />
-                                        <span className="font-medium text-indigo-900">{news.createdBy}</span>
+                                        <span className="font-medium text-indigo-900">{news.createdByName || news.createdBy || 'Unknown User'}</span>
                                       </div>
                                     </div>
                                     <div className="space-y-2">

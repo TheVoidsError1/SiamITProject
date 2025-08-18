@@ -392,6 +392,41 @@ const Profile = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
+      // ตรวจสอบรูปแบบอีเมล
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        toast({
+          title: t('common.error'),
+          description: t('auth.invalidEmailFormat'),
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
+      }
+      
+      // ตรวจสอบเพิ่มเติมว่าอีเมลไม่ใช่รูปแบบที่ไม่สมบูรณ์ เช่น @g, @gmail
+      if (formData.email.includes('@') && !formData.email.includes('.')) {
+        toast({
+          title: t('common.error'),
+          description: t('auth.invalidEmailFormat'),
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
+      }
+      
+      // ตรวจสอบว่าโดเมนต้องมีอย่างน้อย 2 ตัวอักษรหลังจุด (เช่น .com, .co.th)
+      const domainMatch = formData.email.match(/@[^@]+\.([^.]+)$/);
+      if (domainMatch && domainMatch[1].length < 2) {
+        toast({
+          title: t('common.error'),
+          description: t('auth.invalidEmailFormat'),
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
+      }
+      
       // ตรวจสอบว่าตำแหน่งต้องการ End Work Date หรือไม่
       const selectedPos = positions.find(p => String(p.id) === formData.position);
       const requiresEndWorkDate = selectedPos ? !!selectedPos.request_quote : false;
@@ -643,7 +678,10 @@ const Profile = () => {
                       id="email"
                       type="email"
                       value={formData.email}
-                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                      onChange={(e) => {
+                        const email = e.target.value;
+                        setFormData(prev => ({ ...prev, email }));
+                      }}
                       className="input-blue"
                     />
                   </div>

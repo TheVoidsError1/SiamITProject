@@ -13,6 +13,7 @@ import { showToastMessage } from '@/lib/toast';
 import { Eye, EyeOff, Mail, Lock, User, Building } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { RegisterConfirmDialog } from '@/components/dialogs/RegisterConfirmDialog';
 
 const Register = () => {
   const { t, i18n } = useTranslation();
@@ -38,6 +39,7 @@ const Register = () => {
   const [newDepartment, setNewDepartment] = useState('');
   const [newPosition, setNewPosition] = useState('');
   const [error, setError] = useState<{ email?: string; full_name?: string; general?: string }>({});
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   
   const { signup } = useAuth();
   const { toast } = useToast();
@@ -183,6 +185,11 @@ const Register = () => {
       }
     }
 
+    // แสดง dialog ยืนยันการสมัครสมาชิก
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmRegistration = async () => {
     setLoading(true);
 
     try {
@@ -198,7 +205,7 @@ const Register = () => {
         dob: formData.dob,
         phone_number: formData.phone_number,
         start_work: formData.start_work || undefined,
-        end_work: requiresEndWorkDate ? formData.end_work : undefined,
+        end_work: formData.end_work || undefined,
       });
       
       toast({
@@ -472,6 +479,13 @@ const Register = () => {
           </CardContent>
         </Card>
       </div>
+      
+      {/* Dialog ยืนยันการสมัครสมาชิก */}
+      <RegisterConfirmDialog
+        open={showConfirmDialog}
+        onOpenChange={setShowConfirmDialog}
+        onConfirm={handleConfirmRegistration}
+      />
     </div>
   );
 };

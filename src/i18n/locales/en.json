@@ -31,6 +31,8 @@
     "passwordMismatch": "Passwords do not match",
     "passwordTooShort": "Password must be at least 6 characters",
     "invalidEmailFormat": "Invalid email format. Please enter a complete domain like @gmail.com",
+    "registerConfirmTitle": "Confirm Registration",
+    "registerConfirmDesc": "Do you want to register with the information you entered?",
     "checkEmailVerification": "You can now log in with this user.",
     "sessionExpired": "Session expired, please login again",
     "pleaseLoginAgain": "Please login again",
