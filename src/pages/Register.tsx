@@ -147,6 +147,18 @@ const Register = () => {
       return;
     }
     
+    // ตรวจสอบว่าโดเมนต้องมีอย่างน้อย 2 ตัวอักษรหลังจุด (เช่น .com, .co.th)
+    const domainMatch = formData.email.match(/@[^@]+\.([^.]+)$/);
+    if (domainMatch && domainMatch[1].length < 2) {
+      toast({
+        title: t('common.error'),
+        description: t('auth.invalidEmailFormat'),
+        variant: "destructive",
+      });
+      setError({ email: t('auth.invalidEmailFormat') });
+      return;
+    }
+    
     if (formData.password !== formData.confirmPassword) {
       toast({
         title: t('auth.passwordMismatch'),
@@ -372,6 +384,14 @@ const Register = () => {
                       } else if (email && email.includes('@') && !email.includes('.')) {
                         // ตรวจสอบกรณีพิเศษ เช่น @g, @gmail
                         setError(prev => ({ ...prev, email: t('auth.invalidEmailFormat') }));
+                      } else if (email && email.includes('@') && email.includes('.')) {
+                        // ตรวจสอบว่าโดเมนต้องมีอย่างน้อย 2 ตัวอักษรหลังจุด
+                        const domainMatch = email.match(/@[^@]+\.([^.]+)$/);
+                        if (domainMatch && domainMatch[1].length < 2) {
+                          setError(prev => ({ ...prev, email: t('auth.invalidEmailFormat') }));
+                        } else {
+                          setError(prev => ({ ...prev, email: undefined }));
+                        }
                       } else {
                         setError(prev => ({ ...prev, email: undefined }));
                       }
