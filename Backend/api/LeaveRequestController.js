@@ -844,12 +844,48 @@
            let approvedBy = null;
            let rejectedBy = null;
            if (leave.statusBy && leave.status === 'approved') {
+             // statusBy ตอนนี้เป็น ID แล้ว ให้ดึงชื่อจาก ID
              const admin = await adminRepo.findOneBy({ id: leave.statusBy });
-             approvedBy = admin ? admin.admin_name : leave.statusBy;
+             if (admin) {
+               approvedBy = admin.admin_name;
+             } else {
+               // ลองหาใน user table
+               const user = await userRepo.findOneBy({ id: leave.statusBy });
+               if (user) {
+                 approvedBy = user.User_name;
+               } else {
+                 // ลองหาใน superadmin table
+                 const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+                 const superadmin = await superadminRepo.findOneBy({ id: leave.statusBy });
+                 if (superadmin) {
+                   approvedBy = superadmin.superadmin_name;
+                 } else {
+                   approvedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
+                 }
+               }
+             }
            }
            if (leave.statusBy && leave.status === 'rejected') {
+             // statusBy ตอนนี้เป็น ID แล้ว ให้ดึงชื่อจาก ID
              const admin = await adminRepo.findOneBy({ id: leave.statusBy });
-             rejectedBy = admin ? admin.admin_name : leave.statusBy;
+             if (admin) {
+               rejectedBy = admin.admin_name;
+             } else {
+               // ลองหาใน user table
+               const user = await userRepo.findOneBy({ id: leave.statusBy });
+               if (user) {
+                 rejectedBy = user.User_name;
+               } else {
+                 // ลองหาใน superadmin table
+                 const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+                 const superadmin = await superadminRepo.findOneBy({ id: leave.statusBy });
+                 if (superadmin) {
+                   rejectedBy = superadmin.superadmin_name;
+                 } else {
+                   rejectedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
+                 }
+               }
+             }
            }
            return {
              id: leave.id,
@@ -1346,37 +1382,14 @@
          const { status, statusby, rejectedReason } = req.body;
          const { id } = req.params;
 
-         // ดึงชื่อผู้อนุมัติจาก JWT (ถ้าไม่ได้ส่งมา)
-         let approverName = statusby;
+         // ดึง ID ของผู้อนุมัติจาก JWT (ถ้าไม่ได้ส่งมา)
+         let approverId = statusby;
          const authHeader = req.headers.authorization;
-         if (!approverName && authHeader && authHeader.startsWith('Bearer ')) {
+         if (!approverId && authHeader && authHeader.startsWith('Bearer ')) {
            const token = authHeader.split(' ')[1];
            try {
              const decoded = jwt.verify(token, config.server.jwtSecret);
-             let user = await userRepo.findOneBy({ id: decoded.userId });
-             if (user) {
-               approverName = user.User_name;
-             } else {
-               // fallback หาใน process_check
-               const processRepo = AppDataSource.getRepository('ProcessCheck');
-               const processCheck = await processRepo.findOneBy({ Repid: decoded.userId });
-               if (processCheck) {
-                 // หาใน admin table
-                 const adminRepo = AppDataSource.getRepository('Admin');
-                 const admin = await adminRepo.findOneBy({ id: decoded.userId });
-                 if (admin) {
-                   approverName = admin.admin_name;
-                 } else if (processCheck.Role === 'superadmin') {
-                   const superadminRepo = AppDataSource.getRepository('SuperAdmin');
-                   const superadmin = await superadminRepo.findOneBy({ id: decoded.userId });
-                   approverName = superadmin ? superadmin.superadmin_name : processCheck.Email;
-                 } else {
-                   approverName = processCheck.Email;
-                 }
-               } else {
-                 approverName = null;
-               }
-             }
+             approverId = decoded.userId; // ใช้ user ID แทนชื่อ
            } catch (err) {
              return res.status(401).json({ success: false, message: 'Invalid or expired token' });
            }
@@ -1389,7 +1402,7 @@
          const oldStatus = leave.status;
          
          leave.status = status;
-         leave.statusBy = approverName;
+         leave.statusBy = approverId; // เก็บ ID แทนชื่อ
          leave.statusChangeTime = new Date();
          if (status === 'approved') {
            leave.approvedTime = new Date();
@@ -1411,7 +1424,7 @@
            global.io.to(`user_${leave.Repid}`).emit('leaveRequestUpdated', {
              requestId: leave.id,
              status: leave.status,
-             statusBy: leave.statusBy,
+             statusBy: leave.statusBy, // ส่ง ID
              employeeId: leave.Repid,
              message: status === 'approved' ? 'คำขอลาของคุณได้รับการอนุมัติ' : 'คำขอลาของคุณถูกปฏิเสธ'
            });
@@ -1421,12 +1434,34 @@
              requestId: leave.id,
              status: leave.status,
              employeeId: leave.Repid,
-             statusBy: leave.statusBy
+             statusBy: leave.statusBy // ส่ง ID
            });
          }
 
          // Send LINE notification to the user
          try {
+           // ดึงชื่อผู้อนุมัติสำหรับ LINE notification
+           let approverName = 'System';
+           if (approverId) {
+             const user = await userRepo.findOneBy({ id: approverId });
+             if (user) {
+               approverName = user.User_name;
+             } else {
+               // ลองหาใน admin table
+               const adminRepo = AppDataSource.getRepository('Admin');
+               const admin = await adminRepo.findOneBy({ id: approverId });
+               if (admin) {
+                 approverName = admin.admin_name;
+               } else {
+                 // ลองหาใน superadmin table
+                 const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+                 const superadmin = await superadminRepo.findOneBy({ id: approverId });
+                 if (superadmin) {
+                   approverName = superadmin.superadmin_name;
+                 }
+               }
+             }
+           }
            await sendLineNotification(leave, status, approverName, rejectedReason);
          } catch (notificationError) {
            console.error('Failed to send LINE notification:', notificationError);
