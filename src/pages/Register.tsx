@@ -124,6 +124,29 @@ const Register = () => {
     e.preventDefault();
     setError({});
     
+    // ตรวจสอบรูปแบบอีเมล
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast({
+        title: t('common.error'),
+        description: t('auth.invalidEmailFormat'),
+        variant: "destructive",
+      });
+      setError({ email: t('auth.invalidEmailFormat') });
+      return;
+    }
+    
+    // ตรวจสอบเพิ่มเติมว่าอีเมลไม่ใช่รูปแบบที่ไม่สมบูรณ์ เช่น @g, @gmail
+    if (formData.email.includes('@') && !formData.email.includes('.')) {
+      toast({
+        title: t('common.error'),
+        description: t('auth.invalidEmailFormat'),
+        variant: "destructive",
+      });
+      setError({ email: t('auth.invalidEmailFormat') });
+      return;
+    }
+    
     if (formData.password !== formData.confirmPassword) {
       toast({
         title: t('auth.passwordMismatch'),
@@ -339,7 +362,20 @@ const Register = () => {
                     type="email"
                     placeholder={t('auth.email')}
                     value={formData.email}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                    onChange={(e) => {
+                      const email = e.target.value;
+                      setFormData(prev => ({ ...prev, email }));
+                      
+                      // ตรวจสอบรูปแบบอีเมลแบบ real-time
+                      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                        setError(prev => ({ ...prev, email: t('auth.invalidEmailFormat') }));
+                      } else if (email && email.includes('@') && !email.includes('.')) {
+                        // ตรวจสอบกรณีพิเศษ เช่น @g, @gmail
+                        setError(prev => ({ ...prev, email: t('auth.invalidEmailFormat') }));
+                      } else {
+                        setError(prev => ({ ...prev, email: undefined }));
+                      }
+                    }}
                     className="pl-10"
                     required
                   />
@@ -389,7 +425,7 @@ const Register = () => {
               <Button 
                 type="submit" 
                 className="w-full" 
-                disabled={loading}
+                disabled={loading || !!error.email}
               >
                 {loading ? (
                   <>
