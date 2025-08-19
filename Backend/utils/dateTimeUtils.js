@@ -35,7 +35,27 @@ const timeStringToDecimal = (timeStr) => {
  * @returns {number} Number of days (inclusive)
  */
 const calculateDaysBetween = (startDate, endDate) => {
-  return Math.floor((endDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+  // Ensure we have valid dates
+  if (!startDate || !endDate || isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+    return 0;
+  }
+  
+  // For same day, return 1
+  if (startDate.toDateString() === endDate.toDateString()) {
+    return 1;
+  }
+  
+  // Use a more reliable method: calculate the difference in days
+  // Set both dates to midnight to avoid time zone issues
+  const start = new Date(startDate.getFullYear(), startDate.getMonth(), startDate.getDate());
+  const end = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+  
+  // Calculate difference in milliseconds and convert to days
+  const diffTime = end.getTime() - start.getTime();
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+  
+  // Add 1 for inclusive counting (if start and end are different)
+  return diffDays + 1;
 };
 
 /**

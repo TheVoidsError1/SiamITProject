@@ -138,53 +138,19 @@ module.exports = (AppDataSource) => {
         // 2. ดึง leaveRequest ที่อนุมัติของ user/admin นี้
         let usedLeaveDays = 0;
         try {
-          const leaveRepo = AppDataSource.getRepository('LeaveRequest');
-          const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
-          const approvedLeaves = await leaveRepo.find({ where: { Repid: id, status: 'approved' } });
-          for (const lr of approvedLeaves) {
-            // หา leaveTypeName
-            let leaveTypeName = lr.leaveType;
-            if (leaveTypeName && leaveTypeName.length > 20) {
-              const leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
-              if (leaveTypeEntity && leaveTypeEntity.leave_type_th) {
-                leaveTypeName = leaveTypeEntity.leave_type_th;
-              }
-            }
-            // ทุกประเภทการลา: สามารถเป็นชั่วโมงหรือวันได้ (9 ชม. = 1 วัน)
-            if (["sick", "ลาป่วย", "vacation", "ลาพักผ่อน", "personal", "ลากิจ"].includes(leaveTypeName)) {
-              if (leaveTypeName === "personal" || leaveTypeName === "ลากิจ") {
-                // personal: อาจเป็นชั่วโมงหรือวัน
-                if (lr.startTime && lr.endTime) {
-                  // ชั่วโมง
-                  const [sh, sm] = lr.startTime.split(":").map(Number);
-                  const [eh, em] = lr.endTime.split(":").map(Number);
-                  let start = sh + (sm || 0) / 60;
-                  let end = eh + (em || 0) / 60;
-                  let diff = end - start;
-                  if (diff < 0) diff += 24;
-                  usedLeaveDays += diff / 9; // configurable working hours per day
-                } else if (lr.startDate && lr.endDate) {
-                  // วัน
-                  const start = new Date(lr.startDate);
-                  const end = new Date(lr.endDate);
-                  let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-                  if (days < 0 || isNaN(days)) days = 0;
-                  usedLeaveDays += days;
-                }
-              } else {
-                // sick, vacation: วันเท่านั้น
-                if (lr.startDate && lr.endDate) {
-                  const start = new Date(lr.startDate);
-                  const end = new Date(lr.endDate);
-                  let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-                  if (days < 0 || isNaN(days)) days = 0;
-                  usedLeaveDays += days;
-                }
-              }
-            }
-          }
-        } catch (e) { usedLeaveDays = 0; }
-        usedLeaveDays = Math.round(usedLeaveDays * 100) / 100;
+          // Use centralized utility function for leave usage summary
+          const { getLeaveUsageSummary } = require('../utils/leaveUtils');
+          const leaveUsageSummary = await getLeaveUsageSummary(id, null, AppDataSource);
+          
+          // Calculate total used leave days from all leave types
+          usedLeaveDays = leaveUsageSummary.reduce((total, item) => {
+            return total + item.total_used_days;
+          }, 0);
+          
+          usedLeaveDays = Math.round(usedLeaveDays * 100) / 100;
+        } catch (e) { 
+          usedLeaveDays = 0; 
+        }
 
         // --- จบส่วนเพิ่ม ---
 
@@ -281,53 +247,19 @@ module.exports = (AppDataSource) => {
 
       let usedLeaveDays = 0;
       try {
-        const leaveRepo = AppDataSource.getRepository('LeaveRequest');
-        const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
-        const approvedLeaves = await leaveRepo.find({ where: { Repid: id, status: 'approved' } });
-        for (const lr of approvedLeaves) {
-          // หา leaveTypeName
-          let leaveTypeName = lr.leaveType;
-          if (leaveTypeName && leaveTypeName.length > 20) {
-            const leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
-            if (leaveTypeEntity && leaveTypeEntity.leave_type_th) {
-              leaveTypeName = leaveTypeEntity.leave_type_th;
-            }
-          }
-          // เฉพาะประเภท sick, vacation, personal
-          if (["sick", "ลาป่วย", "vacation", "ลาพักผ่อน", "personal", "ลากิจ"].includes(leaveTypeName)) {
-            if (leaveTypeName === "personal" || leaveTypeName === "ลากิจ") {
-              // personal: อาจเป็นชั่วโมงหรือวัน
-              if (lr.startTime && lr.endTime) {
-                // ชั่วโมง
-                const [sh, sm] = lr.startTime.split(":").map(Number);
-                const [eh, em] = lr.endTime.split(":").map(Number);
-                let start = sh + (sm || 0) / 60;
-                let end = eh + (em || 0) / 60;
-                let diff = end - start;
-                if (diff < 0) diff += 24;
-                usedLeaveDays += diff / config.business.workingHoursPerDay; // configurable working hours per day
-              } else if (lr.startDate && lr.endDate) {
-                // วัน
-                const start = new Date(lr.startDate);
-                const end = new Date(lr.endDate);
-                let days = calculateDaysBetween(start, end);
-                if (days < 0 || isNaN(days)) days = 0;
-                usedLeaveDays += days;
-              }
-            } else {
-              // sick, vacation: วันเท่านั้น
-              if (lr.startDate && lr.endDate) {
-                const start = new Date(lr.startDate);
-                const end = new Date(lr.endDate);
-                let days = calculateDaysBetween(start, end);
-                if (days < 0 || isNaN(days)) days = 0;
-                usedLeaveDays += days;
-              }
-            }
-          }
-        }
-      } catch (e) { usedLeaveDays = 0; }
-      usedLeaveDays = Math.round(usedLeaveDays * 100) / 100;
+        // Use centralized utility function for leave usage summary
+        const { getLeaveUsageSummary } = require('../utils/leaveUtils');
+        const leaveUsageSummary = await getLeaveUsageSummary(id, null, AppDataSource);
+        
+        // Calculate total used leave days from all leave types
+        usedLeaveDays = leaveUsageSummary.reduce((total, item) => {
+          return total + item.total_used_days;
+        }, 0);
+        
+        usedLeaveDays = Math.round(usedLeaveDays * 100) / 100;
+      } catch (e) { 
+        usedLeaveDays = 0; 
+      }
       // --- จบส่วนเพิ่ม ---
 
       res.json({
@@ -582,23 +514,27 @@ module.exports = (AppDataSource) => {
       const approvedLeaves = allLeaves.filter(l => l.status === 'approved');
       let totalLeaveDays = 0;
       let totalLeaveHours = 0;
-      approvedLeaves.forEach(l => {
-        if (l.startDate && l.endDate && (!l.startTime || !l.endTime)) {
-          const start = new Date(l.startDate);
-          const end = new Date(l.endDate);
-          let days = calculateDaysBetween(start, end);
-          if (days < 0 || isNaN(days)) days = 0;
-          totalLeaveDays += days;
-        } else if (l.startTime && l.endTime) {
-          const [sh, sm] = l.startTime.split(":").map(Number);
-          const [eh, em] = l.endTime.split(":").map(Number);
-          let start = sh + (sm || 0) / 60;
-          let end = eh + (em || 0) / 60;
-          let diff = end - start;
-          if (diff < 0) diff += 24;
-          totalLeaveHours += Math.floor(diff);
-        }
-      });
+             approvedLeaves.forEach(l => {
+         if (l.startDate && l.endDate && (!l.startTime || !l.endTime)) {
+           const start = new Date(l.startDate);
+           const end = new Date(l.endDate);
+           let days = calculateDaysBetween(start, end);
+           if (days < 0 || isNaN(days)) days = 0;
+           // Ensure minimum duration of 1 day for same-day leaves
+           if (days === 0 && l.startDate === l.endDate) {
+             days = 1;
+           }
+           totalLeaveDays += days;
+         } else if (l.startTime && l.endTime) {
+           const [sh, sm] = l.startTime.split(":").map(Number);
+           const [eh, em] = l.endTime.split(":").map(Number);
+           let start = sh + (sm || 0) / 60;
+           let end = eh + (em || 0) / 60;
+           let diff = end - start;
+           if (diff < 0) diff += 24;
+           totalLeaveHours += Math.floor(diff);
+         }
+       });
       // รวมชั่วโมงเป็นวัน (1 วัน = 9 ชั่วโมง)
                const summaryDays = totalLeaveDays + Math.floor(totalLeaveHours / config.business.workingHoursPerDay);
                const summaryHours = totalLeaveHours % config.business.workingHoursPerDay;
@@ -641,8 +577,15 @@ module.exports = (AppDataSource) => {
           // ลาวัน
           const start = new Date(l.startDate);
           const end = new Date(l.endDate);
+          
           let days = calculateDaysBetween(start, end);
+          
           if (days < 0 || isNaN(days)) days = 0;
+          // Ensure minimum duration of 1 day for same-day leaves
+          if (days === 0 && l.startDate === l.endDate) {
+            days = 1;
+          }
+          
           durationType = 'day';
           duration = days;
           durationHours = 0;
@@ -671,28 +614,14 @@ module.exports = (AppDataSource) => {
       }));
 
       // ===== เพิ่มส่วนนี้: คำนวณวันลาทั้งหมดที่อนุมัติแล้ว (ไม่สน filter) =====
-      const allApprovedLeaves = await leaveRepo.find({ where: { Repid: id, status: 'approved' } });
-      let totalLeaveDaysAllApproved = 0;
-      let totalLeaveHoursAllApproved = 0;
-      allApprovedLeaves.forEach(l => {
-        if (l.startDate && l.endDate && (!l.startTime || !l.endTime)) {
-          const start = new Date(l.startDate);
-          const end = new Date(l.endDate);
-          let days = calculateDaysBetween(start, end);
-          if (days < 0 || isNaN(days)) days = 0;
-          totalLeaveDaysAllApproved += days;
-        } else if (l.startTime && l.endTime) {
-          const [sh, sm] = l.startTime.split(":").map(Number);
-          const [eh, em] = l.endTime.split(":").map(Number);
-          let start = sh + (sm || 0) / 60;
-          let end = eh + (em || 0) / 60;
-          let diff = end - start;
-          if (diff < 0) diff += 24;
-          totalLeaveHoursAllApproved += Math.floor(diff);
-        }
-      });
-      // รวมชั่วโมงเป็นวัน (1 วัน = 9 ชั่วโมง)
-               const totalLeaveDaysFinal = totalLeaveDaysAllApproved + (totalLeaveHoursAllApproved / config.business.workingHoursPerDay);
+      // Use centralized utility function for leave usage summary
+      const { getLeaveUsageSummary } = require('../utils/leaveUtils');
+      const leaveUsageSummary = await getLeaveUsageSummary(id, null, AppDataSource);
+      
+      // Calculate total leave days from all leave types
+      const totalLeaveDaysFinal = leaveUsageSummary.reduce((total, item) => {
+        return total + item.total_used_days;
+      }, 0);
       // ===== จบส่วนเพิ่ม =====
 
       sendSuccess(res, { 
