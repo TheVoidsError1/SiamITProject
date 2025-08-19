@@ -168,29 +168,16 @@ module.exports = (AppDataSource) => {
         console.error('Error in final calculations:', calcError);
       }
 
-      // Calculate leave days by type using leaveType name
-      const leaveTypeStats = {};
-      for (const lr of approvedLeaves) {
-        let leaveTypeName = lr.leaveType;
-        try {
-          if (leaveTypeName && leaveTypeName.length > 20) {
-            const leaveType = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
-            leaveTypeName = leaveType ? leaveType.leave_type_th : leaveTypeName;
-          }
-        } catch (leaveTypeError) {
-          console.error('Error looking up leave type in approved leaves:', leaveTypeError);
-          // Continue with original leaveTypeName if lookup fails
-        }
-        try {
-          const start = new Date(lr.startDate);
-          const end = new Date(lr.endDate);
-          const days = calculateDaysBetween(start, end);
-          if (!leaveTypeStats[leaveTypeName]) leaveTypeStats[leaveTypeName] = 0;
-          leaveTypeStats[leaveTypeName] += days;
-        } catch (dateError) {
-          console.error('Error calculating days for approved leave:', dateError);
-        }
-      }
+              // Use centralized utility function for leave usage summary
+        const { getLeaveUsageSummary } = require('../utils/leaveUtils');
+        const leaveUsageSummary = await getLeaveUsageSummary(userId, null, AppDataSource);
+        
+        // Convert to leaveTypeStats format for backward compatibility
+        const leaveTypeStats = {};
+        leaveUsageSummary.forEach(item => {
+          const leaveTypeName = item.leave_type_name_th || item.leave_type_name_en;
+          leaveTypeStats[leaveTypeName] = item.total_used_days;
+        });
       // Pending requests for this user
       const pendingRequests = leaveHistory.filter(lr => lr.status === 'pending').length;
       // Approved requests
@@ -249,34 +236,16 @@ module.exports = (AppDataSource) => {
           )
         };
       }
-      // Get all approved leave requests for this user and filter
-      const leaves = await leaveRepo.find({ where });
-      // Calculate total used leave in hours (all types)
+      // Use centralized utility function for leave usage summary
+      const { getLeaveUsageSummary } = require('../utils/leaveUtils');
+      const leaveUsageSummary = await getLeaveUsageSummary(userId, year, AppDataSource);
+      
+      // Calculate total hours from all leave types
       let totalHours = 0;
-      // Using utility function instead of local function
-      for (const lr of leaves) {
-        // If leaveType is a UUID, look up the entity (for display, not needed for calculation)
-        let leaveTypeName = lr.leaveType;
-        if (leaveTypeName && leaveTypeName.length > 20) {
-          const leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
-          leaveTypeName = leaveTypeEntity ? leaveTypeEntity.leave_type_th : leaveTypeName;
-        }
-        if (lr.startTime && lr.endTime) {
-          // Hour-based
-          const startMinutes = convertToMinutes(...lr.startTime.split(':').map(Number));
-          const endMinutes = convertToMinutes(...lr.endTime.split(':').map(Number));
-          let durationHours = (endMinutes - startMinutes) / 60;
-          if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
-          totalHours += durationHours;
-        } else if (lr.startDate && lr.endDate) {
-          // Day-based, convert days to hours (1 day = 9 hours)
-          const start = new Date(lr.startDate);
-          const end = new Date(lr.endDate);
-          let days = calculateDaysBetween(start, end);
-          if (days < 0 || isNaN(days)) days = 0;
-          totalHours += days * config.business.workingHoursPerDay;
-        }
-      }
+      leaveUsageSummary.forEach(item => {
+        totalHours += (item.used_days * config.business.workingHoursPerDay) + item.used_hours;
+      });
+      
       // Convert to days and hours
       const days = Math.floor(totalHours / config.business.workingHoursPerDay);
       const hours = Math.round(totalHours % config.business.workingHoursPerDay);

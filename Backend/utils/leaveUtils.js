@@ -178,29 +178,32 @@ const getUserLeaveQuota = async (userId, leaveTypeId, AppDataSource) => {
     const adminRepo = AppDataSource.getRepository('Admin');
     const superAdminRepo = AppDataSource.getRepository('SuperAdmin');
     
-    // Check which user table the user belongs to
-    let user = await userRepo.findOneBy({ id: userId });
-    let userTable = 'User';
-    
-    if (!user) {
-      user = await adminRepo.findOneBy({ id: userId });
-      userTable = 'Admin';
+    // Get user's position
+    let positionId = null;
+    let userEntity = await userRepo.findOne({ where: { id: userId } });
+    if (userEntity) {
+      positionId = userEntity.position;
+    } else {
+      userEntity = await adminRepo.findOne({ where: { id: userId } });
+      if (userEntity) {
+        positionId = userEntity.position;
+      } else {
+        userEntity = await superAdminRepo.findOne({ where: { id: userId } });
+        if (userEntity) {
+          positionId = userEntity.position;
+        }
+      }
     }
     
-    if (!user) {
-      user = await superAdminRepo.findOneBy({ id: userId });
-      userTable = 'SuperAdmin';
+    if (!positionId) {
+      throw new Error('User position not found');
     }
     
-    if (!user) {
-      throw new Error(`User not found: ${userId}`);
-    }
-    
-    // Get leave quota
+    // Get leave quota by position and leave type
     const quota = await leaveQuotaRepo.findOne({
       where: { 
-        user_id: userId, 
-        leave_type_id: leaveTypeId 
+        positionId: positionId, 
+        leaveTypeId: leaveTypeId 
       }
     });
     
