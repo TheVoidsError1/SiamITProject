@@ -4,8 +4,62 @@
  */
 
 const config = require('../config');
+const { Between } = require('typeorm');
 
+/**
+ * Convert time range to decimal hours
+ * @param {number} startHour - Start hour
+ * @param {number} startMinute - Start minute
+ * @param {number} endHour - End hour
+ * @param {number} endMinute - End minute
+ * @returns {Object} Object with start and end in decimal hours
+ */
+const convertTimeRangeToDecimal = (startHour, startMinute, endHour, endMinute) => {
+  const start = startHour + (startMinute || 0) / 60;
+  const end = endHour + (endMinute || 0) / 60;
+  return { start, end };
+};
 
+/**
+ * Calculate days between two dates
+ * @param {Date} startDate - Start date
+ * @param {Date} endDate - End date
+ * @returns {number} Number of days
+ */
+const calculateDaysBetween = (startDate, endDate) => {
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  const diffTime = Math.abs(end - start);
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return diffDays;
+};
+
+/**
+ * Normalize leave type name
+ * @param {string} leaveType - Leave type string
+ * @returns {string} Normalized leave type name
+ */
+const normalizeLeaveType = (leaveType) => {
+  if (!leaveType) return 'Unknown';
+  
+  // Convert to lowercase for comparison
+  const normalized = leaveType.toLowerCase();
+  
+  // Map common variations
+  if (normalized.includes('sick') || normalized.includes('ป่วย')) {
+    return 'Sick Leave';
+  } else if (normalized.includes('personal') || normalized.includes('กิจ')) {
+    return 'Personal Leave';
+  } else if (normalized.includes('vacation') || normalized.includes('พักผ่อน')) {
+    return 'Vacation Leave';
+  } else if (normalized.includes('maternity') || normalized.includes('คลอด')) {
+    return 'Maternity Leave';
+  } else if (normalized.includes('emergency') || normalized.includes('ฉุกเฉิน')) {
+    return 'Emergency Leave';
+  }
+  
+  return leaveType;
+};
 
 /**
  * Check if time is within working hours
@@ -71,7 +125,7 @@ const getLeaveUsageFromTable = async (userId, leaveTypeId, year = null, AppDataS
     if (year) {
       const startDate = new Date(parseInt(year), 0, 1);
       const endDate = new Date(parseInt(year), 11, 31, 23, 59, 59, 999);
-      whereClause.created_at = { $gte: startDate, $lte: endDate };
+      whereClause.created_at = Between(startDate, endDate);
     }
     
     const leaveUsedRecord = await leaveUsedRepo.findOne({ where: whereClause });
@@ -203,32 +257,59 @@ const getLeaveUsageSummary = async (userId, year = null, AppDataSource) => {
     const leaveUsedRepo = AppDataSource.getRepository('LeaveUsed');
     const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
     const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
+    const userRepo = AppDataSource.getRepository('User');
+    const adminRepo = AppDataSource.getRepository('Admin');
+    const superadminRepo = AppDataSource.getRepository('SuperAdmin');
     
+    // Get user's position
+    let positionId = null;
+    let userEntity = await userRepo.findOne({ where: { id: userId } });
+    if (userEntity) {
+      positionId = userEntity.position;
+    } else {
+      userEntity = await adminRepo.findOne({ where: { id: userId } });
+      if (userEntity) {
+        positionId = userEntity.position;
+      } else {
+        userEntity = await superadminRepo.findOne({ where: { id: userId } });
+        if (userEntity) {
+          positionId = userEntity.position;
+        }
+      }
+    }
+    
+    if (!positionId) {
+      throw new Error('User position not found');
+    }
+    
+    // Get leave usage records for this user
     let whereClause = { user_id: userId };
     
     // Add year filtering if provided
     if (year) {
       const startDate = new Date(parseInt(year), 0, 1);
       const endDate = new Date(parseInt(year), 11, 31, 23, 59, 59, 999);
-      whereClause.created_at = { $gte: startDate, $lte: endDate };
+      whereClause.created_at = Between(startDate, endDate);
     }
     
     const leaveUsedRecords = await leaveUsedRepo.find({ where: whereClause });
     
-    // Get all leave types to ensure we include types with 0 usage
+    // Get all leave types and quotas for this position
     const allLeaveTypes = await leaveTypeRepo.find();
+    const quotas = await leaveQuotaRepo.find({ where: { positionId } });
     
     const summary = await Promise.all(
       allLeaveTypes.map(async (leaveType) => {
-        const usage = leaveUsedRecords.find(record => record.leave_type_id === leaveType.id);
-        const quota = await leaveQuotaRepo.findOne({
-          where: { user_id: userId, leave_type_id: leaveType.id }
-        });
+        // Find quota for this leave type
+        const quotaRow = quotas.find(q => q.leaveTypeId === leaveType.id);
+        const quotaDays = quotaRow ? quotaRow.quota : 0;
         
-        const quotaDays = quota ? quota.quota : 0;
-        const usedDays = usage ? usage.days : 0;
-        const usedHours = usage ? usage.hour : 0;
-        const totalUsedDays = usage ? (usedDays + (usedHours / config.business.workingHoursPerDay)) : 0;
+        // Find used leave for this type
+        const usedRecord = leaveUsedRecords.find(record => record.leave_type_id === leaveType.id);
+        const usedDays = usedRecord ? (usedRecord.days || 0) : 0;
+        const usedHours = usedRecord ? (usedRecord.hour || 0) : 0;
+        
+        const totalUsedDays = usedDays + (usedHours / config.business.workingHoursPerDay);
         const remainingDays = Math.max(0, quotaDays - totalUsedDays);
         
         return {
@@ -417,6 +498,9 @@ module.exports = {
   isWithinWorkingHours,
   calculateWorkingHours,
   convertHoursToDays,
+  convertTimeRangeToDecimal,
+  calculateDaysBetween,
+  normalizeLeaveType,
   getLeaveUsageFromTable,
   getUserLeaveQuota,
   calculateRemainingLeave,

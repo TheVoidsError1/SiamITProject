@@ -409,7 +409,8 @@
     "companyNews": "ข่าวสารบริษัท",
     "noUpcomingHolidays": "ไม่มีวันหยุดที่กำลังจะมาถึง",
     "noCompanyHolidays": "ไม่มีวันหยุดบริษัทในเดือนนี้",
-    "announcements": "ข่าวสาร"
+    "announcements": "ข่าวสาร",
+    "noAnnouncements": "ไม่มีข่าวสาร"
   },
   "profile": {
     "personalInfo": "ข้อมูลส่วนตัว",

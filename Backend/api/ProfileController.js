@@ -702,103 +702,29 @@ module.exports = (AppDataSource) => {
         return res.status(404).json({ success: false, message: 'User not found in ProcessCheck' });
       }
 
-      const { Repid: repid, Role: role } = processCheck;
+      const { Repid: repid } = processCheck;
 
-      // 4. Get positionId from user/admin
-      let positionId = null;
-      if (role === 'admin') {
-        const adminRepo = AppDataSource.getRepository('Admin');
-        const admin = await adminRepo.findOne({ where: { id: repid } });
-        if (!admin) return res.status(404).json({ success: false, message: 'Admin not found' });
-        positionId = admin.position;
-      } else if (role === 'superadmin') {
-        const superadminRepo = AppDataSource.getRepository('SuperAdmin');
-        const superadmin = await superadminRepo.findOne({ where: { id: repid } });
-        if (!superadmin) return res.status(404).json({ success: false, message: 'SuperAdmin not found' });
-        positionId = superadmin.position;
-      } else {
-        const userRepo = AppDataSource.getRepository('User');
-        const user = await userRepo.findOne({ where: { id: repid } });
-        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-        positionId = user.position;
-      }
-      if (!positionId) return res.status(404).json({ success: false, message: 'Position not found' });
-
-      // 5. Query all leaveQuota rows for this position
-      const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
-      const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
-      const leaveRequestRepo = AppDataSource.getRepository('LeaveRequest');
-      const quotas = await leaveQuotaRepo.find({ where: { positionId } });
-      const leaveTypes = await leaveTypeRepo.find();
-      const leaveRequests = await leaveRequestRepo.find({ where: { Repid: repid, status: 'approved' } });
-
-      // Helper: แปลงค่าทศนิยมวันเป็นวัน/ชั่วโมง (configurable working hours per day)
-      // Using utility function instead of local function
-
-      // 6. For each leave type, calculate quota and used (sick, personal, vacation, maternity)
-      const result = [];
-      for (const leaveType of leaveTypes) {
-        // Find quota for this leave type
-        const quotaRow = quotas.find(q => q.leaveTypeId === leaveType.id);
-        const quota = quotaRow ? quotaRow.quota : 0;
-        // Calculate used leave for this type
-        let used = 0;
-        for (const lr of leaveRequests) {
-          let leaveTypeName = lr.leaveType;
-          if (leaveTypeName && leaveTypeName.length > 20) {
-            const leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
-            if (leaveTypeEntity && leaveTypeEntity.leave_type_en) {
-              leaveTypeName = leaveTypeEntity.leave_type_en;
-            }
-          }
-          if (
-            leaveTypeName === leaveType.leave_type_en ||
-            leaveTypeName === leaveType.leave_type_th ||
-            leaveTypeName === leaveType.id
-          ) {
-            // Personal leave: may be by hour or day
-            if (leaveType.leave_type_en?.toLowerCase() === 'personal' || leaveType.leave_type_th === 'ลากิจ') {
-              if (lr.startTime && lr.endTime) {
-                const timeRange = convertTimeRangeToDecimal(
-                  ...lr.startTime.split(":").map(Number),
-                  ...lr.endTime.split(":").map(Number)
-                );
-                let diff = timeRange.end - timeRange.start;
-                if (diff < 0) diff += 24;
-                used += diff / config.business.workingHoursPerDay; // configurable working hours per day
-              } else if (lr.startDate && lr.endDate) {
-                const start = new Date(lr.startDate);
-                const end = new Date(lr.endDate);
-                let days = calculateDaysBetween(start, end);
-                if (days < 0 || isNaN(days)) days = 0;
-                used += days;
-              }
-            } else {
-              // Other types: by day
-              if (lr.startDate && lr.endDate) {
-                const start = new Date(lr.startDate);
-                const end = new Date(lr.endDate);
-                let days = calculateDaysBetween(start, end);
-                if (days < 0 || isNaN(days)) days = 0;
-                used += days;
-              }
-            }
-          }
-        }
-        const remaining = Math.max(0, quota - used);
-        const usedObj = toDayHour(used);
-        const remainingObj = toDayHour(remaining);
-        result.push({
-          id: leaveType.id,
-          leave_type_en: leaveType.leave_type_en,
-          leave_type_th: leaveType.leave_type_th,
-          quota: quota,
+      // Use centralized utility function for leave calculation
+      const { getLeaveUsageSummary } = require('../utils/leaveUtils');
+      const leaveUsageSummary = await getLeaveUsageSummary(repid, null, AppDataSource);
+      
+      // Format the response to match the expected frontend format
+      const result = leaveUsageSummary.map(item => {
+        const usedObj = toDayHour(item.total_used_days);
+        const remainingObj = toDayHour(item.remaining_days);
+        const quotaObj = toDayHour(item.quota_days);
+        
+        return {
+          id: item.leave_type_id,
+          leave_type_en: item.leave_type_name_en,
+          leave_type_th: item.leave_type_name_th,
+          quota: quotaObj.day + (quotaObj.hour / config.business.workingHoursPerDay),
           used_day: usedObj.day,
           used_hour: usedObj.hour,
           remaining_day: remainingObj.day,
           remaining_hour: remainingObj.hour
-        });
-      }
+        };
+      });
       return sendSuccess(res, result);
     } catch (err) {
       console.error('Leave quota error:', err);

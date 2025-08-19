@@ -393,7 +393,8 @@
     "companyNews": "Company News",
     "noUpcomingHolidays": "No upcoming holidays",
     "noCompanyHolidays": "No company holidays this month",
-    "announcements": "Announcements"
+    "announcements": "Announcements",
+    "noAnnouncements": "No announcements"
   },
   "profile": {
     "personalInfo": "Personal Information",
