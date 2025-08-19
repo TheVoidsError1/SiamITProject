@@ -160,7 +160,7 @@
     "force": "Force (allow outside Jan 1)",
     "triggerReset": "Trigger Reset",
     "note": "Note",
-    "noteDetail": "Positions with will be included when no position is selected.",
+    "noteDetail": "Positions with will be included when no position is selected. All positions and all levels will be reset every year.",
     "allNewYearPositions": "All positions",
     "startDate": "Start Date",
     "endDate": "End Date",

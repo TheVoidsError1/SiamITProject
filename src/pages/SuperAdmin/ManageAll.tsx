@@ -90,6 +90,9 @@ const ManageAll: React.FC = () => {
   const [deletePositionDialog, setDeletePositionDialog] = useState<{ open: boolean; position: any | null }>({ open: false, position: null });
   const [deleteDepartmentDialog, setDeleteDepartmentDialog] = useState<{ open: boolean; department: any | null }>({ open: false, department: null });
   const [deleteLeaveTypeDialog, setDeleteLeaveTypeDialog] = useState<{ open: boolean; leaveType: any | null }>({ open: false, leaveType: null });
+  // Manual reset quota state
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [manualResetLoading, setManualResetLoading] = useState(false);
   const handleDepartmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setDepartmentForm({ ...departmentForm, [e.target.name]: e.target.value });
   };
@@ -535,6 +538,55 @@ const ManageAll: React.FC = () => {
     return lang === 'th' ? leaveType.leave_type_th : leaveType.leave_type_en;
   };
 
+  // Fetch all employees for selection (simple list of ids+names)
+  const [employeeOptions, setEmployeeOptions] = useState<{ id: string; name: string; avatar?: string | null }[]>([]);
+  const fetchEmployeesForReset = async () => {
+    try {
+      const data = await apiService.get('/api/employees');
+      if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
+        const baseUrl = import.meta.env.VITE_API_BASE_URL as string;
+        const opts = data.data.map((e: any) => ({
+          id: e.id,
+          name: e.name || e.email || e.id,
+          avatar: e.avatar ? `${baseUrl}${e.avatar}` : null
+        }));
+        setEmployeeOptions(opts);
+      }
+    } catch (e) { setEmployeeOptions([]); }
+  };
+  useEffect(() => { fetchEmployeesForReset(); }, []);
+
+  const toggleSelectUser = (id: string) => {
+    setSelectedUserIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const handleManualReset = async () => {
+    if (selectedUserIds.length === 0) {
+      showToast.warning(t('leave.selectUsersFirst', 'กรุณาเลือกผู้ใช้ก่อน'));
+      return;
+    }
+    setManualResetLoading(true);
+    try {
+      const res = await apiService.post('/api/leave-quota/reset-by-users', { userIds: selectedUserIds, strategy: 'zero' });
+      if (!res || !(res.success || res.status === 'success')) throw new Error(res?.message || 'Failed');
+      showToast.success(t('leave.manualResetSuccess', 'รีเซ็ตโควต้าสำเร็จ'));
+    } catch (err: any) {
+      showToast.error(err?.message || t('leave.manualResetFailed', 'รีเซ็ตโควต้าไม่สำเร็จ'));
+    } finally {
+      setManualResetLoading(false);
+    }
+  };
+
+  // Confirm dialog for manual reset
+  const [confirmResetOpen, setConfirmResetOpen] = useState(false);
+  const openConfirmReset = () => {
+    if (selectedUserIds.length === 0) {
+      showToast.warning(t('leave.selectUsersFirst', 'กรุณาเลือกผู้ใช้ก่อน'));
+      return;
+    }
+    setConfirmResetOpen(true);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-100 via-indigo-50 to-white flex flex-col">
       {/* Hero Section */}
@@ -720,6 +772,26 @@ const ManageAll: React.FC = () => {
                   <h2 className="text-lg font-bold text-white">{t('leave.quota', 'Quota')}</h2>
                 </div>
                 <div className="p-6 space-y-6">
+                  {/* Manual reset section */}
+                  <div className="bg-white rounded-xl p-4 shadow-sm">
+                    <h3 className="text-blue-900 font-semibold mb-3">{t('leave.manualReset', 'สั่งรีโควต้าทันที (เลือกผู้ใช้)')}</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-64 overflow-auto border rounded p-2">
+                      {employeeOptions.map(e => (
+                        <label key={e.id} className="flex items-center gap-3 text-sm p-2 rounded hover:bg-blue-50 cursor-pointer">
+                          <input type="checkbox" className="mt-0.5" checked={selectedUserIds.includes(e.id)} onChange={() => toggleSelectUser(e.id)} />
+                          <span className="flex items-center gap-2">
+                            <img src={e.avatar || '/lovable-uploads/siamit.png'} alt={e.name} className="w-6 h-6 rounded-full object-cover border" />
+                            <span className="font-medium text-blue-900">{e.name}</span>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      <Button onClick={openConfirmReset} disabled={manualResetLoading} className="btn-primary">
+                        {manualResetLoading ? t('common.loading', 'กำลังทำงาน...') : t('leave.resetNow', 'รีโควต้าทันที')}
+                      </Button>
+                    </div>
+                  </div>
                   <div className="bg-white rounded-xl p-4 shadow-sm">
                     <h3 className="text-blue-900 font-semibold mb-3">{t('leave.note', 'Note')}</h3>
                     <p className="text-sm text-gray-700">{t('leave.noteDetail', 'Positions with new_year_quota = 0 will be included when no position is selected.')}</p>
@@ -999,6 +1071,24 @@ const ManageAll: React.FC = () => {
             <AlertDialogCancel>{t('common.cancel', 'ยกเลิก')}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDeletePosition} className="bg-red-600 hover:bg-red-700">
               {t('common.delete', 'ลบ')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm manual reset dialog */}
+      <AlertDialog open={confirmResetOpen} onOpenChange={setConfirmResetOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('leave.confirmManualResetTitle', 'ยืนยันการรีโควต้า')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('leave.confirmManualResetDesc', 'คุณต้องการรีโควต้าของผู้ใช้ที่เลือกใช่หรือไม่? การกระทำนี้จะตั้งค่าการใช้สิทธิ์ลา (days/hour) เป็น 0 โดยไม่ลบใบลาที่ผ่านมา')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel', 'ยกเลิก')}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setConfirmResetOpen(false); handleManualReset(); }} className="bg-blue-600 hover:bg-blue-700">
+              {t('leave.resetNow', 'รีโควต้าทันที')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

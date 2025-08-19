@@ -348,6 +348,70 @@ module.exports = (AppDataSource) => {
     }
   });
 
+  /**
+   * @swagger
+   * /api/leave-quota/reset-by-users:
+   *   post:
+   *     summary: รีเซ็ตการใช้สิทธิ์ลาแบบเลือกผู้ใช้ (ทำได้ทุกวัน ใช้สำหรับทดสอบ/สั่งรีทันที)
+   *     description: ตั้งค่า days/hour ในตาราง leave_used ของผู้ใช้ที่ระบุให้เป็น 0 หรือจะลบระเบียนตาม strategy
+   *     tags: [LeaveQuota]
+   *     requestBody:
+   *       required: true
+   *       content:
+   *         application/json:
+   *           schema:
+   *             type: object
+   *             properties:
+   *               userIds:
+   *                 type: array
+   *                 items:
+   *                   type: string
+   *                 description: รายการ user_id ที่ต้องการรีเซ็ต
+   *               strategy:
+   *                 type: string
+   *                 enum: [delete, zero]
+   *                 description: วิธีรีเซ็ต (delete = ลบระเบียน leave_used, zero = ตั้งค่า days/hour เป็น 0)
+   *     responses:
+   *       200:
+   *         description: รีเซ็ตสำเร็จ
+   *       400:
+   *         description: เงื่อนไขไม่ถูกต้อง
+   */
+  router.post('/reset-by-users', async (req, res) => {
+    const queryRunner = AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    try {
+      const { userIds, strategy = 'zero' } = req.body || {};
+      if (!Array.isArray(userIds) || userIds.length === 0) {
+        return sendValidationError(res, 'userIds (array) is required');
+      }
+
+      const leaveUsedRepo = queryRunner.manager.getRepository('LeaveUsed');
+
+      let affected = 0;
+      if (strategy === 'delete') {
+        const result = await leaveUsedRepo.delete({ user_id: In(userIds) });
+        affected = result.affected || 0;
+      } else {
+        const qb = queryRunner.manager.createQueryBuilder()
+          .update('LeaveUsed')
+          .set({ days: 0, hour: 0 })
+          .where({ user_id: In(userIds) });
+        const result = await qb.execute();
+        affected = result.affected || 0;
+      }
+
+      await queryRunner.commitTransaction();
+      return sendSuccess(res, { users: userIds.length, affected, strategy }, 'รีเซ็ตการใช้สิทธิ์ลาสำเร็จ');
+    } catch (err) {
+      await queryRunner.rollbackTransaction();
+      return sendError(res, err.message, 500);
+    } finally {
+      await queryRunner.release();
+    }
+  });
+
   // Test endpoint to check database state
   router.get('/test', async (req, res) => {
     try {

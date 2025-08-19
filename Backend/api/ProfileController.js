@@ -728,9 +728,21 @@ module.exports = (AppDataSource) => {
       const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
       const leaveRequestRepo = AppDataSource.getRepository('LeaveRequest');
+      const leaveUsedRepo = AppDataSource.getRepository('LeaveUsed');
       const quotas = await leaveQuotaRepo.find({ where: { positionId } });
       const leaveTypes = await leaveTypeRepo.find();
       const leaveRequests = await leaveRequestRepo.find({ where: { Repid: repid, status: 'approved' } });
+      const leaveUsedRows = await leaveUsedRepo.find({ where: { user_id: repid } });
+      const useLeaveUsedTable = Array.isArray(leaveUsedRows) && leaveUsedRows.length > 0;
+      const usedDecimalByTypeId = new Map();
+      if (useLeaveUsedTable) {
+        for (const row of leaveUsedRows) {
+          const days = Number(row.days) || 0;
+          const hours = Number(row.hour) || 0;
+          const total = days + (hours / config.business.workingHoursPerDay);
+          usedDecimalByTypeId.set(row.leave_type_id, total);
+        }
+      }
 
       // Helper: แปลงค่าทศนิยมวันเป็นวัน/ชั่วโมง (configurable working hours per day)
       // Using utility function instead of local function
@@ -741,52 +753,58 @@ module.exports = (AppDataSource) => {
         // Find quota for this leave type
         const quotaRow = quotas.find(q => q.leaveTypeId === leaveType.id);
         const quota = quotaRow ? quotaRow.quota : 0;
+
         // Calculate used leave for this type
-        let used = 0;
-        for (const lr of leaveRequests) {
-          let leaveTypeName = lr.leaveType;
-          if (leaveTypeName && leaveTypeName.length > 20) {
-            const leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
-            if (leaveTypeEntity && leaveTypeEntity.leave_type_en) {
-              leaveTypeName = leaveTypeEntity.leave_type_en;
-            }
-          }
-          if (
-            leaveTypeName === leaveType.leave_type_en ||
-            leaveTypeName === leaveType.leave_type_th ||
-            leaveTypeName === leaveType.id
-          ) {
-            // Personal leave: may be by hour or day
-            if (leaveType.leave_type_en?.toLowerCase() === 'personal' || leaveType.leave_type_th === 'ลากิจ') {
-              if (lr.startTime && lr.endTime) {
-                const timeRange = convertTimeRangeToDecimal(
-                  ...lr.startTime.split(":").map(Number),
-                  ...lr.endTime.split(":").map(Number)
-                );
-                let diff = timeRange.end - timeRange.start;
-                if (diff < 0) diff += 24;
-                used += diff / config.business.workingHoursPerDay; // configurable working hours per day
-              } else if (lr.startDate && lr.endDate) {
-                const start = new Date(lr.startDate);
-                const end = new Date(lr.endDate);
-                let days = calculateDaysBetween(start, end);
-                if (days < 0 || isNaN(days)) days = 0;
-                used += days;
+        let usedDecimal = 0;
+        if (useLeaveUsedTable) {
+          usedDecimal = usedDecimalByTypeId.get(leaveType.id) || 0;
+        } else {
+          for (const lr of leaveRequests) {
+            let leaveTypeName = lr.leaveType;
+            if (leaveTypeName && leaveTypeName.length > 20) {
+              const leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
+              if (leaveTypeEntity && leaveTypeEntity.leave_type_en) {
+                leaveTypeName = leaveTypeEntity.leave_type_en;
               }
-            } else {
-              // Other types: by day
-              if (lr.startDate && lr.endDate) {
-                const start = new Date(lr.startDate);
-                const end = new Date(lr.endDate);
-                let days = calculateDaysBetween(start, end);
-                if (days < 0 || isNaN(days)) days = 0;
-                used += days;
+            }
+            if (
+              leaveTypeName === leaveType.leave_type_en ||
+              leaveTypeName === leaveType.leave_type_th ||
+              leaveTypeName === leaveType.id
+            ) {
+              // Personal leave: may be by hour or day
+              if (leaveType.leave_type_en?.toLowerCase() === 'personal' || leaveType.leave_type_th === 'ลากิจ') {
+                if (lr.startTime && lr.endTime) {
+                  const timeRange = convertTimeRangeToDecimal(
+                    ...lr.startTime.split(":").map(Number),
+                    ...lr.endTime.split(":").map(Number)
+                  );
+                  let diff = timeRange.end - timeRange.start;
+                  if (diff < 0) diff += 24;
+                  usedDecimal += diff / config.business.workingHoursPerDay;
+                } else if (lr.startDate && lr.endDate) {
+                  const start = new Date(lr.startDate);
+                  const end = new Date(lr.endDate);
+                  let days = calculateDaysBetween(start, end);
+                  if (days < 0 || isNaN(days)) days = 0;
+                  usedDecimal += days;
+                }
+              } else {
+                // Other types: by day
+                if (lr.startDate && lr.endDate) {
+                  const start = new Date(lr.startDate);
+                  const end = new Date(lr.endDate);
+                  let days = calculateDaysBetween(start, end);
+                  if (days < 0 || isNaN(days)) days = 0;
+                  usedDecimal += days;
+                }
               }
             }
           }
         }
-        const remaining = Math.max(0, quota - used);
-        const usedObj = toDayHour(used);
+
+        const remaining = Math.max(0, quota - usedDecimal);
+        const usedObj = toDayHour(usedDecimal);
         const remainingObj = toDayHour(remaining);
         result.push({
           id: leaveType.id,

@@ -14,6 +14,7 @@ const fs = require('fs');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 const config = require('./config');
+const scheduler = require('./utils/scheduler.js');
 
 
 const app = express();
@@ -276,4 +277,6 @@ global.AppDataSource = AppDataSource;
 server.listen(port, '0.0.0.0', () => {
   console.log(`Server is running on ${config.server.apiBaseUrl}`);
   console.log('Socket.io server is ready');
+  // Register scheduled jobs (yearly quota reset)
+  scheduler.registerScheduledJobs(config);
 }); 
