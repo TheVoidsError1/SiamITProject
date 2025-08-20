@@ -290,11 +290,47 @@ module.exports = (AppDataSource) => {
         }
         if (leave.statusBy && leave.status === 'approved') {
           const admin = await adminRepo.findOneBy({ id: leave.statusBy });
-          approvedBy = admin ? admin.admin_name + ' ผู้จัดการ' : leave.statusBy;
+          if (admin) {
+            approvedBy = admin.admin_name;
+          } else {
+            // ลองหาใน user table
+            const userRepo = AppDataSource.getRepository('User');
+            const user = await userRepo.findOneBy({ id: leave.statusBy });
+            if (user) {
+              approvedBy = user.User_name;
+            } else {
+              // ลองหาใน superadmin table
+              const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+              const superadmin = await superadminRepo.findOneBy({ id: leave.statusBy });
+              if (superadmin) {
+                approvedBy = superadmin.superadmin_name;
+              } else {
+                approvedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
+              }
+            }
+          }
         }
         if (leave.statusBy && leave.status === 'rejected') {
           const admin = await adminRepo.findOneBy({ id: leave.statusBy });
-          rejectedBy = admin ? admin.admin_name + ' ผู้จัดการ' : leave.statusBy;
+          if (admin) {
+            rejectedBy = admin.admin_name;
+          } else {
+            // ลองหาใน user table
+            const userRepo = AppDataSource.getRepository('User');
+            const user = await userRepo.findOneBy({ id: leave.statusBy });
+            if (user) {
+              rejectedBy = user.User_name;
+            } else {
+              // ลองหาใน superadmin table
+              const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+              const superadmin = await superadminRepo.findOneBy({ id: leave.statusBy });
+              if (superadmin) {
+                rejectedBy = superadmin.superadmin_name;
+              } else {
+                rejectedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
+              }
+            }
+          }
         }
         // คำนวณระยะเวลาการลา
         let days = 0;

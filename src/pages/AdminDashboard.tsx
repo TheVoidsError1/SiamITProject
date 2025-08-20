@@ -1756,12 +1756,12 @@ const AdminDashboard = () => {
                         )}
                       </div>
                     </div>
-                    {selectedRequest.status === "approved" && (selectedRequest.approvedBy || selectedRequest.statusBy) && (
+                    {selectedRequest.status === "approved" && selectedRequest.approvedBy && (
                       <div className="space-y-2">
                         <Label className="text-sm font-medium text-gray-600">{t('leave.approvedBy')}</Label>
                         <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
                           <CheckCircle className="w-4 h-4 text-green-500" />
-                          <span className="font-medium text-green-900">{selectedRequest.approvedBy || selectedRequest.statusBy}</span>
+                          <span className="font-medium text-green-900">{selectedRequest.approvedBy}</span>
                         </div>
                       </div>
                     )}
@@ -1771,7 +1771,7 @@ const AdminDashboard = () => {
                           <Label className="text-sm font-medium text-gray-600">{t('leave.rejectedBy')}</Label>
                           <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
                             <XCircle className="w-4 h-4 text-red-500" />
-                            <span className="font-medium text-red-900">{selectedRequest.rejectedBy || selectedRequest.statusBy || '-'}</span>
+                            <span className="font-medium text-red-900">{selectedRequest.rejectedBy || '-'}</span>
                           </div>
                         </div>
                         {selectedRequest.rejectionReason && (

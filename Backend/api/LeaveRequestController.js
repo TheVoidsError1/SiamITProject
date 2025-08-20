@@ -1113,6 +1113,53 @@
              duration = Math.abs((end - start) / (1000*60*60*24)) + 1;
              durationType = 'day';
            }
+
+           // ดึงชื่อผู้อนุมัติ/ไม่อนุมัติ
+           let approvedBy = null;
+           let rejectedBy = null;
+           if (leave.statusBy && leave.status === 'approved') {
+             const admin = await adminRepo.findOneBy({ id: leave.statusBy });
+             if (admin) {
+               approvedBy = admin.admin_name;
+             } else {
+               // ลองหาใน user table
+               const user = await userRepo.findOneBy({ id: leave.statusBy });
+               if (user) {
+                 approvedBy = user.User_name;
+               } else {
+                 // ลองหาใน superadmin table
+                 const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+                 const superadmin = await superadminRepo.findOneBy({ id: leave.statusBy });
+                 if (superadmin) {
+                   approvedBy = superadmin.superadmin_name;
+                 } else {
+                   approvedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
+                 }
+               }
+             }
+           }
+           if (leave.statusBy && leave.status === 'rejected') {
+             const admin = await adminRepo.findOneBy({ id: leave.statusBy });
+             if (admin) {
+               rejectedBy = admin.admin_name;
+             } else {
+               // ลองหาใน user table
+               const user = await userRepo.findOneBy({ id: leave.statusBy });
+               if (user) {
+                 rejectedBy = user.User_name;
+               } else {
+                 // ลองหาใน superadmin table
+                 const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+                 const superadmin = await superadminRepo.findOneBy({ id: leave.statusBy });
+                 if (superadmin) {
+                   rejectedBy = superadmin.superadmin_name;
+                 } else {
+                   rejectedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
+                 }
+               }
+             }
+           }
+
            return {
              id: leave.id,
              leaveType: leave.leaveType, // id
@@ -1337,6 +1384,52 @@
            }
          }
 
+         // ดึงชื่อผู้อนุมัติ/ไม่อนุมัติ
+         let approvedBy = null;
+         let rejectedBy = null;
+         if (leave.statusBy && leave.status === 'approved') {
+           const admin = await adminRepo.findOneBy({ id: leave.statusBy });
+           if (admin) {
+             approvedBy = admin.admin_name;
+           } else {
+             // ลองหาใน user table
+             const user = await userRepo.findOneBy({ id: leave.statusBy });
+             if (user) {
+               approvedBy = user.User_name;
+             } else {
+               // ลองหาใน superadmin table
+               const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+               const superadmin = await superadminRepo.findOneBy({ id: leave.statusBy });
+               if (superadmin) {
+                 approvedBy = superadmin.superadmin_name;
+               } else {
+                 approvedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
+               }
+             }
+           }
+         }
+         if (leave.statusBy && leave.status === 'rejected') {
+           const admin = await adminRepo.findOneBy({ id: leave.statusBy });
+           if (admin) {
+             rejectedBy = admin.admin_name;
+           } else {
+             // ลองหาใน user table
+             const user = await userRepo.findOneBy({ id: leave.statusBy });
+             if (user) {
+               rejectedBy = user.User_name;
+             } else {
+               // ลองหาใน superadmin table
+               const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+               const superadmin = await superadminRepo.findOneBy({ id: leave.statusBy });
+               if (superadmin) {
+                 rejectedBy = superadmin.superadmin_name;
+               } else {
+                 rejectedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
+               }
+             }
+           }
+         }
+
          res.json({
            success: true,
            data: {
@@ -1367,6 +1460,8 @@
              rejectedTime: leave.rejectedTime,
              employeeType: leave.employeeType,
              Repid: leave.Repid,
+             approvedBy,
+             rejectedBy,
            }
          });
        } catch (err) {

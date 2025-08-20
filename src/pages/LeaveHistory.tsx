@@ -1719,7 +1719,7 @@ const LeaveHistory = () => {
 
                             <span className="font-medium">{t('leave.approvedBy')}:</span>
 
-                            <span>{leave.approvedBy && !/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/.test(leave.approvedBy) ? leave.approvedBy : '-'}</span>
+                            <span>{leave.approvedBy}</span>
 
                           </div>
 
@@ -2395,7 +2395,7 @@ const LeaveHistory = () => {
 
                     
 
-                    {selectedLeave.status === "approved" && selectedLeave.name && (
+                    {selectedLeave.status === "approved" && selectedLeave.approvedBy && (
 
                       <div className="space-y-2">
 
@@ -2404,7 +2404,7 @@ const LeaveHistory = () => {
                         <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
 
                           <CheckCircle className="w-4 h-4 text-green-500" />
-                          <span className="font-medium text-green-900 break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">{selectedLeave.name}</span>
+                          <span className="font-medium text-green-900 break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">{selectedLeave.approvedBy}</span>
                         </div>
 
                       </div>

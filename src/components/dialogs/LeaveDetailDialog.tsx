@@ -23,6 +23,8 @@ interface LeaveRequest {
   status: string;
   createdAt?: string;
   statusBy?: string;
+  approvedBy?: string;
+  rejectedBy?: string;
   approvedTime?: string;
   startTime?: string;
   endTime?: string;
@@ -40,7 +42,6 @@ interface LeaveRequest {
   backdated?: boolean;
   durationType?: string;
   durationHours?: number;
-  rejectedBy?: string;
   attachments?: string[];
 }
 
@@ -377,12 +378,12 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                     </div>
                   </div>
                   
-                  {leaveDetail.status === "approved" && (leaveDetail.name || leaveDetail.statusBy) && (
+                  {leaveDetail.status === "approved" && leaveDetail.approvedBy && (
                     <div className="space-y-2">
                       <Label className="text-sm font-medium text-gray-600">{t('leave.approvedBy', 'Approved by')}</Label>
                       <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
                         <CheckCircle className="w-4 h-4 text-green-500" />
-                        <span className="font-medium text-green-900">{leaveDetail.name || leaveDetail.statusBy || '-'}</span>
+                        <span className="font-medium text-green-900">{leaveDetail.approvedBy}</span>
                       </div>
                     </div>
                   )}
@@ -393,7 +394,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                         <Label className="text-sm font-medium text-gray-600">{t('leave.rejectedBy', 'Rejected by')}</Label>
                         <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
                           <XCircle className="w-4 h-4 text-red-500" />
-                          <span className="font-medium text-red-900">{leaveDetail.rejectedBy || leaveDetail.statusBy || '-'}</span>
+                          <span className="font-medium text-red-900">{leaveDetail.rejectedBy || '-'}</span>
                         </div>
                       </div>
                       {leaveDetail.rejectedReason && (
