@@ -52,6 +52,7 @@ const Profile = () => {
   const [leaveLoading, setLeaveLoading] = useState(false);
   const [allLeaveTypes, setAllLeaveTypes] = useState<any[]>([]);
   const withCacheBust = (url: string) => `${url}${url.includes('?') ? '&' : '?'}v=${Date.now()}`;
+  const [isEditing, setIsEditing] = useState(false);
 
   const getKeyByLabel = (label: string, options: string[], tPrefix: string) => {
     for (const key of options) {
@@ -487,6 +488,8 @@ const Profile = () => {
         });
         
         console.log('Profile updated successfully:', updatedData);
+        setIsEditing(false);
+        // window.location.reload(); <-- ลบออก
       } else {
         throw new Error(res.message || t('profile.saveError'));
       }
@@ -570,20 +573,24 @@ const Profile = () => {
                 {user?.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
               </AvatarFallback>
             </Avatar>
-            <button
-              type="button"
-              className="absolute bottom-2 right-2 p-2 bg-blue-500 text-white rounded-full shadow-md border-2 border-white hover:bg-blue-600 transition-colors"
-              onClick={handleCameraClick}
-              aria-label="Change avatar"
-            >
-              <Camera className="h-5 w-5" />
-            </button>
+            {/* ปุ่มเปลี่ยนรูป avatar: แสดงเฉพาะตอน isEditing */}
+            {isEditing && (
+              <button
+                type="button"
+                className="absolute bottom-2 right-2 p-2 bg-blue-500 text-white rounded-full shadow-md border-2 border-white hover:bg-blue-600 transition-colors"
+                onClick={handleCameraClick}
+                aria-label="Change avatar"
+              >
+                <Camera className="h-5 w-5" />
+              </button>
+            )}
             <input
               type="file"
               accept="image/*"
               ref={fileInputRef}
               style={{ display: 'none' }}
               onChange={handleFileChange}
+              disabled={!isEditing}
             />
           </div>
           <AvatarCropDialog
@@ -670,6 +677,7 @@ const Profile = () => {
                       value={formData.full_name}
                       onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
                       className="input-blue"
+                      disabled={!isEditing}
                     />
                   </div>
                   <div className="space-y-3">
@@ -683,6 +691,7 @@ const Profile = () => {
                         setFormData(prev => ({ ...prev, email }));
                       }}
                       className="input-blue"
+                      disabled={!isEditing}
                     />
                   </div>
                   <div className="space-y-3">
@@ -690,6 +699,7 @@ const Profile = () => {
                     <Select
                       value={formData.position || "not_specified"}
                       onValueChange={(value) => setFormData(prev => ({ ...prev, position: value === "not_specified" ? "" : value }))}
+                      disabled={!isEditing}
                     >
                       <SelectTrigger className="input-blue">
                         <SelectValue placeholder={t('positions.selectPosition')} />
@@ -710,6 +720,7 @@ const Profile = () => {
                     <Select
                       value={formData.department || "not_specified"}
                       onValueChange={(value) => setFormData(prev => ({ ...prev, department: value === "not_specified" ? "" : value }))}
+                      disabled={!isEditing}
                     >
                       <SelectTrigger className="input-blue">
                         <SelectValue placeholder={t('departments.selectDepartment')} />
@@ -730,6 +741,7 @@ const Profile = () => {
                     <Select
                       value={formData.gender || "not_specified"}
                       onValueChange={(value) => setFormData(prev => ({ ...prev, gender: value === "not_specified" ? "" : value }))}
+                      disabled={!isEditing}
                     >
                       <SelectTrigger className="input-blue">
                         <SelectValue placeholder={t('employee.selectGender')} />
@@ -755,6 +767,7 @@ const Profile = () => {
                       value={formData.dob}
                       onChange={(e) => setFormData(prev => ({ ...prev, dob: e.target.value }))}
                       className="input-blue"
+                      disabled={!isEditing}
                     />
                   </div>
                   <div className="space-y-3">
@@ -766,6 +779,7 @@ const Profile = () => {
                       onChange={(e) => setFormData(prev => ({ ...prev, phone_number: e.target.value }))}
                       placeholder={t('employee.enterPhoneNumber')}
                       className="input-blue"
+                      disabled={!isEditing}
                     />
                   </div>
                   {/* Start/End work dates: Start Work Date always shows; End Work Date shows only when position has Request Quote enabled */}
@@ -782,6 +796,7 @@ const Profile = () => {
                             value={formData.start_work}
                             onChange={(e) => setFormData(prev => ({ ...prev, start_work: e.target.value }))}
                             className="input-blue"
+                            disabled={!isEditing}
                           />
                         </div>
                         {showEndWorkDate && (
@@ -793,6 +808,7 @@ const Profile = () => {
                               value={formData.end_work}
                               onChange={(e) => setFormData(prev => ({ ...prev, end_work: e.target.value }))}
                               className="input-blue"
+                              disabled={!isEditing}
                             />
                           </div>
                         )}
@@ -800,20 +816,33 @@ const Profile = () => {
                     );
                   })()}
                 </div>
-                <div className="flex justify-end">
-                  <Button type="submit" disabled={saving || loading} className="btn-blue px-8 py-2 text-lg">
-                    {saving ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        {t('profile.saving')}
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-5 w-5 mr-2" />
-                        {t('profile.saveData')}
-                      </>
-                    )}
-                  </Button>
+                {/* ปุ่มแก้ไข/บันทึก/ยกเลิก (วางไว้ใต้ Avatar หรือในฟอร์ม) */}
+                <div className="flex gap-3 justify-center mt-4">
+                  {!isEditing && (
+                    <Button type="button" className="btn-blue px-6 py-2 text-lg" onClick={() => setIsEditing(true)}>
+                      <span>แก้ไขข้อมูล</span>
+                    </Button>
+                  )}
+                  {isEditing && (
+                    <>
+                      <Button type="button" className="btn-blue px-6 py-2 text-lg" onClick={handleSave} disabled={saving || loading}>
+                        {saving ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                            กำลังบันทึก...
+                          </>
+                        ) : (
+                          <>
+                            <Save className="h-5 w-5 mr-2" />
+                            บันทึก
+                          </>
+                        )}
+                      </Button>
+                      <Button type="button" variant="outline" className="btn-blue-outline px-6 py-2 text-lg" onClick={() => { setIsEditing(false); }} disabled={saving || loading}>
+                        ยกเลิก
+                      </Button>
+                    </>
+                  )}
                 </div>
               </form>
             </TabsContent>
