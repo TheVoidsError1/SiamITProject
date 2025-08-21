@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { X, Download } from 'lucide-react';
 
@@ -19,72 +19,61 @@ export default function ImagePreviewDialog({
   imageName,
   title = "รูปภาพ"
 }: ImagePreviewDialogProps) {
-  const handleDownload = () => {
-    const link = document.createElement('a');
-    link.href = imageUrl;
-    link.download = imageName;
-    link.click();
+  const handleDownload = async () => {
+    try {
+      const response = await fetch(imageUrl, { credentials: 'omit' });
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = imageName || 'download';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch (e) {
+      // fallback
+      const link = document.createElement('a');
+      link.href = imageUrl;
+      link.download = imageName;
+      link.click();
+    }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
-        <DialogHeader className="bg-gray-100 px-6 py-4 border-b">
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-lg font-semibold text-gray-800">
-              {title}
-            </DialogTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onClose}
-              className="h-8 w-8 p-0 hover:bg-gray-200"
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        </DialogHeader>
-        
-        <div className="bg-black flex-1 flex items-center justify-center p-8">
-          <div className="relative max-w-full max-h-full">
-            <img
-              src={imageUrl}
-              alt={imageName}
-              className="max-w-full max-h-full object-contain"
-              onError={(e) => {
-                console.error('Image failed to load:', imageUrl);
-                e.currentTarget.style.display = 'none';
-              }}
-            />
-          </div>
+      <DialogContent className="w-screen h-screen max-w-none max-h-none p-0 bg-black/40 backdrop-blur-sm border-0">
+        <div className="absolute top-4 right-4 z-50 flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleDownload}
+            className="bg-white/20 text-white border-white/30 hover:bg-white/30"
+            aria-label="download"
+          >
+            <Download className="w-4 h-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onClose}
+            className="bg-white/20 text-white border-white/30 hover:bg-white/30"
+            aria-label="close"
+          >
+            <X className="w-4 h-4" />
+          </Button>
         </div>
-        
-        <div className="bg-gray-100 px-6 py-4 border-t">
-          <div className="flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm text-gray-600 truncate" title={imageName}>
-                {imageName}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDownload}
-                className="flex items-center gap-2"
-              >
-                <Download className="h-4 w-4" />
-                ดาวน์โหลด
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={onClose}
-              >
-                ปิด
-              </Button>
-            </div>
-          </div>
+        <div className="flex items-center justify-center h-full p-4">
+          <img 
+            src={imageUrl} 
+            alt={imageName}
+            style={{ maxWidth: '100vw', maxHeight: '100vh' }}
+            className="object-contain rounded-lg shadow-2xl"
+            onError={(e) => {
+              const target = e.currentTarget as HTMLImageElement;
+              target.style.display = 'none';
+            }}
+          />
         </div>
       </DialogContent>
     </Dialog>

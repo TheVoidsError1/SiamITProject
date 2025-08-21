@@ -19,6 +19,7 @@ import { monthNames } from '../constants/common';
 import { apiEndpoints, apiService, createAuthenticatedFileUrl } from '../lib/api';
 import { showToastMessage } from '../lib/toast';
 import { formatDateLocalized, formatDateOnly } from '../lib/utils';
+import ImagePreviewDialog from '@/components/dialogs/ImagePreviewDialog';
 
 type LeaveRequest = {
   id: number;
@@ -613,6 +614,7 @@ const AdminDashboard = () => {
   // --- State สำหรับลบใบลา ---
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deletingRequest, setDeletingRequest] = useState<any | null>(null);
+  const [previewImage, setPreviewImage] = useState<{ url: string; name: string } | null>(null);
 
   // --- ฟังก์ชันลบใบลา ---
   const handleDelete = (request: any) => {
@@ -1877,7 +1879,7 @@ const AdminDashboard = () => {
                                     />
                                     <div className="flex items-center justify-between">
                                       <span className="text-sm text-gray-600 truncate">{fileName}</span>
-                                      <Button size="sm" variant="outline" onClick={() => window.open(authenticatedFileUrl, '_blank')}>{t('common.view')}</Button>
+                                      <Button size="sm" variant="outline" onClick={() => setPreviewImage({ url: authenticatedFileUrl, name: fileName })}>{t('common.view')}</Button>
                                     </div>
                                   </div>
                                 ) : (
@@ -1910,6 +1912,16 @@ const AdminDashboard = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {previewImage && (
+        <ImagePreviewDialog
+          isOpen={!!previewImage}
+          onClose={() => setPreviewImage(null)}
+          imageUrl={previewImage.url}
+          imageName={previewImage.name}
+          title={t('leave.attachmentPreview', 'ตัวอย่างไฟล์แนบ')}
+        />
+      )}
 
       {/* Dialog สำหรับป้อนเหตุผลไม่อนุมัติ */}
       <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
