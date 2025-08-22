@@ -269,8 +269,6 @@ const Profile = () => {
         type: item.leave_type_en,
         remaining: { days: item.remaining_day ?? '-', hours: item.remaining_hour ?? '-' },
         quotaRaw: item.quota,
-        usedRaw: item.used_day + (item.used_hour / 9),
-        remainingRaw: item.remaining_day + (item.remaining_hour / 9),
         unit: 'day',
       };
     });
@@ -841,14 +839,17 @@ const Profile = () => {
                     <div className="w-full bg-blue-100 rounded-full h-2">
                       <div
                         className={`${stat.color} h-2 rounded-full transition-all duration-500`}
-                        style={{ width: `${Math.min((Number(stat.used.days) / Number(stat.quota)) * 100, 100)}%` }}
+                        style={{ 
+                          width: `${Math.min(
+                            ((Number(stat.used.days) + (Number(stat.used.hours) / 9)) / Number(stat.quota)) * 100, 
+                            100
+                          )}%` 
+                        }}
                       ></div>
                     </div>
                     <div className="text-xs text-blue-500">
                       {(() => {
-                        const usedDays = Number(stat.used.days) || 0;
-                        const usedHours = Number(stat.used.hours) || 0;
-                        const remainingDays = Number(stat.quota) - usedDays;
+                        const remainingDays = Number(stat.remaining.days) || 0;
                         const remainingHours = Number(stat.remaining.hours) || 0;
                         
                         if (remainingHours > 0) {
