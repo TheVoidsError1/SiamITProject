@@ -26,6 +26,8 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarKey, setAvatarKey] = useState<number>(0);
+  const [forceRefresh, setForceRefresh] = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null);
@@ -51,7 +53,7 @@ const Profile = () => {
   const [leaveQuota, setLeaveQuota] = useState<any[]>([]);
   const [leaveLoading, setLeaveLoading] = useState(false);
   const [allLeaveTypes, setAllLeaveTypes] = useState<any[]>([]);
-  const withCacheBust = (url: string) => `${url}${url.includes('?') ? '&' : '?'}v=${Date.now()}`;
+  const withCacheBust = (url: string) => `${url}${url.includes('?') ? '&' : '?'}v=${Date.now()}&t=${Math.random()}`;
 
   const getKeyByLabel = (label: string, options: string[], tPrefix: string) => {
     for (const key of options) {
@@ -277,6 +279,24 @@ const Profile = () => {
     fileInputRef.current?.click();
   };
 
+  // Force reload avatar from server
+  const forceReloadAvatar = async () => {
+    try {
+      const res = await apiService.get(apiEndpoints.auth.avatar);
+      if (res.success && res.avatar_url) {
+        const timestamp = Date.now();
+        const random = Math.random();
+        const newUrl = `${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}?v=${timestamp}&t=${random}&reload=true`;
+        setAvatarUrl(newUrl);
+        setAvatarKey(prev => prev + 1);
+        setForceRefresh(prev => prev + 1);
+        updateUser({ avatar_url: res.avatar_url });
+      }
+    } catch (err) {
+      console.error('Failed to reload avatar:', err);
+    }
+  };
+
   // Upload avatar utility with optional optimistic preview URL and realtime fan-out
   const uploadAvatar = async (file: File, localUrl?: string) => {
     const previousUrl = avatarUrl;
@@ -286,9 +306,28 @@ const Profile = () => {
     try {
       const res = await apiService.post(apiEndpoints.auth.avatar, formData);
       if (res?.success) {
-        const finalUrl = withCacheBust(`${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}`);
-        setAvatarUrl(finalUrl);
-        updateUser({ avatar_url: res.avatar_url });
+        // Force immediate update with aggressive cache busting
+        const timestamp = Date.now();
+        const random = Math.random();
+        const finalUrl = `${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}?v=${timestamp}&t=${random}&refresh=true`;
+        
+        // Clear the avatar first, then set the new one
+        setAvatarUrl(null);
+        setAvatarKey(prev => prev + 1);
+        
+        // Small delay to ensure the clear takes effect
+        setTimeout(() => {
+          setAvatarUrl(finalUrl);
+          setAvatarKey(prev => prev + 1);
+          setForceRefresh(prev => prev + 1);
+          updateUser({ avatar_url: res.avatar_url });
+        }, 100);
+        
+        // Force reload after a longer delay to ensure the server has processed the upload
+        setTimeout(() => {
+          forceReloadAvatar();
+        }, 500);
+        
         toast({ title: t('profile.uploadSuccess') });
 
         // Broadcast via socket and localStorage to update other tabs/clients
@@ -329,14 +368,37 @@ const Profile = () => {
   };
 
   const handleCropped = async (file: File) => {
+    const previousUrl = avatarUrl;
     const formData = new FormData();
     formData.append('avatar', file);
     try {
       const res = await apiService.post(apiEndpoints.auth.avatar, formData);
-      if (res.success) {
-        setAvatarUrl(withCacheBust(`${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}`));
-        updateUser({ avatar_url: res.avatar_url });
+      if (res?.success) {
+        // Force immediate update with aggressive cache busting
+        const timestamp = Date.now();
+        const random = Math.random();
+        const finalUrl = `${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}?v=${timestamp}&t=${random}&refresh=true`;
+        
+        // Clear the avatar first, then set the new one
+        setAvatarUrl(null);
+        setAvatarKey(prev => prev + 1);
+        
+        // Small delay to ensure the clear takes effect
+        setTimeout(() => {
+          setAvatarUrl(finalUrl);
+          setAvatarKey(prev => prev + 1);
+          setForceRefresh(prev => prev + 1);
+          updateUser({ avatar_url: res.avatar_url });
+        }, 100);
+        
+        // Force reload after a longer delay to ensure the server has processed the upload
+        setTimeout(() => {
+          forceReloadAvatar();
+        }, 500);
+        
         toast({ title: t('profile.uploadSuccess') });
+
+        // Broadcast via socket and localStorage to update other tabs/clients
         if (socket && isConnected && user?.id) {
           socket.emit('avatarUpdated', { userId: user.id, avatar_url: res.avatar_url });
         }
@@ -346,13 +408,14 @@ const Profile = () => {
           }
         } catch {}
       } else {
-        throw new Error(res.message || t('profile.uploadError'));
+        throw new Error(res?.message || t('profile.uploadError'));
       }
     } catch (err: any) {
-      toast({
-        title: t('profile.uploadError'),
-        description: err?.message,
-        variant: 'destructive'
+      if (previousUrl) setAvatarUrl(previousUrl);
+      toast({ 
+        title: t('profile.uploadError'), 
+        description: err?.message, 
+        variant: 'destructive' 
       });
     }
   };
@@ -364,6 +427,7 @@ const Profile = () => {
       if (!data) return;
       if (user?.id && String(data.userId) === String(user.id)) {
         setAvatarUrl(withCacheBust(`${baseUrl}${data.avatar_url}`));
+        setAvatarKey(prev => prev + 1);
         updateUser({ avatar_url: data.avatar_url });
       }
     };
@@ -376,6 +440,7 @@ const Profile = () => {
         const data = JSON.parse(e.newValue);
         if (user?.id && String(data.userId) === String(user.id)) {
           setAvatarUrl(withCacheBust(`${baseUrl}${data.avatar_url}`));
+          setAvatarKey(prev => prev + 1);
           updateUser({ avatar_url: data.avatar_url });
         }
       } catch {}
@@ -562,8 +627,14 @@ const Profile = () => {
         {/* Profile Header */}
         <div className="flex flex-col items-center -mt-16">
           <div className="relative">
-            <Avatar className="h-28 w-28 shadow-lg border-4 border-white bg-white/80 backdrop-blur rounded-full">
-              <AvatarImage src={avatarUrl || undefined} />
+            <Avatar key={`${avatarUrl}-${avatarKey}-${forceRefresh}`} className="h-28 w-28 shadow-lg border-4 border-white bg-white/80 backdrop-blur rounded-full">
+              <AvatarImage 
+                src={avatarUrl ? `${avatarUrl}&force=${forceRefresh}` : undefined} 
+                onError={() => {
+                  // If image fails to load, force a refresh
+                  setForceRefresh(prev => prev + 1);
+                }}
+              />
               <AvatarFallback className="text-2xl font-bold bg-blue-200 text-blue-900">
                 {user?.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
               </AvatarFallback>
