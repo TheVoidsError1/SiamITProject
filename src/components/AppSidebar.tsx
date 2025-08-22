@@ -65,11 +65,6 @@ const adminItems = [
     url: "/admin/employees",
     icon: Users,
   },
-  {
-    title: "navigation.lineOASettings",
-    url: "/admin/line-oa-settings",
-    icon: MessageSquare,
-  },
 ];
 
 const superadminItems = [
