@@ -20,7 +20,7 @@ import { useSocket } from '@/contexts/SocketContext';
 
 const Profile = () => {
   const { t, i18n } = useTranslation();
-  const { user, updateUser, showSessionExpiredDialog } = useAuth();
+  const { user, updateUser, showSessionExpiredDialog, avatarPreviewUrl, setAvatarPreviewUrl } = useAuth();
   const { toast } = useToast();
   const { enabled: pushNotificationEnabled, setEnabled: setPushNotificationEnabled } = usePushNotification();
   const [loading, setLoading] = useState(true);
@@ -53,6 +53,8 @@ const Profile = () => {
   const [allLeaveTypes, setAllLeaveTypes] = useState<any[]>([]);
   const withCacheBust = (url: string) => `${url}${url.includes('?') ? '&' : '?'}v=${Date.now()}`;
   const [isEditing, setIsEditing] = useState(false);
+  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
+  const [pendingCroppedFile, setPendingCroppedFile] = useState<File | null>(null);
 
   const getKeyByLabel = (label: string, options: string[], tPrefix: string) => {
     for (const key of options) {
@@ -318,13 +320,24 @@ const Profile = () => {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const file = e.target.files[0];
-    // Show cropper UI for both GIF and other images. For GIF we only preview crop and upload original to preserve animation.
-    const url = URL.createObjectURL(file);
-    setSelectedImageSrc(url);
+    // แสดง preview ด้วย Data URL (base64) แทน Blob URL เพื่อไม่ให้หมดอายุ
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      console.log('Profile: File selected, dataUrl length:', dataUrl?.length);
+      setSelectedImageSrc(dataUrl);
+      if (setAvatarPreviewUrl) {
+        setAvatarPreviewUrl(dataUrl);
+        console.log('Profile: avatarPreviewUrl set to context, length:', dataUrl?.length);
+      } else {
+        console.log('Profile: setAvatarPreviewUrl is undefined!');
+      }
+    };
+    reader.readAsDataURL(file);
     setCropDialogOpen(true);
-    // Keep a ref of original file for GIF to upload later untouched
+    setPendingAvatarFile(file); // เก็บไฟล์ไว้ก่อน
+    setPendingCroppedFile(null); // reset cropped file
     if (file.type === 'image/gif') {
-      // @ts-ignore - attach to window scoped var to avoid adding more state variables
       (window as any).__avatarOriginalGifFile = file;
     } else {
       (window as any).__avatarOriginalGifFile = null;
@@ -332,32 +345,22 @@ const Profile = () => {
   };
 
   const handleCropped = async (file: File) => {
-    const formData = new FormData();
-    formData.append('avatar', file);
-    try {
-      const res = await apiService.post(apiEndpoints.auth.avatar, formData);
-      if (res.success) {
-        setAvatarUrl(withCacheBust(`${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}`));
-        updateUser({ avatar_url: res.avatar_url });
-        toast({ title: t('profile.uploadSuccess') });
-        if (socket && isConnected && user?.id) {
-          socket.emit('avatarUpdated', { userId: user.id, avatar_url: res.avatar_url });
-        }
-        try {
-          if (user?.id) {
-            localStorage.setItem('avatarUpdated', JSON.stringify({ userId: user.id, avatar_url: res.avatar_url, ts: Date.now() }));
-          }
-        } catch {}
+    setPendingCroppedFile(file); // เก็บไฟล์ที่ crop แล้วไว้ก่อน
+    setCropDialogOpen(false);
+    // แสดง preview ด้วย Data URL (base64) แทน Blob URL เพื่อไม่ให้หมดอายุ
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      console.log('Profile: Cropped, dataUrl length:', dataUrl?.length);
+      setAvatarUrl(dataUrl);
+      if (setAvatarPreviewUrl) {
+        setAvatarPreviewUrl(dataUrl);
+        console.log('Profile: avatarPreviewUrl set to context after crop, length:', dataUrl?.length);
       } else {
-        throw new Error(res.message || t('profile.uploadError'));
+        console.log('Profile: setAvatarPreviewUrl is undefined after crop!');
       }
-    } catch (err: any) {
-      toast({
-        title: t('profile.uploadError'),
-        description: err?.message,
-        variant: 'destructive'
-      });
-    }
+    };
+    reader.readAsDataURL(file);
   };
 
   // Listen to avatar updates via socket and localStorage for realtime self/other-tab refresh
@@ -416,18 +419,6 @@ const Profile = () => {
         return;
       }
       
-      // ตรวจสอบว่าโดเมนต้องมีอย่างน้อย 2 ตัวอักษรหลังจุด (เช่น .com, .co.th)
-      const domainMatch = formData.email.match(/@[^@]+\.([^.]+)$/);
-      if (domainMatch && domainMatch[1].length < 2) {
-        toast({
-          title: t('common.error'),
-          description: t('auth.invalidEmailFormat'),
-          variant: "destructive",
-        });
-        setSaving(false);
-        return;
-      }
-      
       // ตรวจสอบว่าตำแหน่งต้องการ End Work Date หรือไม่
       const selectedPos = positions.find(p => String(p.id) === formData.position);
       const requiresEndWorkDate = selectedPos ? !!selectedPos.request_quote : false;
@@ -445,6 +436,34 @@ const Profile = () => {
         }
       }
 
+      // อัปโหลด avatar ถ้ามีไฟล์ใหม่
+      let avatarUploadedUrl = null;
+      if (pendingCroppedFile) {
+        const formData = new FormData();
+        formData.append('avatar', pendingCroppedFile);
+        const res = await apiService.post(apiEndpoints.auth.avatar, formData);
+        if (res?.success) {
+          avatarUploadedUrl = res.avatar_url;
+          // อัปเดต avatarUrl ใน Profile ด้วย URL ใหม่ (ไม่ใช้ withCacheBust)
+          const newAvatarUrl = `${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}`;
+          setAvatarUrl(newAvatarUrl);
+          // อัปเดต user context ด้วย avatar_url ใหม่
+          updateUser({ avatar_url: res.avatar_url });
+          toast({ title: t('profile.uploadSuccess') });
+          if (socket && isConnected && user?.id) {
+            socket.emit('avatarUpdated', { userId: user.id, avatar_url: res.avatar_url });
+          }
+          try {
+            if (user?.id) {
+              localStorage.setItem('avatarUpdated', JSON.stringify({ userId: user.id, avatar_url: res.avatar_url, ts: Date.now() }));
+            }
+          } catch {}
+          if (setAvatarPreviewUrl) setAvatarPreviewUrl(null); // clear preview หลังบันทึก
+        } else {
+          throw new Error(res?.message || t('profile.uploadError'));
+        }
+      }
+      
       const requestData = {
         name: formData.full_name,
         email: formData.email,
@@ -454,7 +473,7 @@ const Profile = () => {
         dob: formData.dob || null,
         phone_number: formData.phone_number || null,
         start_work: formData.start_work || null,
-        end_work: requiresEndWorkDate ? (formData.end_work || null) : null,
+        end_work: (positions.find(p => String(p.id) === formData.position)?.request_quote ? (formData.end_work || null) : null),
       };
       
       console.log('Sending profile update data:', requestData);
@@ -485,10 +504,14 @@ const Profile = () => {
           position: updatedData.position_name || '',
           department: updatedData.department_name || '',
           email: updatedData.email || formData.email,
+          ...(avatarUploadedUrl ? { avatar_url: avatarUploadedUrl } : {}),
         });
         
         console.log('Profile updated successfully:', updatedData);
         setIsEditing(false);
+        setPendingAvatarFile(null);
+        setPendingCroppedFile(null);
+        if (setAvatarPreviewUrl) setAvatarPreviewUrl(null); // clear preview หลังบันทึก
         // window.location.reload(); <-- ลบออก
       } else {
         throw new Error(res.message || t('profile.saveError'));
