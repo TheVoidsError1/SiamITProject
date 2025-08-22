@@ -26,14 +26,12 @@ const Profile = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [avatarKey, setAvatarKey] = useState<number>(0);
-  const [forceRefresh, setForceRefresh] = useState<number>(0);
-  const [avatarKey, setAvatarKey] = useState<number>(0);
-  const [forceRefresh, setForceRefresh] = useState<number>(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null);
   const { socket, isConnected } = useSocket();
+  const [avatarKey, setAvatarKey] = useState<number>(0);
+  const [forceRefresh, setForceRefresh] = useState<number>(0);
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
@@ -59,6 +57,7 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
   const [pendingCroppedFile, setPendingCroppedFile] = useState<File | null>(null);
+  
 
   const getKeyByLabel = (label: string, options: string[], tPrefix: string) => {
     for (const key of options) {
@@ -302,24 +301,6 @@ const Profile = () => {
     }
   };
 
-  // Force reload avatar from server
-  const forceReloadAvatar = async () => {
-    try {
-      const res = await apiService.get(apiEndpoints.auth.avatar);
-      if (res.success && res.avatar_url) {
-        const timestamp = Date.now();
-        const random = Math.random();
-        const newUrl = `${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}?v=${timestamp}&t=${random}&reload=true`;
-        setAvatarUrl(newUrl);
-        setAvatarKey(prev => prev + 1);
-        setForceRefresh(prev => prev + 1);
-        updateUser({ avatar_url: res.avatar_url });
-      }
-    } catch (err) {
-      console.error('Failed to reload avatar:', err);
-    }
-  };
-
   // Upload avatar utility with optional optimistic preview URL and realtime fan-out
   const uploadAvatar = async (file: File, localUrl?: string) => {
     const previousUrl = avatarUrl;
@@ -329,28 +310,6 @@ const Profile = () => {
     try {
       const res = await apiService.post(apiEndpoints.auth.avatar, formData);
       if (res?.success) {
-        // Force immediate update with aggressive cache busting
-        const timestamp = Date.now();
-        const random = Math.random();
-        const finalUrl = `${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}?v=${timestamp}&t=${random}&refresh=true`;
-        
-        // Clear the avatar first, then set the new one
-        setAvatarUrl(null);
-        setAvatarKey(prev => prev + 1);
-        
-        // Small delay to ensure the clear takes effect
-        setTimeout(() => {
-          setAvatarUrl(finalUrl);
-          setAvatarKey(prev => prev + 1);
-          setForceRefresh(prev => prev + 1);
-          updateUser({ avatar_url: res.avatar_url });
-        }, 100);
-        
-        // Force reload after a longer delay to ensure the server has processed the upload
-        setTimeout(() => {
-          forceReloadAvatar();
-        }, 500);
-        
         // Force immediate update with aggressive cache busting
         const timestamp = Date.now();
         const random = Math.random();
@@ -423,8 +382,7 @@ const Profile = () => {
     }
   };
 
-  const handleCropped = async (file: File) => {
-    const previousUrl = avatarUrl;
+    const handleCropped = async (file: File) => {
     const previousUrl = avatarUrl;
     const formData = new FormData();
     formData.append('avatar', file);
@@ -453,32 +411,7 @@ const Profile = () => {
           forceReloadAvatar();
         }, 500);
         
-      if (res?.success) {
-        // Force immediate update with aggressive cache busting
-        const timestamp = Date.now();
-        const random = Math.random();
-        const finalUrl = `${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}?v=${timestamp}&t=${random}&refresh=true`;
-        
-        // Clear the avatar first, then set the new one
-        setAvatarUrl(null);
-        setAvatarKey(prev => prev + 1);
-        
-        // Small delay to ensure the clear takes effect
-        setTimeout(() => {
-          setAvatarUrl(finalUrl);
-          setAvatarKey(prev => prev + 1);
-          setForceRefresh(prev => prev + 1);
-          updateUser({ avatar_url: res.avatar_url });
-        }, 100);
-        
-        // Force reload after a longer delay to ensure the server has processed the upload
-        setTimeout(() => {
-          forceReloadAvatar();
-        }, 500);
-        
         toast({ title: t('profile.uploadSuccess') });
-
-        // Broadcast via socket and localStorage to update other tabs/clients
 
         // Broadcast via socket and localStorage to update other tabs/clients
         if (socket && isConnected && user?.id) {
@@ -491,14 +424,8 @@ const Profile = () => {
         } catch {}
       } else {
         throw new Error(res?.message || t('profile.uploadError'));
-        throw new Error(res?.message || t('profile.uploadError'));
       }
     } catch (err: any) {
-      if (previousUrl) setAvatarUrl(previousUrl);
-      toast({ 
-        title: t('profile.uploadError'), 
-        description: err?.message, 
-        variant: 'destructive' 
       if (previousUrl) setAvatarUrl(previousUrl);
       toast({ 
         title: t('profile.uploadError'), 
@@ -739,14 +666,7 @@ const Profile = () => {
         {/* Profile Header */}
         <div className="flex flex-col items-center -mt-16">
           <div className="relative">
-            <Avatar key={`${avatarUrl}-${avatarKey}-${forceRefresh}`} className="h-28 w-28 shadow-lg border-4 border-white bg-white/80 backdrop-blur rounded-full">
-              <AvatarImage 
-                src={avatarUrl ? `${avatarUrl}&force=${forceRefresh}` : undefined} 
-                onError={() => {
-                  // If image fails to load, force a refresh
-                  setForceRefresh(prev => prev + 1);
-                }}
-              />
+
             <Avatar key={`${avatarUrl}-${avatarKey}-${forceRefresh}`} className="h-28 w-28 shadow-lg border-4 border-white bg-white/80 backdrop-blur rounded-full">
               <AvatarImage 
                 src={avatarUrl ? `${avatarUrl}&force=${forceRefresh}` : undefined} 
@@ -1062,18 +982,12 @@ const Profile = () => {
                             100
                           )}%` 
                         }}
-                        style={{ 
-                          width: `${Math.min(
-                            ((Number(stat.used.days) + (Number(stat.used.hours) / 9)) / Number(stat.quota)) * 100, 
-                            100
-                          )}%` 
-                        }}
                       ></div>
                     </div>
                     <div className="text-xs text-blue-500">
                       {(() => {
                         const remainingDays = Number(stat.remaining.days) || 0;
-                        const remainingDays = Number(stat.remaining.days) || 0;
+
                         const remainingHours = Number(stat.remaining.hours) || 0;
                         
                         if (remainingHours > 0) {
