@@ -68,7 +68,9 @@ export const FileUpload = ({
       
       {attachments.length > 0 && (
         <div className="mt-3 space-y-2">
-          <Label className="text-sm font-medium">{t('leave.attachedFiles')}:</Label>
+          {!readOnly && (
+            <Label className="text-sm font-medium">{t('leave.attachedFiles')}:</Label>
+          )}
           {attachments.map((file, index) => (
             <div
               key={index}
@@ -76,40 +78,18 @@ export const FileUpload = ({
             >
               {/* รูปไฟล์อยู่ด้านบน */}
               {isImageFile(file) && (
-                <div className="mb-3 relative">
+                <div className="mb-3">
                   <img
                     src={getFileUrl(file)}
                     alt={file.name}
-                    className="w-full h-auto rounded border object-cover cursor-pointer hover:opacity-80 transition-opacity"
-                    style={{ maxHeight: '150px', maxWidth: '200px' }}
+                    className="w-[240px] h-[140px] rounded border object-cover cursor-pointer hover:opacity-90 transition"
                     onClick={() => handleImageClick(file, setPreviewImage, setImageDialogOpen)}
                   />
-                  {/* Yellow overlay with See Details text */}
-                  <div className="absolute bottom-2 left-2 space-y-1">
-                    {/* แถบแรก */}
-                    <div className="bg-yellow-400 text-yellow-900 px-2 py-1 rounded text-xs font-medium shadow-md">
-                      <div className="flex items-center gap-1">
-                        <div className="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center">
-                          <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
-                        </div>
-                        {t('leave.seeDetails')}
-                      </div>
-                    </div>
-                    {/* แถบที่สอง */}
-                    <div className="bg-yellow-400 text-yellow-900 px-2 py-1 rounded text-xs font-medium shadow-md">
-                      <div className="flex items-center gap-1">
-                        <div className="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center">
-                          <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
-                        </div>
-                        {t('leave.seeDetails')}
-                      </div>
-                    </div>
-                  </div>
                 </div>
               )}
               
               {/* ส่วนของชื่อไฟล์และปุ่มต่างๆ อยู่ด้านล่าง */}
-              <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-700 font-medium truncate max-w-[150px]" title={file.name}>
                   {/* Show only filename, not full path และตัดให้สั้น */}
                   {(() => {
@@ -118,7 +98,7 @@ export const FileUpload = ({
                   })()}
                 </span>
                 <div className="flex gap-2">
-                  {isImageFile(file) && (
+                  {isImageFile(file) && !readOnly && (
                     <Button
                       type="button"
                       variant="ghost"
@@ -139,6 +119,10 @@ export const FileUpload = ({
                         variant="outline"
                         size="sm"
                         onClick={() => {
+                          if (isImageFile(file)) {
+                            handleImageClick(file, setPreviewImage, setImageDialogOpen);
+                            return;
+                          }
                           if ((file as any).url) {
                             window.open((file as any).url, '_blank');
                           }
