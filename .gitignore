@@ -28,3 +28,4 @@ README.md
 .env
 public
 Backend/.env
+Backend/scripts/*
