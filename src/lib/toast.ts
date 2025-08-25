@@ -2,6 +2,7 @@
 // This file provides a centralized way to handle all toast notifications
 
 import { toast } from '@/hooks/use-toast';
+import { config } from '@/config';
 
 // Toast variants (only allowed: 'default' | 'destructive')
 export type ToastVariant = 'default' | 'destructive';
@@ -22,7 +23,7 @@ export const showToast = {
       title,
       description,
       variant: 'default',
-      duration: duration || 3000
+      duration: duration || config.notifications.duration
     });
   },
   // Error toast (use 'destructive')
@@ -31,7 +32,7 @@ export const showToast = {
       title,
       description,
       variant: 'destructive',
-      duration: duration || 5000
+      duration: duration || config.notifications.duration
     });
   },
   // Warning toast (map to 'destructive')
@@ -40,7 +41,7 @@ export const showToast = {
       title,
       description,
       variant: 'destructive',
-      duration: duration || 4000
+      duration: duration || config.notifications.duration
     });
   },
   // Info toast (map to 'default')
@@ -49,7 +50,7 @@ export const showToast = {
       title,
       description,
       variant: 'default',
-      duration: duration || 3000
+      duration: duration || config.notifications.duration
     });
   },
   // Custom toast (only allow allowed variants)

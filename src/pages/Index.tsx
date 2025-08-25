@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
 import { apiEndpoints, apiService } from '../lib/api';
 import { showToastMessage } from '../lib/toast';
+import { config } from '@/config';
 
 
 const Index = () => {
@@ -560,7 +561,7 @@ const Index = () => {
           </div>
           <div className="absolute top-0 right-0 w-40 h-40 rounded-full" style={{ background: 'linear-gradient(90deg, #fffbe6 0%, #ffe082 100%)', opacity: 0.18, transform: 'translateY(-50%) translateX(50%)' }}></div>
           <div className="flex-1 flex items-center justify-center animate-float">
-            <img src="/public/lovable-uploads/siamit.png" alt="Logo" className="w-28 h-28 object-contain drop-shadow-2xl animate-float" />
+            <img src={`${config.upload.publicPath}/lovable-uploads/siamit.png`} alt="Logo" className="w-28 h-28 object-contain drop-shadow-2xl animate-float" />
           </div>
         </div>
 
