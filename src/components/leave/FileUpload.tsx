@@ -11,12 +11,14 @@ interface FileUploadProps {
   attachments: File[];
   onFileUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onRemoveAttachment: (index: number) => void;
+  readOnly?: boolean; // เพิ่ม prop สำหรับโหมด read-only
 }
 
 export const FileUpload = ({
   attachments,
   onFileUpload,
   onRemoveAttachment,
+  readOnly = false, // ค่าเริ่มต้นเป็น false
 }: FileUploadProps) => {
   const { t } = useTranslation();
   const [previewImage, setPreviewImage] = useState<{ url: string; name: string } | null>(null);
@@ -26,30 +28,43 @@ export const FileUpload = ({
     return file.type.startsWith('image/');
   };
 
+  // ฟังก์ชันสำหรับดึง URL ของไฟล์ (รองรับทั้ง File object และ custom URL)
+  const getFileUrl = (file: File) => {
+    // ตรวจสอบว่ามี custom url property หรือไม่ (สำหรับโหมด view)
+    if ((file as any).url) {
+      return (file as any).url;
+    }
+    // ถ้าเป็น File object ปกติ ใช้ URL.createObjectURL
+    return URL.createObjectURL(file);
+  };
+
   return (
     <div className="space-y-2">
-      <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
-        <input
-          type="file"
-          id="file-upload"
-          multiple
-          accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-          onChange={onFileUpload}
-          className="hidden"
-        />
-        <label
-          htmlFor="file-upload"
-          className="flex flex-col items-center cursor-pointer"
-        >
-          <Upload className="w-8 h-8 text-gray-400 mb-2" />
-          <p className="text-sm text-gray-600">
-            {t('leave.clickToSelectFile')}
-          </p>
-          <p className="text-xs text-gray-500 mt-1">
-            {t('leave.supportedFormats')}
-          </p>
-        </label>
-      </div>
+      {/* ซ่อนส่วนอัปโหลดถ้าเป็นโหมด read-only */}
+      {!readOnly && (
+        <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+          <input
+            type="file"
+            id="file-upload"
+            multiple
+            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+            onChange={onFileUpload}
+            className="hidden"
+          />
+          <label
+            htmlFor="file-upload"
+            className="flex flex-col items-center cursor-pointer"
+          >
+            <Upload className="w-8 h-8 text-gray-400 mb-2" />
+            <p className="text-sm text-gray-600">
+              {t('leave.clickToSelectFile')}
+            </p>
+            <p className="text-xs text-gray-500 mt-1">
+              {t('leave.supportedFormats')}
+            </p>
+          </label>
+        </div>
+      )}
       
       {attachments.length > 0 && (
         <div className="mt-3 space-y-2">
@@ -60,7 +75,10 @@ export const FileUpload = ({
               className="bg-gray-50 p-3 rounded-lg"
             >
               <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-700 font-medium">{file.name}</span>
+                <span className="text-sm text-gray-700 font-medium">
+                  {/* Show only filename, not full path */}
+                  {file.name.includes('/') ? file.name.split('/').pop() : file.name}
+                </span>
                 <div className="flex gap-2">
                   {isImageFile(file) && (
                     <Button
@@ -75,22 +93,25 @@ export const FileUpload = ({
                       <span className="sr-only">{t('leave.seeDetails')}</span>
                     </Button>
                   )}
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => onRemoveAttachment(index)}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                  >
-                    <X className="w-4 h-4" />
-                  </Button>
+                  {/* Hide remove button in read-only mode */}
+                  {!readOnly && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onRemoveAttachment(index)}
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <X className="w-4 h-4" />
+                    </Button>
+                  )}
                 </div>
               </div>
               
               {isImageFile(file) && (
                 <div className="mt-2">
                   <img
-                    src={URL.createObjectURL(file)}
+                    src={getFileUrl(file)}
                     alt={file.name}
                     className="w-full max-w-[30vw] h-auto rounded border object-cover cursor-pointer hover:opacity-80 transition-opacity"
                     style={{ maxHeight: '200px' }}
