@@ -2580,7 +2580,7 @@ const LeaveHistory = () => {
                         const authenticatedFilePath = createAuthenticatedFileUrl(filePath);
 
                         // สร้าง File object จาก URL สำหรับ FileUpload component
-
+                        
                         const file = new File([], fileName, {
 
                           type: getFileType(fileName)

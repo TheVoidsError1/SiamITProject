@@ -74,10 +74,48 @@ export const FileUpload = ({
               key={index}
               className="bg-gray-50 p-3 rounded-lg"
             >
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm text-gray-700 font-medium">
-                  {/* Show only filename, not full path */}
-                  {file.name.includes('/') ? file.name.split('/').pop() : file.name}
+              {/* รูปไฟล์อยู่ด้านบน */}
+              {isImageFile(file) && (
+                <div className="mb-3 relative">
+                  <img
+                    src={getFileUrl(file)}
+                    alt={file.name}
+                    className="w-full h-auto rounded border object-cover cursor-pointer hover:opacity-80 transition-opacity"
+                    style={{ maxHeight: '150px', maxWidth: '200px' }}
+                    onClick={() => handleImageClick(file, setPreviewImage, setImageDialogOpen)}
+                  />
+                  {/* Yellow overlay with See Details text */}
+                  <div className="absolute bottom-2 left-2 space-y-1">
+                    {/* แถบแรก */}
+                    <div className="bg-yellow-400 text-yellow-900 px-2 py-1 rounded text-xs font-medium shadow-md">
+                      <div className="flex items-center gap-1">
+                        <div className="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center">
+                          <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                        </div>
+                        {t('leave.seeDetails')}
+                      </div>
+                    </div>
+                    {/* แถบที่สอง */}
+                    <div className="bg-yellow-400 text-yellow-900 px-2 py-1 rounded text-xs font-medium shadow-md">
+                      <div className="flex items-center gap-1">
+                        <div className="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center">
+                          <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                        </div>
+                        {t('leave.seeDetails')}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* ส่วนของชื่อไฟล์และปุ่มต่างๆ อยู่ด้านล่าง */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-700 font-medium truncate max-w-[150px]" title={file.name}>
+                  {/* Show only filename, not full path และตัดให้สั้น */}
+                  {(() => {
+                    const fileName = file.name.includes('/') ? file.name.split('/').pop() : file.name;
+                    return fileName && fileName.length > 20 ? fileName.substring(0, 20) + '...' : fileName;
+                  })()}
                 </span>
                 <div className="flex gap-2">
                   {isImageFile(file) && (
@@ -93,6 +131,40 @@ export const FileUpload = ({
                       <span className="sr-only">{t('leave.seeDetails')}</span>
                     </Button>
                   )}
+                  {/* Show View and Download buttons in read-only mode */}
+                  {readOnly && (
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if ((file as any).url) {
+                            window.open((file as any).url, '_blank');
+                          }
+                        }}
+                        className="text-xs px-2 py-1"
+                      >
+                        {t('common.view')}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          if ((file as any).url) {
+                            const link = document.createElement('a');
+                            link.href = (file as any).url;
+                            link.download = file.name.includes('/') ? file.name.split('/').pop() : file.name;
+                            link.click();
+                          }
+                        }}
+                        className="text-xs px-2 py-1"
+                      >
+                        {t('common.download')}
+                      </Button>
+                    </>
+                  )}
                   {/* Hide remove button in read-only mode */}
                   {!readOnly && (
                     <Button
@@ -107,18 +179,6 @@ export const FileUpload = ({
                   )}
                 </div>
               </div>
-              
-              {isImageFile(file) && (
-                <div className="mt-2">
-                  <img
-                    src={getFileUrl(file)}
-                    alt={file.name}
-                    className="w-full max-w-[30vw] h-auto rounded border object-cover cursor-pointer hover:opacity-80 transition-opacity"
-                    style={{ maxHeight: '200px' }}
-                    onClick={() => handleImageClick(file, setPreviewImage, setImageDialogOpen)}
-                  />
-                </div>
-              )}
             </div>
           ))}
         </div>
