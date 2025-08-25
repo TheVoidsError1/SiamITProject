@@ -1,9 +1,10 @@
 
-import { useState } from "react";
+import ImagePreviewDialog from "@/components/dialogs/ImagePreviewDialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { Upload, X, Eye } from "lucide-react";
-import ImagePreviewDialog from "@/components/dialogs/ImagePreviewDialog";
+import { Eye, Upload, X } from "lucide-react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { handleImageClick } from '../../lib/utils';
 
 interface FileUploadProps {
@@ -17,6 +18,7 @@ export const FileUpload = ({
   onFileUpload,
   onRemoveAttachment,
 }: FileUploadProps) => {
+  const { t } = useTranslation();
   const [previewImage, setPreviewImage] = useState<{ url: string; name: string } | null>(null);
   const [imageDialogOpen, setImageDialogOpen] = useState(false);
 
@@ -41,17 +43,17 @@ export const FileUpload = ({
         >
           <Upload className="w-8 h-8 text-gray-400 mb-2" />
           <p className="text-sm text-gray-600">
-            คลิกเพื่อเลือกไฟล์หรือลากไฟล์มาวาง
+            {t('leave.clickToSelectFile')}
           </p>
           <p className="text-xs text-gray-500 mt-1">
-            รองรับ PDF, JPG, PNG, DOC, DOCX
+            {t('leave.supportedFormats')}
           </p>
         </label>
       </div>
       
       {attachments.length > 0 && (
         <div className="mt-3 space-y-2">
-          <Label className="text-sm font-medium">ไฟล์ที่แนบ:</Label>
+          <Label className="text-sm font-medium">{t('leave.attachedFiles')}:</Label>
           {attachments.map((file, index) => (
             <div
               key={index}
@@ -67,8 +69,10 @@ export const FileUpload = ({
                       size="sm"
                       onClick={() => handleImageClick(file, setPreviewImage, setImageDialogOpen)}
                       className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                      title={t('leave.seeDetails')}
                     >
                       <Eye className="w-4 h-4" />
+                      <span className="sr-only">{t('leave.seeDetails')}</span>
                     </Button>
                   )}
                   <Button
@@ -105,7 +109,7 @@ export const FileUpload = ({
           onClose={() => setImageDialogOpen(false)}
           imageUrl={previewImage.url}
           imageName={previewImage.name}
-          title="รูปภาพแนบ"
+          title={t('leave.attachedImage')}
         />
       )}
     </div>
