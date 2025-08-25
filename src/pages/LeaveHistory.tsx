@@ -1,3 +1,4 @@
+import { FileUpload } from '@/components/leave/FileUpload';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -716,6 +717,27 @@ const LeaveHistory = () => {
 
     }
 
+  };
+
+
+
+  // เพิ่มฟังก์ชันสำหรับกำหนดประเภทไฟล์
+  const getFileType = (fileName: string) => {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(extension || '')) {
+      return 'image/' + extension;
+    } else if (extension === 'pdf') {
+      return 'application/pdf';
+    } else if (['doc', 'docx'].includes(extension || '')) {
+      return 'application/msword';
+    } else if (['xls', 'xlsx'].includes(extension || '')) {
+      return 'application/vnd.ms-excel';
+    } else if (['ppt', 'pptx'].includes(extension || '')) {
+      return 'application/vnd.ms-powerpoint';
+    } else if (extension === 'txt') {
+      return 'text/plain';
+    }
+    return 'application/octet-stream';
   };
 
 
@@ -2547,221 +2569,45 @@ const LeaveHistory = () => {
 
                   <CardContent>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <FileUpload
 
-                      {selectedLeave.attachments.map((attachment: string, index: number) => {
+                      attachments={selectedLeave.attachments.map((attachment: string) => {
 
                         const fileName = attachment.split('/').pop() || attachment;
-
-                        const fileExtension = fileName.split('.').pop()?.toLowerCase();
-
-                        const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(fileExtension || '');
-
-                        const isPDF = fileExtension === 'pdf';
-
-                        const isDocument = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt'].includes(fileExtension || '');
-
-                        
-
-                        // Construct the correct file path - always prepend /leave-uploads/ if not already present
 
                         const filePath = attachment.startsWith('/leave-uploads/') ? attachment : `/leave-uploads/${attachment}`;
 
                         const authenticatedFilePath = createAuthenticatedFileUrl(filePath);
 
+                        // สร้าง File object จาก URL สำหรับ FileUpload component
                         
+                        const file = new File([], fileName, {
 
-                        return (
+                          type: getFileType(fileName)
 
-                          <div key={index} className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-all duration-300 hover:shadow-md">
+                        });
 
-                            {isImage ? (
+                        // เพิ่ม custom properties สำหรับ URL
 
-                              <div className="space-y-3">
+                        Object.defineProperty(file, 'url', {
 
-                                <div className="relative group cursor-pointer" onClick={() => {
+                          value: authenticatedFilePath,
 
-                                  setSelectedImage(authenticatedFilePath);
+                          writable: false
 
-                                  setShowImagePreview(true);
+                        });
 
-                                }}>
-
-                                  <img 
-
-                                    src={authenticatedFilePath} 
-
-                                    alt={fileName}
-
-                                    className="w-full h-32 object-cover rounded-lg border transition-all duration-300 group-hover:scale-105"
-
-                                    onError={(e) => {
-
-                                      const target = e.target as HTMLImageElement;
-
-                                      target.style.display = 'none';
-
-                                    }}
-
-                                  />
-
-                                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 rounded-lg flex items-center justify-center">
-
-                                    <div className="opacity-0 group-hover:opacity-100 transition-all duration-300">
-
-                                      <FileText className="w-8 h-8 text-white" />
-
-                                    </div>
-
-                                  </div>
-
-                                </div>
-
-                                <div className="flex items-center justify-between">
-
-                                  <span className="text-sm text-gray-600 truncate flex-1 mr-2">{fileName}</span>
-
-                                  <div className="flex gap-1">
-
-                                    <Button 
-
-                                      size="sm" 
-
-                                      variant="outline"
-
-                                      onClick={() => {
-
-                                        setSelectedImage(authenticatedFilePath);
-
-                                        setShowImagePreview(true);
-
-                                      }}
-
-                                      className="text-xs px-2 py-1"
-
-                                    >
-
-                                      {t('common.view')}
-
-                                    </Button>
-
-                                    <Button 
-
-                                      size="sm" 
-
-                                      variant="outline"
-
-                                      onClick={() => {
-
-                                        const link = document.createElement('a');
-
-                                        link.href = authenticatedFilePath;
-
-                                        link.download = fileName;
-
-                                        link.click();
-
-                                      }}
-
-                                      className="text-xs px-2 py-1"
-
-                                    >
-
-                                      {t('common.download')}
-
-                                    </Button>
-
-                                  </div>
-
-                                </div>
-
-                              </div>
-
-                            ) : (
-
-                              <div className="space-y-3">
-
-                                <div className="w-full h-32 bg-gray-200 rounded-lg flex items-center justify-center">
-
-                                  {isPDF ? (
-
-                                    <FileText className="w-8 h-8 text-red-500" />
-
-                                  ) : isDocument ? (
-
-                                    <FileText className="w-8 h-8 text-blue-500" />
-
-                                  ) : (
-
-                                    <FileText className="w-8 h-8 text-gray-400" />
-
-                                  )}
-
-                                </div>
-
-                                <div className="flex items-center justify-between">
-
-                                  <span className="text-sm text-gray-600 truncate flex-1 mr-2">{fileName}</span>
-
-                                  <div className="flex gap-1">
-
-                                    <Button 
-
-                                      size="sm" 
-
-                                      variant="outline"
-
-                                      onClick={() => window.open(authenticatedFilePath, '_blank')}
-
-                                      className="text-xs px-2 py-1"
-
-                                    >
-
-                                      {t('common.view')}
-
-                                    </Button>
-
-                                    <Button 
-
-                                      size="sm" 
-
-                                      variant="outline"
-
-                                      onClick={() => {
-
-                                        const link = document.createElement('a');
-
-                                        link.href = authenticatedFilePath;
-
-                                        link.download = fileName;
-
-                                        link.click();
-
-                                      }}
-
-                                      className="text-xs px-2 py-1"
-
-                                    >
-
-                                      {t('common.download')}
-
-                                    </Button>
-
-                                  </div>
-
-                                </div>
-
-                              </div>
-
-                            )}
-
-                          </div>
-
-                        );
+                        return file;
 
                       })}
 
-                    </div>
+                      onFileUpload={() => {}} // ไม่ต้องทำอะไรในโหมด view
+
+                      onRemoveAttachment={() => {}} // ไม่ต้องทำอะไรในโหมด view
+
+                      readOnly={true} // เพิ่ม prop สำหรับโหมด read-only
+
+                    />
 
                   </CardContent>
 

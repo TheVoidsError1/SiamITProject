@@ -126,7 +126,15 @@ export function handleImageClick(
   setPreviewImage: (preview: { url: string; name: string } | null) => void,
   setImageDialogOpen: (open: boolean) => void
 ): void {
-  const url = URL.createObjectURL(file);
+  // ตรวจสอบว่ามี custom url property หรือไม่ (สำหรับโหมด view)
+  let url: string;
+  if ((file as any).url) {
+    url = (file as any).url;
+  } else {
+    // ถ้าเป็น File object ปกติ ใช้ URL.createObjectURL
+    url = URL.createObjectURL(file);
+  }
+  
   setPreviewImage({ url, name: file.name });
   setImageDialogOpen(true);
 }
