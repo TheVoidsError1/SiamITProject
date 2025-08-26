@@ -806,7 +806,10 @@
     "save": "Save",
     "cancel": "Cancel",
     "edit": "Edit",
-    "addTitle": "Add Company Event"
+    "add": "Add",
+    "event": "Company Event",
+    "addTitle": "Add Company Event",
+    "monthlyActivities": "Company Activities This Month"
   },
   "announcementsFeed": {
     "title": "Announcements Feed",

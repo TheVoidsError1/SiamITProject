@@ -12,7 +12,7 @@ import { Building2, ChevronLeft, Edit2, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
+ 
 
 function getDaysInMonth(year: number, month: number) {
   return new Date(year, month + 1, 0).getDate();
@@ -366,10 +366,7 @@ const CompanyMonthDetailPage = () => {
             <ChevronLeft className="w-6 h-6" />
           </button>
           
-          {/* Language Switcher */}
-          <div className="absolute right-4 top-4 md:right-10 md:top-10">
-            <LanguageSwitcher />
-          </div>
+          
           
           <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-24 h-24 rounded-full bg-white/80 shadow-2xl border-4 border-white mb-4" />
           <h1 className="text-4xl md:text-5xl font-extrabold text-indigo-900 drop-shadow mb-2 flex items-center gap-3">
