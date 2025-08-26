@@ -2,7 +2,7 @@
 {
   "auth": {
     "login": "Login",
-    "register": "Register",
+    "egister": "Register",
     "logout": "Logout",
     "email": "Email",
     "password": "Password",
@@ -64,7 +64,21 @@
     "manageAll": "Manage All",
     "companyNews": "Company News",
     "announcementsFeed": "Announcements Feed",
-    "calendar": "Calendar"
+    "calendar": "Calendar",
+    "companyCalendar": "Company Calendar",
+    "companyCalendarTitle": "Company Calendar",
+    "companyCalendarDescription": "View company calendar"
+  },
+  "companyEvent": {
+    "add": "Add Event",
+    "addTitle": "Add Company Event",
+    "editTitle": "Edit Company Event",
+    "name": "Event Name",
+    "description": "Description",
+    "datePlaceholder": "Date",
+    "event": "Company Event",
+    "deleteConfirm": "Are you sure you want to delete this event?",
+    "monthlyActivities": "Company Activities This Month"
   },
   "common": {
     "submit": "Submit",
@@ -845,6 +859,13 @@
     "employeeLeaves": "Employee Leaves",
     "myLeaves": "My Leaves",
     "loading": "Loading...",
+    "noEvents": "No events this month",
+    "dualEvents": "Dual Events",
+    "viewMonth": "View Month",
+    "period": "Period",
+    "duration": "Duration",
+    "days": "days",
+    "hours": "hours",
     "months": {
       "january": "January",
       "february": "February",

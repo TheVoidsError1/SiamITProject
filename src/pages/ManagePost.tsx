@@ -327,7 +327,7 @@ export default function ManagePost() {
                           ({form.detail.length}/500)
                         </span>
                       </label>
-                                          <textarea
+                      <textarea
                       className="w-full rounded-lg border border-blue-200 px-3 py-2 text-base focus:ring-2 focus:ring-blue-400 resize-none break-all overflow-wrap-anywhere whitespace-pre-wrap"
                       value={form.detail}
                       onChange={e => setForm(f => ({ ...f, detail: e.target.value }))}
