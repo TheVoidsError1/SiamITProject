@@ -335,6 +335,27 @@ const EmployeeDetail = () => {
   const [deleteLeaveId, setDeleteLeaveId] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  // ฟังก์ชันตรวจสอบว่าสามารถลบใบลาได้หรือไม่
+  const canDeleteLeave = (leave: any) => {
+    // ตรวจสอบสถานะต้องเป็น pending
+    if (leave.status !== 'pending') {
+      return false;
+    }
+    
+    // ตรวจสอบว่าวันลาอยู่ห่างจากวันปัจจุบันมากกว่า 1 วัน
+    const leaveStartDate = new Date(leave.startDate);
+    const currentDate = new Date();
+    const oneDayInMs = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+    
+    // Reset time to start of day for accurate comparison
+    const leaveStartDateOnly = new Date(leaveStartDate.getFullYear(), leaveStartDate.getMonth(), leaveStartDate.getDate());
+    const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+    
+    const daysDifference = Math.abs(leaveStartDateOnly.getTime() - currentDateOnly.getTime()) / oneDayInMs;
+    
+    return daysDifference > 1;
+  };
+
   // --- Add delete handler ---
   const handleDeleteLeave = async () => {
     if (!deleteLeaveId) return;
@@ -1077,7 +1098,7 @@ const EmployeeDetail = () => {
                                 <Eye className="w-3.5 h-3.5 mr-1" />
                                 {t('common.viewDetails')}
                               </Button>
-                              {user?.role === 'superadmin' && (
+                              {user?.role === 'superadmin' && canDeleteLeave(leave) && (
                                 <Button
                                   size="sm"
                                   variant="destructive"
@@ -1087,6 +1108,26 @@ const EmployeeDetail = () => {
                                   <Trash2 className="w-3.5 h-3.5 mr-1" />
                                   {t('common.delete')}
                                 </Button>
+                              )}
+                              {user?.role === 'superadmin' && !canDeleteLeave(leave) && (
+                                <div className="relative group">
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    disabled
+                                    className="rounded-lg px-3 py-1.5 font-medium opacity-50 cursor-not-allowed text-xs"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5 mr-1" />
+                                    {t('common.delete')}
+                                  </Button>
+                                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+                                    {leave.status !== 'pending' 
+                                      ? t('history.cannotDeleteNonPending', 'Only pending requests can be deleted')
+                                      : t('history.cannotDeleteNearDate', 'Cannot delete requests within 1 day of leave date')
+                                    }
+                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                                  </div>
+                                </div>
                               )}
                             </div>
                         </TableCell>

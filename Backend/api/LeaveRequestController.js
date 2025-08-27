@@ -1577,6 +1577,32 @@
          const leave = await leaveRepo.findOneBy({ id });
          if (!leave) return res.status(404).json({ success: false, message: 'Leave request not found' });
          
+         // Check if leave request can be deleted based on status and date restrictions
+         if (leave.status !== 'pending') {
+           return res.status(400).json({ 
+             success: false, 
+             message: 'Only pending leave requests can be deleted' 
+           });
+         }
+         
+         // Check if the leave date is within 1 day from now
+         const leaveStartDate = new Date(leave.startDate);
+         const currentDate = new Date();
+         const oneDayInMs = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+         
+         // Reset time to start of day for accurate comparison
+         const leaveStartDateOnly = new Date(leaveStartDate.getFullYear(), leaveStartDate.getMonth(), leaveStartDate.getDate());
+         const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+         
+         const daysDifference = Math.abs(leaveStartDateOnly.getTime() - currentDateOnly.getTime()) / oneDayInMs;
+         
+         if (daysDifference <= 1) {
+           return res.status(400).json({ 
+             success: false, 
+             message: 'Cannot delete leave requests that are within 1 day of the leave date' 
+           });
+         }
+         
          // Delete attachment files from file system
          if (leave.attachments) {
            try {

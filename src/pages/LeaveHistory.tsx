@@ -719,7 +719,26 @@ const LeaveHistory = () => {
 
   };
 
-
+  // ฟังก์ชันตรวจสอบว่าสามารถลบใบลาได้หรือไม่
+  const canDeleteLeave = (leave: any) => {
+    // ตรวจสอบสถานะต้องเป็น pending
+    if (leave.status !== 'pending') {
+      return false;
+    }
+    
+    // ตรวจสอบว่าวันลาอยู่ห่างจากวันปัจจุบันมากกว่า 1 วัน
+    const leaveStartDate = new Date(leave.startDate);
+    const currentDate = new Date();
+    const oneDayInMs = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+    
+    // Reset time to start of day for accurate comparison
+    const leaveStartDateOnly = new Date(leaveStartDate.getFullYear(), leaveStartDate.getMonth(), leaveStartDate.getDate());
+    const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+    
+    const daysDifference = Math.abs(leaveStartDateOnly.getTime() - currentDateOnly.getTime()) / oneDayInMs;
+    
+    return daysDifference > 1;
+  };
 
   // เพิ่มฟังก์ชันสำหรับกำหนดประเภทไฟล์
   const getFileType = (fileName: string) => {
@@ -1823,29 +1842,30 @@ const LeaveHistory = () => {
 
                           </Button>
 
-                          <AlertDialog open={showDeleteDialog && deleteLeaveId === leave.id} onOpenChange={setShowDeleteDialog}>
+                          {canDeleteLeave(leave) && (
+                            <AlertDialog open={showDeleteDialog && deleteLeaveId === leave.id} onOpenChange={setShowDeleteDialog}>
 
-                            <AlertDialogTrigger asChild>
+                              <AlertDialogTrigger asChild>
 
-                              <Button 
+                                <Button 
 
-                                size="sm" 
+                                  size="sm" 
 
-                                variant="destructive" 
+                                  variant="destructive" 
 
-                                onClick={() => handleDeleteLeave(leave.id)}
+                                  onClick={() => handleDeleteLeave(leave.id)}
 
-                                className="transition-all duration-300 transform hover:scale-105 hover:shadow-md btn-press hover-glow text-sm px-4 py-2"
+                                  className="transition-all duration-300 transform hover:scale-105 hover:shadow-md btn-press hover-glow text-sm px-4 py-2"
 
-                              >
+                                >
 
-                                <Trash2 className="w-4 h-4 mr-1" />
+                                  <Trash2 className="w-4 h-4 mr-1" />
 
-                                {t('common.delete')}
+                                  {t('common.delete')}
 
-                              </Button>
+                                </Button>
 
-                            </AlertDialogTrigger>
+                              </AlertDialogTrigger>
 
                             <AlertDialogContent>
 
@@ -1884,6 +1904,30 @@ const LeaveHistory = () => {
                             </AlertDialogContent>
 
                           </AlertDialog>
+
+                          )}
+
+                          {/* Show disabled delete button with tooltip when deletion is not allowed */}
+                          {!canDeleteLeave(leave) && (
+                            <div className="relative group">
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                disabled
+                                className="transition-all duration-300 transform hover:scale-105 hover:shadow-md btn-press hover-glow text-sm px-4 py-2 opacity-50 cursor-not-allowed"
+                              >
+                                <Trash2 className="w-4 h-4 mr-1" />
+                                {t('common.delete')}
+                              </Button>
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+                                {leave.status !== 'pending' 
+                                  ? t('history.cannotDeleteNonPending', 'Only pending requests can be deleted')
+                                  : t('history.cannotDeleteNearDate', 'Cannot delete requests within 1 day of leave date')
+                                }
+                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                              </div>
+                            </div>
+                          )}
 
                         </div>
 

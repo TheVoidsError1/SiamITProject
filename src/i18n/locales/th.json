@@ -514,7 +514,9 @@
     "noLeaveHistoryDesc": "ยังไม่มีประวัติการลาในระบบ",
     "pageInfo": "หน้า {{page}} จาก {{totalPages}}",
     "leaveTime": "เวลาการลา",
-    "days": "วัน"
+    "days": "วัน",
+    "cannotDeleteNonPending": "สามารถลบได้เฉพาะคำขอที่รอการอนุมัติเท่านั้น",
+    "cannotDeleteNearDate": "ไม่สามารถลบคำขอที่อยู่ภายใน 1 วันของวันลา"
   },
   "admin": {
     "pendingRequests": "คำขอรออนุมัติ",
