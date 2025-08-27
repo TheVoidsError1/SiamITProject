@@ -2,7 +2,7 @@
 {
   "auth": {
     "login": "Login",
-    "register": "Register",
+    "egister": "Register",
     "logout": "Logout",
     "email": "Email",
     "password": "Password",
@@ -64,7 +64,21 @@
     "manageAll": "Manage All",
     "companyNews": "Company News",
     "announcementsFeed": "Announcements Feed",
-    "calendar": "Calendar"
+    "calendar": "Calendar",
+    "companyCalendar": "Company Calendar",
+    "companyCalendarTitle": "Company Calendar",
+    "companyCalendarDescription": "View company calendar"
+  },
+  "companyEvent": {
+    "add": "Add Event",
+    "addTitle": "Add Company Event",
+    "editTitle": "Edit Company Event",
+    "name": "Event Name",
+    "description": "Description",
+    "datePlaceholder": "Date",
+    "event": "Company Event",
+    "deleteConfirm": "Are you sure you want to delete this event?",
+    "monthlyActivities": "Company Activities This Month"
   },
   "common": {
     "logo": "Logo",
@@ -363,7 +377,7 @@
     "notSpecified": "Not specified",
     "noPosition": "No Position",
     "selectPosition": "Select Position",
-    "requestQuote": "Request Quote",
+    "requestQuote": "Request End work date",
     "newYearQuota": "New Year Reset (0=Reset,1=No)"
   },
   "employeeTypes": {
@@ -793,7 +807,10 @@
     "save": "Save",
     "cancel": "Cancel",
     "edit": "Edit",
-    "addTitle": "Add Company Event"
+    "add": "Add",
+    "event": "Company Event",
+    "addTitle": "Add Company Event",
+    "monthlyActivities": "Company Activities This Month"
   },
   "announcementsFeed": {
     "title": "Announcements Feed",
@@ -846,6 +863,13 @@
     "employeeLeaves": "Employee Leaves",
     "myLeaves": "My Leaves",
     "loading": "Loading...",
+    "noEvents": "No events this month",
+    "dualEvents": "Dual Events",
+    "viewMonth": "View Month",
+    "period": "Period",
+    "duration": "Duration",
+    "days": "days",
+    "hours": "hours",
     "months": {
       "january": "January",
       "february": "February",

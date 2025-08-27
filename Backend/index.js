@@ -65,7 +65,7 @@ const AppDataSource = new DataSource({
   password: config.database.password,
   database: config.database.database,
   synchronize: true, // dev only! จะสร้าง/อัปเดต table อัตโนมัติ
-  logging: false,
+  logging: false, //
   entities: [
     require('./EnityTable/user.js'),
     require('./EnityTable/ProcessCheck.entity.js'),

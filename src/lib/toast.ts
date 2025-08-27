@@ -3,6 +3,7 @@
 
 import { toast } from '@/hooks/use-toast';
 import { config } from '@/config';
+import i18next from 'i18next';
 
 // Toast variants (only allowed: 'default' | 'destructive')
 export type ToastVariant = 'default' | 'destructive';
@@ -65,22 +66,27 @@ export const showToast = {
   }
 };
 
-// Predefined toast messages for common scenarios with i18n support
+// Helper to get translation function (t)
+function getT(t?: any) {
+  return t || i18next.t.bind(i18next);
+}
+
 // Helper: map canonical item keys to localized labels
 const resolveItemName = (itemName?: string, t?: any): string | undefined => {
+  const _t = getT(t);
   if (!itemName) return undefined;
   if (!t) return itemName;
   switch (itemName) {
     case 'position':
-      return t('positions.position');
+      return _t('positions.position');
     case 'department':
-      return t('departments.departments');
+      return _t('departments.departments');
     case 'leaveType':
-      return t('leave.leaveType');
+      return _t('leave.leaveType');
     case 'announcement':
-      return t('companyNews.news');
+      return _t('companyNews.news');
     case 'user':
-      return t('common.user');
+      return _t('common.user');
     default:
       return itemName; // already localized or custom
   }
@@ -88,166 +94,237 @@ const resolveItemName = (itemName?: string, t?: any): string | undefined => {
 export const toastMessages = {
   // Authentication
   auth: {
-    loginSuccess: (name?: string, t?: any) => ({
-      title: t ? t('auth.loginSuccess') : 'เข้าสู่ระบบสำเร็จ',
-      description: name ? (t ? t('auth.welcomeToSystem', { name }) : `ยินดีต้อนรับ ${name}`) : (t ? t('auth.welcomeToSystem') : 'เข้าสู่ระบบสำเร็จแล้ว')
-    }),
-    loginError: (message?: string, t?: any) => ({
-      title: t ? t('auth.loginError') : 'เข้าสู่ระบบไม่สำเร็จ',
-      description: message || (t ? t('auth.enterEmailPassword') : 'กรุณาตรวจสอบอีเมลและรหัสผ่าน')
-    }),
-    logoutSuccess: (t?: any) => ({
-      title: t ? t('auth.logoutSuccess') : 'ออกจากระบบสำเร็จ',
-      description: t ? t('auth.logoutSuccess') : 'ออกจากระบบแล้ว'
-    }),
-    sessionExpired: (t?: any) => ({
-      title: t ? t('auth.sessionExpired') : 'เซสชันหมดอายุ',
-      description: t ? t('auth.sessionExpiredDesc') : 'กรุณาเข้าสู่ระบบใหม่'
-    }),
-    tokenNotFound: (t?: any) => ({
-      title: t ? t('auth.tokenNotFound') : 'ไม่พบ token',
-      description: t ? t('auth.pleaseLoginAgain') : 'กรุณาเข้าสู่ระบบใหม่'
-    })
+    loginSuccess: (name?: string, t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('auth.loginSuccess'),
+        description: name ? _t('auth.welcomeToSystem', { name }) : _t('auth.welcomeToSystem')
+      };
+    },
+    loginError: (message?: string, t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('auth.loginError'),
+        description: message || _t('auth.enterEmailPassword')
+      };
+    },
+    logoutSuccess: (t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('auth.logoutSuccess'),
+        description: _t('auth.logoutSuccess')
+      };
+    },
+    sessionExpired: (t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('auth.sessionExpired'),
+        description: _t('auth.sessionExpiredDesc')
+      };
+    },
+    tokenNotFound: (t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('auth.tokenNotFound'),
+        description: _t('auth.pleaseLoginAgain')
+      };
+    }
   },
 
   // CRUD operations
   crud: {
     createSuccess: (itemName?: string, t?: any) => {
-      const item = resolveItemName(itemName, t) || (t ? t('common.user') : 'ผู้ใช้');
+      const _t = getT(t);
+      const item = resolveItemName(itemName, _t) || _t('common.user');
       return {
-        title: t ? t('system.createSuccess') : 'สร้างสำเร็จแล้ว',
-        description: t ? t('system.createSuccessDesc', { itemName: item }) : `สร้าง ${item} สำเร็จแล้ว`
+        title: _t('system.createSuccess'),
+        description: _t('system.createSuccessDesc', { itemName: item })
       };
     },
     createError: (itemName?: string, message?: string, t?: any) => {
-      const item = resolveItemName(itemName, t) || (t ? t('common.user') : 'ผู้ใช้');
+      const _t = getT(t);
+      const item = resolveItemName(itemName, _t) || _t('common.user');
       return {
-        title: t ? t('system.createError') : 'สร้างไม่สำเร็จ',
-        description: message || (t ? t('system.createErrorDesc', { itemName: item, message: '' }) : `ไม่สามารถสร้าง ${item} ได้`)
+        title: _t('system.createError'),
+        description: message || _t('system.createErrorDesc', { itemName: item, message: '' })
       };
     },
     updateSuccess: (itemName?: string, t?: any) => {
-      const item = resolveItemName(itemName, t) || (t ? t('common.user') : 'ผู้ใช้');
+      const _t = getT(t);
+      const item = resolveItemName(itemName, _t) || _t('common.user');
       return {
-        title: t ? t('system.updateSuccess') : 'อัปเดตสำเร็จ',
-        description: t ? t('system.updateSuccessDesc', { itemName: item }) : `อัปเดต ${item} สำเร็จแล้ว`
+        title: _t('system.updateSuccess'),
+        description: _t('system.updateSuccessDesc', { itemName: item })
       };
     },
     updateError: (itemName?: string, message?: string, t?: any) => {
-      const item = resolveItemName(itemName, t) || (t ? t('common.user') : 'ผู้ใช้');
+      const _t = getT(t);
+      const item = resolveItemName(itemName, _t) || _t('common.user');
       return {
-        title: t ? t('system.updateError') : 'อัปเดตไม่สำเร็จ',
-        description: message || (t ? t('system.updateErrorDesc', { itemName: item, message: '' }) : `ไม่สามารถอัปเดต ${item} ได้`)
+        title: _t('system.updateError'),
+        description: message || _t('system.updateErrorDesc', { itemName: item, message: '' })
       };
     },
     deleteSuccess: (itemName?: string, t?: any) => {
-      const item = resolveItemName(itemName, t) || (t ? t('common.user') : 'ผู้ใช้');
+      const _t = getT(t);
+      const item = resolveItemName(itemName, _t) || _t('common.user');
       return {
-        title: t ? t('system.deleteSuccess') : 'ลบสำเร็จ',
-        description: t ? `${t('common.delete')} ${item} ${t('common.success')}` : `ลบ ${item} สำเร็จ`
+        title: _t('system.deleteSuccess'),
+        description: `${_t('common.delete')} ${item} ${_t('common.success')}`
       };
     },
     deleteError: (itemName?: string, message?: string, t?: any) => {
-      const item = resolveItemName(itemName, t) || (t ? t('common.user') : 'ผู้ใช้');
+      const _t = getT(t);
+      const item = resolveItemName(itemName, _t) || _t('common.user');
       return {
-        title: t ? t('system.deleteError') : 'ลบไม่สำเร็จ',
-        description: message || (t ? `${t('common.delete')} ${item} ${t('common.error')}` : `ไม่สามารถลบ ${item} ได้`)
+        title: _t('system.deleteError'),
+        description: message || `${_t('common.delete')} ${item} ${_t('common.error')}`
       };
     },
     loadSuccess: (itemName?: string, t?: any) => {
-      const item = itemName ? resolveItemName(itemName, t) : undefined;
+      const _t = getT(t);
+      const item = itemName ? resolveItemName(itemName, _t) : undefined;
       return {
-        title: t ? t('system.loadSuccess') : 'โหลดสำเร็จ',
-        description: item ? (t ? t('system.loadSuccessDesc', { itemName: item }) : `โหลด ${item} สำเร็จแล้ว`) : (t ? t('system.loadSuccessDesc') : 'โหลดข้อมูลสำเร็จแล้ว')
+        title: _t('system.loadSuccess'),
+        description: item ? _t('system.loadSuccessDesc', { itemName: item }) : _t('system.loadSuccessDesc')
       };
     },
     loadError: (itemName?: string, message?: string, t?: any) => {
-      const item = itemName ? resolveItemName(itemName, t) : undefined;
+      const _t = getT(t);
+      const item = itemName ? resolveItemName(itemName, _t) : undefined;
       return {
-        title: t ? t('system.loadError') : 'โหลดไม่สำเร็จ',
-        description: message || (item ? (t ? t('system.loadErrorDesc', { itemName: item }) : `ไม่สามารถโหลด ${item} ได้`) : (t ? t('system.loadErrorDesc') : 'ไม่สามารถโหลดข้อมูลได้'))
+        title: _t('system.loadError'),
+        description: message || (item ? _t('system.loadErrorDesc', { itemName: item }) : _t('system.loadErrorDesc'))
       };
     }
   },
 
   // Leave management
   leave: {
-    requestSubmitted: (t?: any) => ({
-      title: t ? t('leave.submitSuccess') : 'ส่งคำขอสำเร็จ',
-      description: t ? t('leave.submitSuccessDesc') : 'ส่งคำขอลาพักผ่อนสำเร็จแล้ว'
-    }),
-    requestApproved: (employeeName?: string, t?: any) => ({
-      title: t ? t('admin.approveSuccess') : 'อนุมัติสำเร็จ',
-      description: employeeName ? (t ? t('admin.approveSuccessDesc', { name: employeeName }) : `อนุมัติคำขอของ ${employeeName} สำเร็จแล้ว`) : (t ? t('admin.approveSuccessDesc') : 'อนุมัติคำขอสำเร็จแล้ว')
-    }),
-    requestRejected: (employeeName?: string, t?: any) => ({
-      title: t ? t('admin.rejectSuccess') : 'ปฏิเสธสำเร็จ',
-      description: employeeName ? (t ? t('admin.rejectSuccessDesc', { name: employeeName }) : `ปฏิเสธคำขอของ ${employeeName} สำเร็จแล้ว`) : (t ? t('admin.rejectSuccessDesc') : 'ปฏิเสธคำขอสำเร็จแล้ว')
-    }),
-    requestError: (action: string, message?: string, t?: any) => ({
-      title: t ? t('leave.submitError') : `${action}ไม่สำเร็จ`,
-      description: message || (t ? t('leave.submitErrorDesc') : `ไม่สามารถ${action}คำขอได้`)
-    })
+    requestSubmitted: (t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('leave.submitSuccess'),
+        description: _t('leave.submitSuccessDesc')
+      };
+    },
+    requestApproved: (employeeName?: string, t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('admin.approveSuccess'),
+        description: employeeName ? _t('admin.approveSuccessDesc', { name: employeeName }) : _t('admin.approveSuccessDesc')
+      };
+    },
+    requestRejected: (employeeName?: string, t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('admin.rejectSuccess'),
+        description: employeeName ? _t('admin.rejectSuccessDesc', { name: employeeName }) : _t('admin.rejectSuccessDesc')
+      };
+    },
+    requestError: (action: string, message?: string, t?: any) => {
+      const _t = getT(t);
+      return {
+        title: `${action}${_t('leave.submitError')}`,
+        description: message || `${_t('leave.submitErrorDesc')}`
+      };
+    }
   },
 
   // File operations
   file: {
-    uploadSuccess: (fileName?: string, t?: any) => ({
-      title: t ? t('profile.uploadSuccess') : 'อัปโหลดสำเร็จ',
-      description: fileName ? (t ? t('profile.uploadSuccessDesc', { fileName }) : `อัปโหลด ${fileName} สำเร็จแล้ว`) : (t ? t('profile.uploadSuccessDesc') : 'อัปโหลดไฟล์สำเร็จแล้ว')
-    }),
-    uploadError: (fileName?: string, message?: string, t?: any) => ({
-      title: t ? t('profile.uploadError') : 'อัปโหลดไม่สำเร็จ',
-      description: message || (fileName ? (t ? t('profile.uploadErrorDesc', { fileName }) : `ไม่สามารถอัปโหลด ${fileName} ได้`) : (t ? t('profile.uploadErrorDesc') : 'ไม่สามารถอัปโหลดไฟล์ได้'))
-    }),
-    downloadSuccess: (fileName?: string, t?: any) => ({
-      title: t ? t('file.downloadSuccess') : 'ดาวน์โหลดสำเร็จ',
-      description: fileName ? (t ? t('file.downloadSuccessDesc', { fileName }) : `ดาวน์โหลด ${fileName} สำเร็จแล้ว`) : (t ? t('file.downloadSuccessDesc') : 'ดาวน์โหลดไฟล์สำเร็จแล้ว')
-    }),
-    downloadError: (fileName?: string, message?: string, t?: any) => ({
-      title: t ? t('file.downloadError') : 'ดาวน์โหลดไม่สำเร็จ',
-      description: message || (fileName ? (t ? t('file.downloadErrorDesc', { fileName }) : `ไม่สามารถดาวน์โหลด ${fileName} ได้`) : (t ? t('file.downloadErrorDesc') : 'ไม่สามารถดาวน์โหลดไฟล์ได้'))
-    })
+    uploadSuccess: (fileName?: string, t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('profile.uploadSuccess'),
+        description: fileName ? _t('profile.uploadSuccessDesc', { fileName }) : _t('profile.uploadSuccessDesc')
+      };
+    },
+    uploadError: (fileName?: string, message?: string, t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('profile.uploadError'),
+        description: message || (fileName ? _t('profile.uploadErrorDesc', { fileName }) : _t('profile.uploadErrorDesc'))
+      };
+    },
+    downloadSuccess: (fileName?: string, t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('file.downloadSuccess'),
+        description: fileName ? _t('file.downloadSuccessDesc', { fileName }) : _t('file.downloadSuccessDesc')
+      };
+    },
+    downloadError: (fileName?: string, message?: string, t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('file.downloadError'),
+        description: message || (fileName ? _t('file.downloadErrorDesc', { fileName }) : _t('file.downloadErrorDesc'))
+      };
+    }
   },
 
   // Network errors
   network: {
-    connectionError: (t?: any) => ({
-      title: t ? t('admin.connectionError') : 'ข้อผิดพลาดการเชื่อมต่อ',
-      description: t ? t('admin.serverConnectionError') : 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้'
-    }),
-    timeoutError: (t?: any) => ({
-      title: t ? t('network.timeoutError') : 'หมดเวลาการเชื่อมต่อ',
-      description: t ? t('network.timeoutErrorDesc') : 'การเชื่อมต่อใช้เวลานานเกินไป'
-    }),
-    serverError: (t?: any) => ({
-      title: t ? t('network.serverError') : 'ข้อผิดพลาดเซิร์ฟเวอร์',
-      description: t ? t('network.serverErrorDesc') : 'เกิดข้อผิดพลาดที่เซิร์ฟเวอร์'
-    })
+    connectionError: (t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('admin.connectionError'),
+        description: _t('admin.serverConnectionError')
+      };
+    },
+    timeoutError: (t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('network.timeoutError'),
+        description: _t('network.timeoutErrorDesc')
+      };
+    },
+    serverError: (t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('network.serverError'),
+        description: _t('network.serverErrorDesc')
+      };
+    }
   },
 
   // Validation
   validation: {
-    requiredField: (fieldName?: string, t?: any) => ({
-      title: t ? t('validation.requiredField') : 'ข้อมูลไม่ครบถ้วน',
-      description: fieldName ? (t ? t('validation.requiredFieldDesc', { fieldName }) : `กรุณากรอก ${fieldName}`) : (t ? t('validation.requiredFieldDesc') : 'กรุณากรอกข้อมูลให้ครบถ้วน')
-    }),
-    invalidFormat: (fieldName?: string, t?: any) => ({
-      title: t ? t('validation.invalidFormat') : 'รูปแบบไม่ถูกต้อง',
-      description: fieldName ? (t ? t('validation.invalidFormatDesc', { fieldName }) : `รูปแบบของ ${fieldName} ไม่ถูกต้อง`) : (t ? t('validation.invalidFormatDesc') : 'รูปแบบข้อมูลไม่ถูกต้อง')
-    }),
-    invalidEmail: (t?: any) => ({
-      title: t ? t('validation.invalidEmail') : 'อีเมลไม่ถูกต้อง',
-      description: t ? t('validation.invalidEmailDesc') : 'กรุณากรอกอีเมลให้ถูกต้อง'
-    }),
-    passwordMismatch: (t?: any) => ({
-      title: t ? t('auth.passwordMismatch') : 'รหัสผ่านไม่ตรงกัน',
-      description: t ? t('auth.passwordMismatch') : 'รหัสผ่านและรหัสผ่านยืนยันไม่ตรงกัน'
-    }),
-    passwordTooShort: (t?: any) => ({
-      title: t ? t('auth.passwordTooShort') : 'รหัสผ่านสั้นเกินไป',
-      description: t ? t('auth.passwordTooShort') : 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร'
-    })
+    requiredField: (fieldName?: string, t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('validation.requiredField'),
+        description: fieldName ? _t('validation.requiredFieldDesc', { fieldName }) : _t('validation.requiredFieldDesc')
+      };
+    },
+    invalidFormat: (fieldName?: string, t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('validation.invalidFormat'),
+        description: fieldName ? _t('validation.invalidFormatDesc', { fieldName }) : _t('validation.invalidFormatDesc')
+      };
+    },
+    invalidEmail: (t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('validation.invalidEmail'),
+        description: _t('validation.invalidEmailDesc')
+      };
+    },
+    passwordMismatch: (t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('auth.passwordMismatch'),
+        description: _t('auth.passwordMismatch')
+      };
+    },
+    passwordTooShort: (t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('auth.passwordTooShort'),
+        description: _t('auth.passwordTooShort')
+      };
+    }
   }
 };
 

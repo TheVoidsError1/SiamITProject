@@ -61,7 +61,10 @@
     "manageAll": "จัดการทั้งหมด",
     "companyNews": "ข่าวสารทางบริษัท",
     "announcementsFeed": "ฟีดข่าวสาร",
-    "calendar": "ปฏิทิน"
+    "calendar": "ปฏิทิน",
+    "companyCalendar": "ปฏิทินทางบริษัท",
+    "companyCalendarTitle": "ปฏิทินกิจกรรมและวันสำคัญของบริษัท",
+    "companyCalendarDescription": "ดูปฎิทินกิจกรรมและวันสำคัญของบริษัท"
   },
   "common": {
     "logo": "โลโก้",
@@ -801,14 +804,15 @@
     "editNewsError": "แก้ไขข่าวสารไม่สำเร็จ"
   },
   "companyEvent": {
+    "add": "เพิ่มกิจกรรม",
+    "addTitle": "เพิ่มกิจกรรมของบริษัท",
     "editTitle": "แก้ไขกิจกรรมของบริษัท",
     "name": "ชื่อกิจกรรม",
-    "description": "รายละเอียดกิจกรรม (ไม่บังคับ)",
-    "datePlaceholder": "yyyy-mm-dd",
-    "save": "บันทึก",
-    "cancel": "ยกเลิก",
-    "edit": "แก้ไข",
-    "addTitle": "เพิ่มกิจกรรมของบริษัท"
+    "description": "รายละเอียด",
+    "datePlaceholder": "วันที่",
+    "event": "กิจกรรมของบริษัท",
+    "deleteConfirm": "คุณแน่ใจหรือไม่ที่จะลบกิจกรรมนี้?",
+    "monthlyActivities": "กิจกรรมของบริษัทในเดือนนี้"
   },
   "announcementsFeed": {
     "title": "ฟีดข่าวสาร",
@@ -861,6 +865,13 @@
     "employeeLeaves": "การลาของพนักงาน",
     "myLeaves": "การลาของฉัน",
     "loading": "กำลังโหลด...",
+    "noEvents": "ไม่มีกิจกรรมในเดือนนี้",
+    "dualEvents": "กิจกรรมซ้ำ",
+    "viewMonth": "ดูเดือน",
+    "period": "ช่วงเวลา",
+    "duration": "ระยะเวลา",
+    "days": "วัน",
+    "hours": "ชั่วโมง",
     "months": {
       "january": "มกราคม",
       "february": "กุมภาพันธ์",
