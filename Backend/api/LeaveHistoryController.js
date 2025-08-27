@@ -190,23 +190,38 @@ module.exports = (AppDataSource) => {
         });
       }
 
-      // --- ดึง leave request ทั้งหมดของ user เพื่อคำนวณ summary (ไม่สนใจ filter) ---
-      const allLeavesForSummary = await leaveRepo.find({ where: { Repid: userId } });
+      // --- ดึง leave request ทั้งหมดของ user เพื่อคำนวณ summary (ใช้ filter เดียวกับตาราง) ---
+      const allLeavesForSummary = await leaveRepo.find({ where });
       
-      // ใช้ getLeaveUsageSummary แทนการคำนวณแบบ manual
-      const summaryYear = year || new Date().getFullYear();
-      const leaveUsageSummary = await getLeaveUsageSummary(userId, summaryYear, AppDataSource);
+      // คำนวณ summary จากชุดข้อมูลที่ผ่านการกรองแล้ว (อิงจากใบลาจริง)
+      // นับเฉพาะใบลาที่ "อนุมัติแล้ว" เท่านั้น
+      let rawDays = 0;
+      let rawHours = 0;
+      const approvedLeavesForSummary = allLeavesForSummary.filter(l => l.status === 'approved');
+      for (const l of approvedLeavesForSummary) {
+        if (l.startTime && l.endTime) {
+          const [sh, sm] = l.startTime.split(":").map(Number);
+          const [eh, em] = l.endTime.split(":").map(Number);
+          const startMinutes = (sh || 0) * 60 + (sm || 0);
+          const endMinutes = (eh || 0) * 60 + (em || 0);
+          let diffHrs = (endMinutes - startMinutes) / 60;
+          if (diffHrs < 0 || isNaN(diffHrs)) diffHrs = 0;
+          rawHours += Math.floor(diffHrs);
+        } else if (l.startDate && l.endDate) {
+          const start = new Date(l.startDate);
+          const end = new Date(l.endDate);
+          let days = calculateDaysBetween(start, end);
+          if (days < 0 || isNaN(days)) days = 0;
+          rawDays += days;
+        }
+      }
+      // แปลงชั่วโมงเกินเป็นวันตาม config.business.workingHoursPerDay
+      const convertedDaysFromHours = Math.floor(rawHours / config.business.workingHoursPerDay);
+      const remainingHoursAfterConvert = rawHours % config.business.workingHoursPerDay;
+      const totalLeaveDays = rawDays + convertedDaysFromHours;
+      const totalLeaveHours = remainingHoursAfterConvert;
       
-      // คำนวณ summary จาก leave usage summary
-      let totalLeaveDays = 0;
-      let totalLeaveHours = 0;
-      
-      leaveUsageSummary.forEach(summary => {
-        totalLeaveDays += summary.used_days || 0;
-        totalLeaveHours += summary.used_hours || 0;
-      });
-      
-      const approvedCount = allLeavesForSummary.filter(l => l.status === 'approved').length;
+      const approvedCount = approvedLeavesForSummary.length;
       const pendingCount = allLeavesForSummary.filter(l => l.status === 'pending').length;
       const rejectedCount = allLeavesForSummary.filter(l => l.status === 'rejected').length;
       
@@ -216,7 +231,6 @@ module.exports = (AppDataSource) => {
       // Debug log เพื่อตรวจสอบ
       console.log('Debug - Total leaves for user:', allLeavesForSummary.length);
       console.log('Debug - Backdated leaves:', retroactiveCount);
-      console.log('Debug - Leave usage summary:', leaveUsageSummary);
       console.log('Debug - Summary calculation:', {
         totalLeaveDays: `${totalLeaveDays} days`,
         totalLeaveHours: `${totalLeaveHours} hours`,
@@ -370,9 +384,12 @@ module.exports = (AppDataSource) => {
         message: lang === 'th' ? 'ดึงข้อมูลสำเร็จ' : 'Fetch success'
       });
     } catch (err) {
+      // Determine language safely within catch scope
+      let _lang = (req.headers['accept-language'] || req.query.lang || 'th');
+      _lang = _lang.split(',')[0].toLowerCase().startsWith('en') ? 'en' : 'th';
       res.status(500).json({
         status: 'error',
-        message: lang === 'th' ? 'เกิดข้อผิดพลาด: ' + err.message : 'Error: ' + err.message
+        message: _lang === 'th' ? 'เกิดข้อผิดพลาด: ' + err.message : 'Error: ' + err.message
       });
     }
   });
