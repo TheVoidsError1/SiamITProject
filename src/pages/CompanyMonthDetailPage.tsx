@@ -2,6 +2,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { monthNames } from '@/constants/common';
@@ -372,10 +373,20 @@ const CompanyMonthDetailPage = () => {
             </defs>
           </svg>
         </div>
+        {/* Navigation Controls with Sidebar Trigger */}
+        <div className="relative z-20 flex justify-start items-center px-6 py-4">
+          <div className="flex items-center gap-4">
+            <SidebarTrigger className="bg-white/90 hover:bg-white text-blue-700 border border-blue-200 hover:border-blue-300 shadow-lg backdrop-blur-sm" />
+            <button
+              onClick={() => navigate(-1)}
+              className="bg-white/90 hover:bg-white text-blue-700 border border-blue-200 hover:border-blue-300 shadow-lg backdrop-blur-sm p-2 rounded-full transition-all duration-200"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+          </div>
+        </div>
+
         <div className="relative z-10 flex flex-col items-center justify-center py-10 md:py-16">
-          <button onClick={() => navigate(-1)} className="absolute left-4 top-4 md:left-10 md:top-10 p-2 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 shadow">
-            <ChevronLeft className="w-6 h-6" />
-          </button>
           
           
           
