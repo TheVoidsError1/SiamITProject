@@ -1577,6 +1577,71 @@
          const leave = await leaveRepo.findOneBy({ id });
          if (!leave) return res.status(404).json({ success: false, message: 'Leave request not found' });
          
+         // Adjust LeaveUsed if this leave had been approved
+         try {
+           if (leave.status === 'approved') {
+             const leaveUsedRepo = AppDataSource.getRepository('LeaveUsed');
+             const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+             // Resolve leave type entity
+             let leaveTypeEntity = null;
+             if (leave.leaveType && leave.leaveType.length > 20) {
+               leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leave.leaveType });
+             } else {
+               leaveTypeEntity = await leaveTypeRepo.findOne({
+                 where: [
+                   { leave_type_th: leave.leaveType },
+                   { leave_type_en: leave.leaveType }
+                 ]
+               });
+             }
+             if (leaveTypeEntity) {
+               let days = 0;
+               let hours = 0;
+               const isPersonalLeave = leaveTypeEntity &&
+                 (leaveTypeEntity.leave_type_en?.toLowerCase() === 'personal' || 
+                  leaveTypeEntity.leave_type_th === 'ลากิจ');
+               if (isPersonalLeave && leave.startTime && leave.endTime) {
+                 const startMinutes = convertToMinutes(...leave.startTime.split(':').map(Number));
+                 const endMinutes = convertToMinutes(...leave.endTime.split(':').map(Number));
+                 let durationHours = (endMinutes - startMinutes) / 60;
+                 if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
+                 hours = durationHours;
+               } else if (leave.startDate && leave.endDate) {
+                 const start = new Date(leave.startDate);
+                 const end = new Date(leave.endDate);
+                 let calculatedDays = calculateDaysBetween(start, end);
+                 if (calculatedDays < 0 || isNaN(calculatedDays)) calculatedDays = 0;
+                 days = calculatedDays;
+               }
+               // Normalize hours to days
+               let finalDays = days;
+               let finalHours = hours;
+               if (finalHours >= config.business.workingHoursPerDay) {
+                 const additionalDays = Math.floor(finalHours / config.business.workingHoursPerDay);
+                 finalDays += additionalDays;
+                 finalHours = finalHours % config.business.workingHoursPerDay;
+               }
+               const existingRecord = await leaveUsedRepo.findOne({
+                 where: { user_id: leave.Repid, leave_type_id: leaveTypeEntity.id }
+               });
+               if (existingRecord) {
+                 existingRecord.days = (existingRecord.days || 0) - finalDays;
+                 existingRecord.hour = (existingRecord.hour || 0) - finalHours;
+                 if (existingRecord.hour < 0) {
+                   existingRecord.days = (existingRecord.days || 0) - 1;
+                   existingRecord.hour += config.business.workingHoursPerDay;
+                 }
+                 if (existingRecord.days < 0) existingRecord.days = 0;
+                 if (existingRecord.hour < 0) existingRecord.hour = 0;
+                 existingRecord.updated_at = new Date();
+                 await leaveUsedRepo.save(existingRecord);
+               }
+             }
+           }
+         } catch (adjustErr) {
+           console.error('Failed to decrement LeaveUsed on delete:', adjustErr);
+         }
+         
          // Delete attachment files from file system
          if (leave.attachments) {
            try {
