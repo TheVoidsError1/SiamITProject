@@ -332,61 +332,9 @@ const EmployeeDetail = () => {
     return Number(leave.backdated) === 1;
   };
 
-  const [deleteLeaveId, setDeleteLeaveId] = useState<string | null>(null);
-  const [deleting, setDeleting] = useState(false);
 
-  // ฟังก์ชันตรวจสอบว่าสามารถลบใบลาได้หรือไม่
-  const canDeleteLeave = (leave: any) => {
-    // ตรวจสอบสถานะต้องเป็น pending
-    if (leave.status !== 'pending') {
-      return false;
-    }
-    
-    // ตรวจสอบว่าวันลาอยู่ห่างจากวันปัจจุบันมากกว่า 1 วัน
-    const leaveStartDate = new Date(leave.startDate);
-    const currentDate = new Date();
-    const oneDayInMs = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-    
-    // Reset time to start of day for accurate comparison
-    const leaveStartDateOnly = new Date(leaveStartDate.getFullYear(), leaveStartDate.getMonth(), leaveStartDate.getDate());
-    const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-    
-    const daysDifference = Math.abs(leaveStartDateOnly.getTime() - currentDateOnly.getTime()) / oneDayInMs;
-    
-    return daysDifference > 1;
-  };
 
-  // --- Add delete handler ---
-  const handleDeleteLeave = async () => {
-    if (!deleteLeaveId) return;
-    setDeleting(true);
-    try {
-      const data = await apiService.delete(apiEndpoints.leave.delete(deleteLeaveId), undefined, showSessionExpiredDialog);
-      if (data && (data.success || data.status === 'success')) {
-        setDeleteLeaveId(null);
-        toast({
-          title: t('system.deleteSuccess', 'ลบสำเร็จ'),
-          description: t('system.deleteSuccessDesc', 'ลบใบลาสำเร็จ'),
-          className: 'border-green-500 bg-green-50 text-green-900',
-        });
-        fetchLeaveHistory(); // fetch leave history again
-      } else {
-        toast({
-          title: t('system.deleteFailed', 'ลบไม่สำเร็จ'),
-          description: data?.message || t('system.deleteFailedDesc', 'ไม่สามารถลบใบลาได้'),
-          variant: 'destructive',
-        });
-      }
-    } catch (e) {
-      toast({
-        title: t('system.deleteFailed', 'ลบไม่สำเร็จ'),
-        description: t('system.deleteFailedDesc', 'ไม่สามารถลบใบลาได้'),
-        variant: 'destructive',
-      });
-    } finally {
-      setDeleting(false);
-    }
-  };
+
 
   // เพิ่ม useEffect สำหรับ fetch employee
   useEffect(() => {
@@ -1098,37 +1046,7 @@ const EmployeeDetail = () => {
                                 <Eye className="w-3.5 h-3.5 mr-1" />
                                 {t('common.viewDetails')}
                               </Button>
-                              {user?.role === 'superadmin' && canDeleteLeave(leave) && (
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  className="rounded-lg px-3 py-1.5 font-medium bg-gradient-to-r from-red-500 to-red-600 text-white shadow hover:scale-105 transition text-xs"
-                                  onClick={() => setDeleteLeaveId(leave.id)}
-                                >
-                                  <Trash2 className="w-3.5 h-3.5 mr-1" />
-                                  {t('common.delete')}
-                                </Button>
-                              )}
-                              {user?.role === 'superadmin' && !canDeleteLeave(leave) && (
-                                <div className="relative group">
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    disabled
-                                    className="rounded-lg px-3 py-1.5 font-medium opacity-50 cursor-not-allowed text-xs"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5 mr-1" />
-                                    {t('common.delete')}
-                                  </Button>
-                                  <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
-                                    {leave.status !== 'pending' 
-                                      ? t('history.cannotDeleteNonPending', 'Only pending requests can be deleted')
-                                      : t('history.cannotDeleteNearDate', 'Cannot delete requests within 1 day of leave date')
-                                    }
-                                    <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
-                                  </div>
-                                </div>
-                              )}
+
                             </div>
                         </TableCell>
                       </TableRow>
@@ -1180,27 +1098,7 @@ const EmployeeDetail = () => {
         leaveRequest={selectedLeave}
       />
         
-        {/* Delete Confirmation Dialog */}
-        <AlertDialog open={!!deleteLeaveId} onOpenChange={() => setDeleteLeaveId(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{t('common.confirmDelete', 'ยืนยันการลบ')}</AlertDialogTitle>
-              <AlertDialogDescription>
-                {t('leave.deleteConfirmMessage', 'คุณต้องการลบใบลานี้หรือไม่? การดำเนินการนี้ไม่สามารถยกเลิกได้')}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDeleteLeave}
-                className="bg-red-600 hover:bg-red-700"
-                disabled={deleting}
-              >
-                {deleting ? t('common.deleting', 'กำลังลบ...') : t('common.delete')}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+
     </div>
   );
 }
