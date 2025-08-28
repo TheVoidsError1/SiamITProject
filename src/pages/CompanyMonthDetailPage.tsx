@@ -1,3 +1,4 @@
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -100,6 +101,8 @@ const CompanyMonthDetailPage = () => {
     description: '',
     date: ''
   });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState<string | null>(null);
 
   // Fetch company events, Thai holidays, and employee leaves for the specific month
   useEffect(() => {
@@ -327,15 +330,23 @@ const CompanyMonthDetailPage = () => {
   };
 
   const handleDelete = async (eventId: string) => {
-    if (!confirm(t('companyEvent.deleteConfirm'))) return;
+    setEventToDelete(eventId);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!eventToDelete) return;
     
     try {
-      await apiService.delete(apiEndpoints.customHoliday(eventId));
-      setCompanyEvents(companyEvents.filter(event => event.id !== eventId));
+      await apiService.delete(apiEndpoints.customHoliday(eventToDelete));
+      setCompanyEvents(companyEvents.filter(event => event.id !== eventToDelete));
       showToastMessage.crud.deleteSuccess(t('companyEvent.event'));
     } catch (error) {
       console.error('Error deleting company event:', error);
       showToastMessage.crud.deleteError(t('companyEvent.event'));
+    } finally {
+      setShowDeleteConfirm(false);
+      setEventToDelete(null);
     }
   };
 
@@ -633,6 +644,24 @@ const CompanyMonthDetailPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('companyEvent.deleteConfirmTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('companyEvent.deleteConfirmMessage')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+              {t('common.delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

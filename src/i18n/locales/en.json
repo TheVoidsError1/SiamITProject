@@ -810,7 +810,9 @@
     "add": "Add",
     "event": "Company Event",
     "addTitle": "Add Company Event",
-    "monthlyActivities": "Company Activities This Month"
+    "monthlyActivities": "Company Activities This Month",
+    "deleteConfirmTitle": "Confirm Delete Event",
+    "deleteConfirmMessage": "Are you sure you want to delete this event?"
   },
   "announcementsFeed": {
     "title": "Announcements Feed",
