@@ -725,8 +725,8 @@ const ManageAll: React.FC = () => {
                                   </td>
                                 ))}
                                 <td className="p-3 flex gap-2 justify-center">
-                                  <Button variant="outline" onClick={saveInlineEdit}>Save</Button>
-                                  <Button variant="destructive" onClick={cancelInlineEdit}>Cancel</Button>
+                                  <Button variant="outline" onClick={saveInlineEdit}>{t('common.save')}</Button>
+                                  <Button variant="destructive" onClick={cancelInlineEdit}>{t('common.cancel')}</Button>
                                 </td>
                               </>
                             ) : (
@@ -867,8 +867,8 @@ const ManageAll: React.FC = () => {
                                   <Input value={inlineDepartmentEdit.name_th} onChange={e => handleInlineDepartmentEditChange('name_th', e.target.value)} className="w-32" />
                                 </td>
                                 <td className="p-3 flex gap-2 justify-center">
-                                  <Button variant="outline" onClick={saveInlineDepartmentEdit}>Save</Button>
-                                  <Button variant="destructive" onClick={cancelInlineDepartmentEdit}>Cancel</Button>
+                                  <Button variant="outline" onClick={saveInlineDepartmentEdit}>{t('common.save')}</Button>
+                                  <Button variant="destructive" onClick={cancelInlineDepartmentEdit}>{t('common.cancel')}</Button>
                                 </td>
                               </>
                             ) : (
@@ -982,8 +982,8 @@ const ManageAll: React.FC = () => {
                                   </label>
                                 </td>
                                 <td className="p-3 flex gap-2 justify-center">
-                                  <Button variant="outline" onClick={saveInlineLeaveTypeEdit}>Save</Button>
-                                  <Button variant="destructive" onClick={cancelInlineLeaveTypeEdit}>Cancel</Button>
+                                  <Button variant="outline" onClick={saveInlineLeaveTypeEdit}>{t('common.save')}</Button>
+                                  <Button variant="destructive" onClick={cancelInlineLeaveTypeEdit}>{t('common.cancel')}</Button>
                                 </td>
                               </>
                             ) : (
