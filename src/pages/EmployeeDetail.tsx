@@ -1,3 +1,4 @@
+import AvatarCropDialog from '@/components/dialogs/AvatarCropDialog';
 import { LeaveDetailDialog } from "@/components/dialogs/LeaveDetailDialog";
 import {
   AlertDialog,
@@ -19,16 +20,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns';
 import { th } from 'date-fns/locale';
-import { ArrowLeft, Calendar, Edit, Eye, Mail, Trash2, User, Camera } from "lucide-react";
+import { Calendar, Camera, ChevronLeft, Edit, Eye, Mail, Trash2, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useLocation, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { API_BASE_URL, apiEndpoints, apiService } from '../lib/api';
-import AvatarCropDialog from '@/components/dialogs/AvatarCropDialog';
 
 const EmployeeDetail = () => {
   const { id } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const { user, showSessionExpiredDialog } = useAuth();
@@ -462,12 +463,12 @@ const EmployeeDetail = () => {
       <div className="border-b bg-white/80 backdrop-blur-sm z-10 relative shadow-lg">
         <div className="flex h-16 items-center px-4 gap-4">
           <SidebarTrigger />
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/admin/employees">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              {t('common.back')}
-            </Link>
-          </Button>
+          <button
+            onClick={() => navigate(-1)}
+            className="bg-white/90 hover:bg-white text-blue-700 border border-blue-200 hover:border-blue-300 shadow-lg backdrop-blur-sm p-2 rounded-full transition-all duration-200"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
           <div className="flex-1">
             <h1 className="text-3xl font-extrabold text-blue-900 tracking-tight drop-shadow-lg animate-slide-in-left">{t('employee.details')}</h1>
             <p className="text-sm text-blue-500 animate-slide-in-left delay-100">{employee.name}</p>
