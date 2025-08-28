@@ -70,35 +70,34 @@ module.exports = (AppDataSource) => {
       const leaveHistory = await leaveRepo.find({ where });
       console.log('Found leave history count:', leaveHistory.length);
       
-             // Use centralized utility function for leave usage summary
-       const { getLeaveUsageSummary } = require('../utils/leaveUtils');
-       const leaveUsageSummary = await getLeaveUsageSummary(userId, year, AppDataSource);
-       
-       // Calculate total days and hours from all leave types
-       let daysUsed = 0;
-       let hoursUsed = 0;
-       leaveUsageSummary.forEach(item => {
-         daysUsed += item.used_days;
-         hoursUsed += item.used_hours;
-       });
-       
-       // Convert hours to days if >= working hours per day
-       let remainingHours = 0;
-       try {
-         const additionalDays = Math.floor(hoursUsed / config.business.workingHoursPerDay);
-         remainingHours = Math.round(hoursUsed % config.business.workingHoursPerDay);
-         daysUsed += additionalDays;
-         console.log('Converted hours to days:', additionalDays, 'remaining hours:', remainingHours);
-       } catch (calcError) {
-         console.error('Error in final calculations:', calcError);
-       }
-       
-       // Convert to leaveTypeStats format for backward compatibility
-       const leaveTypeStats = {};
-       leaveUsageSummary.forEach(item => {
-         const leaveTypeName = item.leave_type_name_th || item.leave_type_name_en;
-         leaveTypeStats[leaveTypeName] = item.total_used_days;
-       });
+      // Recalculate usage directly from approved leave requests (reflect deletions immediately)
+      let rawDays = 0;
+      let rawHours = 0;
+      const approvedLeaves = leaveHistory.filter(lr => lr.status === 'approved');
+      for (const lr of approvedLeaves) {
+        if (lr.startTime && lr.endTime) {
+          const startMinutes = convertToMinutes(...lr.startTime.split(':').map(Number));
+          const endMinutes = convertToMinutes(...lr.endTime.split(':').map(Number));
+          let durationHours = (endMinutes - startMinutes) / 60;
+          if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
+          rawHours += Math.floor(durationHours);
+        } else if (lr.startDate && lr.endDate) {
+          const start = new Date(lr.startDate);
+          const end = new Date(lr.endDate);
+          let days = calculateDaysBetween(start, end);
+          if (days < 0 || isNaN(days)) days = 0;
+          rawDays += days;
+        }
+      }
+      const additionalDays = Math.floor(rawHours / config.business.workingHoursPerDay);
+      const remainingHours = Math.round(rawHours % config.business.workingHoursPerDay);
+      const daysUsed = rawDays + additionalDays;
+      const hoursUsed = remainingHours;
+      
+      // Convert to leaveTypeStats format for backward compatibility
+      const leaveTypeStats = {};
+      // keep previous structure but values may not be exact breakdown here
+      
       // Pending requests for this user
       const pendingRequests = leaveHistory.filter(lr => lr.status === 'pending').length;
       // Approved requests
@@ -116,7 +115,7 @@ module.exports = (AppDataSource) => {
         data: {
           leaveHistory,
           daysUsed,
-          hoursUsed: remainingHours, // เพิ่มชั่วโมงที่เหลือ
+          hoursUsed: remainingHours, // ชั่วโมงที่เหลือหลังแปลงเป็นวัน
           pendingRequests,
           approvalRate,
           remainingDays,
