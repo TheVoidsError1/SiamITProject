@@ -1,14 +1,15 @@
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -44,6 +45,10 @@ const ManageAll: React.FC = () => {
   const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
   const [leaveTypeForm, setLeaveTypeForm] = useState<{ name_en: string; name_th: string; require_attachment: boolean }>({ name_en: '', name_th: '', require_attachment: false });
   const [editingLeaveTypeId, setEditingLeaveTypeId] = useState<string | null>(null);
+  // Add leave type dialog state (set quotas per position)
+  const [addLeaveTypeOpen, setAddLeaveTypeOpen] = useState<boolean>(false);
+  const [newLeaveTypeQuotas, setNewLeaveTypeQuotas] = useState<Record<string, number>>({}); // key = positionId
+  const [addLeaveTypeSubmitting, setAddLeaveTypeSubmitting] = useState<boolean>(false);
 
   // Add state for inline editing
   const [inlineEdit, setInlineEdit] = useState<null | {
@@ -208,27 +213,79 @@ const ManageAll: React.FC = () => {
           require_attachment: leaveTypeForm.require_attachment
         });
         setEditingLeaveTypeId(null);
+        // Refresh leave types
+        const data = await apiService.get(apiEndpoints.leaveTypes);
+        if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
+          setLeaveTypes(data.data);
+        }
+        setLeaveTypeForm({ name_en: '', name_th: '', require_attachment: false });
         showToastMessage.crud.updateSuccess('leaveType', t);
       } else {
-        await apiService.post(apiEndpoints.leaveTypes, {
-          leave_type_en: leaveTypeForm.name_en,
-          leave_type_th: leaveTypeForm.name_th,
-          require_attachment: leaveTypeForm.require_attachment
-        });
-        showToastMessage.crud.createSuccess('leaveType', t);
+        // เปิด dialog ให้กำหนดโควต้าต่อ position ก่อนสร้างจริง
+        setNewLeaveTypeQuotas({});
+        setAddLeaveTypeOpen(true);
       }
-      // Refresh leave types
-      const data = await apiService.get(apiEndpoints.leaveTypes);
-      if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
-        setLeaveTypes(data.data);
-      }
-      setLeaveTypeForm({ name_en: '', name_th: '', require_attachment: false });
     } catch (error) {
       if (editingLeaveTypeId) {
         showToastMessage.crud.updateError('leaveType', undefined, t);
-      } else {
-        showToastMessage.crud.createError('leaveType', undefined, t);
       }
+    }
+  };
+
+  // ยืนยันการเพิ่ม Leave Type พร้อมกำหนดโควต้าต่อแต่ละตำแหน่ง
+  const confirmCreateLeaveTypeWithQuotas = async () => {
+    setAddLeaveTypeSubmitting(true);
+    try {
+      // 1) สร้าง leave type ใหม่ เพื่อให้ได้ id กลับมา
+      const createRes = await apiService.post(apiEndpoints.leaveTypes, {
+        leave_type_en: leaveTypeForm.name_en,
+        leave_type_th: leaveTypeForm.name_th,
+        require_attachment: leaveTypeForm.require_attachment
+      });
+      if (!createRes || !(createRes.success || createRes.status === 'success') || !createRes.data?.id) {
+        throw new Error(createRes?.message || 'Failed to create leave type');
+      }
+      const newLeaveTypeId = createRes.data.id;
+
+      // 2) อัปเดตโควต้าของแต่ละตำแหน่ง โดยรวมโควต้าเดิม + ของ leave type ใหม่นี้
+      const updatePromises = positions.map((pos: any) => {
+        const quotasForBackend: Record<string, number> = {};
+        // โควต้าเดิมของตำแหน่ง
+        pos.quotas.forEach((q: any) => {
+          if (q.leaveTypeId) quotasForBackend[q.leaveTypeId] = q.quota ?? 0;
+        });
+        // เพิ่มค่าใหม่สำหรับ leave type ใหม่นี้ (ถ้ากรอก)
+        if (typeof newLeaveTypeQuotas[pos.id] === 'number') {
+          quotasForBackend[newLeaveTypeId] = Number(newLeaveTypeQuotas[pos.id]) || 0;
+        }
+        return apiService.put(`/api/positions-with-quotas/${pos.id}`, {
+          position_name_en: pos.position_name_en,
+          position_name_th: pos.position_name_th,
+          quotas: quotasForBackend,
+          request_quota: pos.request_quota
+        });
+      });
+      await Promise.all(updatePromises);
+
+      // รีเฟรชข้อมูล
+      const [leaveTypesData, positionsData] = await Promise.all([
+        apiService.get(apiEndpoints.leaveTypes),
+        apiService.get('/api/positions-with-quotas')
+      ]);
+      if ((leaveTypesData.success || leaveTypesData.status === 'success') && Array.isArray(leaveTypesData.data)) {
+        setLeaveTypes(leaveTypesData.data);
+      }
+      if (positionsData.success && Array.isArray(positionsData.data)) {
+        setPositions(positionsData.data);
+      }
+
+      setLeaveTypeForm({ name_en: '', name_th: '', require_attachment: false });
+      setAddLeaveTypeOpen(false);
+      showToastMessage.crud.createSuccess('leaveType', t);
+    } catch (err: any) {
+      showToastMessage.crud.createError('leaveType', err?.message, t);
+    } finally {
+      setAddLeaveTypeSubmitting(false);
     }
   };
 
@@ -1052,7 +1109,56 @@ const ManageAll: React.FC = () => {
         </div>
       </div>
 
-      
+      {/* Add Leave Type with quotas dialog */}
+      <Dialog open={addLeaveTypeOpen} onOpenChange={setAddLeaveTypeOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{t('leave.addLeaveTypeQuota', 'กำหนดโควต้าต่อแต่ละตำแหน่ง')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-sm text-gray-600">
+              {t('leave.fillQuotaForPositions', 'กรอกจำนวนโควต้าของประเภทการลาใหม่นี้สำหรับแต่ละตำแหน่ง')}
+            </div>
+            <div className="overflow-x-auto rounded-xl">
+              <table className="w-full table-auto bg-white rounded-xl">
+                <thead>
+                  <tr className="bg-blue-100 text-blue-900">
+                    <th className="p-3 text-left">{t('positions.position')} (EN)</th>
+                    <th className="p-3 text-left">{t('positions.position')} (TH)</th>
+                    <th className="p-3 text-left">{t('leave.quota', 'Quota')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {positions.map((pos: any) => (
+                    <tr key={pos.id} className="hover:bg-blue-50">
+                      <td className="p-3 font-medium">{pos.position_name_en}</td>
+                      <td className="p-3 font-medium">{pos.position_name_th}</td>
+                      <td className="p-3">
+                        <Input
+                          type="number"
+                          min={0}
+                          value={newLeaveTypeQuotas[pos.id] ?? ''}
+                          onChange={(e) => setNewLeaveTypeQuotas(prev => ({ ...prev, [pos.id]: Number(e.target.value) }))}
+                          className="w-28"
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddLeaveTypeOpen(false)} disabled={addLeaveTypeSubmitting}>
+              {t('common.cancel', 'ยกเลิก')}
+            </Button>
+            <Button onClick={confirmCreateLeaveTypeWithQuotas} disabled={addLeaveTypeSubmitting} className="btn-primary">
+              {addLeaveTypeSubmitting ? t('common.loading') : t('common.save', 'บันทึก')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       {/* Delete Confirmation Dialogs */}
       
