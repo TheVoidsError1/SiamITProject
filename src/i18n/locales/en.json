@@ -186,6 +186,8 @@
     "manualReset": "Manual Reset",
     "resetNow": "Reset Now",
     "manualResetSuccess": "Manual reset successful",
+    "addLeaveTypeQuota": "Set quota per position",
+    "fillQuotaForPositions": "Enter quota for this new leave type for each position",
     "loading": "Loading...",
     "clickToSelectFile": "Click to select file or drag file here",
     "supportedFormats": "Supports PDF, JPG, PNG, DOC, DOCX",
