@@ -241,7 +241,7 @@ const EmployeeDetail = () => {
     if (user?.role === 'admin' && (employee?.role === 'superadmin' || role === 'superadmin')) {
       toast({
         title: t('error.title'),
-        description: t('employee.adminCannotEditSuperadmin', 'Admins cannot edit superadmin information.'),
+        description: t('employee.adminCannotEditSuperadmin'),
         variant: 'destructive',
       });
       return;
@@ -882,7 +882,7 @@ const EmployeeDetail = () => {
                   {/* Backdated Filter */}
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
-                      {t('leave.backdatedOnly', 'เฉพาะย้อนหลัง')}
+                      {t('leave.backdatedOnly')}
                     </label>
                     <select
                       className="w-full py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
@@ -890,8 +890,8 @@ const EmployeeDetail = () => {
                       onChange={(e) => setPendingFilterBackdated(e.target.value)}
                     >
                       <option value="all">{t('common.all')}</option>
-                      <option value="1">{t('leave.backdated', 'ลาย้อนหลัง')}</option>
-                      <option value="0">{t('leave.notBackdated', 'ไม่ใช่ลาย้อนหลัง')}</option>
+                      <option value="1">{t('leave.backdated')}</option>
+                      <option value="0">{t('leave.notBackdated')}</option>
                     </select>
                   </div>
 
@@ -924,14 +924,14 @@ const EmployeeDetail = () => {
                       }}
                       type="button"
                     >
-                      {t('common.confirm', 'ยืนยัน')}
+                      {t('common.confirm')}
                     </button>
                     <button
                       className="min-h-[42px] min-w-[100px] px-5 py-2.5 rounded-lg font-bold border border-blue-300 text-blue-700 bg-white hover:bg-blue-50 shadow transition-all duration-200 text-sm"
                       onClick={resetFilters}
                       type="button"
                     >
-                      {t('common.reset', 'รีเซ็ต')}
+                      {t('common.reset')}
                     </button>
                   </div>
                 </div>
@@ -973,7 +973,7 @@ const EmployeeDetail = () => {
                               <span className="font-semibold text-sm whitespace-nowrap">{getLeaveTypeLabel(leave.leaveType)}</span>
                               {isBackdatedLeave(leave) && (
                                 <Badge className="bg-red-100 text-red-700 border-red-200 text-xs px-1.5 py-0.5 w-fit whitespace-nowrap">
-                                  {t('leave.backdated', 'ลาย้อนหลัง')}
+                                  {t('leave.backdated')}
                                 </Badge>
                               )}
                             </div>
@@ -1089,7 +1089,7 @@ const EmployeeDetail = () => {
                           <TableCell colSpan={7} className="text-center py-6 text-gray-500">
                             <div className="flex flex-col items-center gap-2">
                               <Calendar className="w-6 h-6 text-gray-300" />
-                              <span className="text-sm">{t('leave.noHistory', 'ไม่มีประวัติการลา')}</span>
+                              <span className="text-sm">{t('leave.noHistory')}</span>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -1101,7 +1101,7 @@ const EmployeeDetail = () => {
             {leaveTotalPages > 1 && leaveHistory.length > 0 && (
                 <div className="flex justify-center items-center mt-4 gap-2 p-3 bg-gray-50 rounded-lg">
                   <span className="text-sm text-gray-600 mr-2">
-                    {t('common.page', 'หน้า')} {leavePage} {t('common.of', 'จาก')} {leaveTotalPages}
+                    {t('common.page')} {leavePage} {t('common.of')} {leaveTotalPages}
                   </span>
                   <div className="flex gap-1">
                 {Array.from({ length: leaveTotalPages }, (_, i) => (

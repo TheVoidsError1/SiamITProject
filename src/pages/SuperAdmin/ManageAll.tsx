@@ -850,8 +850,8 @@ const ManageAll: React.FC = () => {
                     <table className="w-full table-auto bg-white rounded-xl">
                       <thead>
                         <tr className="bg-blue-100 text-blue-900">
-                          <th className="p-3">{t('departments.departments', 'แผนก')} (EN)</th>
-                          <th className="p-3">{t('departments.departments', 'แผนก')} (TH)</th>
+                                                  <th className="p-3">{t('departments.departments')} (EN)</th>
+                        <th className="p-3">{t('departments.departments')} (TH)</th>
                           <th className="p-3 text-center">{t('common.actions', 'Actions')}</th>
                         </tr>
                       </thead>
@@ -924,8 +924,8 @@ const ManageAll: React.FC = () => {
                     <table className="w-full table-auto bg-white rounded-xl">
                       <thead>
                         <tr className="bg-blue-100 text-blue-900">
-                          <th className="p-3">{t('leave.leaveType', 'ประเภทการลา')} (EN)</th>
-                          <th className="p-3">{t('leave.leaveType', 'ประเภทการลา')} (TH)</th>
+                                                  <th className="p-3">{t('leave.leaveType')} (EN)</th>
+                        <th className="p-3">{t('leave.leaveType')} (TH)</th>
                           <th className="p-3">{t('leave.requiresAttachment', 'Require Attachment')}</th>
                           <th className="p-3 text-center">{t('common.actions', 'Actions')}</th>
                         </tr>
@@ -1060,17 +1060,17 @@ const ManageAll: React.FC = () => {
       <AlertDialog open={deletePositionDialog.open} onOpenChange={(open) => setDeletePositionDialog({ open, position: null })}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('common.confirmDelete', 'ยืนยันการลบ')}</AlertDialogTitle>
+            <AlertDialogTitle>{t('common.confirmDelete')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('common.confirmDeletePosition', 'คุณต้องการลบตำแหน่ง')} "
+              {t('common.confirmDeletePosition')} "
               {getPositionDisplayName(deletePositionDialog.position, lang)}"
-              {t('common.confirmDeleteQuestion', 'หรือไม่?')}
+              {t('common.confirmDeleteQuestion')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel', 'ยกเลิก')}</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDeletePosition} className="bg-red-600 hover:bg-red-700">
-              {t('common.delete', 'ลบ')}
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1080,15 +1080,15 @@ const ManageAll: React.FC = () => {
       <AlertDialog open={confirmResetOpen} onOpenChange={setConfirmResetOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('leave.confirmManualResetTitle', 'ยืนยันการรีโควต้า')}</AlertDialogTitle>
+            <AlertDialogTitle>{t('leave.confirmManualResetTitle')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('leave.confirmManualResetDesc', 'คุณต้องการรีโควต้าของผู้ใช้ที่เลือกใช่หรือไม่? การกระทำนี้จะตั้งค่าการใช้สิทธิ์ลา (days/hour) เป็น 0 โดยไม่ลบใบลาที่ผ่านมา')}
+              {t('leave.confirmManualResetDesc')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel', 'ยกเลิก')}</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={() => { setConfirmResetOpen(false); handleManualReset(); }} className="bg-blue-600 hover:bg-blue-700">
-              {t('leave.resetNow', 'รีโควต้าทันที')}
+              {t('leave.resetNow')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1098,17 +1098,17 @@ const ManageAll: React.FC = () => {
       <AlertDialog open={deleteDepartmentDialog.open} onOpenChange={(open) => setDeleteDepartmentDialog({ open, department: null })}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('common.confirmDelete', 'ยืนยันการลบ')}</AlertDialogTitle>
+            <AlertDialogTitle>{t('common.confirmDelete')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('common.confirmDeleteDepartment', 'คุณต้องการลบแผนก')} "
+              {t('common.confirmDeleteDepartment')} "
               {getDepartmentDisplayName(deleteDepartmentDialog.department, lang)}"
-              {t('common.confirmDeleteQuestion', 'หรือไม่?')}
+              {t('common.confirmDeleteQuestion')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel', 'ยกเลิก')}</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDeleteDepartment} className="bg-red-600 hover:bg-red-700">
-              {t('common.delete', 'ลบ')}
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1118,17 +1118,17 @@ const ManageAll: React.FC = () => {
       <AlertDialog open={deleteLeaveTypeDialog.open} onOpenChange={(open) => setDeleteLeaveTypeDialog({ open, leaveType: null })}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>{t('common.confirmDelete', 'ยืนยันการลบ')}</AlertDialogTitle>
+            <AlertDialogTitle>{t('common.confirmDelete')}</AlertDialogTitle>
             <AlertDialogDescription>
-              {t('common.confirmDeleteLeaveType', 'คุณต้องการลบประเภทการลา')} "
+              {t('common.confirmDeleteLeaveType')} "
               {getLeaveTypeDisplayName(deleteLeaveTypeDialog.leaveType, lang)}"
-              {t('common.confirmDeleteQuestion', 'หรือไม่?')}
+              {t('common.confirmDeleteQuestion')}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>{t('common.cancel', 'ยกเลิก')}</AlertDialogCancel>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDeleteLeaveType} className="bg-red-600 hover:bg-red-700">
-              {t('common.delete', 'ลบ')}
+              {t('common.delete')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

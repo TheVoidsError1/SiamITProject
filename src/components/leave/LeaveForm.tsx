@@ -328,7 +328,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
         hasError = true;
       }
       if ((startTime && !isTimeInRange(startTime)) || (endTime && !isTimeInRange(endTime))) {
-        const errorMessage = `${t('leave.timeRangeError')} (09:00-18:00)`;
+        const errorMessage = t('leave.timeRangeError');
         newErrors.startTime = errorMessage;
         newErrors.endTime = errorMessage;
         hasError = true;
@@ -357,18 +357,18 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
       // validate รูปแบบเวลา HH:mm
       if (!isValidTimeFormat(startTime) || !isValidTimeFormat(endTime)) {
         toast({
-          title: 'รูปแบบเวลาไม่ถูกต้อง',
-          description: 'กรุณากรอกเวลาเป็น HH:mm เช่น 09:00, 17:30',
+          title: t('leave.invalidTimeFormat'),
+          description: t('leave.invalidTimeFormatDesc'),
           variant: "destructive",
         });
         return;
       }
       // ตรวจสอบห้ามเวลาเริ่ม = เวลาสิ้นสุด
       if (startTime === endTime) {
-        setTimeError('เวลาเริ่มต้นและเวลาสิ้นสุดต้องไม่เหมือนกัน');
+        setTimeError(t('leave.startEndTimeSame'));
         toast({
-          title: 'เวลาเริ่มต้นและเวลาสิ้นสุดต้องไม่เหมือนกัน',
-          description: 'กรุณาเลือกเวลาให้แตกต่างกัน',
+          title: t('leave.startEndTimeSame'),
+          description: t('leave.startEndTimeSameDesc'),
           variant: 'destructive',
         });
         return;
@@ -464,7 +464,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
       if (!response.ok) {
         // ถ้ามี message จาก backend ให้แสดงใน toast
         toast({
-          title: i18n.language.startsWith('en') ? 'Notice' : 'แจ้งเตือน',
+          title: t('leave.notice'),
           description: data.message || t('leave.submitError'),
           variant: "default", // เปลี่ยนจาก destructive เป็น default (สีเทา)
         });
@@ -472,8 +472,8 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
       }
       if (mode === 'edit') {
         toast({
-          title: t('leave.updateSuccess', 'อัปเดตใบลาสำเร็จ'),
-          description: t('leave.updateSuccessDesc', 'แก้ไขข้อมูลใบลาสำเร็จ'),
+                  title: t('leave.updateSuccess'),
+        description: t('leave.updateSuccessDesc'),
           variant: 'default',
           className: 'border-green-500 bg-green-50 text-green-900',
         });

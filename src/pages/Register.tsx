@@ -360,7 +360,7 @@ const Register = () => {
                     </div>
                     {showEndWorkDate && (
                       <div className="space-y-2">
-                        <Label htmlFor="end_work" className="mb-2 block">{t('employee.endWorkDate', 'End Work Date')}</Label>
+                        <Label htmlFor="end_work" className="mb-2 block">{t('employee.endWorkDate')}</Label>
                         <DatePicker 
                           date={formData.end_work} 
                           onDateChange={(date) => setFormData(prev => ({ ...prev, end_work: date }))}

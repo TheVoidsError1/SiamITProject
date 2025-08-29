@@ -425,7 +425,7 @@ const LeaveHistory = () => {
 
           <History className="w-3 h-3 mr-1" />
 
-          {t('history.retroactiveLeave', 'การลาย้อนหลัง')}
+          {t('history.retroactiveLeave')}
 
         </Badge>
 
@@ -1122,13 +1122,13 @@ const LeaveHistory = () => {
 
                           leaveTypesLoading 
 
-                            ? t('common.loading', 'กำลังโหลด...') 
+                            ? t('common.loading') 
 
                             : leaveTypesError 
 
-                              ? t('common.error', 'เกิดข้อผิดพลาด') 
+                              ? t('common.error') 
 
-                              : t('leaveTypes.all', 'ทั้งหมด')
+                              : t('leaveTypes.all')
 
                         } />
 
@@ -1138,7 +1138,7 @@ const LeaveHistory = () => {
 
                         <SelectItem value="all" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">
 
-                          {t('leaveTypes.all', 'ทั้งหมด')}
+                          {t('leaveTypes.all')}
 
                         </SelectItem>
 
@@ -1150,7 +1150,7 @@ const LeaveHistory = () => {
 
                               <div className="w-4 h-4 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
 
-                              {t('common.loading', 'กำลังโหลด...')}
+                              {t('common.loading')}
 
                             </div>
 
@@ -1164,7 +1164,7 @@ const LeaveHistory = () => {
 
                               <XCircle className="w-4 h-4" />
 
-                              {t('common.error', 'เกิดข้อผิดพลาด')}
+                              {t('common.error')}
 
                             </div>
 
@@ -1206,7 +1206,7 @@ const LeaveHistory = () => {
 
                       <AlertCircle className="w-4 h-4 text-yellow-600" />
 
-                      {t('leave.status', 'สถานะ')}
+                      {t('leave.status')}
 
                     </Label>
 
@@ -1214,13 +1214,13 @@ const LeaveHistory = () => {
 
                       <SelectTrigger className="bg-white/80 backdrop-blur border-yellow-200 hover:bg-yellow-50 hover:border-yellow-300 transition-all duration-200 rounded-lg h-11 text-sm">
 
-                        <SelectValue placeholder={t('history.allStatuses', 'ทั้งหมด')} />
+                        <SelectValue placeholder={t('history.allStatuses')} />
 
                       </SelectTrigger>
 
                       <SelectContent className="border-0 shadow-xl rounded-xl">
 
-                        <SelectItem value="all" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{t('leave.statusAll', 'ทุกสถานะ')}</SelectItem>
+                        <SelectItem value="all" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{t('leave.statusAll')}</SelectItem>
 
                         {statusOptions.map(status => (
 
@@ -1248,7 +1248,7 @@ const LeaveHistory = () => {
 
                       <History className="w-4 h-4 text-purple-600" />
 
-                      {t('history.retroactiveLeave', 'การลาย้อนหลัง')}
+                      {t('history.retroactiveLeave')}
 
                     </Label>
 
@@ -1256,7 +1256,7 @@ const LeaveHistory = () => {
 
                       <SelectTrigger className="bg-white/80 backdrop-blur border-purple-200 hover:bg-purple-50 hover:border-purple-300 transition-all duration-200 rounded-lg h-11 text-sm">
 
-                        <SelectValue placeholder={t('history.allTypes', 'ทั้งหมด')} />
+                        <SelectValue placeholder={t('history.allTypes')} />
 
                       </SelectTrigger>
 
@@ -1268,7 +1268,7 @@ const LeaveHistory = () => {
 
                             <div className="w-3 h-3 rounded-full bg-gray-400"></div>
 
-                            {t('history.allTypes', 'ทั้งหมด')}
+                            {t('history.allTypes')}
 
                           </div>
 
@@ -1282,7 +1282,7 @@ const LeaveHistory = () => {
 
                             <CheckCircle className="w-4 h-4 text-green-600" />
 
-                            {t('history.normalLeave', 'การลาปกติ')}
+                            {t('history.normalLeave')}
 
                           </div>
 
@@ -1296,7 +1296,7 @@ const LeaveHistory = () => {
 
                             <History className="w-4 h-4 text-purple-600" />
 
-                            {t('history.retroactiveLeave', 'การลาย้อนหลัง')}
+                            {t('history.retroactiveLeave')}
 
                           </div>
 
@@ -1318,7 +1318,7 @@ const LeaveHistory = () => {
 
                       <Clock className="w-4 h-4 text-indigo-600" />
 
-                      {t('history.monthYear', 'เดือน/ปี')}
+                      {t('history.monthYear')}
 
                     </Label>
 
@@ -1336,13 +1336,13 @@ const LeaveHistory = () => {
 
                         <SelectTrigger className="w-20 bg-white/80 backdrop-blur border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-200 rounded-lg h-11 text-sm">
 
-                          <SelectValue placeholder={t('history.month', 'เดือน')} />
+                          <SelectValue placeholder={t('history.month')} />
 
                         </SelectTrigger>
 
                         <SelectContent className="border-0 shadow-xl rounded-xl">
 
-                          <SelectItem value="all" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{t('history.allMonths', 'ทุกเดือน')}</SelectItem>
+                          <SelectItem value="all" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{t('history.allMonths')}</SelectItem>
 
                           {allMonths.map(m => (
 
@@ -1366,13 +1366,13 @@ const LeaveHistory = () => {
 
                         <SelectTrigger className="w-20 bg-white/80 backdrop-blur border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-200 rounded-lg h-11 text-sm">
 
-                          <SelectValue placeholder={t('history.year', 'ปี')} />
+                          <SelectValue placeholder={t('history.year')} />
 
                         </SelectTrigger>
 
                         <SelectContent className="border-0 shadow-xl rounded-xl">
 
-                          <SelectItem value="all" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{t('history.allYears', 'ทุกปี')}</SelectItem>
+                          <SelectItem value="all" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{t('history.allYears')}</SelectItem>
 
                           {allYears.map(y => (
 
@@ -1432,7 +1432,7 @@ const LeaveHistory = () => {
 
                             <History className="w-4 h-4 text-purple-600" />
 
-                            {t('history.showingRetroactive', 'แสดงเฉพาะการลาย้อนหลัง')}
+                            {t('history.showingRetroactive')}
 
                           </span>
 
@@ -1442,13 +1442,13 @@ const LeaveHistory = () => {
 
                             <CheckCircle className="w-4 h-4 text-green-600" />
 
-                            {t('history.showingNormal', 'แสดงเฉพาะการลาปกติ')}
+                            {t('history.showingNormal')}
 
                           </span>
 
                         ) : (
 
-                          t('history.activeFilters', 'มีตัวกรองที่ใช้งานอยู่')
+                          t('history.activeFilters')
 
                         )}
 
@@ -1462,7 +1462,7 @@ const LeaveHistory = () => {
 
                     <div className="text-sm text-gray-600">
 
-                      {leaveHistory.length} {t('history.results', 'ผลลัพธ์')}
+                      {leaveHistory.length} {t('history.results')}
 
                     </div>
 
@@ -1496,9 +1496,9 @@ const LeaveHistory = () => {
 
                   <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3 loading-pulse"></div>
 
-                  <p className="text-base font-medium text-blue-600 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>{t('common.loading', 'กำลังโหลด...')}</p>
+                  <p className="text-base font-medium text-blue-600 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>{t('common.loading')}</p>
 
-                  <p className="text-xs text-gray-500 mt-1 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>{t('history.loadingData', 'กำลังดึงข้อมูลประวัติการลา')}</p>
+                  <p className="text-xs text-gray-500 mt-1 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>{t('history.loadingData')}</p>
 
                 </div>
 
@@ -1516,7 +1516,7 @@ const LeaveHistory = () => {
 
                   </div>
 
-                  <p className="text-base font-medium text-red-600 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>{t('common.error', 'เกิดข้อผิดพลาด')}</p>
+                  <p className="text-base font-medium text-red-600 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>{t('common.error')}</p>
 
                   <p className="text-xs text-gray-500 mt-1 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>{error}</p>
 
@@ -1536,9 +1536,9 @@ const LeaveHistory = () => {
 
                   </div>
 
-                  <p className="text-base font-medium text-gray-600 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>{t('history.noLeaveHistory', 'ไม่พบประวัติการลา')}</p>
+                  <p className="text-base font-medium text-gray-600 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>{t('history.noLeaveHistory')}</p>
 
-                  <p className="text-xs text-gray-500 mt-1 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>{t('history.noLeaveHistoryDesc', 'ยังไม่มีประวัติการลาในระบบ')}</p>
+                  <p className="text-xs text-gray-500 mt-1 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>{t('history.noLeaveHistoryDesc')}</p>
 
                 </div>
 
@@ -1556,9 +1556,9 @@ const LeaveHistory = () => {
 
                   </div>
 
-                  <p className="text-base font-medium text-gray-700 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>{t('history.noResultsForFilter', 'ไม่พบผลลัพธ์สำหรับตัวกรองที่เลือก')}</p>
+                  <p className="text-base font-medium text-gray-700 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>{t('history.noResultsForFilter')}</p>
 
-                  <p className="text-xs text-gray-500 mt-1 mb-3 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>{t('history.tryDifferentFilter', 'ลองเปลี่ยนตัวกรองหรือล้างตัวกรองทั้งหมด')}</p>
+                  <p className="text-xs text-gray-500 mt-1 mb-3 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>{t('history.tryDifferentFilter')}</p>
 
                   <Button
 
@@ -1576,7 +1576,7 @@ const LeaveHistory = () => {
 
                     <X className="w-3 h-3 mr-1" />
 
-                    {t('history.clearAllFilters', 'ล้างตัวกรองทั้งหมด')}
+                    {t('history.clearAllFilters')}
 
                   </Button>
 
@@ -1737,8 +1737,8 @@ const LeaveHistory = () => {
                                     className="text-blue-600 hover:text-blue-800 text-xs font-medium mt-1 transition-colors"
                                   >
                                     {expandedReason === leave.id 
-                                      ? t('common.showLess', 'แสดงน้อยลง') 
-                                      : t('common.showMore', 'แสดงเพิ่มเติม')
+                                      ? t('common.showLess') 
+                                      : t('common.showMore')
                                     }
                                   </button>
                                 </div>
@@ -1804,10 +1804,10 @@ const LeaveHistory = () => {
                                           onClick={() => setExpandedReject(expandedReject === leave.id ? null : leave.id)}
                                           className="text-red-600 hover:text-red-800 text-xs font-medium mt-1 transition-colors block"
                                         >
-                                          {expandedReject === leave.id 
-                                            ? t('common.showLess', 'แสดงน้อยลง') 
-                                            : t('common.showMore', 'แสดงเพิ่มเติม')
-                                          }
+                                                                                  {expandedReject === leave.id 
+                                          ? t('common.showLess') 
+                                          : t('common.showMore')
+                                        }
                                         </button>
                                       </div>
                                     ) : (
@@ -1921,8 +1921,8 @@ const LeaveHistory = () => {
                               </Button>
                               <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
                                 {leave.status !== 'pending' 
-                                  ? t('history.cannotDeleteNonPending', 'Only pending requests can be deleted')
-                                  : t('history.cannotDeleteNearDate', 'Cannot delete requests within 1 day of leave date')
+                                  ? t('history.cannotDeleteNonPending')
+                                  : t('history.cannotDeleteNearDate')
                                 }
                                 <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
                               </div>
@@ -2183,7 +2183,7 @@ const LeaveHistory = () => {
 
                   </Select>
 
-                  <span className="text-sm text-gray-600">{t('admin.itemsPerPage', 'รายการต่อหน้า')}</span>
+                  <span className="text-sm text-gray-600">{t('admin.itemsPerPage')}</span>
 
                 </div>
 
@@ -2213,7 +2213,7 @@ const LeaveHistory = () => {
 
             <DialogDescription>
 
-              {t('leave.detailDescription', 'Detailed information about this leave request.')}
+              {t('leave.detailDescription')}
 
             </DialogDescription>
 

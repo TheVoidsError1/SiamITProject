@@ -121,7 +121,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
   const getRetroactiveBadge = (leave: LeaveRequest) => {
     if (Number(leave.backdated) === 1) {
       return <Badge className="bg-red-100 text-red-700 border-red-200 text-xs px-1.5 py-0.5">
-        {t('leave.backdated', 'ลาย้อนหลัง')}
+        {t('leave.backdated')}
       </Badge>;
     }
     return null;
@@ -221,7 +221,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
         <DialogHeader>
           <DialogTitle>{t('leave.details')}</DialogTitle>
           <DialogDescription>
-            {t('leave.detailDescription', 'Detailed information about this leave request.')}
+            {t('leave.detailDescription')}
           </DialogDescription>
         </DialogHeader>
         <div className="flex items-center justify-center py-8">
@@ -240,7 +240,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
             {t('common.viewDetails')}
           </DialogTitle>
           <DialogDescription>
-            {t('leave.detailDescription', 'Detailed information about this leave request.')}
+            {t('leave.detailDescription')}
           </DialogDescription>
         </DialogHeader>
         
@@ -256,7 +256,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm text-gray-500">{t('history.submittedOn', 'Submitted on')}</div>
+                    <div className="text-sm text-gray-500">{t('history.submittedOn')}</div>
                     <div className="text-lg font-semibold text-blue-600">
                       {formatDateLocalized(leaveDetail.submittedDate || leaveDetail.createdAt || '', i18n.language)}
                     </div>
@@ -277,7 +277,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-2">
                     <Calendar className="w-5 h-5 text-blue-600" />
-                    <h3 className="text-lg font-semibold">{t('leave.dateInformation', 'Date Information')}</h3>
+                    <h3 className="text-lg font-semibold">{t('leave.dateInformation')}</h3>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -375,10 +375,10 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                   })()}
                   {isRetroactiveLeave(leaveDetail) && (
                     <div className="space-y-2">
-                      <Label className="text-sm font-medium text-purple-600">{t('history.retroactiveLeave', 'ลาย้อนหลัง')}</Label>
+                      <Label className="text-sm font-medium text-purple-600">{t('history.retroactiveLeave')}</Label>
                       <div className="flex items-center gap-2 p-3 bg-purple-50 rounded-lg">
                         <History className="w-4 h-4 text-purple-500" />
-                        <span className="text-purple-700">{t('history.retroactiveLeaveDesc', 'ใบลานี้เป็นลาย้อนหลัง')}</span>
+                        <span className="text-purple-700">{t('history.retroactiveLeaveDesc')}</span>
                       </div>
                     </div>
                   )}
@@ -390,7 +390,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-2">
                     <CheckCircle className="w-5 h-5 text-green-600" />
-                    <h3 className="text-lg font-semibold">{t('leave.statusAndApproval', 'Status & Approval')}</h3>
+                    <h3 className="text-lg font-semibold">{t('leave.statusAndApproval')}</h3>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -403,7 +403,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                   
                   {leaveDetail.status === "approved" && leaveDetail.approvedBy && (
                     <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-600">{t('leave.approvedBy', 'Approved by')}</Label>
+                      <Label className="text-sm font-medium text-gray-600">{t('leave.approvedBy')}</Label>
                       <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
                         <CheckCircle className="w-4 h-4 text-green-500" />
                         <span className="font-medium text-green-900">{leaveDetail.approvedBy}</span>
@@ -414,7 +414,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                   {leaveDetail.status === "rejected" && (
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-600">{t('leave.rejectedBy', 'Rejected by')}</Label>
+                        <Label className="text-sm font-medium text-gray-600">{t('leave.rejectedBy')}</Label>
                         <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
                           <XCircle className="w-4 h-4 text-red-500" />
                           <span className="font-medium text-red-900">{leaveDetail.rejectedBy || '-'}</span>
@@ -422,7 +422,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                       </div>
                       {leaveDetail.rejectedReason && (
                         <div className="space-y-2">
-                          <Label className="text-sm font-medium text-gray-600">{t('leave.rejectionReason', 'Rejection reason')}</Label>
+                          <Label className="text-sm font-medium text-gray-600">{t('leave.rejectionReason')}</Label>
                           <div className="flex items-start gap-2 p-3 bg-red-50 rounded-lg">
                             <FileText className="w-4 h-4 text-red-500 mt-0.5" />
                             <div className="flex-1 min-w-0">
@@ -447,9 +447,9 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
               </CardHeader>
               <CardContent>
                 <div className="p-4 bg-orange-50 rounded-lg">
-                  <p className="text-orange-900 leading-relaxed break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">
-                    {leaveDetail.reason || t('leave.noReasonProvided', 'ไม่มีเหตุผล')}
-                  </p>
+                                      <p className="text-orange-900 leading-relaxed break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">
+                      {leaveDetail.reason || t('leave.noReasonProvided')}
+                    </p>
                 </div>
               </CardContent>
             </Card>
@@ -460,7 +460,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-2">
                     <User className="w-5 h-5 text-teal-600" />
-                    <h3 className="text-lg font-semibold">{t('leave.contactInformation', 'Contact Information')}</h3>
+                    <h3 className="text-lg font-semibold">{t('leave.contactInformation')}</h3>
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -477,9 +477,9 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-2">
                     <FileText className="w-5 h-5 text-indigo-600" />
-                    <h3 className="text-lg font-semibold">{t('leave.attachments', 'Attachments')}</h3>
+                    <h3 className="text-lg font-semibold">{t('leave.attachments')}</h3>
                     <Badge variant="secondary" className="ml-2">
-                      {leaveDetail.attachments.length} {t('leave.files', 'files')}
+                                              {leaveDetail.attachments.length} {t('leave.files')}
                     </Badge>
                   </div>
                 </CardHeader>
@@ -517,14 +517,14 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                                     variant="outline"
                                     onClick={() => setPreview({ url: authenticatedFilePath, name: fileName })}
                                   >
-                                    {t('common.view', 'View')}
+                                    {t('common.view')}
                                   </Button>
                                   <Button 
                                     size="sm" 
                                     variant="outline"
                                     onClick={() => handleDownload(authenticatedFilePath, fileName)}
                                   >
-                                    {t('common.download', 'Download')}
+                                    {t('common.download')}
                                   </Button>
                                 </div>
                               </div>
@@ -541,7 +541,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                                   variant="outline"
                                   onClick={() => handleDownload(authenticatedFilePath, fileName)}
                                 >
-                                  {t('common.download', 'Download')}
+                                  {t('common.download')}
                                 </Button>
                               </div>
                             </div>
@@ -555,7 +555,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
             )}
           </div>
         ) : (
-          <div className="text-center text-gray-500 py-8">{t('leave.noDetailFound', 'No data found for this leave request.')}</div>
+          <div className="text-center text-gray-500 py-8">{t('leave.noDetailFound')}</div>
         )}
       </DialogContent>
     </Dialog>
@@ -565,7 +565,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
         onClose={() => setPreview(null)}
         imageUrl={preview.url}
         imageName={preview.name}
-        title={t('leave.attachmentPreview', 'ตัวอย่างไฟล์แนบ')}
+        title={t('leave.attachmentPreview')}
       />
     )}
   </>
