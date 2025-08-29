@@ -179,14 +179,30 @@ module.exports = (AppDataSource) => {
 
   // DELETE leave type
   router.delete('/leave-types/:id', async (req, res) => {
+    const queryRunner = AppDataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+    
     try {
-      await leaveTypeController.delete(AppDataSource, req.params.id);
-      sendSuccess(res, null, 'Deleted leave type successfully');
+      const leaveTypeId = req.params.id;
+      
+      // First, delete all related leave quota records
+      const leaveQuotaRepo = queryRunner.manager.getRepository('LeaveQuota');
+      await leaveQuotaRepo.delete({ leaveTypeId: leaveTypeId });
+      
+      // Then delete the leave type
+      await leaveTypeController.delete(AppDataSource, leaveTypeId);
+      
+      await queryRunner.commitTransaction();
+      sendSuccess(res, null, 'Deleted leave type and related quotas successfully');
     } catch (err) {
+      await queryRunner.rollbackTransaction();
       if (err.message === 'Record not found') {
         return sendNotFound(res, 'Leave type not found');
       }
       sendError(res, err.message, 500);
+    } finally {
+      await queryRunner.release();
     }
   });
 
