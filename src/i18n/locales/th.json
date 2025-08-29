@@ -67,6 +67,7 @@
     "companyCalendarDescription": "ดูปฎิทินกิจกรรมและวันสำคัญของบริษัท"
   },
   "common": {
+    "logo": "โลโก้",
     "submit": "ส่ง",
     "cancel": "ยกเลิก",
     "save": "บันทึก",
@@ -815,7 +816,9 @@
     "datePlaceholder": "วันที่",
     "event": "กิจกรรมของบริษัท",
     "deleteConfirm": "คุณแน่ใจหรือไม่ที่จะลบกิจกรรมนี้?",
-    "monthlyActivities": "กิจกรรมของบริษัทในเดือนนี้"
+    "monthlyActivities": "กิจกรรมของบริษัทในเดือนนี้",
+    "deleteConfirmTitle": "ยืนยันการลบกิจกรรม",
+    "deleteConfirmMessage": "คุณแน่ใจหรือไม่ที่จะลบกิจกรรมนี้?"
   },
   "announcementsFeed": {
     "title": "ฟีดข่าวสาร",

@@ -1,6 +1,8 @@
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { monthNames } from '@/constants/common';
@@ -100,6 +102,8 @@ const CompanyMonthDetailPage = () => {
     description: '',
     date: ''
   });
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState<string | null>(null);
 
   // Fetch company events, Thai holidays, and employee leaves for the specific month
   useEffect(() => {
@@ -327,15 +331,23 @@ const CompanyMonthDetailPage = () => {
   };
 
   const handleDelete = async (eventId: string) => {
-    if (!confirm(t('companyEvent.deleteConfirm'))) return;
+    setEventToDelete(eventId);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!eventToDelete) return;
     
     try {
-      await apiService.delete(apiEndpoints.customHoliday(eventId));
-      setCompanyEvents(companyEvents.filter(event => event.id !== eventId));
+      await apiService.delete(apiEndpoints.customHoliday(eventToDelete));
+      setCompanyEvents(companyEvents.filter(event => event.id !== eventToDelete));
       showToastMessage.crud.deleteSuccess(t('companyEvent.event'));
     } catch (error) {
       console.error('Error deleting company event:', error);
       showToastMessage.crud.deleteError(t('companyEvent.event'));
+    } finally {
+      setShowDeleteConfirm(false);
+      setEventToDelete(null);
     }
   };
 
@@ -361,10 +373,20 @@ const CompanyMonthDetailPage = () => {
             </defs>
           </svg>
         </div>
+        {/* Navigation Controls with Sidebar Trigger */}
+        <div className="relative z-20 flex justify-start items-center px-6 py-4">
+          <div className="flex items-center gap-4">
+            <SidebarTrigger className="bg-white/90 hover:bg-white text-blue-700 border border-blue-200 hover:border-blue-300 shadow-lg backdrop-blur-sm" />
+            <button
+              onClick={() => navigate(-1)}
+              className="bg-white/90 hover:bg-white text-blue-700 border border-blue-200 hover:border-blue-300 shadow-lg backdrop-blur-sm p-2 rounded-full transition-all duration-200"
+            >
+              <ChevronLeft className="w-6 h-6" />
+            </button>
+          </div>
+        </div>
+
         <div className="relative z-10 flex flex-col items-center justify-center py-10 md:py-16">
-          <button onClick={() => navigate(-1)} className="absolute left-4 top-4 md:left-10 md:top-10 p-2 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-600 shadow">
-            <ChevronLeft className="w-6 h-6" />
-          </button>
           
           
           
@@ -633,6 +655,24 @@ const CompanyMonthDetailPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('companyEvent.deleteConfirmTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('companyEvent.deleteConfirmMessage')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
+              {t('common.delete')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
