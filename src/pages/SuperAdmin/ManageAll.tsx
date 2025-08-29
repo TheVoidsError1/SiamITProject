@@ -587,6 +587,21 @@ const ManageAll: React.FC = () => {
     setConfirmResetOpen(true);
   };
 
+  // --- เพิ่ม state สำหรับ filter และ pagination ---
+  const [userSearch, setUserSearch] = useState('');
+  const [userPage, setUserPage] = useState(1);
+  const USERS_PER_PAGE = 15;
+
+  // --- กรองและแบ่งหน้า ---
+  const filteredEmployees = employeeOptions.filter(e =>
+    e.name.toLowerCase().includes(userSearch.toLowerCase())
+  );
+  const totalPages = Math.ceil(filteredEmployees.length / USERS_PER_PAGE);
+  const pagedEmployees = filteredEmployees.slice(
+    (userPage - 1) * USERS_PER_PAGE,
+    userPage * USERS_PER_PAGE
+  );
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-100 via-indigo-50 to-white flex flex-col">
       {/* Hero Section */}
@@ -775,8 +790,41 @@ const ManageAll: React.FC = () => {
                   {/* Manual reset section */}
                   <div className="bg-white rounded-xl p-4 shadow-sm">
                     <h3 className="text-blue-900 font-semibold mb-3">{t('leave.manualReset', )}</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-64 overflow-auto border rounded p-2">
-                      {employeeOptions.map(e => (
+                    {/* --- ช่องค้นหาชื่อ --- */}
+                    <div className="mb-2 flex flex-col md:flex-row gap-2 items-center">
+                      <Input
+                        placeholder={t('common.search', 'Search by name')}
+                        value={userSearch}
+                        onChange={e => { setUserSearch(e.target.value); setUserPage(1); }}
+                        className="w-full md:w-64"
+                      />
+                      {filteredEmployees.length > USERS_PER_PAGE && (
+                        <div className="flex gap-2 items-center ml-auto">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={userPage === 1}
+                            onClick={() => setUserPage(p => Math.max(1, p - 1))}
+                          >
+                            {t('common.prev', 'Prev')}
+                          </Button>
+                          <span className="text-sm font-medium">
+                            {userPage} / {totalPages}
+                          </span>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={userPage === totalPages}
+                            onClick={() => setUserPage(p => Math.min(totalPages, p + 1))}
+                          >
+                            {t('common.next', 'Next')}
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                    {/* --- Grid 3x5 --- */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-64 overflow-auto border rounded p-2">
+                      {pagedEmployees.map(e => (
                         <label key={e.id} className="flex items-center gap-3 text-sm p-2 rounded hover:bg-blue-50 cursor-pointer">
                           <input type="checkbox" className="mt-0.5" checked={selectedUserIds.includes(e.id)} onChange={() => toggleSelectUser(e.id)} />
                           <span className="flex items-center gap-2">
@@ -785,6 +833,9 @@ const ManageAll: React.FC = () => {
                           </span>
                         </label>
                       ))}
+                      {pagedEmployees.length === 0 && (
+                        <div className="col-span-3 text-center text-gray-400 py-6">{t('common.noData', 'No users found')}</div>
+                      )}
                     </div>
                     <div className="mt-3 flex gap-2">
                       <Button onClick={openConfirmReset} disabled={manualResetLoading} className="btn-primary">

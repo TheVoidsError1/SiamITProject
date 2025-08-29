@@ -438,7 +438,7 @@
     "noPosition": "No Position",
     "selectPosition": "Select Position",
     "requestQuote": "Request End work date",
-    "newYearQuota": "New Year Reset (0=Reset,1=No)"
+    "newYearQuota": "New Year Reset (Close/Open)"
   },
   "employeeTypes": {
     "employee": "Employee",

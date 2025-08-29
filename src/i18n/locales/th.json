@@ -427,7 +427,7 @@
     "noPosition": "ไม่มีตำแหน่ง",
     "selectPosition": "เลือกตำแหน่ง",
     "requestQuote": "ต้องการ End Work Date",
-    "newYearQuota": "รีเซ็ตต้นปี (0=รี,1=ไม่รี)"
+    "newYearQuota": "รีเซ็ตต้นปี ปิด/เปิด"
   },
   "employeeTypes": {
     "employee": "พนักงาน",
