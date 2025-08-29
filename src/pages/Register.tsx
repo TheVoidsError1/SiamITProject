@@ -103,9 +103,9 @@ const Register = () => {
       await apiService.post(apiEndpoints.departments, { department_name: newDepartment });
       setDepartments(prev => [...prev, { id: 'new', department_name_en: newDepartment, department_name_th: newDepartment }]);
       setNewDepartment('');
-      showToastMessage.crud.createSuccess('แผนก');
+      showToastMessage.crud.createSuccess('');
     } catch (error) {
-      showToastMessage.crud.createError('แผนก');
+      showToastMessage.crud.createError('');
     }
   };
 
@@ -116,9 +116,9 @@ const Register = () => {
       await apiService.post(apiEndpoints.positions, { position_name: newPosition });
       setPositions(prev => [...prev, { id: 'new', position_name_en: newPosition, position_name_th: newPosition }]);
       setNewPosition('');
-      showToastMessage.crud.createSuccess('ตำแหน่ง');
+      showToastMessage.crud.createSuccess('');
     } catch (error) {
-      showToastMessage.crud.createError('ตำแหน่ง');
+      showToastMessage.crud.createError('');
     }
   };
 
@@ -176,7 +176,7 @@ const Register = () => {
 
     if (requiresEndWorkDate) {
       if (!formData.start_work || !formData.end_work) {
-        toast({ title: t('common.error'), description: t('auth.pleaseFillEndWorkDate', 'กรุณาเลือกวันที่เริ่มและสิ้นสุดการทำงาน'), variant: 'destructive' });
+        toast({ title: t('common.error'), description: t('auth.pleaseFillEndWorkDate'), variant: 'destructive' });
         return;
       }
       if (formData.start_work > formData.end_work) {

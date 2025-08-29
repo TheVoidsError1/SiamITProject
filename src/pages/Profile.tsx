@@ -259,7 +259,7 @@ const Profile = () => {
       // Filter out emergency leave type
       const leaveTypeEn = item.leave_type_en?.toLowerCase() || '';
       const leaveTypeTh = item.leave_type_th?.toLowerCase() || '';
-      return !leaveTypeEn.includes('emergency') && !leaveTypeTh.includes('ฉุกเฉิน');
+      return !leaveTypeEn.includes('emergency') && !leaveTypeTh.includes('');
     })
     .map(item => {
       return {
@@ -504,7 +504,7 @@ const Profile = () => {
         if (formData.start_work > formData.end_work) {
           toast({ 
             title: t('common.error'), 
-            description: t('auth.dateRangeInvalid', 'ช่วงวันที่ไม่ถูกต้อง'), 
+            description: t('auth.dateRangeInvalid'), 
             variant: 'destructive' 
           });
           setSaving(false);

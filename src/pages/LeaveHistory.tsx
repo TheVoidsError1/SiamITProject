@@ -461,15 +461,15 @@ const LeaveHistory = () => {
 
       const typeKey = found.leave_type?.toLowerCase() || found.id?.toLowerCase();
 
-      if (typeKey === 'vacation' || typeKey === 'ลาพักร้อน') return "text-blue-600";
+      if (typeKey === 'vacation' || typeKey === '') return "text-blue-600";
 
-      if (typeKey === 'sick' || typeKey === 'ลาป่วย') return "text-red-600";
+      if (typeKey === 'sick' || typeKey === '') return "text-red-600";
 
-      if (typeKey === 'personal' || typeKey === 'ลากิจ') return "text-green-600";
+      if (typeKey === 'personal' || typeKey === '') return "text-green-600";
 
-      if (typeKey === 'emergency' || typeKey === 'ลาฉุกเฉิน') return "text-orange-500";
+      if (typeKey === 'emergency' || typeKey === '') return "text-orange-500";
 
-      if (typeKey === 'maternity' || typeKey === 'ลาคลอด') return "text-purple-600";
+      if (typeKey === 'maternity' || typeKey === '') return "text-purple-600";
 
     }
 
@@ -489,15 +489,15 @@ const LeaveHistory = () => {
 
     
 
-    if (type === tVacation || typeLower === 'vacation' || type === 'ลาพักร้อน') return "text-blue-600";
+    if (type === tVacation || typeLower === 'vacation' || type === '') return "text-blue-600";
 
-    if (type === tSick || typeLower === 'sick' || type === 'ลาป่วย') return "text-red-600";
+    if (type === tSick || typeLower === 'sick' || type === '') return "text-red-600";
 
-    if (type === tPersonal || typeLower === 'personal' || type === 'ลากิจ') return "text-green-600";
+    if (type === tPersonal || typeLower === 'personal' || type === '') return "text-green-600";
 
-    if (type === tEmergency || typeLower === 'emergency' || type === 'ลาฉุกเฉิน') return "text-orange-500";
+    if (type === tEmergency || typeLower === 'emergency' || type === '') return "text-orange-500";
 
-    if (type === tMaternity || typeLower === 'maternity' || type === 'ลาคลอด') return "text-purple-600";
+    if (type === tMaternity || typeLower === 'maternity' || type === '') return "text-purple-600";
 
     
 

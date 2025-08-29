@@ -426,7 +426,7 @@ const ManageAll: React.FC = () => {
   };
   // Helper to filter out emergency leave types for position form/table only
   const filteredLeaveTypes = leaveTypes.filter(
-    lt => lt.leave_type_en?.toLowerCase() !== 'emergency' && lt.leave_type_th !== 'ฉุกเฉิน'
+    lt => lt.leave_type_en?.toLowerCase() !== 'emergency' && lt.leave_type_th !== ''
   );
 
   // Debug: Log leave type keys for quota mapping
@@ -562,16 +562,16 @@ const ManageAll: React.FC = () => {
 
   const handleManualReset = async () => {
     if (selectedUserIds.length === 0) {
-      showToast.warning(t('leave.selectUsersFirst', 'กรุณาเลือกผู้ใช้ก่อน'));
+      showToast.warning(t('leave.selectUsersFirst'));
       return;
     }
     setManualResetLoading(true);
     try {
       const res = await apiService.post('/api/leave-quota/reset-by-users', { userIds: selectedUserIds, strategy: 'zero' });
       if (!res || !(res.success || res.status === 'success')) throw new Error(res?.message || 'Failed');
-      showToast.success(t('leave.manualResetSuccess', 'รีเซ็ตโควต้าสำเร็จ'));
+      showToast.success(t('leave.manualResetSuccess'));
     } catch (err: any) {
-      showToast.error(err?.message || t('leave.manualResetFailed', 'รีเซ็ตโควต้าไม่สำเร็จ'));
+      showToast.error(err?.message || t('leave.manualResetFailed'));
     } finally {
       setManualResetLoading(false);
     }
@@ -581,7 +581,7 @@ const ManageAll: React.FC = () => {
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const openConfirmReset = () => {
     if (selectedUserIds.length === 0) {
-      showToast.warning(t('leave.selectUsersFirst', 'กรุณาเลือกผู้ใช้ก่อน'));
+      showToast.warning(t('leave.selectUsersFirst'));
       return;
     }
     setConfirmResetOpen(true);
@@ -685,8 +685,8 @@ const ManageAll: React.FC = () => {
                     <table className="w-full table-auto bg-white rounded-xl">
                       <thead>
                         <tr className="bg-blue-100 text-blue-900">
-                          <th className="p-3">{t('positions.position', 'ตำแหน่ง')} (EN)</th>
-                          <th className="p-3">{t('positions.position', 'ตำแหน่ง')} (TH)</th>
+                          <th className="p-3">{t('positions.position')} (EN)</th>
+                          <th className="p-3">{t('positions.position')} (TH)</th>
                           <th className="p-3">{t('positions.requestQuote', 'Request Quote')}</th>
                           {filteredLeaveTypes.map(lt => (
                             <th key={lt.id} className="p-3">{lang === 'th' ? lt.leave_type_th : lt.leave_type_en}</th>
@@ -774,7 +774,7 @@ const ManageAll: React.FC = () => {
                 <div className="p-6 space-y-6">
                   {/* Manual reset section */}
                   <div className="bg-white rounded-xl p-4 shadow-sm">
-                    <h3 className="text-blue-900 font-semibold mb-3">{t('leave.manualReset', 'สั่งรีโควต้าทันที (เลือกผู้ใช้)')}</h3>
+                    <h3 className="text-blue-900 font-semibold mb-3">{t('leave.manualReset', )}</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-64 overflow-auto border rounded p-2">
                       {employeeOptions.map(e => (
                         <label key={e.id} className="flex items-center gap-3 text-sm p-2 rounded hover:bg-blue-50 cursor-pointer">
@@ -788,7 +788,7 @@ const ManageAll: React.FC = () => {
                     </div>
                     <div className="mt-3 flex gap-2">
                       <Button onClick={openConfirmReset} disabled={manualResetLoading} className="btn-primary">
-                        {manualResetLoading ? t('common.loading', 'กำลังทำงาน...') : t('leave.resetNow', 'รีโควต้าทันที')}
+                        {manualResetLoading ? t('common.loading') : t('leave.resetNow')}
                       </Button>
                     </div>
                   </div>
@@ -802,8 +802,8 @@ const ManageAll: React.FC = () => {
                       <table className="w-full table-auto bg-white rounded-xl">
                         <thead>
                           <tr className="bg-blue-100 text-blue-900">
-                            <th className="p-3">{t('positions.position', 'Position')} (EN)</th>
-                            <th className="p-3">{t('positions.position', 'Position')} (TH)</th>
+                            <th className="p-3">{t('positions.position')} (EN)</th>
+                            <th className="p-3">{t('positions.position')} (TH)</th>
                             <th className="p-3 text-center">{t('positions.newYearQuota', 'New Year Reset (0=Reset,1=No)')}</th>
                           </tr>
                         </thead>

@@ -152,7 +152,7 @@ const CompanyCalendarPage = () => {
   // Get weekday names based on current language
   const getWeekdayNames = () => {
     return currentLang === 'th' 
-      ? ['อา', 'จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส']
+      ? ['', '', '', '', '', '', '']
       : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   };
 

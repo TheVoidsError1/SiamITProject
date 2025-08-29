@@ -200,7 +200,7 @@ const AdminDashboard = () => {
     const mins = diff % 60;
     return `${hours}.${mins.toString().padStart(2, '0')}`;
   };
-  const hourUnit = i18n.language === 'th' ? 'ชม' : 'Hours';
+  const hourUnit = i18n.language === 'th' ? '' : 'Hours';
 
   const handleApprove = (id: string, employeeName: string) => {
     setApprovingRequest({ id, employeeName });
@@ -222,11 +222,11 @@ const AdminDashboard = () => {
           fetchHistoryRequests();
           refreshLeaveRequests();
         } else {
-          showToastMessage.leave.requestError('อนุมัติ', data.message);
+          showToastMessage.leave.requestError('', data.message);
         }
       })
       .catch(() => {
-        showToastMessage.leave.requestError('อนุมัติ');
+        showToastMessage.leave.requestError('');
       })
       .finally(() => {
         setShowApproveDialog(false);
@@ -254,11 +254,11 @@ const AdminDashboard = () => {
           fetchHistoryRequests();
           refreshLeaveRequests();
         } else {
-          showToastMessage.leave.requestError('ปฏิเสธ', data.message);
+          showToastMessage.leave.requestError('', data.message);
         }
       })
       .catch(() => {
-        showToastMessage.leave.requestError('ปฏิเสธ');
+        showToastMessage.leave.requestError('');
       })
       .finally(() => {
         setShowRejectDialog(false);

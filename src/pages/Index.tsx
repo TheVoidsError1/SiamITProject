@@ -848,7 +848,7 @@ const Index = () => {
               ) : errorRecentLeaves ? (
                 <div className="text-center py-4 text-red-500 animate-shake text-sm">{errorRecentLeaves}</div>
               ) : recentLeaves.length === 0 ? (
-                <div className="text-center py-4 text-blue-400 text-sm">{t('main.noRecentLeaveRequests', 'ไม่มีคำขอลาล่าสุด')}</div>
+                <div className="text-center py-4 text-blue-400 text-sm">{t('main.noRecentLeaveRequests')}</div>
               ) : (
                 <div className="space-y-2">
                   {recentLeaves.map((l, idx) => (

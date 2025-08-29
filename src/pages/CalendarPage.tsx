@@ -333,7 +333,7 @@ const CalendarPage = () => {
         (i18n.language.startsWith('th') ? `${duration} วัน` : `${duration} days`) :
         (i18n.language.startsWith('th') ? `${duration} ชั่วโมง` : `${duration} hours`);
       
-      return `${userName}\n${leaveType}\n${i18n.language.startsWith('th') ? 'ช่วงเวลา' : 'Period'}: ${start} - ${end}\n${i18n.language.startsWith('th') ? 'ระยะเวลา' : 'Duration'}: ${durationText}`;
+      return `${userName}\n${leaveType}\n${i18n.language.startsWith('th') ? '' : 'Period'}: ${start} - ${end}\n${i18n.language.startsWith('th') ? '' : 'Duration'}: ${durationText}`;
     }
     return event.title;
   };

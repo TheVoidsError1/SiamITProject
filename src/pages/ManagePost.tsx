@@ -93,7 +93,7 @@ export default function ManagePost() {
         setNewsList(data.data.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
       } else {
         setNewsList([]);
-        setError(data.message || 'เกิดข้อผิดพลาด');
+        setError(data.message || '');
       }
     } catch (err) {
       setNewsList([]);
@@ -135,18 +135,18 @@ export default function ManagePost() {
 
       const data = await apiService.post(apiEndpoints.announcements, formData);
       if (data.status === 'success') {
-        showToastMessage.crud.createSuccess('ข่าวสาร', t);
+        showToastMessage.crud.createSuccess('', t);
         setAddOpen(false);
         setForm({ subject: '', detail: '', Image: '' });
         setSelectedFile(null);
         setImagePreview(null);
         fetchNews();
       } else {
-        showToastMessage.crud.createError('ข่าวสาร', data.message, t);
+        showToastMessage.crud.createError('', data.message, t);
         setError(data.message || 'บันทึกข่าวสารไม่สำเร็จ');
       }
     } catch (err) {
-      showToastMessage.crud.createError('ข่าวสาร', undefined, t);
+      showToastMessage.crud.createError('', undefined, t);
       setError('บันทึกข่าวสารไม่สำเร็จ');
     } finally {
       setLoading(false);
@@ -215,7 +215,7 @@ export default function ManagePost() {
 
       const data = await apiService.put(apiEndpoints.announcement(editingNews.id), formData);
       if (data.status === 'success') {
-        showToastMessage.crud.updateSuccess('ข่าวสาร', t);
+        showToastMessage.crud.updateSuccess('', t);
         setEditOpen(false);
         setEditingNews(null);
         setForm({ subject: '', detail: '', Image: '' });
@@ -223,11 +223,11 @@ export default function ManagePost() {
         setImagePreview(null);
         fetchNews();
       } else {
-        showToastMessage.crud.updateError('ข่าวสาร', data.message, t);
+        showToastMessage.crud.updateError('', data.message, t);
         setError(data.message || t('companyNews.editNewsError'));
       }
     } catch (err) {
-      showToastMessage.crud.updateError('ข่าวสาร', undefined, t);
+      showToastMessage.crud.updateError('', undefined, t);
       setError(t('companyNews.editNewsError'));
     } finally {
       setLoading(false);

@@ -344,22 +344,22 @@ const EmployeeDetail = () => {
       if (data && (data.success || data.status === 'success')) {
         setDeleteLeaveId(null);
         toast({
-          title: t('system.deleteSuccess', 'ลบสำเร็จ'),
-          description: t('system.deleteSuccessDesc', 'ลบใบลาสำเร็จ'),
+          title: t('system.deleteSuccess'),
+          description: t('system.deleteSuccessDesc'),
           className: 'border-green-500 bg-green-50 text-green-900',
         });
         fetchLeaveHistory(); // fetch leave history again
       } else {
         toast({
-          title: t('system.deleteFailed', 'ลบไม่สำเร็จ'),
-          description: data?.message || t('system.deleteFailedDesc', 'ไม่สามารถลบใบลาได้'),
+          title: t('system.deleteFailed'),
+          description: data?.message || t('system.deleteFailedDesc'),
           variant: 'destructive',
         });
       }
     } catch (e) {
       toast({
-        title: t('system.deleteFailed', 'ลบไม่สำเร็จ'),
-        description: t('system.deleteFailedDesc', 'ไม่สามารถลบใบลาได้'),
+        title: t('system.deleteFailed'),
+        description: t('system.deleteFailedDesc'),
         variant: 'destructive',
       });
     } finally {

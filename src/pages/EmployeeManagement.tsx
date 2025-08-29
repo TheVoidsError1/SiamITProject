@@ -135,19 +135,19 @@ const EmployeeManagement = () => {
   const getPositionName = (id: string) => {
     // ถ้า id เป็น null, undefined, หรือค่าว่าง ให้แสดงข้อความที่เหมาะสม
     if (!id || id === 'null' || id === 'undefined' || id === '') {
-      return t('system.notSpecified', 'ไม่ระบุ');
+      return t('system.notSpecified');
     }
     const found = positions.find((p) => p.id === id);
-    if (!found) return t('system.notSpecified', 'ไม่ระบุ');
+    if (!found) return t('system.notSpecified');
     return i18n.language === 'th' ? found.position_name_th : found.position_name_en;
   };
   const getDepartmentName = (id: string) => {
     // ถ้า id เป็น null, undefined, หรือค่าว่าง ให้แสดงข้อความที่เหมาะสม
     if (!id || id === 'null' || id === 'undefined' || id === '') {
-      return t('departments.noDepartment', 'ไม่มีแผนก');
+      return t('departments.noDepartment');
     }
     const found = departments.find((d) => d.id === id);
-    if (!found) return t('departments.noDepartment', 'ไม่มีแผนก');
+    if (!found) return t('departments.noDepartment');
     return i18n.language === 'th' ? found.department_name_th : found.department_name_en;
   };
 

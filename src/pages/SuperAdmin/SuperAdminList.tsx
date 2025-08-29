@@ -116,9 +116,9 @@ const SuperAdminList: React.FC = () => {
 
   const getPasswordStrengthText = () => {
     switch (passwordStrength) {
-      case 'strong': return 'รหัสผ่านแข็งแกร่ง';
-      case 'medium': return 'รหัสผ่านปานกลาง';
-      case 'weak': return 'รหัสผ่านอ่อนแอ';
+      case 'strong': return '';
+      case 'medium': return '';
+      case 'weak': return '';
       default: return '';
     }
   };
