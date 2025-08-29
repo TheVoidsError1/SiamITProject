@@ -233,7 +233,7 @@ module.exports = (AppDataSource) => {
     await queryRunner.startTransaction();
     
     try {
-      const { role, name, department, position, email, password } = req.body;
+      const { role, name, department, position, email, password, gender_name_th, date_of_birth, start_work, end_work, phone_number } = req.body;
       if (!role || !['superadmin', 'admin', 'user'].includes(role)) {
         return res.status(400).json({ success: false, message: 'Invalid or missing role' });
       }
@@ -241,7 +241,8 @@ module.exports = (AppDataSource) => {
       const processRepo = queryRunner.manager.getRepository('ProcessCheck');
       const departmentRepo = queryRunner.manager.getRepository('Department');
       const positionRepo = queryRunner.manager.getRepository('Position');
-      
+      // Gender is stored as a simple varchar in entities; no separate Gender table
+      const genderValue = gender_name_th || null;
       // Check for duplicate email
       const exist = await processRepo.findOneBy({ Email: email });
       if (exist) {
@@ -289,7 +290,7 @@ module.exports = (AppDataSource) => {
         userRepo = queryRunner.manager.getRepository('SuperAdmin');
         nameField = 'superadmin_name';
       } else if (role === 'admin') {
-        userRepo = queryRunner.manager.getRepository('admin');
+        userRepo = queryRunner.manager.getRepository('Admin');
         nameField = 'admin_name';
       } else {
         userRepo = queryRunner.manager.getRepository('User');
@@ -308,7 +309,12 @@ module.exports = (AppDataSource) => {
         id: uuidv4(),
         [nameField]: name,
         department: departmentId,
-        position: positionId
+        position: positionId,
+        gender: genderValue,
+        dob: date_of_birth || null,
+        start_work: start_work || null,
+        end_work: end_work || null,
+        phone_number: phone_number || null,
       });
       await userRepo.save(user);
       

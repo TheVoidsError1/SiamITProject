@@ -162,6 +162,8 @@ export const apiEndpoints = {
   departments: '/api/departments',
   positions: '/api/positions',
   positionsWithQuotas: '/api/positions-with-quotas',
+  // Genders
+  gender: '/api/genders',
 
   // Leave types
   leaveTypes: '/api/leave-types',
