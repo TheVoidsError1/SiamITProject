@@ -2,7 +2,7 @@
 {
   "auth": {
     "login": "Login",
-    "egister": "Register",
+    "register": "Register",
     "logout": "Logout",
     "email": "Email",
     "password": "Password",
@@ -703,7 +703,9 @@
     "phoneNumber": "Phone Number",
     "internshipStartDate": "Start Work Date",
     "internshipEndDate": "End Work Date",
-    "selectBirthday": "Select Birthday",
+    "selectBirthday": "Select Date",
+    "selectStartWorkDate": "Select Date",
+    "selectEndWorkDate": "Select Date",
     "enterPhoneNumber": "Enter Phone Number",
     "selectInternshipStartDate": "Select Start Work Date",
     "selectInternshipEndDate": "Select End Work Date",
