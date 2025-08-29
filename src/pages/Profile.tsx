@@ -259,7 +259,7 @@ const Profile = () => {
       // Filter out emergency leave type
       const leaveTypeEn = item.leave_type_en?.toLowerCase() || '';
       const leaveTypeTh = item.leave_type_th?.toLowerCase() || '';
-      return !leaveTypeEn.includes('emergency') && !leaveTypeTh.includes('');
+      return !leaveTypeEn.includes('emergency') && !leaveTypeTh.includes('ฉุกเฉิน');
     })
     .map(item => {
       return {
