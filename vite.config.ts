@@ -12,7 +12,8 @@ export default defineConfig({
   },
   server: {
     allowedHosts: true, // Allow all hosts for ngrok
-    port: 8081,
+    port: parseInt(process.env.VITE_DEV_SERVER_PORT || '8081'),
+    host: process.env.VITE_DEV_SERVER_HOST || 'localhost',
     open: true,
     allowedHosts: [
       "localhost",
@@ -23,7 +24,7 @@ export default defineConfig({
     ],
     proxy: {
       "/api": {
-        target: "http://localhost:3001",
+        target: process.env.VITE_API_BASE_URL || "http://localhost:3001",
         changeOrigin: true,
         secure: false,
       },

@@ -2,7 +2,7 @@ const express = require('express');
 const authMiddleware = require('../middleware/authMiddleware');
 const { Between } = require('typeorm');
 const config = require('../config');
-const { calculateDaysBetween } = require('../utils');
+const { calculateDaysBetween, getLeaveUsageSummary } = require('../utils');
 
 module.exports = (AppDataSource) => {
   const router = express.Router();
@@ -190,48 +190,38 @@ module.exports = (AppDataSource) => {
         });
       }
 
-      // --- ดึง leave request ทั้งหมดของ user เพื่อคำนวณ summary (ไม่สนใจ filter) ---
-      const allLeavesForSummary = await leaveRepo.find({ where: { Repid: userId } });
+      // --- ดึง leave request ทั้งหมดของ user เพื่อคำนวณ summary (ใช้ filter เดียวกับตาราง) ---
+      const allLeavesForSummary = await leaveRepo.find({ where });
       
-              // คำนวณ summary จากข้อมูลทั้งหมดของ user
-        let totalLeaveDays = 0;
-        let totalLeaveHours = 0;
-        let totalHoursFromHourlyLeaves = 0; // รวมชั่วโมงทั้งหมดจากการลาเป็นชั่วโมง
-        
-        allLeavesForSummary.forEach(leave => {
-          if (leave.startTime && leave.endTime) {
-            // ลาชั่วโมง
-            const [sh, sm] = leave.startTime.split(":").map(Number);
-            const [eh, em] = leave.endTime.split(":").map(Number);
-            let start = sh + (sm || 0) / 60;
-            let end = eh + (em || 0) / 60;
-            let diff = end - start;
-            if (diff < 0) diff += 24;
-            
-            const hours = Math.floor(diff);
-            totalHoursFromHourlyLeaves += hours; // รวมชั่วโมงทั้งหมด
-          } else if (leave.startDate && leave.endDate) {
-            // ลาวัน
-            const start = new Date(leave.startDate);
-            const end = new Date(leave.endDate);
-            const days = calculateDaysBetween(start, end);
-            if (days > 0 && !isNaN(days)) {
-              totalLeaveDays += days;
-            }
-          }
-        });
-        
-        // คำนวณวันจากชั่วโมงรวมทั้งหมด (configurable working hours per day)
-        const totalDaysFromHours = Math.floor(totalHoursFromHourlyLeaves / config.business.workingHoursPerDay);
-        const totalRemainingHours = totalHoursFromHourlyLeaves % config.business.workingHoursPerDay;
-        
-        totalLeaveDays += totalDaysFromHours;
-        totalLeaveHours = totalRemainingHours;
-        
-        // เพิ่มการคำนวณชั่วโมงรวมทั้งหมด (ไม่แปลงเป็นวัน)
-        const totalHoursUsed = totalHoursFromHourlyLeaves;
+      // คำนวณ summary จากชุดข้อมูลที่ผ่านการกรองแล้ว (อิงจากใบลาจริง)
+      // นับเฉพาะใบลาที่ "อนุมัติแล้ว" เท่านั้น
+      let rawDays = 0;
+      let rawHours = 0;
+      const approvedLeavesForSummary = allLeavesForSummary.filter(l => l.status === 'approved');
+      for (const l of approvedLeavesForSummary) {
+        if (l.startTime && l.endTime) {
+          const [sh, sm] = l.startTime.split(":").map(Number);
+          const [eh, em] = l.endTime.split(":").map(Number);
+          const startMinutes = (sh || 0) * 60 + (sm || 0);
+          const endMinutes = (eh || 0) * 60 + (em || 0);
+          let diffHrs = (endMinutes - startMinutes) / 60;
+          if (diffHrs < 0 || isNaN(diffHrs)) diffHrs = 0;
+          rawHours += Math.floor(diffHrs);
+        } else if (l.startDate && l.endDate) {
+          const start = new Date(l.startDate);
+          const end = new Date(l.endDate);
+          let days = calculateDaysBetween(start, end);
+          if (days < 0 || isNaN(days)) days = 0;
+          rawDays += days;
+        }
+      }
+      // แปลงชั่วโมงเกินเป็นวันตาม config.business.workingHoursPerDay
+      const convertedDaysFromHours = Math.floor(rawHours / config.business.workingHoursPerDay);
+      const remainingHoursAfterConvert = rawHours % config.business.workingHoursPerDay;
+      const totalLeaveDays = rawDays + convertedDaysFromHours;
+      const totalLeaveHours = remainingHoursAfterConvert;
       
-      const approvedCount = allLeavesForSummary.filter(l => l.status === 'approved').length;
+      const approvedCount = approvedLeavesForSummary.length;
       const pendingCount = allLeavesForSummary.filter(l => l.status === 'pending').length;
       const rejectedCount = allLeavesForSummary.filter(l => l.status === 'rejected').length;
       
@@ -241,39 +231,14 @@ module.exports = (AppDataSource) => {
       // Debug log เพื่อตรวจสอบ
       console.log('Debug - Total leaves for user:', allLeavesForSummary.length);
       console.log('Debug - Backdated leaves:', retroactiveCount);
-      console.log('Debug - Sample backdated values:', allLeavesForSummary.slice(0, 5).map(l => ({ id: l.id, backdated: l.backdated, type: typeof l.backdated })));
       console.log('Debug - Summary calculation:', {
-        totalHoursFromHourlyLeaves: `${totalHoursFromHourlyLeaves} hours (รวมชั่วโมงทั้งหมด)`,
-        totalDaysFromHours: `${totalDaysFromHours} days (แปลงจากชั่วโมงรวม)`,
-        totalRemainingHours: `${totalRemainingHours} hours (ชั่วโมงที่เหลือ)`,
-        totalLeaveDays: `${totalLeaveDays} days (รวมจากวันปกติ + วันจากชั่วโมงรวม)`,
-        totalLeaveHours: `${totalHoursUsed} hours (ชั่วโมงรวมทั้งหมดที่ส่งไป frontend)`,
+        totalLeaveDays: `${totalLeaveDays} days`,
+        totalLeaveHours: `${totalLeaveHours} hours`,
         approvedCount,
         pendingCount,
         rejectedCount,
         retroactiveCount
       });
-      
-      // Debug log สำหรับตรวจสอบการคำนวณชั่วโมง
-      console.log('Debug - Hour calculation examples:');
-      let totalHours = 0;
-      allLeavesForSummary.slice(0, 3).forEach(leave => {
-        if (leave.startTime && leave.endTime) {
-          const [sh, sm] = leave.startTime.split(":").map(Number);
-          const [eh, em] = leave.endTime.split(":").map(Number);
-          let start = sh + (sm || 0) / 60;
-          let end = eh + (em || 0) / 60;
-          let diff = end - start;
-          if (diff < 0) diff += 24;
-          const hours = Math.floor(diff);
-          totalHours += hours;
-          console.log(`  Leave ID ${leave.id}: ${hours} hours (รวม: ${totalHours} ชั่วโมง)`);
-        }
-      });
-      
-      console.log(`  รวมชั่วโมงทั้งหมด: ${totalHours} ชั่วโมง`);
-               console.log(`  แปลงเป็นวัน: ${Math.floor(totalHours / config.business.workingHoursPerDay)} วัน`);
-         console.log(`  ชั่วโมงที่เหลือ: ${totalHours % config.business.workingHoursPerDay} ชั่วโมง`);
 
       // join leaveType, admin (approver/rejector)
       const result = await Promise.all(leaves.map(async (leave) => {
@@ -290,11 +255,47 @@ module.exports = (AppDataSource) => {
         }
         if (leave.statusBy && leave.status === 'approved') {
           const admin = await adminRepo.findOneBy({ id: leave.statusBy });
-          approvedBy = admin ? admin.admin_name + ' ผู้จัดการ' : leave.statusBy;
+          if (admin) {
+            approvedBy = admin.admin_name;
+          } else {
+            // ลองหาใน user table
+            const userRepo = AppDataSource.getRepository('User');
+            const user = await userRepo.findOneBy({ id: leave.statusBy });
+            if (user) {
+              approvedBy = user.User_name;
+            } else {
+              // ลองหาใน superadmin table
+              const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+              const superadmin = await superadminRepo.findOneBy({ id: leave.statusBy });
+              if (superadmin) {
+                approvedBy = superadmin.superadmin_name;
+              } else {
+                approvedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
+              }
+            }
+          }
         }
         if (leave.statusBy && leave.status === 'rejected') {
           const admin = await adminRepo.findOneBy({ id: leave.statusBy });
-          rejectedBy = admin ? admin.admin_name + ' ผู้จัดการ' : leave.statusBy;
+          if (admin) {
+            rejectedBy = admin.admin_name;
+          } else {
+            // ลองหาใน user table
+            const userRepo = AppDataSource.getRepository('User');
+            const user = await userRepo.findOneBy({ id: leave.statusBy });
+            if (user) {
+              rejectedBy = user.User_name;
+            } else {
+              // ลองหาใน superadmin table
+              const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+              const superadmin = await superadminRepo.findOneBy({ id: leave.statusBy });
+              if (superadmin) {
+                rejectedBy = superadmin.superadmin_name;
+              } else {
+                rejectedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
+              }
+            }
+          }
         }
         // คำนวณระยะเวลาการลา
         let days = 0;
@@ -374,7 +375,7 @@ module.exports = (AppDataSource) => {
         totalPages: Math.ceil(total / limit),
         summary: {
           totalLeaveDays,
-          totalLeaveHours: totalHoursUsed, // ส่งชั่วโมงรวมทั้งหมดแทนที่จะเป็นแค่ชั่วโมงที่เหลือ
+          totalLeaveHours, // ส่งชั่วโมงรวมทั้งหมดแทนที่จะเป็นแค่ชั่วโมงที่เหลือ
           approvedCount,
           pendingCount,
           rejectedCount,
@@ -383,9 +384,12 @@ module.exports = (AppDataSource) => {
         message: lang === 'th' ? 'ดึงข้อมูลสำเร็จ' : 'Fetch success'
       });
     } catch (err) {
+      // Determine language safely within catch scope
+      let _lang = (req.headers['accept-language'] || req.query.lang || 'th');
+      _lang = _lang.split(',')[0].toLowerCase().startsWith('en') ? 'en' : 'th';
       res.status(500).json({
         status: 'error',
-        message: lang === 'th' ? 'เกิดข้อผิดพลาด: ' + err.message : 'Error: ' + err.message
+        message: _lang === 'th' ? 'เกิดข้อผิดพลาด: ' + err.message : 'Error: ' + err.message
       });
     }
   });

@@ -702,103 +702,114 @@ module.exports = (AppDataSource) => {
         return res.status(404).json({ success: false, message: 'User not found in ProcessCheck' });
       }
 
-      const { Repid: repid, Role: role } = processCheck;
+      const { Repid: repid } = processCheck;
 
-      // 4. Get positionId from user/admin
-      let positionId = null;
-      if (role === 'admin') {
-        const adminRepo = AppDataSource.getRepository('Admin');
-        const admin = await adminRepo.findOne({ where: { id: repid } });
-        if (!admin) return res.status(404).json({ success: false, message: 'Admin not found' });
-        positionId = admin.position;
-      } else if (role === 'superadmin') {
-        const superadminRepo = AppDataSource.getRepository('SuperAdmin');
-        const superadmin = await superadminRepo.findOne({ where: { id: repid } });
-        if (!superadmin) return res.status(404).json({ success: false, message: 'SuperAdmin not found' });
-        positionId = superadmin.position;
+      // เพิ่มเติม: ดึง leave_used ของ user มาด้วย
+      const leaveUsedRepo = AppDataSource.getRepository('LeaveUsed');
+      const leaveUsedRecords = await leaveUsedRepo.find({ where: { user_id: repid } });
+
+      // Get user's position to determine leave quotas
+      const userRepo = AppDataSource.getRepository('User');
+      const adminRepo = AppDataSource.getRepository('Admin');
+      const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+      
+      let userPosition = null;
+      let userEntity = await userRepo.findOne({ where: { id: repid } });
+      if (userEntity) {
+        userPosition = userEntity.position;
       } else {
-        const userRepo = AppDataSource.getRepository('User');
-        const user = await userRepo.findOne({ where: { id: repid } });
-        if (!user) return res.status(404).json({ success: false, message: 'User not found' });
-        positionId = user.position;
+        userEntity = await adminRepo.findOne({ where: { id: repid } });
+        if (userEntity) {
+          userPosition = userEntity.position;
+        } else {
+          userEntity = await superadminRepo.findOne({ where: { id: repid } });
+          if (userEntity) {
+            userPosition = userEntity.position;
+          }
+        }
       }
-      if (!positionId) return res.status(404).json({ success: false, message: 'Position not found' });
 
-      // 5. Query all leaveQuota rows for this position
+      if (!userPosition) {
+        return res.status(404).json({ success: false, message: 'User position not found' });
+      }
+
+      // Get leave quotas for this position
       const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
       const leaveRequestRepo = AppDataSource.getRepository('LeaveRequest');
-      const quotas = await leaveQuotaRepo.find({ where: { positionId } });
+      
+      const quotas = await leaveQuotaRepo.find({ where: { positionId: userPosition } });
       const leaveTypes = await leaveTypeRepo.find();
-      const leaveRequests = await leaveRequestRepo.find({ where: { Repid: repid, status: 'approved' } });
+      
+      // Get all approved leave requests for this user
+      const approvedLeaves = await leaveRequestRepo.find({ 
+        where: { Repid: repid, status: 'approved' },
+        order: { createdAt: 'DESC' }
+      });
 
-      // Helper: แปลงค่าทศนิยมวันเป็นวัน/ชั่วโมง (configurable working hours per day)
-      // Using utility function instead of local function
+      // Calculate leave usage from actual approved requests (reflects deletions immediately)
+      const result = leaveTypes
+        .filter(lt => {
+          // Filter out emergency leave
+          const leaveTypeEn = lt.leave_type_en?.toLowerCase() || '';
+          const leaveTypeTh = lt.leave_type_th?.toLowerCase() || '';
+          return !leaveTypeEn.includes('emergency') && !leaveTypeTh.includes('ฉุกเฉิน');
+        })
+        .map(leaveType => {
+          // quota
+          const quotaRow = quotas.find(q => q.leaveTypeId === leaveType.id);
+          const quotaDays = quotaRow ? quotaRow.quota : 0;
 
-      // 6. For each leave type, calculate quota and used (sick, personal, vacation, maternity)
-      const result = [];
-      for (const leaveType of leaveTypes) {
-        // Find quota for this leave type
-        const quotaRow = quotas.find(q => q.leaveTypeId === leaveType.id);
-        const quota = quotaRow ? quotaRow.quota : 0;
-        // Calculate used leave for this type
-        let used = 0;
-        for (const lr of leaveRequests) {
-          let leaveTypeName = lr.leaveType;
-          if (leaveTypeName && leaveTypeName.length > 20) {
-            const leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
-            if (leaveTypeEntity && leaveTypeEntity.leave_type_en) {
-              leaveTypeName = leaveTypeEntity.leave_type_en;
-            }
-          }
-          if (
-            leaveTypeName === leaveType.leave_type_en ||
-            leaveTypeName === leaveType.leave_type_th ||
-            leaveTypeName === leaveType.id
-          ) {
-            // Personal leave: may be by hour or day
-            if (leaveType.leave_type_en?.toLowerCase() === 'personal' || leaveType.leave_type_th === 'ลากิจ') {
-              if (lr.startTime && lr.endTime) {
-                const timeRange = convertTimeRangeToDecimal(
-                  ...lr.startTime.split(":").map(Number),
-                  ...lr.endTime.split(":").map(Number)
-                );
-                let diff = timeRange.end - timeRange.start;
-                if (diff < 0) diff += 24;
-                used += diff / config.business.workingHoursPerDay; // configurable working hours per day
-              } else if (lr.startDate && lr.endDate) {
-                const start = new Date(lr.startDate);
-                const end = new Date(lr.endDate);
+          // ใช้ leave_used ถ้ามี
+          const usedRecord = leaveUsedRecords.find(r => r.leave_type_id === leaveType.id);
+          let usedDays = 0, usedHours = 0;
+          if (usedRecord) {
+            usedDays = usedRecord.days || 0;
+            usedHours = usedRecord.hour || 0;
+          } else {
+            // fallback: คำนวณจากใบลาเดิม
+            const typeLeaves = approvedLeaves.filter(leave => leave.leaveType === leaveType.id);
+            for (const leave of typeLeaves) {
+              if (leave.startTime && leave.endTime) {
+                // Hour-based leave
+                const [sh, sm] = leave.startTime.split(':').map(Number);
+                const [eh, em] = leave.endTime.split(':').map(Number);
+                const startMinutes = (sh || 0) * 60 + (sm || 0);
+                const endMinutes = (eh || 0) * 60 + (em || 0);
+                let durationHours = (endMinutes - startMinutes) / 60;
+                if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
+                usedHours += Math.floor(durationHours);
+              } else if (leave.startDate && leave.endDate) {
+                // Day-based leave
+                const start = new Date(leave.startDate);
+                const end = new Date(leave.endDate);
                 let days = calculateDaysBetween(start, end);
                 if (days < 0 || isNaN(days)) days = 0;
-                used += days;
-              }
-            } else {
-              // Other types: by day
-              if (lr.startDate && lr.endDate) {
-                const start = new Date(lr.startDate);
-                const end = new Date(lr.endDate);
-                let days = calculateDaysBetween(start, end);
-                if (days < 0 || isNaN(days)) days = 0;
-                used += days;
+                usedDays += days;
               }
             }
           }
-        }
-        const remaining = Math.max(0, quota - used);
-        const usedObj = toDayHour(used);
-        const remainingObj = toDayHour(remaining);
-        result.push({
-          id: leaveType.id,
-          leave_type_en: leaveType.leave_type_en,
-          leave_type_th: leaveType.leave_type_th,
-          quota: quota,
-          used_day: usedObj.day,
-          used_hour: usedObj.hour,
-          remaining_day: remainingObj.day,
-          remaining_hour: remainingObj.hour
+          
+          // Convert hours to days according to working hours per day
+          const additionalDays = Math.floor(usedHours / config.business.workingHoursPerDay);
+          const remainingHours = usedHours % config.business.workingHoursPerDay;
+          const totalUsedDays = usedDays + additionalDays;
+          
+          // Calculate remaining
+          const remainingDays = Math.max(0, quotaDays - totalUsedDays);
+          
+          return {
+            id: leaveType.id,
+            leave_type_en: leaveType.leave_type_en,
+            leave_type_th: leaveType.leave_type_th,
+            quota: quotaDays,
+            used_day: usedDays + additionalDays,
+            used_hour: remainingHours,
+            remaining_day: remainingDays,
+            remaining_hour: 0
+          };
         });
-      }
+
       return sendSuccess(res, result);
     } catch (err) {
       console.error('Leave quota error:', err);

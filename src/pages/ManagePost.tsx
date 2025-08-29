@@ -8,13 +8,27 @@ import { Label } from '@/components/ui/label';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useAuth } from '@/contexts/AuthContext';
-import { ArrowLeft, Calendar, Clock, Edit, Eye, FileText, Image, Newspaper, Plus, Trash2, User, X } from 'lucide-react';
+import { Calendar, ChevronLeft, Clock, Edit, Eye, FileText, Image, Newspaper, Plus, Trash2, User, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { apiEndpoints, apiService } from '../lib/api';
 import { showToastMessage } from '../lib/toast';
 import { formatDate, getImageUrl, handleFileSelect, handleImageError } from '../lib/utils';
+
+// Interface for news items
+interface NewsItem {
+  id: string;
+  subject: string;
+  detail: string;
+  createdAt: string;
+  createdBy: string; // User ID
+  createdByName: string; // User display name
+  Image?: string;
+  avatar?: string;
+  contact?: string; // Optional contact info
+  attachments?: any[]; // Optional attachments array
+}
 
 // ฟังก์ชันสำหรับจัดการวันที่ให้รองรับ i18n
 const formatTime = (date: Date, locale: string) => {
@@ -29,13 +43,13 @@ export default function ManagePost() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
-  const [newsList, setNewsList] = useState<any[]>([]);
+  const [newsList, setNewsList] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [openIdx, setOpenIdx] = useState<number | null>(null);
   const [addOpen, setAddOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [editingNews, setEditingNews] = useState<any>(null);
+  const [editingNews, setEditingNews] = useState<NewsItem | null>(null);
   const [form, setForm] = useState({
     subject: '',
     detail: '',
@@ -54,7 +68,7 @@ export default function ManagePost() {
   const [previewImageName, setPreviewImageName] = useState<string>('');
   
   // State สำหรับจัดการการลบข่าวสาร
-  const [deleteTarget, setDeleteTarget] = useState<any | null>(null); 
+  const [deleteTarget, setDeleteTarget] = useState<NewsItem | null>(null); 
   const [deleting, setDeleting] = useState(false);
 
 
@@ -63,12 +77,15 @@ export default function ManagePost() {
     setLoading(true);
     setError('');
     try {
-      const data = await apiService.get(apiEndpoints.announcements);
+      // Use the feed endpoint to get announcements with user names
+      const data = await apiService.get(apiEndpoints.announcements + '/feed');
       console.log('=== Fetch News Response ===');
       console.log('API Response:', data);
       if (data.data && data.data.length > 0) {
         console.log('First news item:', data.data[0]);
         console.log('Image field:', data.data[0].Image);
+        console.log('Created by ID:', data.data[0].createdBy);
+        console.log('Created by name:', data.data[0].createdByName);
       }
       console.log('==========================');
       
@@ -76,7 +93,7 @@ export default function ManagePost() {
         setNewsList(data.data.sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
       } else {
         setNewsList([]);
-        setError(data.message || 'เกิดข้อผิดพลาด');
+        setError(data.message || '');
       }
     } catch (err) {
       setNewsList([]);
@@ -97,13 +114,20 @@ export default function ManagePost() {
   // เพิ่มข่าวสารใหม่
   const handleAddNews = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Check if user has an ID
+    if (!user?.id) {
+      setError('ไม่สามารถระบุตัวตนผู้ใช้ได้ กรุณาเข้าสู่ระบบใหม่');
+      return;
+    }
+    
     setLoading(true);
     setError('');
     try {
       const formData = new FormData();
       formData.append('subject', form.subject);
       formData.append('detail', form.detail);
-      formData.append('createdBy', user?.full_name || '');
+      formData.append('createdBy', user.id); // Use user ID
       
       if (selectedFile) {
         formData.append('Image', selectedFile);
@@ -111,18 +135,18 @@ export default function ManagePost() {
 
       const data = await apiService.post(apiEndpoints.announcements, formData);
       if (data.status === 'success') {
-        showToastMessage.crud.createSuccess('ข่าวสาร', t);
+        showToastMessage.crud.createSuccess('', t);
         setAddOpen(false);
         setForm({ subject: '', detail: '', Image: '' });
         setSelectedFile(null);
         setImagePreview(null);
         fetchNews();
       } else {
-        showToastMessage.crud.createError('ข่าวสาร', data.message, t);
+        showToastMessage.crud.createError('', data.message, t);
         setError(data.message || 'บันทึกข่าวสารไม่สำเร็จ');
       }
     } catch (err) {
-      showToastMessage.crud.createError('ข่าวสาร', undefined, t);
+      showToastMessage.crud.createError('', undefined, t);
       setError('บันทึกข่าวสารไม่สำเร็จ');
     } finally {
       setLoading(false);
@@ -140,13 +164,13 @@ export default function ManagePost() {
         // ลบข่าวสารออกจากรายการและแสดงข้อความสำเร็จ
         setNewsList(prev => prev.filter(news => news.id !== deleteTarget.id));
         setDeleteTarget(null);
-        showToastMessage.crud.deleteSuccess('ข่าวสาร', t);
+        showToastMessage.crud.deleteSuccess('announcement', t);
       } else {
-        showToastMessage.crud.deleteError('ข่าวสาร', data.message, t);
+        showToastMessage.crud.deleteError('announcement', data.message, t);
         setError(data.message || 'ลบข่าวสารไม่สำเร็จ');
       }
     } catch (err) {
-      showToastMessage.crud.deleteError('ข่าวสาร', undefined, t);
+      showToastMessage.crud.deleteError('announcement', undefined, t);
       setError('ลบข่าวสารไม่สำเร็จ');
     } finally {
       setDeleting(false);
@@ -154,7 +178,7 @@ export default function ManagePost() {
   };
 
   // เปิดฟอร์มแก้ไขข่าวสาร
-  const handleEditNews = (news: any) => {
+  const handleEditNews = (news: NewsItem) => {
     setEditingNews(news);
     setForm({
       subject: news.subject,
@@ -171,13 +195,19 @@ export default function ManagePost() {
     e.preventDefault();
     if (!editingNews) return;
     
+    // Check if user has an ID
+    if (!user?.id) {
+      setError('ไม่สามารถระบุตัวตนผู้ใช้ได้ กรุณาเข้าสู่ระบบใหม่');
+      return;
+    }
+    
     setLoading(true);
     setError('');
     try {
       const formData = new FormData();
       formData.append('subject', form.subject);
       formData.append('detail', form.detail);
-      formData.append('createdBy', user?.full_name || '');
+      formData.append('createdBy', user.id); // Use user ID instead of name
       
       if (selectedFile) {
         formData.append('Image', selectedFile);
@@ -185,7 +215,7 @@ export default function ManagePost() {
 
       const data = await apiService.put(apiEndpoints.announcement(editingNews.id), formData);
       if (data.status === 'success') {
-        showToastMessage.crud.updateSuccess('ข่าวสาร', t);
+        showToastMessage.crud.updateSuccess('', t);
         setEditOpen(false);
         setEditingNews(null);
         setForm({ subject: '', detail: '', Image: '' });
@@ -193,11 +223,11 @@ export default function ManagePost() {
         setImagePreview(null);
         fetchNews();
       } else {
-        showToastMessage.crud.updateError('ข่าวสาร', data.message, t);
+        showToastMessage.crud.updateError('', data.message, t);
         setError(data.message || t('companyNews.editNewsError'));
       }
     } catch (err) {
-      showToastMessage.crud.updateError('ข่าวสาร', undefined, t);
+      showToastMessage.crud.updateError('', undefined, t);
       setError(t('companyNews.editNewsError'));
     } finally {
       setLoading(false);
@@ -237,10 +267,9 @@ export default function ManagePost() {
             <SidebarTrigger className="bg-white/90 hover:bg-white text-blue-700 border border-blue-200 hover:border-blue-300 shadow-lg backdrop-blur-sm" />
             <button
               onClick={() => navigate(-1)}
-              className="flex items-center gap-2 px-4 py-2 bg-white/90 hover:bg-white text-blue-700 font-semibold rounded-xl shadow-lg transition-all duration-200 backdrop-blur-sm border border-blue-200 hover:border-blue-300"
+              className="bg-white/90 hover:bg-white text-blue-700 border border-blue-200 hover:border-blue-300 shadow-lg backdrop-blur-sm p-2 rounded-full transition-all duration-200"
             >
-              <ArrowLeft className="w-5 h-5" />
-              {t('common.goBack')}
+              <ChevronLeft className="w-6 h-6" />
             </button>
           </div>
         </div>
@@ -298,7 +327,7 @@ export default function ManagePost() {
                           ({form.detail.length}/500)
                         </span>
                       </label>
-                                          <textarea
+                      <textarea
                       className="w-full rounded-lg border border-blue-200 px-3 py-2 text-base focus:ring-2 focus:ring-blue-400 resize-none break-all overflow-wrap-anywhere whitespace-pre-wrap"
                       value={form.detail}
                       onChange={e => setForm(f => ({ ...f, detail: e.target.value }))}
@@ -497,7 +526,7 @@ export default function ManagePost() {
                         : news.detail
                       }
                     </TableCell>
-                    <TableCell className="p-4 text-center">{news.createdBy}</TableCell>
+                    <TableCell className="p-4 text-center">{news.createdByName || news.createdBy || 'Unknown User'}</TableCell>
                     {isAdmin && (
                       <TableCell className="p-4 text-center">
                         <button
@@ -621,7 +650,7 @@ export default function ManagePost() {
                                       <Label className="text-sm font-medium text-gray-600">{t('companyNews.publishedBy')}</Label>
                                       <div className="flex items-center gap-2 p-3 bg-indigo-50 rounded-lg">
                                         <User className="w-4 h-4 text-indigo-500" />
-                                        <span className="font-medium text-indigo-900">{news.createdBy}</span>
+                                        <span className="font-medium text-indigo-900">{news.createdByName || news.createdBy || 'Unknown User'}</span>
                                       </div>
                                     </div>
                                     <div className="space-y-2">

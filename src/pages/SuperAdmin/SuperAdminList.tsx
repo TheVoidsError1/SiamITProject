@@ -116,9 +116,9 @@ const SuperAdminList: React.FC = () => {
 
   const getPasswordStrengthText = () => {
     switch (passwordStrength) {
-      case 'strong': return 'รหัสผ่านแข็งแกร่ง';
-      case 'medium': return 'รหัสผ่านปานกลาง';
-      case 'weak': return 'รหัสผ่านอ่อนแอ';
+      case 'strong': return '';
+      case 'medium': return '';
+      case 'weak': return '';
       default: return '';
     }
   };
@@ -129,37 +129,37 @@ const SuperAdminList: React.FC = () => {
     
     // Validation    
     if (!form.full_name.trim()) {
-      showToastMessage.validation.requiredField('fullName');
+      showToastMessage.validation.requiredField('fullName', t);
       return;
     }
     
     if (!form.email.trim()) {
-      showToastMessage.validation.requiredField('email');
+      showToastMessage.validation.requiredField('email', t);
       return;
     }
     
     if (!form.department) {
-      showToastMessage.validation.requiredField('department');
+      showToastMessage.validation.requiredField('department', t);
       return;
     }
     
     if (!form.position) {
-      showToastMessage.validation.requiredField('position');
+      showToastMessage.validation.requiredField('position', t);
       return;
     }
     
     if (form.password.length < 6) {
-      showToastMessage.validation.passwordTooShort();
+      showToastMessage.validation.passwordTooShort(t);
       return;
     }
     
     if (form.password !== form.confirmPassword) {
-      showToastMessage.validation.passwordMismatch();
+      showToastMessage.validation.passwordMismatch(t);
       return;
     }
     
     if (!form.role) {
-      showToastMessage.validation.requiredField('role');
+      showToastMessage.validation.requiredField('role', t);
       return;
     }
     
@@ -183,7 +183,7 @@ const SuperAdminList: React.FC = () => {
       
       const data = await apiService.post('/api/create-user-with-role', payload);
       if (data && (data.success || data.token)) {
-        showToastMessage.crud.createSuccess('user');
+        showToastMessage.crud.createSuccess('user', t);
         setForm({
           full_name: '',
           email: '',
@@ -195,10 +195,10 @@ const SuperAdminList: React.FC = () => {
         });
         setPasswordStrength('weak');
       } else {
-        showToastMessage.crud.createError('user', data?.message);
+        showToastMessage.crud.createError('user', data?.message, t);
       }
     } catch (err: any) {
-      showToastMessage.network.connectionError();
+      showToastMessage.network.connectionError(t);
     } finally {
       setLoading(false);
     }
@@ -310,7 +310,7 @@ const SuperAdminList: React.FC = () => {
                   onClick={() => handleTabChange(tab)}
                   className={`flex-1 flex items-center justify-center gap-4 py-6 px-8 rounded-2xl transition-all duration-500 transform hover:scale-105 relative overflow-hidden ${
                     isActive 
-                      ? `bg-gradient-to-r ${config.gradient} ${config.activeTextColor} shadow-xl shadow-lg` 
+                      ? `bg-gradient-to-r ${config.gradient} ${config.activeTextColor}  shadow-lg` 
                       : `${config.bgColor} ${config.textColor} ${config.hoverColor} ${config.borderColor} border hover:shadow-lg`
                   }`}
                 >

@@ -20,7 +20,8 @@ interface Announcement {
   subject: string;
   detail: string;
   createdAt: string;
-  createdBy: string;
+  createdBy: string; // This is now the user ID
+  createdByName: string; // This is the display name
   Image?: string;
   avatar?: string;
 }
@@ -60,8 +61,13 @@ const AnnouncementsFeedPage = () => {
           variant: 'default'
         });
         
-        // Add new announcement to the list
-        setAnnouncements(prev => [data, ...prev]);
+        // Add new announcement to the list with createdByName
+        const newAnnouncement = {
+          ...data,
+          id: data.id || `temp-${Date.now()}`, // Ensure ID exists
+          createdByName: user?.full_name || 'Unknown User' // Use current user's name for new announcements
+        };
+        setAnnouncements(prev => [newAnnouncement, ...prev]);
       });
 
       // Listen for announcement updates
@@ -78,7 +84,7 @@ const AnnouncementsFeedPage = () => {
         // Update announcement in the list
         setAnnouncements(prev => 
           prev.map(announcement => 
-            announcement.id === data.id ? data : announcement
+            announcement.id === data.id ? { ...data, createdByName: announcement.createdByName } : announcement
           )
         );
       });
@@ -106,7 +112,7 @@ const AnnouncementsFeedPage = () => {
         socket.off('announcementDeleted');
       };
     }
-  }, [socket, isConnected, toast, t]);
+  }, [socket, isConnected, toast, t, user]);
 
   useEffect(() => {
     const fetchAnnouncements = async () => {
@@ -143,7 +149,7 @@ const AnnouncementsFeedPage = () => {
       const formData = new FormData();
       formData.append('subject', createForm.subject);
       formData.append('detail', createForm.detail);
-      formData.append('createdBy', user?.full_name || '');
+      formData.append('createdBy', user?.id || '');
       formData.append('createdAt', new Date().toISOString());
       if (selectedFile) {
         formData.append('Image', selectedFile);
@@ -375,7 +381,7 @@ const AnnouncementsFeedPage = () => {
                       <Avatar className="h-16 w-16 border-3 border-blue-200 shadow-lg">
                         <AvatarImage 
                                                      src={announcement.avatar ? getImageUrl(announcement.avatar, import.meta.env.VITE_API_BASE_URL) : '/placeholder-avatar.png'} 
-                          alt={announcement.createdBy}
+                          alt={announcement.createdByName}
                           className="object-cover"
                           onError={(e) => {
                             console.log('Avatar failed to load:', announcement.avatar);
@@ -386,12 +392,12 @@ const AnnouncementsFeedPage = () => {
                           }}
                         />
                         <AvatarFallback className="bg-blue-100 text-blue-600 font-bold text-lg">
-                          {announcement.createdBy ? announcement.createdBy.charAt(0).toUpperCase() : '?'}
+                          {announcement.createdByName ? announcement.createdByName.charAt(0).toUpperCase() : '?'}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <CardTitle className="text-xl font-bold text-gray-800 mb-2 truncate">
-                          {announcement.createdBy}
+                          {announcement.createdByName}
                         </CardTitle>
                         <div className="flex items-center gap-1 text-sm text-gray-500">
                           <Calendar className="w-4 h-4" />

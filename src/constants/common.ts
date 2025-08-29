@@ -88,16 +88,5 @@ export const SUCCESS_MESSAGES = {
   CREATE_SUCCESS: 'Created successfully'
 } as const;
 
-// Common animation delays
-export const ANIMATION_DELAYS = {
-  SHORT: 100,
-  MEDIUM: 300,
-  LONG: 500
-} as const;
-
-// Common breakpoints
-export const BREAKPOINTS = {
-  MOBILE: 768,
-  TABLET: 1024,
-  DESKTOP: 1280
-} as const; 
+// Import UI constants to avoid duplication
+export { ANIMATION_DELAYS, BREAKPOINTS } from './ui'; 

@@ -1,3 +1,4 @@
+import AvatarCropDialog from '@/components/dialogs/AvatarCropDialog';
 import { LeaveDetailDialog } from "@/components/dialogs/LeaveDetailDialog";
 import {
   AlertDialog,
@@ -19,16 +20,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns';
 import { th } from 'date-fns/locale';
-import { ArrowLeft, Calendar, Edit, Eye, Mail, Trash2, User, Camera } from "lucide-react";
+import { Calendar, Camera, ChevronLeft, Edit, Eye, Mail, Trash2, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useLocation, useParams } from 'react-router-dom';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { API_BASE_URL, apiEndpoints, apiService } from '../lib/api';
-import AvatarCropDialog from '@/components/dialogs/AvatarCropDialog';
 
 const EmployeeDetail = () => {
   const { id } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const { user, showSessionExpiredDialog } = useAuth();
@@ -344,22 +345,22 @@ const EmployeeDetail = () => {
       if (data && (data.success || data.status === 'success')) {
         setDeleteLeaveId(null);
         toast({
-          title: t('system.deleteSuccess', 'ลบสำเร็จ'),
-          description: t('system.deleteSuccessDesc', 'ลบใบลาสำเร็จ'),
+          title: t('system.deleteSuccess'),
+          description: t('system.deleteSuccessDesc'),
           className: 'border-green-500 bg-green-50 text-green-900',
         });
         fetchLeaveHistory(); // fetch leave history again
       } else {
         toast({
-          title: t('system.deleteFailed', 'ลบไม่สำเร็จ'),
-          description: data?.message || t('system.deleteFailedDesc', 'ไม่สามารถลบใบลาได้'),
+          title: t('system.deleteFailed'),
+          description: data?.message || t('system.deleteFailedDesc'),
           variant: 'destructive',
         });
       }
     } catch (e) {
       toast({
-        title: t('system.deleteFailed', 'ลบไม่สำเร็จ'),
-        description: t('system.deleteFailedDesc', 'ไม่สามารถลบใบลาได้'),
+        title: t('system.deleteFailed'),
+        description: t('system.deleteFailedDesc'),
         variant: 'destructive',
       });
     } finally {
@@ -462,12 +463,12 @@ const EmployeeDetail = () => {
       <div className="border-b bg-white/80 backdrop-blur-sm z-10 relative shadow-lg">
         <div className="flex h-16 items-center px-4 gap-4">
           <SidebarTrigger />
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/admin/employees">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              {t('common.back')}
-            </Link>
-          </Button>
+          <button
+            onClick={() => navigate(-1)}
+            className="bg-white/90 hover:bg-white text-blue-700 border border-blue-200 hover:border-blue-300 shadow-lg backdrop-blur-sm p-2 rounded-full transition-all duration-200"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
           <div className="flex-1">
             <h1 className="text-3xl font-extrabold text-blue-900 tracking-tight drop-shadow-lg animate-slide-in-left">{t('employee.details')}</h1>
             <p className="text-sm text-blue-500 animate-slide-in-left delay-100">{employee.name}</p>
@@ -1077,17 +1078,7 @@ const EmployeeDetail = () => {
                                 <Eye className="w-3.5 h-3.5 mr-1" />
                                 {t('common.viewDetails')}
                               </Button>
-                              {user?.role === 'superadmin' && (
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  className="rounded-lg px-3 py-1.5 font-medium bg-gradient-to-r from-red-500 to-red-600 text-white shadow hover:scale-105 transition text-xs"
-                                  onClick={() => setDeleteLeaveId(leave.id)}
-                                >
-                                  <Trash2 className="w-3.5 h-3.5 mr-1" />
-                                  {t('common.delete')}
-                                </Button>
-                              )}
+
                             </div>
                         </TableCell>
                       </TableRow>
@@ -1139,27 +1130,7 @@ const EmployeeDetail = () => {
         leaveRequest={selectedLeave}
       />
         
-        {/* Delete Confirmation Dialog */}
-        <AlertDialog open={!!deleteLeaveId} onOpenChange={() => setDeleteLeaveId(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{t('common.confirmDelete', 'ยืนยันการลบ')}</AlertDialogTitle>
-              <AlertDialogDescription>
-                {t('leave.deleteConfirmMessage', 'คุณต้องการลบใบลานี้หรือไม่? การดำเนินการนี้ไม่สามารถยกเลิกได้')}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDeleteLeave}
-                className="bg-red-600 hover:bg-red-700"
-                disabled={deleting}
-              >
-                {deleting ? t('common.deleting', 'กำลังลบ...') : t('common.delete')}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+
     </div>
   );
 }

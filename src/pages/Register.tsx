@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DatePicker } from '@/components/ui/date-picker';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { apiService, apiEndpoints } from '@/lib/api';
@@ -12,6 +13,7 @@ import { showToastMessage } from '@/lib/toast';
 import { Eye, EyeOff, Mail, Lock, User, Building } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { RegisterConfirmDialog } from '@/components/dialogs/RegisterConfirmDialog';
 
 const Register = () => {
   const { t, i18n } = useTranslation();
@@ -34,11 +36,11 @@ const Register = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [departments, setDepartments] = useState<{ id: string; department_name_en: string; department_name_th: string }[]>([]);
-  const [positions, setPositions] = useState<{ id: string; position_name_en: string; position_name_th: string; request_quote?: boolean }[]>([]);
+      const [positions, setPositions] = useState<{ id: string; position_name_en: string; position_name_th: string; request_quota?: boolean }[]>([]);
   const [newDepartment, setNewDepartment] = useState('');
   const [newPosition, setNewPosition] = useState('');
   const [error, setError] = useState<{ email?: string; full_name?: string; general?: string }>({});
-  const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong'>('weak');
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   
   const { signup } = useAuth();
   const { toast } = useToast();
@@ -71,7 +73,7 @@ const Register = () => {
         // Fetch positions
         const posData = await apiService.get(apiEndpoints.positions);
         if (posData && posData.data && Array.isArray(posData.data)) {
-          const pos = posData.data.map((p: any) => ({ id: p.id, position_name_th: p.position_name_th, position_name_en: p.position_name_en, request_quote: !!p.request_quote }));
+          const pos = posData.data.map((p: any) => ({ id: p.id, position_name_th: p.position_name_th, position_name_en: p.position_name_en, request_quota: !!p.request_quota }));
           const noPositionItem = pos.find(p => p.position_name_en === 'No Position');
           const otherPos = pos.filter(p => p.position_name_en !== 'No Position');
           otherPos.sort((a, b) => {
@@ -102,9 +104,9 @@ const Register = () => {
       await apiService.post(apiEndpoints.departments, { department_name: newDepartment });
       setDepartments(prev => [...prev, { id: 'new', department_name_en: newDepartment, department_name_th: newDepartment }]);
       setNewDepartment('');
-      showToastMessage.crud.createSuccess('แผนก');
+      showToastMessage.crud.createSuccess('');
     } catch (error) {
-      showToastMessage.crud.createError('แผนก');
+      showToastMessage.crud.createError('');
     }
   };
 
@@ -115,15 +117,50 @@ const Register = () => {
       await apiService.post(apiEndpoints.positions, { position_name: newPosition });
       setPositions(prev => [...prev, { id: 'new', position_name_en: newPosition, position_name_th: newPosition }]);
       setNewPosition('');
-      showToastMessage.crud.createSuccess('ตำแหน่ง');
+      showToastMessage.crud.createSuccess('');
     } catch (error) {
-      showToastMessage.crud.createError('ตำแหน่ง');
+      showToastMessage.crud.createError('');
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError({});
+    
+    // ตรวจสอบรูปแบบอีเมล
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast({
+        title: t('common.error'),
+        description: t('auth.invalidEmailFormat'),
+        variant: "destructive",
+      });
+      setError({ email: t('auth.invalidEmailFormat') });
+      return;
+    }
+    
+    // ตรวจสอบเพิ่มเติมว่าอีเมลไม่ใช่รูปแบบที่ไม่สมบูรณ์ เช่น @g, @gmail
+    if (formData.email.includes('@') && !formData.email.includes('.')) {
+      toast({
+        title: t('common.error'),
+        description: t('auth.invalidEmailFormat'),
+        variant: "destructive",
+      });
+      setError({ email: t('auth.invalidEmailFormat') });
+      return;
+    }
+    
+    // ตรวจสอบว่าโดเมนต้องมีอย่างน้อย 2 ตัวอักษรหลังจุด (เช่น .com, .co.th)
+    const domainMatch = formData.email.match(/@[^@]+\.([^.]+)$/);
+    if (domainMatch && domainMatch[1].length < 2) {
+      toast({
+        title: t('common.error'),
+        description: t('auth.invalidEmailFormat'),
+        variant: "destructive",
+      });
+      setError({ email: t('auth.invalidEmailFormat') });
+      return;
+    }
     
     if (formData.password !== formData.confirmPassword) {
       toast({
@@ -136,11 +173,11 @@ const Register = () => {
 
     // ตรวจว่าตำแหน่งต้องการ End Work Date หรือไม่
     const selectedPos = positions.find(p => p.id === formData.position);
-    const requiresEndWorkDate = selectedPos ? !!selectedPos.request_quote : false;
+            const requiresEndWorkDate = selectedPos ? !!selectedPos.request_quota : false;
 
     if (requiresEndWorkDate) {
       if (!formData.start_work || !formData.end_work) {
-        toast({ title: t('common.error'), description: t('auth.pleaseFillEndWorkDate', 'กรุณาเลือกวันที่เริ่มและสิ้นสุดการทำงาน'), variant: 'destructive' });
+        toast({ title: t('common.error'), description: t('auth.pleaseFillEndWorkDate'), variant: 'destructive' });
         return;
       }
       if (formData.start_work > formData.end_work) {
@@ -149,6 +186,11 @@ const Register = () => {
       }
     }
 
+    // แสดง dialog ยืนยันการสมัครสมาชิก
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmRegistration = async () => {
     setLoading(true);
 
     try {
@@ -164,7 +206,7 @@ const Register = () => {
         dob: formData.dob,
         phone_number: formData.phone_number,
         start_work: formData.start_work || undefined,
-        end_work: requiresEndWorkDate ? formData.end_work : undefined,
+        end_work: formData.end_work || undefined,
       });
       
       toast({
@@ -272,7 +314,11 @@ const Register = () => {
               {/* Date of Birth */}
               <div className="space-y-2 mb-4">
                 <Label htmlFor="dob" className="mb-2 block">{t('employee.birthdate')}</Label>
-                <Input id="dob" type="date" value={formData.dob} onChange={(e) => setFormData(prev => ({ ...prev, dob: e.target.value }))} />
+                <DatePicker 
+                  date={formData.dob} 
+                  onDateChange={(date) => setFormData(prev => ({ ...prev, dob: date }))}
+                  placeholder={t('employee.selectDate')}
+                />
               </div>
 
               <div className="space-y-2 mb-4">
@@ -324,17 +370,25 @@ const Register = () => {
               {/* Start/End work dates: Start Work Date always shows; End Work Date shows only when position has Request Quote enabled */}
               {(() => {
                 const selectedPos = positions.find(p => p.id === formData.position);
-                const showEndWorkDate = selectedPos ? !!selectedPos.request_quote : false;
+                const showEndWorkDate = selectedPos ? !!selectedPos.request_quota : false;
                 return (
                   <div className={`grid grid-cols-1 ${showEndWorkDate ? 'md:grid-cols-2' : ''} gap-4`}>
                     <div className="space-y-2">
                       <Label htmlFor="start_work" className="mb-2 block">{t('employee.startWorkDate')}</Label>
-                      <Input id="start_work" type="date" value={formData.start_work} onChange={(e) => setFormData(prev => ({ ...prev, start_work: e.target.value }))} />
+                      <DatePicker 
+                        date={formData.start_work} 
+                        onDateChange={(date) => setFormData(prev => ({ ...prev, start_work: date }))}
+                        placeholder={t('employee.selectDate')}
+                      />
                     </div>
                     {showEndWorkDate && (
                       <div className="space-y-2">
                         <Label htmlFor="end_work" className="mb-2 block">{t('employee.endWorkDate', 'End Work Date')}</Label>
-                        <Input id="end_work" type="date" value={formData.end_work} onChange={(e) => setFormData(prev => ({ ...prev, end_work: e.target.value }))} />
+                        <DatePicker 
+                          date={formData.end_work} 
+                          onDateChange={(date) => setFormData(prev => ({ ...prev, end_work: date }))}
+                          placeholder={t('employee.selectDate')}
+                        />
                       </div>
                     )}
                   </div>
@@ -350,8 +404,29 @@ const Register = () => {
                     type="email"
                     placeholder={t('auth.email')}
                     value={formData.email}
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    className="pl-12 pr-4 py-3 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 rounded-xl"
+                    onChange={(e) => {
+                      const email = e.target.value;
+                      setFormData(prev => ({ ...prev, email }));
+                      
+                      // ตรวจสอบรูปแบบอีเมลแบบ real-time
+                      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                        setError(prev => ({ ...prev, email: t('auth.invalidEmailFormat') }));
+                      } else if (email && email.includes('@') && !email.includes('.')) {
+                        // ตรวจสอบกรณีพิเศษ เช่น @g, @gmail
+                        setError(prev => ({ ...prev, email: t('auth.invalidEmailFormat') }));
+                      } else if (email && email.includes('@') && email.includes('.')) {
+                        // ตรวจสอบว่าโดเมนต้องมีอย่างน้อย 2 ตัวอักษรหลังจุด
+                        const domainMatch = email.match(/@[^@]+\.([^.]+)$/);
+                        if (domainMatch && domainMatch[1].length < 2) {
+                          setError(prev => ({ ...prev, email: t('auth.invalidEmailFormat') }));
+                        } else {
+                          setError(prev => ({ ...prev, email: undefined }));
+                        }
+                      } else {
+                        setError(prev => ({ ...prev, email: undefined }));
+                      }
+                    }}
+                    className="pl-10"
                     required
                   />
                   <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
@@ -447,8 +522,8 @@ const Register = () => {
               {/* Submit Button */}
               <Button 
                 type="submit" 
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 disabled:transform-none disabled:opacity-50" 
-                disabled={loading}
+                className="w-full" 
+                disabled={loading || !!error.email}
               >
                 {loading ? (
                   <div className="flex items-center justify-center">
@@ -487,33 +562,13 @@ const Register = () => {
           </CardContent>
         </Card>
       </div>
-
-      {/* Add custom CSS for animations */}
-      <style>{`
-        @keyframes blob {
-          0% {
-            transform: translate(0px, 0px) scale(1);
-          }
-          33% {
-            transform: translate(30px, -50px) scale(1.1);
-          }
-          66% {
-            transform: translate(-20px, 20px) scale(0.9);
-          }
-          100% {
-            transform: translate(0px, 0px) scale(1);
-          }
-        }
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-      `}</style>
+      
+      {/* Dialog ยืนยันการสมัครสมาชิก */}
+      <RegisterConfirmDialog
+        open={showConfirmDialog}
+        onOpenChange={setShowConfirmDialog}
+        onConfirm={handleConfirmRegistration}
+      />
     </div>
   );
 };

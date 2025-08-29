@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatDateLocalized } from '../../lib/utils';
 import { createAuthenticatedFileUrl } from '../../lib/api';
+import ImagePreviewDialog from '@/components/dialogs/ImagePreviewDialog';
 
 interface LeaveRequest {
   id: string;
@@ -23,6 +24,8 @@ interface LeaveRequest {
   status: string;
   createdAt?: string;
   statusBy?: string;
+  approvedBy?: string;
+  rejectedBy?: string;
   approvedTime?: string;
   startTime?: string;
   endTime?: string;
@@ -40,7 +43,6 @@ interface LeaveRequest {
   backdated?: boolean;
   durationType?: string;
   durationHours?: number;
-  rejectedBy?: string;
   attachments?: string[];
 }
 
@@ -57,6 +59,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
   const [leaveTypes, setLeaveTypes] = useState<{ id: string; leave_type: string; leave_type_th: string; leave_type_en: string }[]>([]);
   const [leaveTypesLoading, setLeaveTypesLoading] = useState(false);
   const [leaveTypesError, setLeaveTypesError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<{ url: string; name: string } | null>(null);
 
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -192,6 +195,26 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
     }
   };
 
+  const handleDownload = async (fileUrl: string, fileName: string) => {
+    try {
+      const response = await fetch(fileUrl, { credentials: 'omit' });
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = fileName || 'download';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch (e) {
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.download = fileName;
+      link.click();
+    }
+  };
+
   if (loading) return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -209,6 +232,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
   );
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto animate-scale-in">
         <DialogHeader>
@@ -377,12 +401,12 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                     </div>
                   </div>
                   
-                  {leaveDetail.status === "approved" && (leaveDetail.name || leaveDetail.statusBy) && (
+                  {leaveDetail.status === "approved" && leaveDetail.approvedBy && (
                     <div className="space-y-2">
                       <Label className="text-sm font-medium text-gray-600">{t('leave.approvedBy', 'Approved by')}</Label>
                       <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
                         <CheckCircle className="w-4 h-4 text-green-500" />
-                        <span className="font-medium text-green-900">{leaveDetail.name || leaveDetail.statusBy || '-'}</span>
+                        <span className="font-medium text-green-900">{leaveDetail.approvedBy}</span>
                       </div>
                     </div>
                   )}
@@ -393,7 +417,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                         <Label className="text-sm font-medium text-gray-600">{t('leave.rejectedBy', 'Rejected by')}</Label>
                         <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
                           <XCircle className="w-4 h-4 text-red-500" />
-                          <span className="font-medium text-red-900">{leaveDetail.rejectedBy || leaveDetail.statusBy || '-'}</span>
+                          <span className="font-medium text-red-900">{leaveDetail.rejectedBy || '-'}</span>
                         </div>
                       </div>
                       {leaveDetail.rejectedReason && (
@@ -478,7 +502,8 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                               <img 
                                 src={authenticatedFilePath} 
                                 alt={fileName}
-                                className="w-full h-32 object-cover rounded-lg border"
+                                className="w-full h-32 object-cover rounded-lg border cursor-zoom-in"
+                                onClick={() => setPreview({ url: authenticatedFilePath, name: fileName })}
                                 onError={(e) => {
                                   const target = e.target as HTMLImageElement;
                                   target.style.display = 'none';
@@ -490,19 +515,14 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                                   <Button 
                                     size="sm" 
                                     variant="outline"
-                                    onClick={() => window.open(authenticatedFilePath, '_blank')}
+                                    onClick={() => setPreview({ url: authenticatedFilePath, name: fileName })}
                                   >
                                     {t('common.view', 'View')}
                                   </Button>
                                   <Button 
                                     size="sm" 
                                     variant="outline"
-                                    onClick={() => {
-                                      const link = document.createElement('a');
-                                      link.href = authenticatedFilePath;
-                                      link.download = fileName;
-                                      link.click();
-                                    }}
+                                    onClick={() => handleDownload(authenticatedFilePath, fileName)}
                                   >
                                     {t('common.download', 'Download')}
                                   </Button>
@@ -516,15 +536,10 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                               </div>
                               <div className="flex items-center justify-between">
                                 <span className="text-sm text-gray-600 truncate">{fileName}</span>
-                                    <Button 
+                                <Button 
                                   size="sm" 
                                   variant="outline"
-                                  onClick={() => {
-                                    const link = document.createElement('a');
-                                    link.href = authenticatedFilePath;
-                                    link.download = fileName;
-                                    link.click();
-                                  }}
+                                  onClick={() => handleDownload(authenticatedFilePath, fileName)}
                                 >
                                   {t('common.download', 'Download')}
                                 </Button>
@@ -544,5 +559,17 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
         )}
       </DialogContent>
     </Dialog>
+    {preview && (
+      <ImagePreviewDialog
+        isOpen={!!preview}
+        onClose={() => setPreview(null)}
+        imageUrl={preview.url}
+        imageName={preview.name}
+        title={t('leave.attachmentPreview', 'ตัวอย่างไฟล์แนบ')}
+      />
+    )}
+  </>
   );
 };
+
+export default LeaveDetailDialog;

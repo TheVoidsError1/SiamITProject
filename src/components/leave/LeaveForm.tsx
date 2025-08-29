@@ -1,14 +1,12 @@
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { DatePicker } from "@/components/ui/date-picker";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
-import { enUS, th } from "date-fns/locale";
-import { ArrowLeftCircle, CalendarDays, CalendarIcon, ClipboardList, Clock, FileText, Phone, Send } from "lucide-react";
+import { ArrowLeftCircle, CalendarDays, ClipboardList, Clock, FileText, Phone, Send } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from 'react-router-dom';
@@ -702,34 +700,19 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
                           {t('leave.leaveDateDescription')}
                         </p>
                       </div>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <Button
-                            variant="outline"
-                            className={`w-full h-12 justify-start text-left font-normal rounded-xl border-2 transition-all ${
-                              errors.leaveDate 
-                                ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' 
-                                : 'focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20'
-                            }`}
-                          >
-                            <CalendarIcon className="mr-2 h-4 w-4" />
-                            {leaveDate ? (
-                              format(leaveDate, "PPP", { locale: i18n.language === 'th' ? th : enUS })
-                            ) : (
-                              <span className="text-gray-500">{t('leave.selectLeaveDate')}</span>
-                            )}
-                          </Button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
-                            mode="single"
-                            selected={leaveDate}
-                            onSelect={setLeaveDate}
-                            initialFocus
-                            locale={i18n.language === 'th' ? th : enUS}
-                          />
-                        </PopoverContent>
-                      </Popover>
+                      <DatePicker
+                        date={leaveDate ? format(leaveDate, 'yyyy-MM-dd') : undefined}
+                        onDateChange={(dateStr) => {
+                          const date = new Date(dateStr);
+                          setLeaveDate(date);
+                        }}
+                        placeholder={t('leave.selectLeaveDate')}
+                        className={`h-12 rounded-xl border-2 transition-all ${
+                          errors.leaveDate 
+                            ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' 
+                            : 'focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20'
+                        }`}
+                      />
                       {errors.leaveDate && (
                         <p className="mt-1 text-sm text-red-600">{errors.leaveDate}</p>
                       )}

@@ -1,3 +1,4 @@
+import { FileUpload } from '@/components/leave/FileUpload';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -460,15 +461,15 @@ const LeaveHistory = () => {
 
       const typeKey = found.leave_type?.toLowerCase() || found.id?.toLowerCase();
 
-      if (typeKey === 'vacation' || typeKey === 'ลาพักร้อน') return "text-blue-600";
+      if (typeKey === 'vacation' || typeKey === '') return "text-blue-600";
 
-      if (typeKey === 'sick' || typeKey === 'ลาป่วย') return "text-red-600";
+      if (typeKey === 'sick' || typeKey === '') return "text-red-600";
 
-      if (typeKey === 'personal' || typeKey === 'ลากิจ') return "text-green-600";
+      if (typeKey === 'personal' || typeKey === '') return "text-green-600";
 
-      if (typeKey === 'emergency' || typeKey === 'ลาฉุกเฉิน') return "text-orange-500";
+      if (typeKey === 'emergency' || typeKey === '') return "text-orange-500";
 
-      if (typeKey === 'maternity' || typeKey === 'ลาคลอด') return "text-purple-600";
+      if (typeKey === 'maternity' || typeKey === '') return "text-purple-600";
 
     }
 
@@ -488,15 +489,15 @@ const LeaveHistory = () => {
 
     
 
-    if (type === tVacation || typeLower === 'vacation' || type === 'ลาพักร้อน') return "text-blue-600";
+    if (type === tVacation || typeLower === 'vacation' || type === '') return "text-blue-600";
 
-    if (type === tSick || typeLower === 'sick' || type === 'ลาป่วย') return "text-red-600";
+    if (type === tSick || typeLower === 'sick' || type === '') return "text-red-600";
 
-    if (type === tPersonal || typeLower === 'personal' || type === 'ลากิจ') return "text-green-600";
+    if (type === tPersonal || typeLower === 'personal' || type === '') return "text-green-600";
 
-    if (type === tEmergency || typeLower === 'emergency' || type === 'ลาฉุกเฉิน') return "text-orange-500";
+    if (type === tEmergency || typeLower === 'emergency' || type === '') return "text-orange-500";
 
-    if (type === tMaternity || typeLower === 'maternity' || type === 'ลาคลอด') return "text-purple-600";
+    if (type === tMaternity || typeLower === 'maternity' || type === '') return "text-purple-600";
 
     
 
@@ -716,6 +717,46 @@ const LeaveHistory = () => {
 
     }
 
+  };
+
+  // ฟังก์ชันตรวจสอบว่าสามารถลบใบลาได้หรือไม่
+  const canDeleteLeave = (leave: any) => {
+    // ตรวจสอบสถานะต้องเป็น pending
+    if (leave.status !== 'pending') {
+      return false;
+    }
+    
+    // ตรวจสอบว่าวันลาอยู่ห่างจากวันปัจจุบันมากกว่า 1 วัน
+    const leaveStartDate = new Date(leave.startDate);
+    const currentDate = new Date();
+    const oneDayInMs = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
+    
+    // Reset time to start of day for accurate comparison
+    const leaveStartDateOnly = new Date(leaveStartDate.getFullYear(), leaveStartDate.getMonth(), leaveStartDate.getDate());
+    const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
+    
+    const daysDifference = Math.abs(leaveStartDateOnly.getTime() - currentDateOnly.getTime()) / oneDayInMs;
+    
+    return daysDifference > 1;
+  };
+
+  // เพิ่มฟังก์ชันสำหรับกำหนดประเภทไฟล์
+  const getFileType = (fileName: string) => {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(extension || '')) {
+      return 'image/' + extension;
+    } else if (extension === 'pdf') {
+      return 'application/pdf';
+    } else if (['doc', 'docx'].includes(extension || '')) {
+      return 'application/msword';
+    } else if (['xls', 'xlsx'].includes(extension || '')) {
+      return 'application/vnd.ms-excel';
+    } else if (['ppt', 'pptx'].includes(extension || '')) {
+      return 'application/vnd.ms-powerpoint';
+    } else if (extension === 'txt') {
+      return 'text/plain';
+    }
+    return 'application/octet-stream';
   };
 
 
@@ -1719,7 +1760,7 @@ const LeaveHistory = () => {
 
                             <span className="font-medium">{t('leave.approvedBy')}:</span>
 
-                            <span>{leave.approvedBy && !/^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/.test(leave.approvedBy) ? leave.approvedBy : '-'}</span>
+                            <span>{leave.approvedBy}</span>
 
                           </div>
 
@@ -1801,29 +1842,30 @@ const LeaveHistory = () => {
 
                           </Button>
 
-                          <AlertDialog open={showDeleteDialog && deleteLeaveId === leave.id} onOpenChange={setShowDeleteDialog}>
+                          {canDeleteLeave(leave) && (
+                            <AlertDialog open={showDeleteDialog && deleteLeaveId === leave.id} onOpenChange={setShowDeleteDialog}>
 
-                            <AlertDialogTrigger asChild>
+                              <AlertDialogTrigger asChild>
 
-                              <Button 
+                                <Button 
 
-                                size="sm" 
+                                  size="sm" 
 
-                                variant="destructive" 
+                                  variant="destructive" 
 
-                                onClick={() => handleDeleteLeave(leave.id)}
+                                  onClick={() => handleDeleteLeave(leave.id)}
 
-                                className="transition-all duration-300 transform hover:scale-105 hover:shadow-md btn-press hover-glow text-sm px-4 py-2"
+                                  className="transition-all duration-300 transform hover:scale-105 hover:shadow-md btn-press hover-glow text-sm px-4 py-2"
 
-                              >
+                                >
 
-                                <Trash2 className="w-4 h-4 mr-1" />
+                                  <Trash2 className="w-4 h-4 mr-1" />
 
-                                {t('common.delete')}
+                                  {t('common.delete')}
 
-                              </Button>
+                                </Button>
 
-                            </AlertDialogTrigger>
+                              </AlertDialogTrigger>
 
                             <AlertDialogContent>
 
@@ -1862,6 +1904,30 @@ const LeaveHistory = () => {
                             </AlertDialogContent>
 
                           </AlertDialog>
+
+                          )}
+
+                          {/* Show disabled delete button with tooltip when deletion is not allowed */}
+                          {!canDeleteLeave(leave) && (
+                            <div className="relative group">
+                              <Button 
+                                size="sm" 
+                                variant="outline" 
+                                disabled
+                                className="transition-all duration-300 transform hover:scale-105 hover:shadow-md btn-press hover-glow text-sm px-4 py-2 opacity-50 cursor-not-allowed"
+                              >
+                                <Trash2 className="w-4 h-4 mr-1" />
+                                {t('common.delete')}
+                              </Button>
+                              <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
+                                {leave.status !== 'pending' 
+                                  ? t('history.cannotDeleteNonPending', 'Only pending requests can be deleted')
+                                  : t('history.cannotDeleteNearDate', 'Cannot delete requests within 1 day of leave date')
+                                }
+                                <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
+                              </div>
+                            </div>
+                          )}
 
                         </div>
 
@@ -2395,7 +2461,7 @@ const LeaveHistory = () => {
 
                     
 
-                    {selectedLeave.status === "approved" && selectedLeave.name && (
+                    {selectedLeave.status === "approved" && selectedLeave.approvedBy && (
 
                       <div className="space-y-2">
 
@@ -2404,7 +2470,7 @@ const LeaveHistory = () => {
                         <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
 
                           <CheckCircle className="w-4 h-4 text-green-500" />
-                          <span className="font-medium text-green-900 break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">{selectedLeave.name}</span>
+                          <span className="font-medium text-green-900 break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">{selectedLeave.approvedBy}</span>
                         </div>
 
                       </div>
@@ -2547,221 +2613,45 @@ const LeaveHistory = () => {
 
                   <CardContent>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <FileUpload
 
-                      {selectedLeave.attachments.map((attachment: string, index: number) => {
+                      attachments={selectedLeave.attachments.map((attachment: string) => {
 
                         const fileName = attachment.split('/').pop() || attachment;
-
-                        const fileExtension = fileName.split('.').pop()?.toLowerCase();
-
-                        const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'].includes(fileExtension || '');
-
-                        const isPDF = fileExtension === 'pdf';
-
-                        const isDocument = ['doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt'].includes(fileExtension || '');
-
-                        
-
-                        // Construct the correct file path - always prepend /leave-uploads/ if not already present
 
                         const filePath = attachment.startsWith('/leave-uploads/') ? attachment : `/leave-uploads/${attachment}`;
 
                         const authenticatedFilePath = createAuthenticatedFileUrl(filePath);
 
+                        // สร้าง File object จาก URL สำหรับ FileUpload component
                         
+                        const file = new File([], fileName, {
 
-                        return (
+                          type: getFileType(fileName)
 
-                          <div key={index} className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-all duration-300 hover:shadow-md">
+                        });
 
-                            {isImage ? (
+                        // เพิ่ม custom properties สำหรับ URL
 
-                              <div className="space-y-3">
+                        Object.defineProperty(file, 'url', {
 
-                                <div className="relative group cursor-pointer" onClick={() => {
+                          value: authenticatedFilePath,
 
-                                  setSelectedImage(authenticatedFilePath);
+                          writable: false
 
-                                  setShowImagePreview(true);
+                        });
 
-                                }}>
-
-                                  <img 
-
-                                    src={authenticatedFilePath} 
-
-                                    alt={fileName}
-
-                                    className="w-full h-32 object-cover rounded-lg border transition-all duration-300 group-hover:scale-105"
-
-                                    onError={(e) => {
-
-                                      const target = e.target as HTMLImageElement;
-
-                                      target.style.display = 'none';
-
-                                    }}
-
-                                  />
-
-                                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 rounded-lg flex items-center justify-center">
-
-                                    <div className="opacity-0 group-hover:opacity-100 transition-all duration-300">
-
-                                      <FileText className="w-8 h-8 text-white" />
-
-                                    </div>
-
-                                  </div>
-
-                                </div>
-
-                                <div className="flex items-center justify-between">
-
-                                  <span className="text-sm text-gray-600 truncate flex-1 mr-2">{fileName}</span>
-
-                                  <div className="flex gap-1">
-
-                                    <Button 
-
-                                      size="sm" 
-
-                                      variant="outline"
-
-                                      onClick={() => {
-
-                                        setSelectedImage(authenticatedFilePath);
-
-                                        setShowImagePreview(true);
-
-                                      }}
-
-                                      className="text-xs px-2 py-1"
-
-                                    >
-
-                                      {t('common.view')}
-
-                                    </Button>
-
-                                    <Button 
-
-                                      size="sm" 
-
-                                      variant="outline"
-
-                                      onClick={() => {
-
-                                        const link = document.createElement('a');
-
-                                        link.href = authenticatedFilePath;
-
-                                        link.download = fileName;
-
-                                        link.click();
-
-                                      }}
-
-                                      className="text-xs px-2 py-1"
-
-                                    >
-
-                                      {t('common.download')}
-
-                                    </Button>
-
-                                  </div>
-
-                                </div>
-
-                              </div>
-
-                            ) : (
-
-                              <div className="space-y-3">
-
-                                <div className="w-full h-32 bg-gray-200 rounded-lg flex items-center justify-center">
-
-                                  {isPDF ? (
-
-                                    <FileText className="w-8 h-8 text-red-500" />
-
-                                  ) : isDocument ? (
-
-                                    <FileText className="w-8 h-8 text-blue-500" />
-
-                                  ) : (
-
-                                    <FileText className="w-8 h-8 text-gray-400" />
-
-                                  )}
-
-                                </div>
-
-                                <div className="flex items-center justify-between">
-
-                                  <span className="text-sm text-gray-600 truncate flex-1 mr-2">{fileName}</span>
-
-                                  <div className="flex gap-1">
-
-                                    <Button 
-
-                                      size="sm" 
-
-                                      variant="outline"
-
-                                      onClick={() => window.open(authenticatedFilePath, '_blank')}
-
-                                      className="text-xs px-2 py-1"
-
-                                    >
-
-                                      {t('common.view')}
-
-                                    </Button>
-
-                                    <Button 
-
-                                      size="sm" 
-
-                                      variant="outline"
-
-                                      onClick={() => {
-
-                                        const link = document.createElement('a');
-
-                                        link.href = authenticatedFilePath;
-
-                                        link.download = fileName;
-
-                                        link.click();
-
-                                      }}
-
-                                      className="text-xs px-2 py-1"
-
-                                    >
-
-                                      {t('common.download')}
-
-                                    </Button>
-
-                                  </div>
-
-                                </div>
-
-                              </div>
-
-                            )}
-
-                          </div>
-
-                        );
+                        return file;
 
                       })}
 
-                    </div>
+                      onFileUpload={() => {}} // ไม่ต้องทำอะไรในโหมด view
+
+                      onRemoveAttachment={() => {}} // ไม่ต้องทำอะไรในโหมด view
+
+                      readOnly={true} // เพิ่ม prop สำหรับโหมด read-only
+
+                    />
 
                   </CardContent>
 

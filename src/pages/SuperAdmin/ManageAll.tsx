@@ -1,12 +1,12 @@
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,7 +31,7 @@ const ManageAll: React.FC = () => {
   const lang = i18n.language.startsWith('th') ? 'th' : 'en';
   // Position state
   const [positions, setPositions] = useState<any[]>([]);
-  const [positionForm, setPositionForm] = useState<{ name_en: string; name_th: string; quotas: Record<string, number>; request_quote: boolean }>({ name_en: '', name_th: '', quotas: {}, request_quote: false });
+      const [positionForm, setPositionForm] = useState<{ name_en: string; name_th: string; quotas: Record<string, number>; request_quota: boolean }>({ name_en: '', name_th: '', quotas: {}, request_quota: false });
   const [editingPositionId, setEditingPositionId] = useState<string | null>(null);
   const [positionError, setPositionError] = useState<string | null>(null);
 
@@ -65,7 +65,7 @@ const ManageAll: React.FC = () => {
         position_name_th: pos.position_name_th,
         quotas: quotasForBackend,
         new_year_quota: nextValue,
-        request_quote: pos.request_quote,
+                        request_quota: pos.request_quota,
       });
       if (!data || !data.success) throw new Error('Failed to update');
       // Refresh positions
@@ -90,6 +90,9 @@ const ManageAll: React.FC = () => {
   const [deletePositionDialog, setDeletePositionDialog] = useState<{ open: boolean; position: any | null }>({ open: false, position: null });
   const [deleteDepartmentDialog, setDeleteDepartmentDialog] = useState<{ open: boolean; department: any | null }>({ open: false, department: null });
   const [deleteLeaveTypeDialog, setDeleteLeaveTypeDialog] = useState<{ open: boolean; leaveType: any | null }>({ open: false, leaveType: null });
+  // Manual reset quota state
+  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+  const [manualResetLoading, setManualResetLoading] = useState(false);
   const handleDepartmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setDepartmentForm({ ...departmentForm, [e.target.name]: e.target.value });
   };
@@ -285,7 +288,7 @@ const ManageAll: React.FC = () => {
 
   // Toggle Request Quote switch for a position
   const handleToggleRequestQuote = async (pos: any) => {
-    const newValue = !pos.request_quote;
+            const newValue = !pos.request_quota;
     try {
       // Build quotas payload from current row
       const quotasForBackend: Record<string, number> = {};
@@ -294,7 +297,7 @@ const ManageAll: React.FC = () => {
         position_name_en: pos.position_name_en,
         position_name_th: pos.position_name_th,
         quotas: quotasForBackend,
-        request_quote: newValue
+                    request_quota: newValue
       });
       if (!data || !data.success) throw new Error('Failed to update');
       // Refresh positions
@@ -423,7 +426,7 @@ const ManageAll: React.FC = () => {
   };
   // Helper to filter out emergency leave types for position form/table only
   const filteredLeaveTypes = leaveTypes.filter(
-    lt => lt.leave_type_en?.toLowerCase() !== 'emergency' && lt.leave_type_th !== 'ฉุกเฉิน'
+    lt => lt.leave_type_en?.toLowerCase() !== 'emergency' && lt.leave_type_th !== ''
   );
 
   // Debug: Log leave type keys for quota mapping
@@ -447,7 +450,7 @@ const ManageAll: React.FC = () => {
           position_name_en: positionForm.name_en,
           position_name_th: positionForm.name_th,
           quotas: quotasForBackend,
-          request_quote: positionForm.request_quote
+                      request_quota: positionForm.request_quota
         });
         if (!data || !data.success) {
           setPositionError(data?.message || 'Unknown error');
@@ -458,7 +461,7 @@ const ManageAll: React.FC = () => {
         if (positionsData.success && Array.isArray(positionsData.data)) {
           setPositions(positionsData.data);
         }
-        setPositionForm({ name_en: '', name_th: '', quotas: {}, request_quote: false });
+        setPositionForm({ name_en: '', name_th: '', quotas: {}, request_quota: false });
         showToastMessage.crud.createSuccess('position', t);
       }
     } catch (err: any) {
@@ -473,7 +476,7 @@ const ManageAll: React.FC = () => {
         name_en: pos.position_name_en,
         name_th: pos.position_name_th,
         quotas: pos.quotas,
-        request_quote: !!pos.request_quote
+                        request_quota: !!pos.request_quota
       });
       setEditingPositionId(id);
     }
@@ -533,6 +536,55 @@ const ManageAll: React.FC = () => {
   const getLeaveTypeDisplayName = (leaveType: any, lang: string) => {
     if (!leaveType) return '';
     return lang === 'th' ? leaveType.leave_type_th : leaveType.leave_type_en;
+  };
+
+  // Fetch all employees for selection (simple list of ids+names)
+  const [employeeOptions, setEmployeeOptions] = useState<{ id: string; name: string; avatar?: string | null }[]>([]);
+  const fetchEmployeesForReset = async () => {
+    try {
+      const data = await apiService.get('/api/employees');
+      if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
+        const baseUrl = import.meta.env.VITE_API_BASE_URL as string;
+        const opts = data.data.map((e: any) => ({
+          id: e.id,
+          name: e.name || e.email || e.id,
+          avatar: e.avatar ? `${baseUrl}${e.avatar}` : null
+        }));
+        setEmployeeOptions(opts);
+      }
+    } catch (e) { setEmployeeOptions([]); }
+  };
+  useEffect(() => { fetchEmployeesForReset(); }, []);
+
+  const toggleSelectUser = (id: string) => {
+    setSelectedUserIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const handleManualReset = async () => {
+    if (selectedUserIds.length === 0) {
+      showToast.warning(t('leave.selectUsersFirst'));
+      return;
+    }
+    setManualResetLoading(true);
+    try {
+      const res = await apiService.post('/api/leave-quota-reset/reset-by-users', { userIds: selectedUserIds, strategy: 'zero' });
+      if (!res || !(res.success || res.status === 'success')) throw new Error(res?.message || 'Failed');
+      showToast.success(t('leave.manualResetSuccess'));
+    } catch (err: any) {
+      showToast.error(err?.message || t('leave.manualResetFailed'));
+    } finally {
+      setManualResetLoading(false);
+    }
+  };
+
+  // Confirm dialog for manual reset
+  const [confirmResetOpen, setConfirmResetOpen] = useState(false);
+  const openConfirmReset = () => {
+    if (selectedUserIds.length === 0) {
+      showToast.warning(t('leave.selectUsersFirst'));
+      return;
+    }
+    setConfirmResetOpen(true);
   };
 
   return (
@@ -613,8 +665,8 @@ const ManageAll: React.FC = () => {
                       <label className="flex items-center gap-3 ml-1">
                         <input
                           type="checkbox"
-                          name="request_quote"
-                          checked={positionForm.request_quote}
+                                              name="request_quota"
+                    checked={positionForm.request_quota}
                           onChange={handlePositionChange}
                           className="accent-blue-600 h-5 w-5 rounded border-gray-300 focus:ring-2 focus:ring-blue-400 transition-all"
                         />
@@ -633,8 +685,8 @@ const ManageAll: React.FC = () => {
                     <table className="w-full table-auto bg-white rounded-xl">
                       <thead>
                         <tr className="bg-blue-100 text-blue-900">
-                          <th className="p-3">{t('positions.position', 'ตำแหน่ง')} (EN)</th>
-                          <th className="p-3">{t('positions.position', 'ตำแหน่ง')} (TH)</th>
+                          <th className="p-3">{t('positions.position')} (EN)</th>
+                          <th className="p-3">{t('positions.position')} (TH)</th>
                           <th className="p-3">{t('positions.requestQuote', 'Request Quote')}</th>
                           {filteredLeaveTypes.map(lt => (
                             <th key={lt.id} className="p-3">{lang === 'th' ? lt.leave_type_th : lt.leave_type_en}</th>
@@ -655,9 +707,9 @@ const ManageAll: React.FC = () => {
                                 </td>
                                 <td className="p-3 font-medium text-center">
                                   <label style={{ display: 'inline-block', position: 'relative', width: 40, height: 24 }}>
-                                    <input type="checkbox" checked={!!pos.request_quote} style={{ opacity: 0, width: 0, height: 0 }} tabIndex={-1} readOnly />
-                                    <span style={{ position: 'absolute', cursor: 'not-allowed', top: 0, left: 0, right: 0, bottom: 0, background: !!pos.request_quote ? '#64b5f6' : '#ccc', borderRadius: 24, transition: 'background 0.2s', display: 'block' }}>
-                                      <span style={{ position: 'absolute', left: !!pos.request_quote ? 20 : 2, top: 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} />
+                                    <input type="checkbox" checked={!!pos.request_quota} style={{ opacity: 0, width: 0, height: 0 }} tabIndex={-1} readOnly />
+                                    <span style={{ position: 'absolute', cursor: 'not-allowed', top: 0, left: 0, right: 0, bottom: 0, background: !!pos.request_quota ? '#64b5f6' : '#ccc', borderRadius: 24, transition: 'background 0.2s', display: 'block' }}>
+                                      <span style={{ position: 'absolute', left: !!pos.request_quota ? 20 : 2, top: 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} />
                                     </span>
                                   </label>
                                 </td>
@@ -673,8 +725,8 @@ const ManageAll: React.FC = () => {
                                   </td>
                                 ))}
                                 <td className="p-3 flex gap-2 justify-center">
-                                  <Button variant="outline" onClick={saveInlineEdit}>Save</Button>
-                                  <Button variant="destructive" onClick={cancelInlineEdit}>Cancel</Button>
+                                  <Button variant="outline" onClick={saveInlineEdit}>{t('common.save')}</Button>
+                                  <Button variant="destructive" onClick={cancelInlineEdit}>{t('common.cancel')}</Button>
                                 </td>
                               </>
                             ) : (
@@ -685,13 +737,13 @@ const ManageAll: React.FC = () => {
                                   <label style={{ display: 'inline-block', position: 'relative', width: 40, height: 24 }}>
                                     <input
                                       type="checkbox"
-                                      checked={!!pos.request_quote}
+                                      checked={!!pos.request_quota}
                                       onChange={() => handleToggleRequestQuote(pos)}
                                       style={{ opacity: 0, width: 0, height: 0 }}
                                       tabIndex={-1}
                                     />
-                                    <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, background: !!pos.request_quote ? '#64b5f6' : '#ccc', borderRadius: 24, transition: 'background 0.2s', display: 'block' }}>
-                                      <span style={{ position: 'absolute', left: !!pos.request_quote ? 20 : 2, top: 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} />
+                                    <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, background: !!pos.request_quota ? '#64b5f6' : '#ccc', borderRadius: 24, transition: 'background 0.2s', display: 'block' }}>
+                                      <span style={{ position: 'absolute', left: !!pos.request_quota ? 20 : 2, top: 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} />
                                     </span>
                                   </label>
                                 </td>
@@ -720,6 +772,26 @@ const ManageAll: React.FC = () => {
                   <h2 className="text-lg font-bold text-white">{t('leave.quota', 'Quota')}</h2>
                 </div>
                 <div className="p-6 space-y-6">
+                  {/* Manual reset section */}
+                  <div className="bg-white rounded-xl p-4 shadow-sm">
+                    <h3 className="text-blue-900 font-semibold mb-3">{t('leave.manualReset', )}</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-64 overflow-auto border rounded p-2">
+                      {employeeOptions.map(e => (
+                        <label key={e.id} className="flex items-center gap-3 text-sm p-2 rounded hover:bg-blue-50 cursor-pointer">
+                          <input type="checkbox" className="mt-0.5" checked={selectedUserIds.includes(e.id)} onChange={() => toggleSelectUser(e.id)} />
+                          <span className="flex items-center gap-2">
+                            <img src={e.avatar || '/lovable-uploads/siamit.png'} alt={e.name} className="w-6 h-6 rounded-full object-cover border" />
+                            <span className="font-medium text-blue-900">{e.name}</span>
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                    <div className="mt-3 flex gap-2">
+                      <Button onClick={openConfirmReset} disabled={manualResetLoading} className="btn-primary">
+                        {manualResetLoading ? t('common.loading') : t('leave.resetNow')}
+                      </Button>
+                    </div>
+                  </div>
                   <div className="bg-white rounded-xl p-4 shadow-sm">
                     <h3 className="text-blue-900 font-semibold mb-3">{t('leave.note', 'Note')}</h3>
                     <p className="text-sm text-gray-700">{t('leave.noteDetail', 'Positions with new_year_quota = 0 will be included when no position is selected.')}</p>
@@ -730,8 +802,8 @@ const ManageAll: React.FC = () => {
                       <table className="w-full table-auto bg-white rounded-xl">
                         <thead>
                           <tr className="bg-blue-100 text-blue-900">
-                            <th className="p-3">{t('positions.position', 'Position')} (EN)</th>
-                            <th className="p-3">{t('positions.position', 'Position')} (TH)</th>
+                            <th className="p-3">{t('positions.position')} (EN)</th>
+                            <th className="p-3">{t('positions.position')} (TH)</th>
                             <th className="p-3 text-center">{t('positions.newYearQuota', 'New Year Reset (0=Reset,1=No)')}</th>
                           </tr>
                         </thead>
@@ -795,8 +867,8 @@ const ManageAll: React.FC = () => {
                                   <Input value={inlineDepartmentEdit.name_th} onChange={e => handleInlineDepartmentEditChange('name_th', e.target.value)} className="w-32" />
                                 </td>
                                 <td className="p-3 flex gap-2 justify-center">
-                                  <Button variant="outline" onClick={saveInlineDepartmentEdit}>Save</Button>
-                                  <Button variant="destructive" onClick={cancelInlineDepartmentEdit}>Cancel</Button>
+                                  <Button variant="outline" onClick={saveInlineDepartmentEdit}>{t('common.save')}</Button>
+                                  <Button variant="destructive" onClick={cancelInlineDepartmentEdit}>{t('common.cancel')}</Button>
                                 </td>
                               </>
                             ) : (
@@ -910,8 +982,8 @@ const ManageAll: React.FC = () => {
                                   </label>
                                 </td>
                                 <td className="p-3 flex gap-2 justify-center">
-                                  <Button variant="outline" onClick={saveInlineLeaveTypeEdit}>Save</Button>
-                                  <Button variant="destructive" onClick={cancelInlineLeaveTypeEdit}>Cancel</Button>
+                                  <Button variant="outline" onClick={saveInlineLeaveTypeEdit}>{t('common.save')}</Button>
+                                  <Button variant="destructive" onClick={cancelInlineLeaveTypeEdit}>{t('common.cancel')}</Button>
                                 </td>
                               </>
                             ) : (
@@ -999,6 +1071,24 @@ const ManageAll: React.FC = () => {
             <AlertDialogCancel>{t('common.cancel', 'ยกเลิก')}</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDeletePosition} className="bg-red-600 hover:bg-red-700">
               {t('common.delete', 'ลบ')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm manual reset dialog */}
+      <AlertDialog open={confirmResetOpen} onOpenChange={setConfirmResetOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('leave.confirmManualResetTitle', 'ยืนยันการรีโควต้า')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('leave.confirmManualResetDesc', 'คุณต้องการรีโควต้าของผู้ใช้ที่เลือกใช่หรือไม่? การกระทำนี้จะตั้งค่าการใช้สิทธิ์ลา (days/hour) เป็น 0 โดยไม่ลบใบลาที่ผ่านมา')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel', 'ยกเลิก')}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setConfirmResetOpen(false); handleManualReset(); }} className="bg-blue-600 hover:bg-blue-700">
+              {t('leave.resetNow', 'รีโควต้าทันที')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

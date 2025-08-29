@@ -1,10 +1,14 @@
 const express = require('express');
 const fs = require('fs');
+const path = require('path');
 const config = require('../config');
 const { announcementImageUpload, handleUploadError } = require('../middleware/fileUploadMiddleware');
 
 module.exports = (AppDataSource) => {
   const router = express.Router();
+  
+  // Define uploads directory
+  const uploadsDir = path.join(__dirname, '../uploads');
 
   // File upload middleware is now imported from fileUploadMiddleware.js
 
@@ -104,38 +108,49 @@ module.exports = (AppDataSource) => {
         }
       });
 
-      // Get avatar data for each announcement
+      // Get avatar data and user names for each announcement
       const announcementsWithAvatar = await Promise.all(
         announcements.map(async (announcement) => {
           let avatar = null;
+          let userName = 'Unknown User';
           
           if (announcement.createdBy) {
-            // First, find the user by name in User, Admin, and SuperAdmin tables
+            // First, find the user by ID in User, Admin, and SuperAdmin tables
             const userRepo = AppDataSource.getRepository('User');
             const adminRepo = AppDataSource.getRepository('Admin');
             const superadminRepo = AppDataSource.getRepository('SuperAdmin');
             
             // Try to find user in User table
             let user = await userRepo.findOne({
-              where: { User_name: announcement.createdBy }
+              where: { id: announcement.createdBy }
             });
             
             // If not found in User table, try Admin table
             if (!user) {
               user = await adminRepo.findOne({
-                where: { admin_name: announcement.createdBy }
+                where: { id: announcement.createdBy }
               });
             }
             
             // If not found in Admin table, try SuperAdmin table
             if (!user) {
               user = await superadminRepo.findOne({
-                where: { superadmin_name: announcement.createdBy }
+                where: { id: announcement.createdBy }
               });
             }
             
-            // If user found, get their avatar from ProcessCheck table
+            // If user found, get their name and avatar
             if (user) {
+              // Get user name based on which table they were found in
+              if (user.User_name) {
+                userName = user.User_name;
+              } else if (user.admin_name) {
+                userName = user.admin_name;
+              } else if (user.superadmin_name) {
+                userName = user.superadmin_name;
+              }
+              
+              // Get avatar from ProcessCheck table
               const processCheck = await processCheckRepo.findOne({
                 where: { Repid: user.id }
               });
@@ -147,10 +162,12 @@ module.exports = (AppDataSource) => {
           }
 
           return {
+            id: announcement.id,
             subject: announcement.subject,
             detail: announcement.detail,
             createdAt: announcement.createdAt,
-            createdBy: announcement.createdBy,
+            createdBy: announcement.createdBy, // This is now the user ID
+            createdByName: userName, // This is the display name
             Image: announcement.Image,
             avatar: avatar
           };
@@ -270,7 +287,7 @@ module.exports = (AppDataSource) => {
         subject,
         detail,
         Image: req.file ? req.file.filename : null,
-        createdBy: createdBy || 'system'
+        createdBy: createdBy || null // This should now be a user ID
       });
       
       const savedAnnouncement = await announcementRepo.save(newAnnouncement);
@@ -282,7 +299,7 @@ module.exports = (AppDataSource) => {
           subject: savedAnnouncement.subject,
           detail: savedAnnouncement.detail,
           createdAt: savedAnnouncement.createdAt,
-          createdBy: savedAnnouncement.createdBy,
+          createdBy: savedAnnouncement.createdBy, // User ID
           Image: savedAnnouncement.Image
         });
       }
@@ -390,7 +407,7 @@ module.exports = (AppDataSource) => {
           subject: updatedAnnouncement.subject,
           detail: updatedAnnouncement.detail,
           createdAt: updatedAnnouncement.createdAt,
-          createdBy: updatedAnnouncement.createdBy,
+          createdBy: updatedAnnouncement.createdBy, // User ID
           Image: updatedAnnouncement.Image
         });
       }
@@ -470,9 +487,9 @@ module.exports = (AppDataSource) => {
         global.io.emit('announcementDeleted', {
           id: announcement.id,
           subject: announcement.subject,
-          detail: announcement.detail,
+          detail: announcement.subject,
           createdAt: announcement.createdAt,
-          createdBy: announcement.createdBy,
+          createdBy: announcement.createdBy, // User ID
           Image: announcement.Image
         });
       }

@@ -20,7 +20,7 @@ import { useSocket } from '@/contexts/SocketContext';
 
 const Profile = () => {
   const { t, i18n } = useTranslation();
-  const { user, updateUser, showSessionExpiredDialog } = useAuth();
+  const { user, updateUser, showSessionExpiredDialog, avatarPreviewUrl, setAvatarPreviewUrl } = useAuth();
   const { toast } = useToast();
   const { enabled: pushNotificationEnabled, setEnabled: setPushNotificationEnabled } = usePushNotification();
   const [loading, setLoading] = useState(true);
@@ -30,6 +30,8 @@ const Profile = () => {
   const [cropDialogOpen, setCropDialogOpen] = useState(false);
   const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null);
   const { socket, isConnected } = useSocket();
+  const [avatarKey, setAvatarKey] = useState<number>(0);
+  const [forceRefresh, setForceRefresh] = useState<number>(0);
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
@@ -43,7 +45,7 @@ const Profile = () => {
   });
   const [saving, setSaving] = useState(false);
   const [departments, setDepartments] = useState<any[]>([]);
-  const [positions, setPositions] = useState<{ id: string; position_name_en: string; position_name_th: string; request_quote?: boolean }[]>([]);
+      const [positions, setPositions] = useState<{ id: string; position_name_en: string; position_name_th: string; request_quota?: boolean }[]>([]);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [positionsLoaded, setPositionsLoaded] = useState(false);
   const [departmentsLoaded, setDepartmentsLoaded] = useState(false);
@@ -51,7 +53,11 @@ const Profile = () => {
   const [leaveQuota, setLeaveQuota] = useState<any[]>([]);
   const [leaveLoading, setLeaveLoading] = useState(false);
   const [allLeaveTypes, setAllLeaveTypes] = useState<any[]>([]);
-  const withCacheBust = (url: string) => `${url}${url.includes('?') ? '&' : '?'}v=${Date.now()}`;
+  const withCacheBust = (url: string) => `${url}${url.includes('?') ? '&' : '?'}v=${Date.now()}&t=${Math.random()}`;
+  const [isEditing, setIsEditing] = useState(false);
+  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
+  const [pendingCroppedFile, setPendingCroppedFile] = useState<File | null>(null);
+  
 
   const getKeyByLabel = (label: string, options: string[], tPrefix: string) => {
     for (const key of options) {
@@ -169,7 +175,7 @@ const Profile = () => {
           id: p.id,
           position_name_en: p.position_name_en,
           position_name_th: p.position_name_th,
-          request_quote: !!p.request_quote
+                          request_quota: !!p.request_quota
         }));
         setPositions(pos);
         setPositionsLoaded(true);
@@ -247,6 +253,35 @@ const Profile = () => {
     };
   }, [setPushNotificationEnabled]);
 
+  // Simple random color system for leave types
+  const getLeaveTypeColor = (leaveTypeId: string) => {
+    const colorClasses = [
+      'bg-blue-500',
+      'bg-green-500', 
+      'bg-orange-500',
+      'bg-purple-500',
+      'bg-red-500',
+      'bg-pink-500',
+      'bg-indigo-500',
+      'bg-teal-500',
+      'bg-yellow-500',
+      'bg-cyan-500',
+      'bg-emerald-500',
+      'bg-rose-500',
+      'bg-violet-500',
+      'bg-sky-500',
+      'bg-lime-500',
+    ];
+    
+    // Use the leave type ID to generate a consistent random color
+    const hash = leaveTypeId.split('').reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0);
+      return a & a;
+    }, 0);
+    
+    return colorClasses[Math.abs(hash) % colorClasses.length];
+  };
+
   // New leaveStats for new API response
   const leaveStats = leaveQuota
     .filter(item => {
@@ -260,23 +295,34 @@ const Profile = () => {
         label: i18n.language.startsWith('th') ? (item.leave_type_th || item.leave_type_en) : (item.leave_type_en || item.leave_type_th),
         used: { days: item.used_day ?? '-', hours: item.used_hour ?? '-' },
         quota: item.quota,
-        color:
-          item.leave_type_en?.toLowerCase() === 'personal' ? 'bg-orange-500' :
-          item.leave_type_en?.toLowerCase() === 'vacation' ? 'bg-blue-500' :
-          item.leave_type_en?.toLowerCase() === 'sick' ? 'bg-green-500' :
-          item.leave_type_en?.toLowerCase() === 'maternity' ? 'bg-purple-500' :
-          'bg-gray-400',
+        color: getLeaveTypeColor(item.id), // Use dynamic color based on leave type ID
         type: item.leave_type_en,
         remaining: { days: item.remaining_day ?? '-', hours: item.remaining_hour ?? '-' },
         quotaRaw: item.quota,
-        usedRaw: item.used_day + (item.used_hour / 9),
-        remainingRaw: item.remaining_day + (item.remaining_hour / 9),
         unit: 'day',
       };
     });
 
   const handleCameraClick = () => {
     fileInputRef.current?.click();
+  };
+
+  // Force reload avatar from server
+  const forceReloadAvatar = async () => {
+    try {
+      const res = await apiService.get(apiEndpoints.auth.avatar);
+      if (res.success && res.avatar_url) {
+        const timestamp = Date.now();
+        const random = Math.random();
+        const newUrl = `${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}?v=${timestamp}&t=${random}&reload=true`;
+        setAvatarUrl(newUrl);
+        setAvatarKey(prev => prev + 1);
+        setForceRefresh(prev => prev + 1);
+        updateUser({ avatar_url: res.avatar_url });
+      }
+    } catch (err) {
+      console.error('Failed to reload avatar:', err);
+    }
   };
 
   // Upload avatar utility with optional optimistic preview URL and realtime fan-out
@@ -288,9 +334,28 @@ const Profile = () => {
     try {
       const res = await apiService.post(apiEndpoints.auth.avatar, formData);
       if (res?.success) {
-        const finalUrl = withCacheBust(`${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}`);
-        setAvatarUrl(finalUrl);
-        updateUser({ avatar_url: res.avatar_url });
+        // Force immediate update with aggressive cache busting
+        const timestamp = Date.now();
+        const random = Math.random();
+        const finalUrl = `${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}?v=${timestamp}&t=${random}&refresh=true`;
+        
+        // Clear the avatar first, then set the new one
+        setAvatarUrl(null);
+        setAvatarKey(prev => prev + 1);
+        
+        // Small delay to ensure the clear takes effect
+        setTimeout(() => {
+          setAvatarUrl(finalUrl);
+          setAvatarKey(prev => prev + 1);
+          setForceRefresh(prev => prev + 1);
+          updateUser({ avatar_url: res.avatar_url });
+        }, 100);
+        
+        // Force reload after a longer delay to ensure the server has processed the upload
+        setTimeout(() => {
+          forceReloadAvatar();
+        }, 500);
+        
         toast({ title: t('profile.uploadSuccess') });
 
         // Broadcast via socket and localStorage to update other tabs/clients
@@ -317,28 +382,62 @@ const Profile = () => {
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files) return;
     const file = e.target.files[0];
-    // Show cropper UI for both GIF and other images. For GIF we only preview crop and upload original to preserve animation.
-    const url = URL.createObjectURL(file);
-    setSelectedImageSrc(url);
+    // แสดง preview ด้วย Data URL (base64) แทน Blob URL เพื่อไม่ให้หมดอายุ
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      console.log('Profile: File selected, dataUrl length:', dataUrl?.length);
+      setSelectedImageSrc(dataUrl);
+      if (setAvatarPreviewUrl) {
+        setAvatarPreviewUrl(dataUrl);
+        console.log('Profile: avatarPreviewUrl set to context, length:', dataUrl?.length);
+      } else {
+        console.log('Profile: setAvatarPreviewUrl is undefined!');
+      }
+    };
+    reader.readAsDataURL(file);
     setCropDialogOpen(true);
-    // Keep a ref of original file for GIF to upload later untouched
+    setPendingAvatarFile(file); // เก็บไฟล์ไว้ก่อน
+    setPendingCroppedFile(null); // reset cropped file
     if (file.type === 'image/gif') {
-      // @ts-ignore - attach to window scoped var to avoid adding more state variables
       (window as any).__avatarOriginalGifFile = file;
     } else {
       (window as any).__avatarOriginalGifFile = null;
     }
   };
 
-  const handleCropped = async (file: File) => {
+    const handleCropped = async (file: File) => {
+    const previousUrl = avatarUrl;
     const formData = new FormData();
     formData.append('avatar', file);
     try {
       const res = await apiService.post(apiEndpoints.auth.avatar, formData);
-      if (res.success) {
-        setAvatarUrl(withCacheBust(`${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}`));
-        updateUser({ avatar_url: res.avatar_url });
+      if (res?.success) {
+        // Force immediate update with aggressive cache busting
+        const timestamp = Date.now();
+        const random = Math.random();
+        const finalUrl = `${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}?v=${timestamp}&t=${random}&refresh=true`;
+        
+        // Clear the avatar first, then set the new one
+        setAvatarUrl(null);
+        setAvatarKey(prev => prev + 1);
+        
+        // Small delay to ensure the clear takes effect
+        setTimeout(() => {
+          setAvatarUrl(finalUrl);
+          setAvatarKey(prev => prev + 1);
+          setForceRefresh(prev => prev + 1);
+          updateUser({ avatar_url: res.avatar_url });
+        }, 100);
+        
+        // Force reload after a longer delay to ensure the server has processed the upload
+        setTimeout(() => {
+          forceReloadAvatar();
+        }, 500);
+        
         toast({ title: t('profile.uploadSuccess') });
+
+        // Broadcast via socket and localStorage to update other tabs/clients
         if (socket && isConnected && user?.id) {
           socket.emit('avatarUpdated', { userId: user.id, avatar_url: res.avatar_url });
         }
@@ -348,13 +447,14 @@ const Profile = () => {
           }
         } catch {}
       } else {
-        throw new Error(res.message || t('profile.uploadError'));
+        throw new Error(res?.message || t('profile.uploadError'));
       }
     } catch (err: any) {
-      toast({
-        title: t('profile.uploadError'),
-        description: err?.message,
-        variant: 'destructive'
+      if (previousUrl) setAvatarUrl(previousUrl);
+      toast({ 
+        title: t('profile.uploadError'), 
+        description: err?.message, 
+        variant: 'destructive' 
       });
     }
   };
@@ -366,6 +466,8 @@ const Profile = () => {
       if (!data) return;
       if (user?.id && String(data.userId) === String(user.id)) {
         setAvatarUrl(withCacheBust(`${baseUrl}${data.avatar_url}`));
+        setAvatarKey(prev => prev + 1);
+        setAvatarKey(prev => prev + 1);
         updateUser({ avatar_url: data.avatar_url });
       }
     };
@@ -378,6 +480,8 @@ const Profile = () => {
         const data = JSON.parse(e.newValue);
         if (user?.id && String(data.userId) === String(user.id)) {
           setAvatarUrl(withCacheBust(`${baseUrl}${data.avatar_url}`));
+          setAvatarKey(prev => prev + 1);
+          setAvatarKey(prev => prev + 1);
           updateUser({ avatar_url: data.avatar_url });
         }
       } catch {}
@@ -392,16 +496,39 @@ const Profile = () => {
   const handleSave = async () => {
     setSaving(true);
     try {
+      // ตรวจสอบรูปแบบอีเมล
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        toast({
+          title: t('common.error'),
+          description: t('auth.invalidEmailFormat'),
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
+      }
+      
+      // ตรวจสอบเพิ่มเติมว่าอีเมลไม่ใช่รูปแบบที่ไม่สมบูรณ์ เช่น @g, @gmail
+      if (formData.email.includes('@') && !formData.email.includes('.')) {
+        toast({
+          title: t('common.error'),
+          description: t('auth.invalidEmailFormat'),
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
+      }
+      
       // ตรวจสอบว่าตำแหน่งต้องการ End Work Date หรือไม่
       const selectedPos = positions.find(p => String(p.id) === formData.position);
-      const requiresEndWorkDate = selectedPos ? !!selectedPos.request_quote : false;
+              const requiresEndWorkDate = selectedPos ? !!selectedPos.request_quota : false;
 
       // Validation สำหรับ End Work Date
       if (requiresEndWorkDate && formData.start_work && formData.end_work) {
         if (formData.start_work > formData.end_work) {
           toast({ 
             title: t('common.error'), 
-            description: t('auth.dateRangeInvalid', 'ช่วงวันที่ไม่ถูกต้อง'), 
+            description: t('auth.dateRangeInvalid'), 
             variant: 'destructive' 
           });
           setSaving(false);
@@ -409,6 +536,34 @@ const Profile = () => {
         }
       }
 
+      // อัปโหลด avatar ถ้ามีไฟล์ใหม่
+      let avatarUploadedUrl = null;
+      if (pendingCroppedFile) {
+        const formData = new FormData();
+        formData.append('avatar', pendingCroppedFile);
+        const res = await apiService.post(apiEndpoints.auth.avatar, formData);
+        if (res?.success) {
+          avatarUploadedUrl = res.avatar_url;
+          // อัปเดต avatarUrl ใน Profile ด้วย URL ใหม่ (ไม่ใช้ withCacheBust)
+          const newAvatarUrl = `${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}`;
+          setAvatarUrl(newAvatarUrl);
+          // อัปเดต user context ด้วย avatar_url ใหม่
+          updateUser({ avatar_url: res.avatar_url });
+          toast({ title: t('profile.uploadSuccess') });
+          if (socket && isConnected && user?.id) {
+            socket.emit('avatarUpdated', { userId: user.id, avatar_url: res.avatar_url });
+          }
+          try {
+            if (user?.id) {
+              localStorage.setItem('avatarUpdated', JSON.stringify({ userId: user.id, avatar_url: res.avatar_url, ts: Date.now() }));
+            }
+          } catch {}
+          if (setAvatarPreviewUrl) setAvatarPreviewUrl(null); // clear preview หลังบันทึก
+        } else {
+          throw new Error(res?.message || t('profile.uploadError'));
+        }
+      }
+      
       const requestData = {
         name: formData.full_name,
         email: formData.email,
@@ -418,7 +573,7 @@ const Profile = () => {
         dob: formData.dob || null,
         phone_number: formData.phone_number || null,
         start_work: formData.start_work || null,
-        end_work: requiresEndWorkDate ? (formData.end_work || null) : null,
+                    end_work: (positions.find(p => String(p.id) === formData.position)?.request_quota ? (formData.end_work || null) : null),
       };
       
       console.log('Sending profile update data:', requestData);
@@ -449,9 +604,15 @@ const Profile = () => {
           position: updatedData.position_name || '',
           department: updatedData.department_name || '',
           email: updatedData.email || formData.email,
+          ...(avatarUploadedUrl ? { avatar_url: avatarUploadedUrl } : {}),
         });
         
         console.log('Profile updated successfully:', updatedData);
+        setIsEditing(false);
+        setPendingAvatarFile(null);
+        setPendingCroppedFile(null);
+        if (setAvatarPreviewUrl) setAvatarPreviewUrl(null); // clear preview หลังบันทึก
+        // window.location.reload(); <-- ลบออก
       } else {
         throw new Error(res.message || t('profile.saveError'));
       }
@@ -529,26 +690,37 @@ const Profile = () => {
         {/* Profile Header */}
         <div className="flex flex-col items-center -mt-16">
           <div className="relative">
-            <Avatar className="h-28 w-28 shadow-lg border-4 border-white bg-white/80 backdrop-blur rounded-full">
-              <AvatarImage src={avatarUrl || undefined} />
+
+            <Avatar key={`${avatarUrl}-${avatarKey}-${forceRefresh}`} className="h-28 w-28 shadow-lg border-4 border-white bg-white/80 backdrop-blur rounded-full">
+              <AvatarImage 
+                src={avatarUrl ? `${avatarUrl}&force=${forceRefresh}` : undefined} 
+                onError={() => {
+                  // If image fails to load, force a refresh
+                  setForceRefresh(prev => prev + 1);
+                }}
+              />
               <AvatarFallback className="text-2xl font-bold bg-blue-200 text-blue-900">
                 {user?.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
               </AvatarFallback>
             </Avatar>
-            <button
-              type="button"
-              className="absolute bottom-2 right-2 p-2 bg-blue-500 text-white rounded-full shadow-md border-2 border-white hover:bg-blue-600 transition-colors"
-              onClick={handleCameraClick}
-              aria-label="Change avatar"
-            >
-              <Camera className="h-5 w-5" />
-            </button>
+            {/* ปุ่มเปลี่ยนรูป avatar: แสดงเฉพาะตอน isEditing */}
+            {isEditing && (
+              <button
+                type="button"
+                className="absolute bottom-2 right-2 p-2 bg-blue-500 text-white rounded-full shadow-md border-2 border-white hover:bg-blue-600 transition-colors"
+                onClick={handleCameraClick}
+                aria-label="Change avatar"
+              >
+                <Camera className="h-5 w-5" />
+              </button>
+            )}
             <input
               type="file"
               accept="image/*"
               ref={fileInputRef}
               style={{ display: 'none' }}
               onChange={handleFileChange}
+              disabled={!isEditing}
             />
           </div>
           <AvatarCropDialog
@@ -635,6 +807,7 @@ const Profile = () => {
                       value={formData.full_name}
                       onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
                       className="input-blue"
+                      disabled={!isEditing}
                     />
                   </div>
                   <div className="space-y-3">
@@ -643,8 +816,12 @@ const Profile = () => {
                       id="email"
                       type="email"
                       value={formData.email}
-                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                      onChange={(e) => {
+                        const email = e.target.value;
+                        setFormData(prev => ({ ...prev, email }));
+                      }}
                       className="input-blue"
+                      disabled={!isEditing}
                     />
                   </div>
                   <div className="space-y-3">
@@ -652,6 +829,7 @@ const Profile = () => {
                     <Select
                       value={formData.position || "not_specified"}
                       onValueChange={(value) => setFormData(prev => ({ ...prev, position: value === "not_specified" ? "" : value }))}
+                      disabled={!isEditing}
                     >
                       <SelectTrigger className="input-blue">
                         <SelectValue placeholder={t('positions.selectPosition')} />
@@ -672,6 +850,7 @@ const Profile = () => {
                     <Select
                       value={formData.department || "not_specified"}
                       onValueChange={(value) => setFormData(prev => ({ ...prev, department: value === "not_specified" ? "" : value }))}
+                      disabled={!isEditing}
                     >
                       <SelectTrigger className="input-blue">
                         <SelectValue placeholder={t('departments.selectDepartment')} />
@@ -692,6 +871,7 @@ const Profile = () => {
                     <Select
                       value={formData.gender || "not_specified"}
                       onValueChange={(value) => setFormData(prev => ({ ...prev, gender: value === "not_specified" ? "" : value }))}
+                      disabled={!isEditing}
                     >
                       <SelectTrigger className="input-blue">
                         <SelectValue placeholder={t('employee.selectGender')} />
@@ -717,6 +897,7 @@ const Profile = () => {
                       value={formData.dob}
                       onChange={(e) => setFormData(prev => ({ ...prev, dob: e.target.value }))}
                       className="input-blue"
+                      disabled={!isEditing}
                     />
                   </div>
                   <div className="space-y-3">
@@ -728,12 +909,13 @@ const Profile = () => {
                       onChange={(e) => setFormData(prev => ({ ...prev, phone_number: e.target.value }))}
                       placeholder={t('employee.enterPhoneNumber')}
                       className="input-blue"
+                      disabled={!isEditing}
                     />
                   </div>
                   {/* Start/End work dates: Start Work Date always shows; End Work Date shows only when position has Request Quote enabled */}
                   {(() => {
                     const selectedPos = positions.find(p => String(p.id) === formData.position);
-                    const showEndWorkDate = selectedPos ? !!selectedPos.request_quote : false;
+                    const showEndWorkDate = selectedPos ? !!selectedPos.request_quota : false;
                     return (
                       <>
                         <div className="space-y-3">
@@ -744,6 +926,7 @@ const Profile = () => {
                             value={formData.start_work}
                             onChange={(e) => setFormData(prev => ({ ...prev, start_work: e.target.value }))}
                             className="input-blue"
+                            disabled={!isEditing}
                           />
                         </div>
                         {showEndWorkDate && (
@@ -755,6 +938,7 @@ const Profile = () => {
                               value={formData.end_work}
                               onChange={(e) => setFormData(prev => ({ ...prev, end_work: e.target.value }))}
                               className="input-blue"
+                              disabled={!isEditing}
                             />
                           </div>
                         )}
@@ -762,21 +946,34 @@ const Profile = () => {
                     );
                   })()}
                 </div>
-                <div className="flex justify-end">
-                  <Button type="submit" disabled={saving || loading} className="btn-blue px-8 py-2 text-lg">
-                    {saving ? (
-                      <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        {t('profile.saving')}
-                      </>
-                    ) : (
-                      <>
-                        <Save className="h-5 w-5 mr-2" />
-                        {t('profile.saveData')}
-                      </>
-                    )}
-                  </Button>
-                </div>
+                {/* ปุ่มแก้ไข/บันทึก/ยกเลิก (วางไว้ใต้ Avatar หรือในฟอร์ม) */}
+                                 <div className="flex gap-3 justify-center mt-4">
+                   {!isEditing && (
+                     <Button type="button" className="btn-blue px-6 py-2 text-lg" onClick={() => setIsEditing(true)}>
+                       <span>{t('profile.editProfile')}</span>
+                     </Button>
+                   )}
+                   {isEditing && (
+                     <>
+                       <Button type="button" className="btn-blue px-6 py-2 text-lg" onClick={handleSave} disabled={saving || loading}>
+                         {saving ? (
+                           <>
+                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                             {t('common.saving')}
+                           </>
+                         ) : (
+                           <>
+                             <Save className="h-5 w-5 mr-2" />
+                             {t('common.save')}
+                           </>
+                         )}
+                       </Button>
+                       <Button type="button" variant="outline" className="btn-blue-outline px-6 py-2 text-lg" onClick={() => { setIsEditing(false); }} disabled={saving || loading}>
+                         {t('common.cancel')}
+                       </Button>
+                     </>
+                   )}
+                 </div>
               </form>
             </TabsContent>
 
@@ -803,14 +1000,18 @@ const Profile = () => {
                     <div className="w-full bg-blue-100 rounded-full h-2">
                       <div
                         className={`${stat.color} h-2 rounded-full transition-all duration-500`}
-                        style={{ width: `${Math.min((Number(stat.used.days) / Number(stat.quota)) * 100, 100)}%` }}
+                        style={{ 
+                          width: `${Math.min(
+                            ((Number(stat.used.days) + (Number(stat.used.hours) / 9)) / Number(stat.quota)) * 100, 
+                            100
+                          )}%` 
+                        }}
                       ></div>
                     </div>
                     <div className="text-xs text-blue-500">
                       {(() => {
-                        const usedDays = Number(stat.used.days) || 0;
-                        const usedHours = Number(stat.used.hours) || 0;
-                        const remainingDays = Number(stat.quota) - usedDays;
+                        const remainingDays = Number(stat.remaining.days) || 0;
+
                         const remainingHours = Number(stat.remaining.hours) || 0;
                         
                         if (remainingHours > 0) {

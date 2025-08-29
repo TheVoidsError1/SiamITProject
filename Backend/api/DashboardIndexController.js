@@ -70,93 +70,40 @@ module.exports = (AppDataSource) => {
       const leaveHistory = await leaveRepo.find({ where });
       console.log('Found leave history count:', leaveHistory.length);
       
-      // Calculate days used - ปรับการคำนวณให้ถูกต้องตามประเภทการลา
+                   // Calculate days and hours used from approved leave requests (using LeaveRequest table for filtering)
       let daysUsed = 0;
       let hoursUsed = 0;
-
-      // Only use approved leaves for stats
-      const approvedLeaves = leaveHistory.filter(lr => lr.status === 'approved');
-      console.log('Approved leaves count:', approvedLeaves.length);
-
-      for (const lr of approvedLeaves) {
-        let leaveTypeName = lr.leaveType;
-        let leaveTypeEntity = null;
-        
-        try {
-          if (leaveTypeName && leaveTypeName.length > 20) {
-            // If it's a UUID, look up the leave type entity
-            leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
-            leaveTypeName = leaveTypeEntity ? leaveTypeEntity.leave_type_th : leaveTypeName;
-          } else {
-            // If it's a string, try to find the entity by name
-            leaveTypeEntity = await leaveTypeRepo.findOne({
-              where: [
-                { leave_type_th: leaveTypeName },
-                { leave_type_en: leaveTypeName }
-              ]
-            });
-          }
-        } catch (leaveTypeError) {
-          console.error('Error looking up leave type:', leaveTypeError);
-          // Continue with original leaveTypeName if lookup fails
-        }
-        
-        console.log('Processing leave type:', leaveTypeName);
-
-        // Skip emergency leave types
-        const isEmergency = leaveTypeEntity ? 
-          (leaveTypeEntity.leave_type_en?.toLowerCase().includes('emergency') || 
-           leaveTypeEntity.leave_type_th?.includes('ฉุกเฉิน')) :
-          (leaveTypeName?.toLowerCase().includes('emergency') || 
-           leaveTypeName?.includes('ฉุกเฉิน'));
-
-        if (isEmergency) {
-          console.log('Skipping emergency leave type:', leaveTypeName);
-          continue;
-        }
-
-        // Check if this leave type supports hourly leave (like personal leave)
-        const supportsHourly = leaveTypeEntity ? 
-          (leaveTypeEntity.leave_type_en?.toLowerCase().includes('personal') || 
-           leaveTypeEntity.leave_type_th?.includes('กิจ')) :
-          (leaveTypeName?.toLowerCase().includes('personal') || 
-           leaveTypeName?.includes('กิจ'));
-
-        if (supportsHourly && lr.startTime && lr.endTime) {
-          // Hour-based calculation for leave types that support it
-          try {
-            const startMinutes = convertToMinutes(...lr.startTime.split(':').map(Number));
-            const endMinutes = convertToMinutes(...lr.endTime.split(':').map(Number));
-            let durationHours = (endMinutes - startMinutes) / 60;
-            if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
-            hoursUsed += durationHours;
-            console.log('Added hours for hourly leave:', durationHours);
-          } catch (timeError) {
-            console.error('Error calculating time duration:', timeError);
-          }
-        } else if (lr.startDate && lr.endDate) {
-          // Day-based calculation for all other leave types
-          try {
-            const start = new Date(lr.startDate);
-            const end = new Date(lr.endDate);
-            let days = calculateDaysBetween(start, end);
-            if (days < 0 || isNaN(days)) days = 0;
+      
+      // Filter only approved requests for calculation
+      const approvedRequests = leaveHistory.filter(lr => lr.status === 'approved');
+      
+      for (const request of approvedRequests) {
+        if (request.startDate && request.endDate) {
+          // Calculate days between start and end date
+          const startDate = new Date(request.startDate);
+          const endDate = new Date(request.endDate);
+          const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+          
+          if (request.startTime && request.endTime) {
+            // Hour-based leave
+            const startTime = new Date(`2000-01-01T${request.startTime}`);
+            const endTime = new Date(`2000-01-01T${request.endTime}`);
+            const hoursDiff = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
             
-            if (supportsHourly) {
-              // For leave types that support hourly, convert days to hours
-              hoursUsed += days * config.business.workingHoursPerDay;
-              console.log('Added hours for day-based hourly leave:', days * config.business.workingHoursPerDay);
+            if (daysDiff === 1) {
+              // Same day leave - add hours
+              hoursUsed += hoursDiff;
             } else {
-              // For regular leave types, add directly to days
-              daysUsed += days;
-              console.log('Added days for regular leave:', days);
+              // Multi-day leave - add full days
+              daysUsed += daysDiff;
             }
-          } catch (dateError) {
-            console.error('Error calculating date duration:', dateError);
+          } else {
+            // Full day leave
+            daysUsed += daysDiff;
           }
         }
       }
-
+      
       // Convert hours to days if >= working hours per day
       let remainingHours = 0;
       try {
@@ -167,37 +114,50 @@ module.exports = (AppDataSource) => {
       } catch (calcError) {
         console.error('Error in final calculations:', calcError);
       }
-
-      // Calculate leave days by type using leaveType name
+      
+      // Calculate leave type stats from LeaveRequest table
       const leaveTypeStats = {};
-      for (const lr of approvedLeaves) {
-        let leaveTypeName = lr.leaveType;
-        try {
-          if (leaveTypeName && leaveTypeName.length > 20) {
-            const leaveType = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
-            leaveTypeName = leaveType ? leaveType.leave_type_th : leaveTypeName;
-          }
-        } catch (leaveTypeError) {
-          console.error('Error looking up leave type in approved leaves:', leaveTypeError);
-          // Continue with original leaveTypeName if lookup fails
+      for (const request of approvedRequests) {
+        let leaveTypeName = request.leaveType;
+        
+        // Get leave type name if it's an ID
+        if (leaveTypeName && leaveTypeName.length > 20) {
+          const leaveType = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
+          leaveTypeName = leaveType ? leaveType.leave_type_th : leaveTypeName;
         }
-        try {
-          const start = new Date(lr.startDate);
-          const end = new Date(lr.endDate);
-          const days = calculateDaysBetween(start, end);
-          if (!leaveTypeStats[leaveTypeName]) leaveTypeStats[leaveTypeName] = 0;
-          leaveTypeStats[leaveTypeName] += days;
-        } catch (dateError) {
-          console.error('Error calculating days for approved leave:', dateError);
+        
+        if (!leaveTypeStats[leaveTypeName]) {
+          leaveTypeStats[leaveTypeName] = 0;
+        }
+        
+        // Calculate days for this request
+        if (request.startDate && request.endDate) {
+          const startDate = new Date(request.startDate);
+          const endDate = new Date(request.endDate);
+          const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+          
+          if (request.startTime && request.endTime) {
+            const startTime = new Date(`2000-01-01T${request.startTime}`);
+            const endTime = new Date(`2000-01-01T${request.endTime}`);
+            const hoursDiff = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+            
+            if (daysDiff === 1) {
+              leaveTypeStats[leaveTypeName] += hoursDiff / config.business.workingHoursPerDay;
+            } else {
+              leaveTypeStats[leaveTypeName] += daysDiff;
+            }
+          } else {
+            leaveTypeStats[leaveTypeName] += daysDiff;
+          }
         }
       }
-      // Pending requests for this user
-      const pendingRequests = leaveHistory.filter(lr => lr.status === 'pending').length;
-      // Approved requests
-      const approvedRequests = leaveHistory.filter(lr => lr.status === 'approved').length;
-      // Approval rate
-      const totalRequests = leaveHistory.length;
-      const approvalRate = totalRequests > 0 ? Math.round((approvedRequests / totalRequests) * 100) : 0;
+             // Pending requests for this user
+       const pendingRequests = leaveHistory.filter(lr => lr.status === 'pending').length;
+       // Approved requests count
+       const approvedRequestsCount = leaveHistory.filter(lr => lr.status === 'approved').length;
+             // Approval rate
+       const totalRequests = leaveHistory.length;
+       const approvalRate = totalRequests > 0 ? Math.round((approvedRequestsCount / totalRequests) * 100) : 0;
       // Remaining days (configurable limit)
       const remainingDays = Math.max(0, config.business.maxLeaveDays - daysUsed);
       
@@ -208,7 +168,7 @@ module.exports = (AppDataSource) => {
         data: {
           leaveHistory,
           daysUsed,
-          hoursUsed: remainingHours, // เพิ่มชั่วโมงที่เหลือ
+          hoursUsed: remainingHours, // ชั่วโมงที่เหลือหลังแปลงเป็นวัน
           pendingRequests,
           approvalRate,
           remainingDays,
@@ -249,38 +209,46 @@ module.exports = (AppDataSource) => {
           )
         };
       }
-      // Get all approved leave requests for this user and filter
-      const leaves = await leaveRepo.find({ where });
-      // Calculate total used leave in hours (all types)
-      let totalHours = 0;
-      // Using utility function instead of local function
-      for (const lr of leaves) {
-        // If leaveType is a UUID, look up the entity (for display, not needed for calculation)
-        let leaveTypeName = lr.leaveType;
-        if (leaveTypeName && leaveTypeName.length > 20) {
-          const leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
-          leaveTypeName = leaveTypeEntity ? leaveTypeEntity.leave_type_th : leaveTypeName;
-        }
-        if (lr.startTime && lr.endTime) {
-          // Hour-based
-          const startMinutes = convertToMinutes(...lr.startTime.split(':').map(Number));
-          const endMinutes = convertToMinutes(...lr.endTime.split(':').map(Number));
-          let durationHours = (endMinutes - startMinutes) / 60;
-          if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
-          totalHours += durationHours;
-        } else if (lr.startDate && lr.endDate) {
-          // Day-based, convert days to hours (1 day = 9 hours)
-          const start = new Date(lr.startDate);
-          const end = new Date(lr.endDate);
-          let days = calculateDaysBetween(start, end);
-          if (days < 0 || isNaN(days)) days = 0;
-          totalHours += days * config.business.workingHoursPerDay;
-        }
-      }
-      // Convert to days and hours
-      const days = Math.floor(totalHours / config.business.workingHoursPerDay);
-      const hours = Math.round(totalHours % config.business.workingHoursPerDay);
-      res.json({ status: 'success', data: { days, hours } });
+             // Get approved leave requests with filtering
+       const approvedRequests = await leaveRepo.find({ where });
+       
+       // Calculate total days and hours from LeaveRequest table
+       let totalDays = 0;
+       let totalHours = 0;
+       
+       for (const request of approvedRequests) {
+         if (request.startDate && request.endDate) {
+           // Calculate days between start and end date
+           const startDate = new Date(request.startDate);
+           const endDate = new Date(request.endDate);
+           const daysDiff = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+           
+           if (request.startTime && request.endTime) {
+             // Hour-based leave
+             const startTime = new Date(`2000-01-01T${request.startTime}`);
+             const endTime = new Date(`2000-01-01T${request.endTime}`);
+             const hoursDiff = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
+             
+             if (daysDiff === 1) {
+               // Same day leave - add hours
+               totalHours += hoursDiff;
+             } else {
+               // Multi-day leave - add full days
+               totalDays += daysDiff;
+             }
+           } else {
+             // Full day leave
+             totalDays += daysDiff;
+           }
+         }
+       }
+       
+       // Convert hours to days if >= working hours per day
+       const additionalDays = Math.floor(totalHours / config.business.workingHoursPerDay);
+       const remainingHours = Math.round(totalHours % config.business.workingHoursPerDay);
+       totalDays += additionalDays;
+       
+       res.json({ status: 'success', data: { days: totalDays, hours: remainingHours } });
     } catch (err) {
       res.status(500).json({ status: 'error', message: err.message });
     }

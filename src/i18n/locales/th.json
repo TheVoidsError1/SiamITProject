@@ -29,11 +29,9 @@
     "newPassword": "รหัสผ่านใหม่",
     "passwordMismatch": "รหัสผ่านไม่ตรงกัน",
     "passwordTooShort": "รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร",
-    "passwordStrong": "รหัสผ่านแข็งแกร่ง",
-    "passwordMedium": "รหัสผ่านปานกลาง",
-    "passwordWeak": "รหัสผ่านอ่อนแอ",
-    "passwordsMatch": "รหัสผ่านตรงกัน",
-    "passwordsDoNotMatch": "รหัสผ่านไม่ตรงกัน",
+    "invalidEmailFormat": "รูปแบบอีเมลไม่ถูกต้อง กรุณาใส่โดเมนที่สมบูรณ์ เช่น @gmail.com",
+    "registerConfirmTitle": "ยืนยันการสมัครสมาชิก",
+    "registerConfirmDesc": "คุณต้องการสมัครสมาชิกด้วยข้อมูลที่กรอกหรือไม่?",
     "checkEmailVerification": "ตอนนี้คุณสามารถเข้าสู่ระบบด้วยผู้ใช้นี้ได้แล้ว",
     "sessionExpired": "เซสชันหมดอายุ",
     "sessionExpiredDesc": "เซสชันการใช้งานของคุณหมดอายุแล้ว กรุณาเข้าสู่ระบบใหม่",
@@ -64,12 +62,16 @@
     "companyNews": "ข่าวสารทางบริษัท",
     "announcementsFeed": "ฟีดข่าวสาร",
     "calendar": "ปฏิทิน",
-    "lineOASettings": "ตั้งค่า Line OA"
+    "companyCalendar": "ปฏิทินทางบริษัท",
+    "companyCalendarTitle": "ปฏิทินกิจกรรมและวันสำคัญของบริษัท",
+    "companyCalendarDescription": "ดูปฎิทินกิจกรรมและวันสำคัญของบริษัท"
   },
   "common": {
+    "logo": "โลโก้",
     "submit": "ส่ง",
     "cancel": "ยกเลิก",
     "save": "บันทึก",
+    "saving": "กำลังบันทึก...",
     "edit": "แก้ไข",
     "delete": "ลบ",
     "view": "ดู",
@@ -162,7 +164,7 @@
     "force": "บังคับ (อนุญาตนอกวัน 1 ม.ค.)",
     "triggerReset": "สั่งรีเซ็ต",
     "note": "หมายเหตุ",
-    "noteDetail": "หากไม่เลือกตำแหน่ง จะรวมตำแหน่งที่  ทั้งหมด",
+    "noteDetail": "หากไม่เลือกตำแหน่ง จะรวมตำแหน่งที่  ทั้งหมด และตำหน้าทั่งหมดที่ เปิด จะรีเซ็ตการใช้สิทธิ์ลาทุกปี",
     "allNewYearPositions": "ทุกตำแหน่งที่ ",
     "type": "ประเภทการลา",
     "date": "วันที่ลา",
@@ -176,6 +178,11 @@
     "startDate": "วันที่เริ่มลา",
     "endDate": "วันที่สิ้นสุด",
     "attachments": "เอกสารแนบ",
+    "attachedFiles": "ไฟล์ที่แนบ",
+    "seeDetails": "ดูรายละเอียด",
+    "clickToSelectFile": "คลิกเพื่อเลือกไฟล์หรือลากไฟล์มาวาง",
+    "supportedFormats": "รองรับ PDF, JPG, PNG, DOC, DOCX",
+    "attachedImage": "รูปภาพแนบ",
     "dateRange": "ช่วงวันที่ลา",
     "submitRequest": "ส่งคำขอ",
     "submitting": "กำลังส่งคำขอ...",
@@ -243,6 +250,10 @@
     "attachment": "ไฟล์แนบ",
     "hour": "ชั่วโมง",
     "day": "วัน",
+    "manualReset": "สั่งรีเซ็ตโควต้าทันที (เลือกผู้ใช้)",
+    "resetNow": "รีเซ็ตโควต้าทันที",
+    "manualResetSuccess": "รีเซ็ตโควต้าสำเร็จ",
+    "loading": "กำลังทำงาน...",
     "leaveTime": "เวลาที่ลา:",
     "noHourlyLeave": "ไม่มีการลาเป็น ชม.",
     "required": "กรุณากรอกข้อมูลให้ครบถ้วน",
@@ -412,7 +423,8 @@
     "companyNews": "ข่าวสารบริษัท",
     "noUpcomingHolidays": "ไม่มีวันหยุดที่กำลังจะมาถึง",
     "noCompanyHolidays": "ไม่มีวันหยุดบริษัทในเดือนนี้",
-    "announcements": "ข่าวสาร"
+    "announcements": "ข่าวสาร",
+    "noAnnouncements": "ไม่มีข่าวสาร"
   },
   "profile": {
     "personalInfo": "ข้อมูลส่วนตัว",
@@ -422,6 +434,7 @@
     "settings": "การตั้งค่า",
     "settingsDesc": "จัดการการตั้งค่าบัญชีของคุณ",
     "profileTitle": "จัดการข้อมูลส่วนตัวและการตั้งค่า",
+    "editProfile": "แก้ไขข้อมูล",
     "updateSuccess": "อัปเดตสำเร็จ",
     "updateError": "อัปเดตไม่สำเร็จ",
     "updateErrorDesc": "เกิดข้อผิดพลาดในการอัปเดตข้อมูล",
@@ -508,7 +521,9 @@
     "noLeaveHistoryDesc": "ยังไม่มีประวัติการลาในระบบ",
     "pageInfo": "หน้า {{page}} จาก {{totalPages}}",
     "leaveTime": "เวลาการลา",
-    "days": "วัน"
+    "days": "วัน",
+    "cannotDeleteNonPending": "สามารถลบได้เฉพาะคำขอที่รอการอนุมัติเท่านั้น",
+    "cannotDeleteNearDate": "ไม่สามารถลบคำขอที่อยู่ภายใน 1 วันของวันลา"
   },
   "admin": {
     "pendingRequests": "คำขอรออนุมัติ",
@@ -625,6 +640,10 @@
     "createSuccessDesc": "สร้างข้อมูลสำเร็จแล้ว",
     "createError": "สร้างไม่สำเร็จ",
     "createErrorDesc": "ไม่สามารถสร้างข้อมูลได้",
+    "loadSuccess": "โหลดสำเร็จ",
+    "loadSuccessDesc": "โหลดข้อมูลสำเร็จแล้ว",
+    "loadError": "โหลดไม่สำเร็จ",
+    "loadErrorDesc": "ไม่สามารถโหลดข้อมูลได้",
     "allPositions": "ทุกตำแหน่ง",
     "allDepartments": "ทุกแผนก",
     "allRoles": "ทุกบทบาท",
@@ -636,7 +655,8 @@
     "noEmployeesFoundDesc": "ไม่พบพนักงานที่ตรงกับเงื่อนไขการกรองที่เลือก กรุณาลองเปลี่ยนเงื่อนไขหรือรีเซ็ตตัวกรอง",
     "confirmDelete": "ยืนยันการลบ",
     "confirmDeleteNewsDesc": "คุณแน่ใจหรือไม่ว่าต้องการลบข่าวสารนี้?",
-    "confirmDeleteDesc": "คุณแน่ใจหรือไม่ว่าต้องการลบผู้ใช้งานนี้?"
+    "confirmDeleteDesc": "คุณแน่ใจหรือไม่ว่าต้องการลบผู้ใช้งานนี้?",
+    "noPermissionToDelete": "ไม่มีสิทธิ์ในการลบผู้ใช้นี้"
   },
   "error": {
     "apiConnectionError": "ข้อผิดพลาดการเชื่อมต่อ API",
@@ -703,6 +723,7 @@
     "enterPhoneNumber": "กรอกเบอร์โทรศัพท์",
     "selectInternshipStartDate": "เลือกวันเริ่มฝึกงาน",
     "selectInternshipEndDate": "เลือกวันสิ้นสุดฝึกงาน",
+    "selectDate": "เลือกวันที่",
     "other": "อื่นๆ",
     "preferNotToSay": "ไม่ต้องการระบุ"
   },
@@ -796,14 +817,17 @@
     "editNewsError": "แก้ไขข่าวสารไม่สำเร็จ"
   },
   "companyEvent": {
+    "add": "เพิ่มกิจกรรม",
+    "addTitle": "เพิ่มกิจกรรมของบริษัท",
     "editTitle": "แก้ไขกิจกรรมของบริษัท",
     "name": "ชื่อกิจกรรม",
-    "description": "รายละเอียดกิจกรรม (ไม่บังคับ)",
-    "datePlaceholder": "yyyy-mm-dd",
-    "save": "บันทึก",
-    "cancel": "ยกเลิก",
-    "edit": "แก้ไข",
-    "addTitle": "เพิ่มกิจกรรมของบริษัท"
+    "description": "รายละเอียด",
+    "datePlaceholder": "วันที่",
+    "event": "กิจกรรมของบริษัท",
+    "deleteConfirm": "คุณแน่ใจหรือไม่ที่จะลบกิจกรรมนี้?",
+    "monthlyActivities": "กิจกรรมของบริษัทในเดือนนี้",
+    "deleteConfirmTitle": "ยืนยันการลบกิจกรรม",
+    "deleteConfirmMessage": "คุณแน่ใจหรือไม่ที่จะลบกิจกรรมนี้?"
   },
   "announcementsFeed": {
     "title": "ฟีดข่าวสาร",
@@ -856,6 +880,13 @@
     "employeeLeaves": "การลาของพนักงาน",
     "myLeaves": "การลาของฉัน",
     "loading": "กำลังโหลด...",
+    "noEvents": "ไม่มีกิจกรรมในเดือนนี้",
+    "dualEvents": "กิจกรรมซ้ำ",
+    "viewMonth": "ดูเดือน",
+    "period": "ช่วงเวลา",
+    "duration": "ระยะเวลา",
+    "days": "วัน",
+    "hours": "ชั่วโมง",
     "months": {
       "january": "มกราคม",
       "february": "กุมภาพันธ์",
@@ -896,5 +927,25 @@
     "description": "ปรับครอปรูปโปรไฟล์ของคุณให้เหมาะสม",
     "crop": "ปรับครอป",
     "cancel": "ยกเลิก"
+  },
+  "validation": {
+    "requiredField": "ข้อมูลไม่ครบถ้วน",
+    "requiredFieldDesc": "กรุณากรอกข้อมูลให้ครบถ้วน",
+    "invalidFormat": "รูปแบบไม่ถูกต้อง",
+    "invalidFormatDesc": "รูปแบบข้อมูลไม่ถูกต้อง",
+    "invalidEmail": "อีเมลไม่ถูกต้อง",
+    "invalidEmailDesc": "กรุณากรอกอีเมลให้ถูกต้อง"
+  },
+  "network": {
+    "timeoutError": "หมดเวลาการเชื่อมต่อ",
+    "timeoutErrorDesc": "การเชื่อมต่อใช้เวลานานเกินไป",
+    "serverError": "ข้อผิดพลาดเซิร์ฟเวอร์",
+    "serverErrorDesc": "เกิดข้อผิดพลาดที่เซิร์ฟเวอร์"
+  },
+  "file": {
+    "downloadSuccess": "ดาวน์โหลดสำเร็จ",
+    "downloadSuccessDesc": "ดาวน์โหลดไฟล์สำเร็จแล้ว",
+    "downloadError": "ดาวน์โหลดไม่สำเร็จ",
+    "downloadErrorDesc": "ไม่สามารถดาวน์โหลดไฟล์ได้"
   }
 }

@@ -19,6 +19,7 @@ import { monthNames } from '../constants/common';
 import { apiEndpoints, apiService, createAuthenticatedFileUrl } from '../lib/api';
 import { showToastMessage } from '../lib/toast';
 import { formatDateLocalized, formatDateOnly } from '../lib/utils';
+import ImagePreviewDialog from '@/components/dialogs/ImagePreviewDialog';
 
 type LeaveRequest = {
   id: number;
@@ -199,7 +200,7 @@ const AdminDashboard = () => {
     const mins = diff % 60;
     return `${hours}.${mins.toString().padStart(2, '0')}`;
   };
-  const hourUnit = i18n.language === 'th' ? 'ชม' : 'Hours';
+  const hourUnit = i18n.language === 'th' ? '' : 'Hours';
 
   const handleApprove = (id: string, employeeName: string) => {
     setApprovingRequest({ id, employeeName });
@@ -221,11 +222,11 @@ const AdminDashboard = () => {
           fetchHistoryRequests();
           refreshLeaveRequests();
         } else {
-          showToastMessage.leave.requestError('อนุมัติ', data.message);
+          showToastMessage.leave.requestError('', data.message);
         }
       })
       .catch(() => {
-        showToastMessage.leave.requestError('อนุมัติ');
+        showToastMessage.leave.requestError('');
       })
       .finally(() => {
         setShowApproveDialog(false);
@@ -253,11 +254,11 @@ const AdminDashboard = () => {
           fetchHistoryRequests();
           refreshLeaveRequests();
         } else {
-          showToastMessage.leave.requestError('ปฏิเสธ', data.message);
+          showToastMessage.leave.requestError('', data.message);
         }
       })
       .catch(() => {
-        showToastMessage.leave.requestError('ปฏิเสธ');
+        showToastMessage.leave.requestError('');
       })
       .finally(() => {
         setShowRejectDialog(false);
@@ -613,12 +614,15 @@ const AdminDashboard = () => {
   // --- State สำหรับลบใบลา ---
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deletingRequest, setDeletingRequest] = useState<any | null>(null);
+  const [previewImage, setPreviewImage] = useState<{ url: string; name: string } | null>(null);
 
   // --- ฟังก์ชันลบใบลา ---
   const handleDelete = (request: any) => {
     setDeletingRequest(request);
     setShowDeleteDialog(true);
   };
+
+
 
   const confirmDelete = async () => {
     if (!deletingRequest) return;
@@ -1756,12 +1760,12 @@ const AdminDashboard = () => {
                         )}
                       </div>
                     </div>
-                    {selectedRequest.status === "approved" && (selectedRequest.approvedBy || selectedRequest.statusBy) && (
+                    {selectedRequest.status === "approved" && selectedRequest.approvedBy && (
                       <div className="space-y-2">
                         <Label className="text-sm font-medium text-gray-600">{t('leave.approvedBy')}</Label>
                         <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
                           <CheckCircle className="w-4 h-4 text-green-500" />
-                          <span className="font-medium text-green-900">{selectedRequest.approvedBy || selectedRequest.statusBy}</span>
+                          <span className="font-medium text-green-900">{selectedRequest.approvedBy}</span>
                         </div>
                       </div>
                     )}
@@ -1771,7 +1775,7 @@ const AdminDashboard = () => {
                           <Label className="text-sm font-medium text-gray-600">{t('leave.rejectedBy')}</Label>
                           <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
                             <XCircle className="w-4 h-4 text-red-500" />
-                            <span className="font-medium text-red-900">{selectedRequest.rejectedBy || selectedRequest.statusBy || '-'}</span>
+                            <span className="font-medium text-red-900">{selectedRequest.rejectedBy || '-'}</span>
                           </div>
                         </div>
                         {selectedRequest.rejectionReason && (
@@ -1877,7 +1881,7 @@ const AdminDashboard = () => {
                                     />
                                     <div className="flex items-center justify-between">
                                       <span className="text-sm text-gray-600 truncate">{fileName}</span>
-                                      <Button size="sm" variant="outline" onClick={() => window.open(authenticatedFileUrl, '_blank')}>{t('common.view')}</Button>
+                                      <Button size="sm" variant="outline" onClick={() => setPreviewImage({ url: authenticatedFileUrl, name: fileName })}>{t('common.view')}</Button>
                                     </div>
                                   </div>
                                 ) : (
@@ -1910,6 +1914,16 @@ const AdminDashboard = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {previewImage && (
+        <ImagePreviewDialog
+          isOpen={!!previewImage}
+          onClose={() => setPreviewImage(null)}
+          imageUrl={previewImage.url}
+          imageName={previewImage.name}
+          title={t('leave.attachmentPreview', 'ตัวอย่างไฟล์แนบ')}
+        />
+      )}
 
       {/* Dialog สำหรับป้อนเหตุผลไม่อนุมัติ */}
       <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>

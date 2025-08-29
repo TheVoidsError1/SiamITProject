@@ -2,7 +2,7 @@
 {
   "auth": {
     "login": "Login",
-    "register": "Register",
+    "egister": "Register",
     "logout": "Logout",
     "email": "Email",
     "password": "Password",
@@ -30,11 +30,9 @@
     "newPassword": "New Password",
     "passwordMismatch": "Passwords do not match",
     "passwordTooShort": "Password must be at least 6 characters",
-    "passwordStrong": "Strong password",
-    "passwordMedium": "Medium strength password",
-    "passwordWeak": "Weak password",
-    "passwordsMatch": "Passwords match",
-    "passwordsDoNotMatch": "Passwords do not match",
+    "invalidEmailFormat": "Invalid email format. Please enter a complete domain like @gmail.com",
+    "registerConfirmTitle": "Confirm Registration",
+    "registerConfirmDesc": "Do you want to register with the information you entered?",
     "checkEmailVerification": "You can now log in with this user.",
     "sessionExpired": "Session expired, please login again",
     "pleaseLoginAgain": "Please login again",
@@ -67,12 +65,27 @@
     "companyNews": "Company News",
     "announcementsFeed": "Announcements Feed",
     "calendar": "Calendar",
-    "lineOASettings": "Line OA Settings"
+    "companyCalendar": "Company Calendar",
+    "companyCalendarTitle": "Company Calendar",
+    "companyCalendarDescription": "View company calendar"
+  },
+  "companyEvent": {
+    "add": "Add Event",
+    "addTitle": "Add Company Event",
+    "editTitle": "Edit Company Event",
+    "name": "Event Name",
+    "description": "Description",
+    "datePlaceholder": "Date",
+    "event": "Company Event",
+    "deleteConfirm": "Are you sure you want to delete this event?",
+    "monthlyActivities": "Company Activities This Month"
   },
   "common": {
+    "logo": "Logo",
     "submit": "Submit",
     "cancel": "Cancel",
     "save": "Save",
+    "saving": "Saving...",
     "edit": "Edit",
     "delete": "Delete",
     "view": "View",
@@ -163,12 +176,21 @@
     "force": "Force (allow outside Jan 1)",
     "triggerReset": "Trigger Reset",
     "note": "Note",
-    "noteDetail": "Positions with will be included when no position is selected.",
+    "noteDetail": "Positions with will be included when no position is selected. All positions and all levels will be reset every year.",
     "allNewYearPositions": "All positions",
     "startDate": "Start Date",
     "endDate": "End Date",
     "reason": "Reason",
     "attachments": "Attachments",
+    "attachedFiles": "Attached Files",
+    "seeDetails": "See Details",
+    "manualReset": "Manual Reset",
+    "resetNow": "Reset Now",
+    "manualResetSuccess": "Manual reset successful",
+    "loading": "Loading...",
+    "clickToSelectFile": "Click to select file or drag file here",
+    "supportedFormats": "Supports PDF, JPG, PNG, DOC, DOCX",
+    "attachedImage": "Attached Image",
     "dateRange": "Date Range",
     "submitRequest": "Submit Request",
     "submitting": "Submitting...",
@@ -360,7 +382,7 @@
     "notSpecified": "Not specified",
     "noPosition": "No Position",
     "selectPosition": "Select Position",
-    "requestQuote": "Request Quote",
+    "requestQuote": "Request End work date",
     "newYearQuota": "New Year Reset (0=Reset,1=No)"
   },
   "employeeTypes": {
@@ -396,7 +418,8 @@
     "companyNews": "Company News",
     "noUpcomingHolidays": "No upcoming holidays",
     "noCompanyHolidays": "No company holidays this month",
-    "announcements": "Announcements"
+    "announcements": "Announcements",
+    "noAnnouncements": "No announcements"
   },
   "profile": {
     "personalInfo": "Personal Information",
@@ -406,6 +429,7 @@
     "settings": "Settings",
     "settingsDesc": "Manage your account settings",
     "profileTitle": "Manage your personal information and settings",
+    "editProfile": "Edit Profile",
     "updateSuccess": "Update successful",
     "updateError": "Update failed",
     "updateErrorDesc": "An error occurred while updating data",
@@ -504,7 +528,9 @@
     "noLeaveHistoryDesc": "No leave history available in the system",
     "pageInfo": "Page {{page}} of {{totalPages}}",
     "leaveTime": "Leave Time",
-    "days": "Days"
+    "days": "Days",
+    "cannotDeleteNonPending": "Only pending requests can be deleted",
+    "cannotDeleteNearDate": "Cannot delete requests within 1 day of leave date"
   },
   "admin": {
     "pendingRequests": "Pending Requests",
@@ -545,9 +571,9 @@
     "noDataForSelectedMonthYear": "No data for the selected month/year",
     "approveConfirmTitle": "Confirm Approval",
     "rejectConfirmTitle": "Confirm Rejection",
-    "approveConfirmDesc": "Do you want to approve {{name}}'s leave request?",
-    "rejectConfirmDesc": "Do you want to reject {name}'s leave request?",
-    "rejectConfirmDescTh": "Do you want to reject {name}'s leave request?",
+    "approveConfirmDesc": "Do you want to approve {{name}} leave request?",
+    "rejectConfirmDesc": "Do you want to reject {name} leave request?",
+    "rejectConfirmDescTh": "Do you want to reject {name} leave request?",
     "createUserTitle": "Create User",
     "createUserDesc": "Create a new user in the system",
     "selectUserType": "Select user type to create",
@@ -622,6 +648,10 @@
     "createSuccessDesc": "Data created successfully",
     "createError": "Create failed",
     "createErrorDesc": "Unable to create data",
+    "loadSuccess": "Load successful",
+    "loadSuccessDesc": "Data loaded successfully",
+    "loadError": "Load failed",
+    "loadErrorDesc": "Unable to load data",
     "allPositions": "All Positions",
     "allDepartments": "All Departments",
     "allRoles": "All Roles",
@@ -633,7 +663,8 @@
     "noEmployeesFoundDesc": "No employees match the selected filter criteria. Please try changing the criteria or reset the filter",
     "confirmDelete": "Confirm Delete",
     "confirmDeleteNewsDesc": "Are you sure you want to delete this news?",
-    "confirmDeleteDesc": "Are you sure you want to delete this user?"
+    "confirmDeleteDesc": "Are you sure you want to delete this user?",
+    "noPermissionToDelete": "No permission to delete this user"
   },
   "error": {
     "apiConnectionError": "API Connection Error",
@@ -683,6 +714,7 @@
     "enterPhoneNumber": "Enter Phone Number",
     "selectInternshipStartDate": "Select Start Work Date",
     "selectInternshipEndDate": "Select End Work Date",
+    "selectDate": "Select Date",
     "other": "Other",
     "preferNotToSay": "Prefer not to say"
   },
@@ -788,7 +820,12 @@
     "save": "Save",
     "cancel": "Cancel",
     "edit": "Edit",
-    "addTitle": "Add Company Event"
+    "add": "Add",
+    "event": "Company Event",
+    "addTitle": "Add Company Event",
+    "monthlyActivities": "Company Activities This Month",
+    "deleteConfirmTitle": "Confirm Delete Event",
+    "deleteConfirmMessage": "Are you sure you want to delete this event?"
   },
   "announcementsFeed": {
     "title": "Announcements Feed",
@@ -841,6 +878,13 @@
     "employeeLeaves": "Employee Leaves",
     "myLeaves": "My Leaves",
     "loading": "Loading...",
+    "noEvents": "No events this month",
+    "dualEvents": "Dual Events",
+    "viewMonth": "View Month",
+    "period": "Period",
+    "duration": "Duration",
+    "days": "days",
+    "hours": "hours",
     "months": {
       "january": "January",
       "february": "February",
@@ -881,5 +925,25 @@
     "description": "Crop your avatar to the desired size",
     "crop": "Crop",
     "cancel": "Cancel"
+  },
+  "validation": {
+    "requiredField": "Incomplete Information",
+    "requiredFieldDesc": "Please fill in all required information",
+    "invalidFormat": "Invalid Format",
+    "invalidFormatDesc": "Data format is invalid",
+    "invalidEmail": "Invalid Email",
+    "invalidEmailDesc": "Please enter a valid email address"
+  },
+  "network": {
+    "timeoutError": "Connection Timeout",
+    "timeoutErrorDesc": "Connection took too long",
+    "serverError": "Server Error",
+    "serverErrorDesc": "An error occurred on the server"
+  },
+  "file": {
+    "downloadSuccess": "Download Successful",
+    "downloadSuccessDesc": "File downloaded successfully",
+    "downloadError": "Download Failed",
+    "downloadErrorDesc": "Unable to download file"
   }
 }

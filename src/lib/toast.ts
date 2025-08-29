@@ -2,6 +2,8 @@
 // This file provides a centralized way to handle all toast notifications
 
 import { toast } from '@/hooks/use-toast';
+import { config } from '@/config';
+import i18next from 'i18next';
 
 // Toast variants (only allowed: 'default' | 'destructive')
 export type ToastVariant = 'default' | 'destructive';
@@ -22,7 +24,7 @@ export const showToast = {
       title,
       description,
       variant: 'default',
-      duration: duration || 3000
+      duration: duration || config.notifications.duration
     });
   },
   // Error toast (use 'destructive')
@@ -31,7 +33,7 @@ export const showToast = {
       title,
       description,
       variant: 'destructive',
-      duration: duration || 5000
+      duration: duration || config.notifications.duration
     });
   },
   // Warning toast (map to 'destructive')
@@ -40,7 +42,7 @@ export const showToast = {
       title,
       description,
       variant: 'destructive',
-      duration: duration || 4000
+      duration: duration || config.notifications.duration
     });
   },
   // Info toast (map to 'default')
@@ -49,7 +51,7 @@ export const showToast = {
       title,
       description,
       variant: 'default',
-      duration: duration || 3000
+      duration: duration || config.notifications.duration
     });
   },
   // Custom toast (only allow allowed variants)
@@ -64,146 +66,265 @@ export const showToast = {
   }
 };
 
-// Predefined toast messages for common scenarios
+// Helper to get translation function (t)
+function getT(t?: any) {
+  return t || i18next.t.bind(i18next);
+}
+
+// Helper: map canonical item keys to localized labels
+const resolveItemName = (itemName?: string, t?: any): string | undefined => {
+  const _t = getT(t);
+  if (!itemName) return undefined;
+  if (!t) return itemName;
+  switch (itemName) {
+    case 'position':
+      return _t('positions.position');
+    case 'department':
+      return _t('departments.departments');
+    case 'leaveType':
+      return _t('leave.leaveType');
+    case 'announcement':
+      return _t('companyNews.news');
+    case 'user':
+      return _t('common.user');
+    default:
+      return itemName; // already localized or custom
+  }
+};
 export const toastMessages = {
   // Authentication
   auth: {
-    loginSuccess: (name?: string) => ({
-      title: 'เข้าสู่ระบบสำเร็จ',
-      description: name ? `ยินดีต้อนรับ ${name}` : 'เข้าสู่ระบบสำเร็จแล้ว'
-    }),
-    loginError: (message?: string) => ({
-      title: 'เข้าสู่ระบบไม่สำเร็จ',
-      description: message || 'กรุณาตรวจสอบอีเมลและรหัสผ่าน'
-    }),
-    logoutSuccess: () => ({
-      title: 'ออกจากระบบสำเร็จ',
-      description: 'ออกจากระบบแล้ว'
-    }),
-    sessionExpired: () => ({
-      title: 'เซสชันหมดอายุ',
-      description: 'กรุณาเข้าสู่ระบบใหม่'
-    }),
-    tokenNotFound: () => ({
-      title: 'ไม่พบ token',
-      description: 'กรุณาเข้าสู่ระบบใหม่'
-    })
+    loginSuccess: (name?: string, t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('auth.loginSuccess'),
+        description: name ? _t('auth.welcomeToSystem', { name }) : _t('auth.welcomeToSystem')
+      };
+    },
+    loginError: (message?: string, t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('auth.loginError'),
+        description: message || _t('auth.enterEmailPassword')
+      };
+    },
+    logoutSuccess: (t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('auth.logoutSuccess'),
+        description: _t('auth.logoutSuccess')
+      };
+    },
+    sessionExpired: (t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('auth.sessionExpired'),
+        description: _t('auth.sessionExpiredDesc')
+      };
+    },
+    tokenNotFound: (t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('auth.tokenNotFound'),
+        description: _t('auth.pleaseLoginAgain')
+      };
+    }
   },
 
   // CRUD operations
   crud: {
-    createSuccess: (itemName?: string, t?: any) => ({
-      title: t ? t('system.createSuccess', 'สร้างสำเร็จแล้ว') : 'สร้างสำเร็จแล้ว',
-      description: t ? t('system.createSuccessDesc', itemName ? `สร้าง ${itemName} สำเร็จแล้ว` : 'สร้างข้อมูลสำเร็จแล้ว') : (itemName ? `สร้าง ${itemName} สำเร็จแล้ว` : 'สร้างข้อมูลสำเร็จแล้ว')
-    }),
-    createError: (itemName?: string, message?: string, t?: any) => ({
-      title: t ? t('system.createError', 'สร้างไม่สำเร็จ') : 'สร้างไม่สำเร็จ',
-      description: t ? t('system.createErrorDesc', message || (itemName ? `ไม่สามารถสร้าง ${itemName} ได้` : 'ไม่สามารถสร้างข้อมูลได้')) : (message || (itemName ? `ไม่สามารถสร้าง ${itemName} ได้` : 'ไม่สามารถสร้างข้อมูลได้'))
-    }),
-    updateSuccess: (itemName?: string, t?: any) => ({
-      title: t ? t('system.updateSuccess', 'อัปเดตสำเร็จ') : 'อัปเดตสำเร็จ',
-      description: t ? t('system.updateSuccessDesc', itemName ? `อัปเดต ${itemName} สำเร็จแล้ว` : 'อัปเดตข้อมูลสำเร็จแล้ว') : (itemName ? `อัปเดต ${itemName} สำเร็จแล้ว` : 'อัปเดตข้อมูลสำเร็จแล้ว')
-    }),
-    updateError: (itemName?: string, message?: string, t?: any) => ({
-      title: t ? t('system.updateError', 'อัปเดตไม่สำเร็จ') : 'อัปเดตไม่สำเร็จ',
-      description: t ? t('system.updateErrorDesc', message || (itemName ? `ไม่สามารถอัปเดต ${itemName} ได้` : 'ไม่สามารถอัปเดตข้อมูลได้')) : (message || (itemName ? `ไม่สามารถอัปเดต ${itemName} ได้` : 'ไม่สามารถอัปเดตข้อมูลได้'))
-    }),
-    deleteSuccess: (itemName?: string, t?: any) => ({
-      title: t ? t('system.deleteSuccess', 'ลบสำเร็จ') : 'ลบสำเร็จ',
-      description: t ? t('system.deleteSuccessDesc', itemName ? `ลบ ${itemName} สำเร็จแล้ว` : 'ลบข้อมูลสำเร็จแล้ว') : (itemName ? `ลบ ${itemName} สำเร็จแล้ว` : 'ลบข้อมูลสำเร็จแล้ว')
-    }),
-    deleteError: (itemName?: string, message?: string, t?: any) => ({
-      title: t ? t('system.deleteError', 'ลบไม่สำเร็จ') : 'ลบไม่สำเร็จ',
-      description: t ? t('system.deleteFailedDesc', message || (itemName ? `ไม่สามารถลบ ${itemName} ได้` : 'ไม่สามารถลบข้อมูลได้')) : (message || (itemName ? `ไม่สามารถลบ ${itemName} ได้` : 'ไม่สามารถลบข้อมูลได้'))
-    }),
-    loadSuccess: (itemName?: string) => ({
-      title: 'โหลดสำเร็จ',
-      description: itemName ? `โหลด ${itemName} สำเร็จแล้ว` : 'โหลดข้อมูลสำเร็จแล้ว'
-    }),
-    loadError: (itemName?: string, message?: string) => ({
-      title: 'โหลดไม่สำเร็จ',
-      description: message || (itemName ? `ไม่สามารถโหลด ${itemName} ได้` : 'ไม่สามารถโหลดข้อมูลได้')
-    })
+    createSuccess: (itemName?: string, t?: any) => {
+      const _t = getT(t);
+      const item = resolveItemName(itemName, _t) || _t('common.user');
+      return {
+        title: _t('system.createSuccess'),
+        description: _t('system.createSuccessDesc', { itemName: item })
+      };
+    },
+    createError: (itemName?: string, message?: string, t?: any) => {
+      const _t = getT(t);
+      const item = resolveItemName(itemName, _t) || _t('common.user');
+      return {
+        title: _t('system.createError'),
+        description: message || _t('system.createErrorDesc', { itemName: item, message: '' })
+      };
+    },
+    updateSuccess: (itemName?: string, t?: any) => {
+      const _t = getT(t);
+      const item = resolveItemName(itemName, _t) || _t('common.user');
+      return {
+        title: _t('system.updateSuccess'),
+        description: _t('system.updateSuccessDesc', { itemName: item })
+      };
+    },
+    updateError: (itemName?: string, message?: string, t?: any) => {
+      const _t = getT(t);
+      const item = resolveItemName(itemName, _t) || _t('common.user');
+      return {
+        title: _t('system.updateError'),
+        description: message || _t('system.updateErrorDesc', { itemName: item, message: '' })
+      };
+    },
+    deleteSuccess: (itemName?: string, t?: any) => {
+      const _t = getT(t);
+      const item = resolveItemName(itemName, _t) || _t('common.user');
+      return {
+        title: _t('system.deleteSuccess'),
+        description: `${_t('common.delete')} ${item} ${_t('common.success')}`
+      };
+    },
+    deleteError: (itemName?: string, message?: string, t?: any) => {
+      const _t = getT(t);
+      const item = resolveItemName(itemName, _t) || _t('common.user');
+      return {
+        title: _t('system.deleteError'),
+        description: message || `${_t('common.delete')} ${item} ${_t('common.error')}`
+      };
+    },
+    loadSuccess: (itemName?: string, t?: any) => {
+      const _t = getT(t);
+      const item = itemName ? resolveItemName(itemName, _t) : undefined;
+      return {
+        title: _t('system.loadSuccess'),
+        description: item ? _t('system.loadSuccessDesc', { itemName: item }) : _t('system.loadSuccessDesc')
+      };
+    },
+    loadError: (itemName?: string, message?: string, t?: any) => {
+      const _t = getT(t);
+      const item = itemName ? resolveItemName(itemName, _t) : undefined;
+      return {
+        title: _t('system.loadError'),
+        description: message || (item ? _t('system.loadErrorDesc', { itemName: item }) : _t('system.loadErrorDesc'))
+      };
+    }
   },
 
   // Leave management
   leave: {
-    requestSubmitted: () => ({
-      title: 'ส่งคำขอสำเร็จ',
-      description: 'ส่งคำขอลาพักผ่อนสำเร็จแล้ว'
-    }),
-    requestApproved: (employeeName?: string) => ({
-      title: 'อนุมัติสำเร็จ',
-      description: employeeName ? `อนุมัติคำขอของ ${employeeName} สำเร็จแล้ว` : 'อนุมัติคำขอสำเร็จแล้ว'
-    }),
-    requestRejected: (employeeName?: string) => ({
-      title: 'ปฏิเสธสำเร็จ',
-      description: employeeName ? `ปฏิเสธคำขอของ ${employeeName} สำเร็จแล้ว` : 'ปฏิเสธคำขอสำเร็จแล้ว'
-    }),
-    requestError: (action: string, message?: string) => ({
-      title: `${action}ไม่สำเร็จ`,
-      description: message || `ไม่สามารถ${action}คำขอได้`
-    })
+    requestSubmitted: (t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('leave.submitSuccess'),
+        description: _t('leave.submitSuccessDesc')
+      };
+    },
+    requestApproved: (employeeName?: string, t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('admin.approveSuccess'),
+        description: employeeName ? _t('admin.approveSuccessDesc', { name: employeeName }) : _t('admin.approveSuccessDesc')
+      };
+    },
+    requestRejected: (employeeName?: string, t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('admin.rejectSuccess'),
+        description: employeeName ? _t('admin.rejectSuccessDesc', { name: employeeName }) : _t('admin.rejectSuccessDesc')
+      };
+    },
+    requestError: (action: string, message?: string, t?: any) => {
+      const _t = getT(t);
+      return {
+        title: `${action}${_t('leave.submitError')}`,
+        description: message || `${_t('leave.submitErrorDesc')}`
+      };
+    }
   },
 
   // File operations
   file: {
-    uploadSuccess: (fileName?: string) => ({
-      title: 'อัปโหลดสำเร็จ',
-      description: fileName ? `อัปโหลด ${fileName} สำเร็จแล้ว` : 'อัปโหลดไฟล์สำเร็จแล้ว'
-    }),
-    uploadError: (fileName?: string, message?: string) => ({
-      title: 'อัปโหลดไม่สำเร็จ',
-      description: message || (fileName ? `ไม่สามารถอัปโหลด ${fileName} ได้` : 'ไม่สามารถอัปโหลดไฟล์ได้')
-    }),
-    downloadSuccess: (fileName?: string) => ({
-      title: 'ดาวน์โหลดสำเร็จ',
-      description: fileName ? `ดาวน์โหลด ${fileName} สำเร็จแล้ว` : 'ดาวน์โหลดไฟล์สำเร็จแล้ว'
-    }),
-    downloadError: (fileName?: string, message?: string) => ({
-      title: 'ดาวน์โหลดไม่สำเร็จ',
-      description: message || (fileName ? `ไม่สามารถดาวน์โหลด ${fileName} ได้` : 'ไม่สามารถดาวน์โหลดไฟล์ได้')
-    })
+    uploadSuccess: (fileName?: string, t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('profile.uploadSuccess'),
+        description: fileName ? _t('profile.uploadSuccessDesc', { fileName }) : _t('profile.uploadSuccessDesc')
+      };
+    },
+    uploadError: (fileName?: string, message?: string, t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('profile.uploadError'),
+        description: message || (fileName ? _t('profile.uploadErrorDesc', { fileName }) : _t('profile.uploadErrorDesc'))
+      };
+    },
+    downloadSuccess: (fileName?: string, t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('file.downloadSuccess'),
+        description: fileName ? _t('file.downloadSuccessDesc', { fileName }) : _t('file.downloadSuccessDesc')
+      };
+    },
+    downloadError: (fileName?: string, message?: string, t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('file.downloadError'),
+        description: message || (fileName ? _t('file.downloadErrorDesc', { fileName }) : _t('file.downloadErrorDesc'))
+      };
+    }
   },
 
   // Network errors
   network: {
-    connectionError: () => ({
-      title: 'ข้อผิดพลาดการเชื่อมต่อ',
-      description: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้'
-    }),
-    timeoutError: () => ({
-      title: 'หมดเวลาการเชื่อมต่อ',
-      description: 'การเชื่อมต่อใช้เวลานานเกินไป'
-    }),
-    serverError: () => ({
-      title: 'ข้อผิดพลาดเซิร์ฟเวอร์',
-      description: 'เกิดข้อผิดพลาดที่เซิร์ฟเวอร์'
-    })
+    connectionError: (t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('admin.connectionError'),
+        description: _t('admin.serverConnectionError')
+      };
+    },
+    timeoutError: (t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('network.timeoutError'),
+        description: _t('network.timeoutErrorDesc')
+      };
+    },
+    serverError: (t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('network.serverError'),
+        description: _t('network.serverErrorDesc')
+      };
+    }
   },
 
   // Validation
   validation: {
-    requiredField: (fieldName?: string) => ({
-      title: 'ข้อมูลไม่ครบถ้วน',
-      description: fieldName ? `กรุณากรอก ${fieldName}` : 'กรุณากรอกข้อมูลให้ครบถ้วน'
-    }),
-    invalidFormat: (fieldName?: string) => ({
-      title: 'รูปแบบไม่ถูกต้อง',
-      description: fieldName ? `รูปแบบของ ${fieldName} ไม่ถูกต้อง` : 'รูปแบบข้อมูลไม่ถูกต้อง'
-    }),
-    invalidEmail: () => ({
-      title: 'อีเมลไม่ถูกต้อง',
-      description: 'กรุณากรอกอีเมลให้ถูกต้อง'
-    }),
-    passwordMismatch: () => ({
-      title: 'รหัสผ่านไม่ตรงกัน',
-      description: 'รหัสผ่านและรหัสผ่านยืนยันไม่ตรงกัน'
-    }),
-    passwordTooShort: () => ({
-      title: 'รหัสผ่านสั้นเกินไป',
-      description: 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร'
-    })
+    requiredField: (fieldName?: string, t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('validation.requiredField'),
+        description: fieldName ? _t('validation.requiredFieldDesc', { fieldName }) : _t('validation.requiredFieldDesc')
+      };
+    },
+    invalidFormat: (fieldName?: string, t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('validation.invalidFormat'),
+        description: fieldName ? _t('validation.invalidFormatDesc', { fieldName }) : _t('validation.invalidFormatDesc')
+      };
+    },
+    invalidEmail: (t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('validation.invalidEmail'),
+        description: _t('validation.invalidEmailDesc')
+      };
+    },
+    passwordMismatch: (t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('auth.passwordMismatch'),
+        description: _t('auth.passwordMismatch')
+      };
+    },
+    passwordTooShort: (t?: any) => {
+      const _t = getT(t);
+      return {
+        title: _t('auth.passwordTooShort'),
+        description: _t('auth.passwordTooShort')
+      };
+    }
   }
 };
 
@@ -211,24 +332,24 @@ export const toastMessages = {
 export const showToastMessage = {
   // Show authentication related toasts
   auth: {
-    loginSuccess: (name?: string) => {
-      const { title, description } = toastMessages.auth.loginSuccess(name);
+    loginSuccess: (name?: string, t?: any) => {
+      const { title, description } = toastMessages.auth.loginSuccess(name, t);
       return showToast.success(title, description);
     },
-    loginError: (message?: string) => {
-      const { title, description } = toastMessages.auth.loginError(message);
+    loginError: (message?: string, t?: any) => {
+      const { title, description } = toastMessages.auth.loginError(message, t);
       return showToast.error(title, description);
     },
-    logoutSuccess: () => {
-      const { title, description } = toastMessages.auth.logoutSuccess();
+    logoutSuccess: (t?: any) => {
+      const { title, description } = toastMessages.auth.logoutSuccess(t);
       return showToast.success(title, description);
     },
-    sessionExpired: () => {
-      const { title, description } = toastMessages.auth.sessionExpired();
+    sessionExpired: (t?: any) => {
+      const { title, description } = toastMessages.auth.sessionExpired(t);
       return showToast.error(title, description);
     },
-    tokenNotFound: () => {
-      const { title, description } = toastMessages.auth.tokenNotFound();
+    tokenNotFound: (t?: any) => {
+      const { title, description } = toastMessages.auth.tokenNotFound(t);
       return showToast.error(title, description);
     }
   },
@@ -259,92 +380,92 @@ export const showToastMessage = {
       const { title, description } = toastMessages.crud.deleteError(itemName, message, t);
       return showToast.error(title, description);
     },
-    loadSuccess: (itemName?: string) => {
-      const { title, description } = toastMessages.crud.loadSuccess(itemName);
+    loadSuccess: (itemName?: string, t?: any) => {
+      const { title, description } = toastMessages.crud.loadSuccess(itemName, t);
       return showToast.success(title, description);
     },
-    loadError: (itemName?: string, message?: string) => {
-      const { title, description } = toastMessages.crud.loadError(itemName, message);
+    loadError: (itemName?: string, message?: string, t?: any) => {
+      const { title, description } = toastMessages.crud.loadError(itemName, message, t);
       return showToast.error(title, description);
     }
   },
 
   // Show leave management related toasts
   leave: {
-    requestSubmitted: () => {
-      const { title, description } = toastMessages.leave.requestSubmitted();
+    requestSubmitted: (t?: any) => {
+      const { title, description } = toastMessages.leave.requestSubmitted(t);
       return showToast.success(title, description);
     },
-    requestApproved: (employeeName?: string) => {
-      const { title, description } = toastMessages.leave.requestApproved(employeeName);
+    requestApproved: (employeeName?: string, t?: any) => {
+      const { title, description } = toastMessages.leave.requestApproved(employeeName, t);
       return showToast.success(title, description);
     },
-    requestRejected: (employeeName?: string) => {
-      const { title, description } = toastMessages.leave.requestRejected(employeeName);
+    requestRejected: (employeeName?: string, t?: any) => {
+      const { title, description } = toastMessages.leave.requestRejected(employeeName, t);
       return showToast.error(title, description);
     },
-    requestError: (action: string, message?: string) => {
-      const { title, description } = toastMessages.leave.requestError(action, message);
+    requestError: (action: string, message?: string, t?: any) => {
+      const { title, description } = toastMessages.leave.requestError(action, message, t);
       return showToast.error(title, description);
     }
   },
 
   // Show file operation related toasts
   file: {
-    uploadSuccess: (fileName?: string) => {
-      const { title, description } = toastMessages.file.uploadSuccess(fileName);
+    uploadSuccess: (fileName?: string, t?: any) => {
+      const { title, description } = toastMessages.file.uploadSuccess(fileName, t);
       return showToast.success(title, description);
     },
-    uploadError: (fileName?: string, message?: string) => {
-      const { title, description } = toastMessages.file.uploadError(fileName, message);
+    uploadError: (fileName?: string, message?: string, t?: any) => {
+      const { title, description } = toastMessages.file.uploadError(fileName, message, t);
       return showToast.error(title, description);
     },
-    downloadSuccess: (fileName?: string) => {
-      const { title, description } = toastMessages.file.downloadSuccess(fileName);
+    downloadSuccess: (fileName?: string, t?: any) => {
+      const { title, description } = toastMessages.file.downloadSuccess(fileName, t);
       return showToast.success(title, description);
     },
-    downloadError: (fileName?: string, message?: string) => {
-      const { title, description } = toastMessages.file.downloadError(fileName, message);
+    downloadError: (fileName?: string, message?: string, t?: any) => {
+      const { title, description } = toastMessages.file.downloadError(fileName, message, t);
       return showToast.error(title, description);
     }
   },
 
   // Show network error related toasts
   network: {
-    connectionError: () => {
-      const { title, description } = toastMessages.network.connectionError();
+    connectionError: (t?: any) => {
+      const { title, description } = toastMessages.network.connectionError(t);
       return showToast.error(title, description);
     },
-    timeoutError: () => {
-      const { title, description } = toastMessages.network.timeoutError();
+    timeoutError: (t?: any) => {
+      const { title, description } = toastMessages.network.timeoutError(t);
       return showToast.error(title, description);
     },
-    serverError: () => {
-      const { title, description } = toastMessages.network.serverError();
+    serverError: (t?: any) => {
+      const { title, description } = toastMessages.network.serverError(t);
       return showToast.error(title, description);
     }
   },
 
   // Show validation related toasts
   validation: {
-    requiredField: (fieldName?: string) => {
-      const { title, description } = toastMessages.validation.requiredField(fieldName);
+    requiredField: (fieldName?: string, t?: any) => {
+      const { title, description } = toastMessages.validation.requiredField(fieldName, t);
       return showToast.error(title, description);
     },
-    invalidFormat: (fieldName?: string) => {
-      const { title, description } = toastMessages.validation.invalidFormat(fieldName);
+    invalidFormat: (fieldName?: string, t?: any) => {
+      const { title, description } = toastMessages.validation.invalidFormat(fieldName, t);
       return showToast.error(title, description);
     },
-    invalidEmail: () => {
-      const { title, description } = toastMessages.validation.invalidEmail();
+    invalidEmail: (t?: any) => {
+      const { title, description } = toastMessages.validation.invalidEmail(t);
       return showToast.error(title, description);
     },
-    passwordMismatch: () => {
-      const { title, description } = toastMessages.validation.passwordMismatch();
+    passwordMismatch: (t?: any) => {
+      const { title, description } = toastMessages.validation.passwordMismatch(t);
       return showToast.error(title, description);
     },
-    passwordTooShort: () => {
-      const { title, description } = toastMessages.validation.passwordTooShort();
+    passwordTooShort: (t?: any) => {
+      const { title, description } = toastMessages.validation.passwordTooShort(t);
       return showToast.error(title, description);
     }
   }

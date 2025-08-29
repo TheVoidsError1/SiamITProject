@@ -2,6 +2,8 @@ require('dotenv').config(); //node scripts/seed_initial_data.js run แบบน
 require('reflect-metadata');
 const { DataSource } = require('typeorm');
 const config = require('../config');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
 const entities = [
   require('../EnityTable/user.js'),
@@ -71,6 +73,8 @@ async function seed() {
   const departmentRepo = AppDataSource.getRepository('Department');
   const positionRepo = AppDataSource.getRepository('Position');
   const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+  const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+  const processRepo = AppDataSource.getRepository('ProcessCheck');
 
   const departments = [
     ['Finance', 'การเงิน'],
@@ -112,7 +116,62 @@ async function seed() {
     if (await upsertLeaveType(leaveTypeRepo, en, th)) ltAdded += 1;
   }
 
-  console.log('Seeding completed:', { departmentsInserted: depAdded, positionsInserted: posAdded, leaveTypesInserted: ltAdded });
+  // Ensure default superadmin account exists
+  const defaultSuperAdmin = {
+    name: 'Super Admin',
+    email: process.env.SEED_SUPERADMIN_EMAIL || 'superadmin@siamit.local',
+    password: process.env.SEED_SUPERADMIN_PASSWORD || 'Admin@123',
+    departmentEn: 'IT Department',
+    positionEn: 'No Position',
+  };
+
+  let createdSuperAdmin = false;
+  try {
+    const existing = await processRepo.findOne({ where: { Email: defaultSuperAdmin.email } });
+    if (!existing) {
+      // Resolve department
+      let department = await departmentRepo.findOne({ where: [{ department_name_en: defaultSuperAdmin.departmentEn }] });
+      if (!department) {
+        department = await departmentRepo.save(departmentRepo.create({ department_name_en: defaultSuperAdmin.departmentEn, department_name_th: 'แผนกไอที' }));
+      }
+
+      // Resolve position
+      let position = await positionRepo.findOne({ where: [{ position_name_en: defaultSuperAdmin.positionEn }] });
+      if (!position) {
+        position = await positionRepo.save(positionRepo.create({ position_name_en: defaultSuperAdmin.positionEn, position_name_th: 'ไม่มีตำแหน่ง' }));
+      }
+
+      // Create superadmin entity
+      const sa = superadminRepo.create({
+        superadmin_name: defaultSuperAdmin.name,
+        department: department.id,
+        position: position.id,
+      });
+      const savedSa = await superadminRepo.save(sa);
+
+      // Credentials in process_check
+      const hashed = await bcrypt.hash(defaultSuperAdmin.password, 10);
+      const token = jwt.sign(
+        { userId: savedSa.id, email: defaultSuperAdmin.email },
+        config.server.jwtSecret,
+        { expiresIn: config.server.jwtExpiresIn }
+      );
+      const pc = processRepo.create({
+        Email: defaultSuperAdmin.email,
+        Password: hashed,
+        Token: token,
+        Role: 'superadmin',
+        Repid: savedSa.id,
+        avatar_url: null,
+      });
+      await processRepo.save(pc);
+      createdSuperAdmin = true;
+    }
+  } catch (e) {
+    console.error('Error ensuring superadmin:', e.message || e);
+  }
+
+  console.log('Seeding completed:', { departmentsInserted: depAdded, positionsInserted: posAdded, leaveTypesInserted: ltAdded, createdSuperAdmin });
   await AppDataSource.destroy();
 }
 
