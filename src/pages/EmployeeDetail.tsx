@@ -1078,17 +1078,7 @@ const EmployeeDetail = () => {
                                 <Eye className="w-3.5 h-3.5 mr-1" />
                                 {t('common.viewDetails')}
                               </Button>
-                              {user?.role === 'superadmin' && (
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  className="rounded-lg px-3 py-1.5 font-medium bg-gradient-to-r from-red-500 to-red-600 text-white shadow hover:scale-105 transition text-xs"
-                                  onClick={() => setDeleteLeaveId(leave.id)}
-                                >
-                                  <Trash2 className="w-3.5 h-3.5 mr-1" />
-                                  {t('common.delete')}
-                                </Button>
-                              )}
+
                             </div>
                         </TableCell>
                       </TableRow>
@@ -1140,27 +1130,7 @@ const EmployeeDetail = () => {
         leaveRequest={selectedLeave}
       />
         
-        {/* Delete Confirmation Dialog */}
-        <AlertDialog open={!!deleteLeaveId} onOpenChange={() => setDeleteLeaveId(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{t('common.confirmDelete', 'ยืนยันการลบ')}</AlertDialogTitle>
-              <AlertDialogDescription>
-                {t('leave.deleteConfirmMessage', 'คุณต้องการลบใบลานี้หรือไม่? การดำเนินการนี้ไม่สามารถยกเลิกได้')}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDeleteLeave}
-                className="bg-red-600 hover:bg-red-700"
-                disabled={deleting}
-              >
-                {deleting ? t('common.deleting', 'กำลังลบ...') : t('common.delete')}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+
     </div>
   );
 }

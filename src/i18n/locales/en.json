@@ -526,7 +526,9 @@
     "noLeaveHistoryDesc": "No leave history available in the system",
     "pageInfo": "Page {{page}} of {{totalPages}}",
     "leaveTime": "Leave Time",
-    "days": "Days"
+    "days": "Days",
+    "cannotDeleteNonPending": "Only pending requests can be deleted",
+    "cannotDeleteNearDate": "Cannot delete requests within 1 day of leave date"
   },
   "admin": {
     "pendingRequests": "Pending Requests",

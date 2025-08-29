@@ -516,7 +516,8 @@ const CompanyMonthDetailPage = () => {
           ) : eventsThisMonth.length === 0 ? (
             <div className="text-blue-400 text-base">{t('calendar.noEvents')}</div>
           ) : (
-            <ul className="space-y-3">
+            <div className="max-h-96 overflow-y-auto pr-2">
+              <ul className="space-y-3">
               {eventsThisMonth.map(event => {
                 const d = new Date(event.date);
                 const day = d.getDate();
@@ -589,6 +590,7 @@ const CompanyMonthDetailPage = () => {
                 );
               })}
             </ul>
+            </div>
           )}
         </div>
       </div>
