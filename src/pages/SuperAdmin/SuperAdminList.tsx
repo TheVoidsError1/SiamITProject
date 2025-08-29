@@ -310,7 +310,7 @@ const SuperAdminList: React.FC = () => {
                   onClick={() => handleTabChange(tab)}
                   className={`flex-1 flex items-center justify-center gap-4 py-6 px-8 rounded-2xl transition-all duration-500 transform hover:scale-105 relative overflow-hidden ${
                     isActive 
-                      ? `bg-gradient-to-r ${config.gradient} ${config.activeTextColor} shadow-xl shadow-lg` 
+                      ? `bg-gradient-to-r ${config.gradient} ${config.activeTextColor}  shadow-lg` 
                       : `${config.bgColor} ${config.textColor} ${config.hoverColor} ${config.borderColor} border hover:shadow-lg`
                   }`}
                 >

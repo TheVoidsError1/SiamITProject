@@ -567,7 +567,7 @@ const ManageAll: React.FC = () => {
     }
     setManualResetLoading(true);
     try {
-      const res = await apiService.post('/api/leave-quota/reset-by-users', { userIds: selectedUserIds, strategy: 'zero' });
+      const res = await apiService.post('/api/leave-quota-reset/reset-by-users', { userIds: selectedUserIds, strategy: 'zero' });
       if (!res || !(res.success || res.status === 'success')) throw new Error(res?.message || 'Failed');
       showToast.success(t('leave.manualResetSuccess'));
     } catch (err: any) {

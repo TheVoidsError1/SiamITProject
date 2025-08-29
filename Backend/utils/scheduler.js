@@ -21,7 +21,7 @@ function registerScheduledJobs(config) {
     // Run at 00:05 on January 1st every year
     cron.schedule('5 0 1 1 *', async () => {
       try {
-        const resetUrl = `${config.server.apiBaseUrl}/api/leave-quota/reset`;
+        const resetUrl = `${config.server.apiBaseUrl}/api/leave-quota-reset/reset`;
         const response = await axios.post(resetUrl, { force: false, strategy: 'zero' }, { timeout: 60000 });
         console.log('[CRON] Yearly leave reset executed:', response.data);
       } catch (err) {

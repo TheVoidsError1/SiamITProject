@@ -704,6 +704,10 @@ module.exports = (AppDataSource) => {
 
       const { Repid: repid } = processCheck;
 
+      // เพิ่มเติม: ดึง leave_used ของ user มาด้วย
+      const leaveUsedRepo = AppDataSource.getRepository('LeaveUsed');
+      const leaveUsedRecords = await leaveUsedRepo.find({ where: { user_id: repid } });
+
       // Get user's position to determine leave quotas
       const userRepo = AppDataSource.getRepository('User');
       const adminRepo = AppDataSource.getRepository('Admin');
@@ -752,32 +756,37 @@ module.exports = (AppDataSource) => {
           return !leaveTypeEn.includes('emergency') && !leaveTypeTh.includes('ฉุกเฉิน');
         })
         .map(leaveType => {
-          // Find quota for this leave type
+          // quota
           const quotaRow = quotas.find(q => q.leaveTypeId === leaveType.id);
           const quotaDays = quotaRow ? quotaRow.quota : 0;
-          
-          // Calculate used days/hours from approved leaves of this type
-          let usedDays = 0;
-          let usedHours = 0;
-          
-          const typeLeaves = approvedLeaves.filter(leave => leave.leaveType === leaveType.id);
-          for (const leave of typeLeaves) {
-            if (leave.startTime && leave.endTime) {
-              // Hour-based leave
-              const [sh, sm] = leave.startTime.split(':').map(Number);
-              const [eh, em] = leave.endTime.split(':').map(Number);
-              const startMinutes = (sh || 0) * 60 + (sm || 0);
-              const endMinutes = (eh || 0) * 60 + (em || 0);
-              let durationHours = (endMinutes - startMinutes) / 60;
-              if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
-              usedHours += Math.floor(durationHours);
-            } else if (leave.startDate && leave.endDate) {
-              // Day-based leave
-              const start = new Date(leave.startDate);
-              const end = new Date(leave.endDate);
-              let days = calculateDaysBetween(start, end);
-              if (days < 0 || isNaN(days)) days = 0;
-              usedDays += days;
+
+          // ใช้ leave_used ถ้ามี
+          const usedRecord = leaveUsedRecords.find(r => r.leave_type_id === leaveType.id);
+          let usedDays = 0, usedHours = 0;
+          if (usedRecord) {
+            usedDays = usedRecord.days || 0;
+            usedHours = usedRecord.hour || 0;
+          } else {
+            // fallback: คำนวณจากใบลาเดิม
+            const typeLeaves = approvedLeaves.filter(leave => leave.leaveType === leaveType.id);
+            for (const leave of typeLeaves) {
+              if (leave.startTime && leave.endTime) {
+                // Hour-based leave
+                const [sh, sm] = leave.startTime.split(':').map(Number);
+                const [eh, em] = leave.endTime.split(':').map(Number);
+                const startMinutes = (sh || 0) * 60 + (sm || 0);
+                const endMinutes = (eh || 0) * 60 + (em || 0);
+                let durationHours = (endMinutes - startMinutes) / 60;
+                if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
+                usedHours += Math.floor(durationHours);
+              } else if (leave.startDate && leave.endDate) {
+                // Day-based leave
+                const start = new Date(leave.startDate);
+                const end = new Date(leave.endDate);
+                let days = calculateDaysBetween(start, end);
+                if (days < 0 || isNaN(days)) days = 0;
+                usedDays += days;
+              }
             }
           }
           
