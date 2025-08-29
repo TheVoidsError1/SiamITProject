@@ -253,25 +253,49 @@ const Profile = () => {
     };
   }, [setPushNotificationEnabled]);
 
+  // Simple random color system for leave types
+  const getLeaveTypeColor = (leaveTypeId: string) => {
+    const colorClasses = [
+      'bg-blue-500',
+      'bg-green-500', 
+      'bg-orange-500',
+      'bg-purple-500',
+      'bg-red-500',
+      'bg-pink-500',
+      'bg-indigo-500',
+      'bg-teal-500',
+      'bg-yellow-500',
+      'bg-cyan-500',
+      'bg-emerald-500',
+      'bg-rose-500',
+      'bg-violet-500',
+      'bg-sky-500',
+      'bg-lime-500',
+    ];
+    
+    // Use the leave type ID to generate a consistent random color
+    const hash = leaveTypeId.split('').reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0);
+      return a & a;
+    }, 0);
+    
+    return colorClasses[Math.abs(hash) % colorClasses.length];
+  };
+
   // New leaveStats for new API response
   const leaveStats = leaveQuota
     .filter(item => {
       // Filter out emergency leave type
       const leaveTypeEn = item.leave_type_en?.toLowerCase() || '';
       const leaveTypeTh = item.leave_type_th?.toLowerCase() || '';
-      return !leaveTypeEn.includes('emergency') && !leaveTypeTh.includes('');
+      return !leaveTypeEn.includes('emergency') && !leaveTypeTh.includes('ฉุกเฉิน');
     })
     .map(item => {
       return {
         label: i18n.language.startsWith('th') ? (item.leave_type_th || item.leave_type_en) : (item.leave_type_en || item.leave_type_th),
         used: { days: item.used_day ?? '-', hours: item.used_hour ?? '-' },
         quota: item.quota,
-        color:
-          item.leave_type_en?.toLowerCase() === 'personal' ? 'bg-orange-500' :
-          item.leave_type_en?.toLowerCase() === 'vacation' ? 'bg-blue-500' :
-          item.leave_type_en?.toLowerCase() === 'sick' ? 'bg-green-500' :
-          item.leave_type_en?.toLowerCase() === 'maternity' ? 'bg-purple-500' :
-          'bg-gray-400',
+        color: getLeaveTypeColor(item.id), // Use dynamic color based on leave type ID
         type: item.leave_type_en,
         remaining: { days: item.remaining_day ?? '-', hours: item.remaining_hour ?? '-' },
         quotaRaw: item.quota,
@@ -923,33 +947,33 @@ const Profile = () => {
                   })()}
                 </div>
                 {/* ปุ่มแก้ไข/บันทึก/ยกเลิก (วางไว้ใต้ Avatar หรือในฟอร์ม) */}
-                <div className="flex gap-3 justify-center mt-4">
-                  {!isEditing && (
-                    <Button type="button" className="btn-blue px-6 py-2 text-lg" onClick={() => setIsEditing(true)}>
-                      <span>แก้ไขข้อมูล</span>
-                    </Button>
-                  )}
-                  {isEditing && (
-                    <>
-                      <Button type="button" className="btn-blue px-6 py-2 text-lg" onClick={handleSave} disabled={saving || loading}>
-                        {saving ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                            กำลังบันทึก...
-                          </>
-                        ) : (
-                          <>
-                            <Save className="h-5 w-5 mr-2" />
-                            บันทึก
-                          </>
-                        )}
-                      </Button>
-                      <Button type="button" variant="outline" className="btn-blue-outline px-6 py-2 text-lg" onClick={() => { setIsEditing(false); }} disabled={saving || loading}>
-                        ยกเลิก
-                      </Button>
-                    </>
-                  )}
-                </div>
+                                 <div className="flex gap-3 justify-center mt-4">
+                   {!isEditing && (
+                     <Button type="button" className="btn-blue px-6 py-2 text-lg" onClick={() => setIsEditing(true)}>
+                       <span>{t('profile.editProfile')}</span>
+                     </Button>
+                   )}
+                   {isEditing && (
+                     <>
+                       <Button type="button" className="btn-blue px-6 py-2 text-lg" onClick={handleSave} disabled={saving || loading}>
+                         {saving ? (
+                           <>
+                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                             {t('common.saving')}
+                           </>
+                         ) : (
+                           <>
+                             <Save className="h-5 w-5 mr-2" />
+                             {t('common.save')}
+                           </>
+                         )}
+                       </Button>
+                       <Button type="button" variant="outline" className="btn-blue-outline px-6 py-2 text-lg" onClick={() => { setIsEditing(false); }} disabled={saving || loading}>
+                         {t('common.cancel')}
+                       </Button>
+                     </>
+                   )}
+                 </div>
               </form>
             </TabsContent>
 
