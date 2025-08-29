@@ -371,7 +371,7 @@ const SuperAdminList: React.FC = () => {
         {/* Enhanced Form Container */}
         <div className={`bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-10 animate-slide-up hover:shadow-3xl transition-all duration-500 hover:scale-[1.01] border-2 ${currentConfig.borderColor} relative overflow-hidden max-w-3xl mx-auto`}>  
           {/* Section: ข้อมูลส่วนตัว */}
-          <h4 className="text-xl font-bold mb-4 text-blue-700">{t('admin.personalInfo', 'ข้อมูลส่วนตัว')}</h4>
+          <h4 className="text-xl font-bold mb-4 text-blue-700">{t('admin.personalInfo')}</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
             {/* Full Name */}
             <div className="space-y-3 animate-fade-in-up-delay-3">
@@ -494,7 +494,7 @@ const SuperAdminList: React.FC = () => {
           </div>
           <hr className="my-6" />
           {/* Section: ข้อมูลการทำงาน */}
-          <h4 className="text-xl font-bold mb-4 text-purple-700">{t('admin.workInfo', 'ข้อมูลการทำงาน')}</h4>
+          <h4 className="text-xl font-bold mb-4 text-purple-700">{t('admin.workInfo')}</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
             {/* Department */}
             <div className="space-y-3 animate-fade-in-up-delay-6">
@@ -581,7 +581,7 @@ const SuperAdminList: React.FC = () => {
           </div>
           <hr className="my-6" />
           {/* Section: ข้อมูลเข้าสู่ระบบ */}
-          <h4 className="text-xl font-bold mb-4 text-indigo-700">{t('admin.loginInfo', 'ข้อมูลเข้าสู่ระบบ')}</h4>
+          <h4 className="text-xl font-bold mb-4 text-indigo-700">{t('admin.loginInfo')}</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
             {/* Password */}
             <div className="space-y-3 animate-fade-in-up-delay-7">

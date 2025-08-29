@@ -643,7 +643,10 @@
     "enterEmail": "กรอกอีเมล",
     "selectPosition": "เลือกตำแหน่ง",
     "selectDepartment": "เลือกแผนก",
+    "personalInfo": "ข้อมูลส่วนตัว",
     "phoneNumber": "เบอร์โทรศัพท์",
+    "workInfo": "ข้อมูลการทำงาน",
+    "loginInfo": "ข้อมูลเข้าสู่ระบบ",
     "enterPhoneNumber": "กรอกเบอร์โทรศัพท์",
     "passwordStrength": {
       "weak": "รหัสผ่านอ่อนแอ",
