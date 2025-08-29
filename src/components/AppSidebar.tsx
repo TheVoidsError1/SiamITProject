@@ -65,11 +65,7 @@ const adminItems = [
     url: "/admin/employees",
     icon: Users,
   },
-  {
-    title: "navigation.lineOASettings",
-    url: "/admin/line-oa-settings",
-    icon: MessageSquare,
-  },
+ 
 ];
 
 const superadminItems = [
@@ -179,9 +175,7 @@ export function AppSidebar() {
             <h2 className="text-lg font-bold text-sidebar-foreground">
               Siam IT
             </h2>
-            <p className="text-sm text-sidebar-foreground/70">
-              {t('system.onlineLeaveSystem')}
-            </p>
+
           </div>
           <NotificationBell />
         </div>
