@@ -648,6 +648,10 @@
     "workInfo": "ข้อมูลการทำงาน",
     "loginInfo": "ข้อมูลเข้าสู่ระบบ",
     "enterPhoneNumber": "กรอกเบอร์โทรศัพท์",
+    "confirmCreateUserTitle": "ยืนยันการสร้างผู้ใช้",
+    "confirmCreateUserMessage": "คุณต้องการสร้างผู้ใช้นี้หรือไม่?",
+    "confirm": "ยืนยัน",
+    "cancel": "ยกเลิก",
     "passwordStrength": {
       "weak": "รหัสผ่านอ่อนแอ",
       "medium": "รหัสผ่านปานกลาง",

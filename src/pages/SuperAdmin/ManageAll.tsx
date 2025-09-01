@@ -669,6 +669,7 @@ const ManageAll: React.FC = () => {
                             type="number"
                             min={0}
                             name={`quota_${lt.id}`}
+                            placeholder="0"
                             value={positionForm.quotas[lt.id] || ''}
                             onChange={e => handleQuotaChange(lt.id, e.target.value)}
                             required
@@ -680,7 +681,7 @@ const ManageAll: React.FC = () => {
                       <label className="flex items-center gap-3 ml-1">
                         <input
                           type="checkbox"
-                                              name="request_quota"
+                          name="request_quota"
                     checked={positionForm.request_quota}
                           onChange={handlePositionChange}
                           className="accent-blue-600 h-5 w-5 rounded border-gray-300 focus:ring-2 focus:ring-blue-400 transition-all"

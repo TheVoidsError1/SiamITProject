@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { Dialog, DialogContent, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
 import { apiEndpoints, apiService } from '@/lib/api';
 import { showToastMessage } from '@/lib/toast';
@@ -37,6 +38,7 @@ const SuperAdminList: React.FC = () => {
   const [error, setError] = useState<{ email?: string; full_name?: string; general?: string }>({});
   const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong'>('weak');
   const [selectedPositionRequestQuota, setSelectedPositionRequestQuota] = useState<boolean>(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const lang = i18n.language.startsWith('th') ? 'th' : 'en';
 
@@ -144,8 +146,8 @@ const SuperAdminList: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setError({});
     
     // Validation
@@ -684,9 +686,10 @@ const SuperAdminList: React.FC = () => {
           {/* Enhanced Submit Button */}
           <div className="flex justify-center mt-8 animate-fade-in-up-delay-9">
             <Button 
-              type="submit" 
+              type="button" 
               className={`w-full md:w-1/2 py-6 text-xl font-bold rounded-2xl shadow-2xl bg-gradient-to-r ${currentConfig.gradient} hover:shadow-3xl text-white transition-all duration-500 hover:scale-105 active:scale-95 transform relative overflow-hidden group`}
               disabled={loading}
+              onClick={() => setShowConfirmModal(true)}
             >
               {loading ? (
                 <div className="flex items-center justify-center">
@@ -704,6 +707,27 @@ const SuperAdminList: React.FC = () => {
               )}
             </Button>
           </div>
+          {/* Confirm Create User Dialog */}
+          <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+            <DialogContent>
+              <DialogTitle>{t('admin.confirmCreateUserTitle')}</DialogTitle>
+              <div>{t('admin.confirmCreateUserMessage')}</div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowConfirmModal(false)}>
+                  {t('admin.cancel')}
+                </Button>
+                <Button
+                  onClick={(e) => {
+                    setShowConfirmModal(false);
+                    handleSubmit();
+                  }}
+                  disabled={loading}
+                >
+                  {t('admin.confirm')}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
       
