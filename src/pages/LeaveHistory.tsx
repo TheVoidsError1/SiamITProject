@@ -2662,38 +2662,6 @@ const LeaveHistory = () => {
 
 
 
-          {/* Image Preview Dialog */}
-          <Dialog open={!!selectedImage} onOpenChange={() => setSelectedImage(null)}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0 bg-black/95">
-          <DialogHeader className="absolute top-4 right-4 z-10">
-            <DialogTitle className="sr-only">Image Preview</DialogTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSelectedImage(null)}
-              className="bg-white/20 text-white border-white/30 hover:bg-white/30"
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </DialogHeader>
-          
-          {selectedImage && (
-            <div className="flex items-center justify-center h-full p-4">
-              <img 
-                src={selectedImage} 
-                alt="Preview"
-                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                }}
-              />
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
-
-
       <style>{`
 
         .glass {
