@@ -765,8 +765,8 @@ const ManageAll: React.FC = () => {
                                 <td className="p-3 font-medium text-center">
                                   <label style={{ display: 'inline-block', position: 'relative', width: 40, height: 24 }}>
                                     <input type="checkbox" checked={!!pos.request_quota} style={{ opacity: 0, width: 0, height: 0 }} tabIndex={-1} readOnly />
-                                    <span style={{ position: 'absolute', cursor: 'not-allowed', top: 0, left: 0, right: 0, bottom: 0, background: !!pos.request_quota ? '#64b5f6' : '#ccc', borderRadius: 24, transition: 'background 0.2s', display: 'block' }}>
-                                      <span style={{ position: 'absolute', left: !!pos.request_quota ? 20 : 2, top: 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} />
+                                    <span style={{ position: 'absolute', cursor: 'not-allowed', top: 0, left: 0, right: 0, bottom: 0, background: pos.request_quota ? '#64b5f6' : '#ccc', borderRadius: 24, transition: 'background 0.2s', display: 'block' }}>
+                                      <span style={{ position: 'absolute', left: pos.request_quota ? 20 : 2, top: 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} />
                                     </span>
                                   </label>
                                 </td>
@@ -799,8 +799,8 @@ const ManageAll: React.FC = () => {
                                       style={{ opacity: 0, width: 0, height: 0 }}
                                       tabIndex={-1}
                                     />
-                                    <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, background: !!pos.request_quota ? '#64b5f6' : '#ccc', borderRadius: 24, transition: 'background 0.2s', display: 'block' }}>
-                                      <span style={{ position: 'absolute', left: !!pos.request_quota ? 20 : 2, top: 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} />
+                                    <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, background: pos.request_quota ? '#64b5f6' : '#ccc', borderRadius: 24, transition: 'background 0.2s', display: 'block' }}>
+                                      <span style={{ position: 'absolute', left: pos.request_quota ? 20 : 2, top: 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} />
                                     </span>
                                   </label>
                                 </td>
@@ -1064,7 +1064,7 @@ const ManageAll: React.FC = () => {
                                         left: 0,
                                         right: 0,
                                         bottom: 0,
-                                        background: !!lt.require_attachment ? '#64b5f6' : '#ccc',
+                                        background: lt.require_attachment ? '#64b5f6' : '#ccc',
                                         borderRadius: 24,
                                         transition: 'background 0.2s',
                                         display: 'block',
@@ -1073,7 +1073,7 @@ const ManageAll: React.FC = () => {
                                       <span
                                         style={{
                                           position: 'absolute',
-                                          left: !!lt.require_attachment ? 20 : 2,
+                                          left: lt.require_attachment ? 20 : 2,
                                           top: 2,
                                           width: 20,
                                           height: 20,

@@ -214,10 +214,10 @@ const Register = () => {
       });
       navigate('/login');
     } catch (error: any) {
-      let errMsg = error.message || t('common.error');
+      const errMsg = error.message || t('common.error');
       console.log('Registration error object:', error);
       console.log('Registration error message:', errMsg);
-      let newError: { email?: string; full_name?: string; general?: string } = {};
+      const newError: { email?: string; full_name?: string; general?: string } = {};
       const lowerMsg = errMsg.toLowerCase();
       if (lowerMsg.includes('user') || lowerMsg.includes('ชื่อผู้ใช')) {
         newError.full_name = errMsg;
