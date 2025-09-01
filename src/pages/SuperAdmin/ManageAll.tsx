@@ -31,7 +31,7 @@ const ManageAll: React.FC = () => {
   const lang = i18n.language.startsWith('th') ? 'th' : 'en';
   // Position state
   const [positions, setPositions] = useState<any[]>([]);
-      const [positionForm, setPositionForm] = useState<{ name_en: string; name_th: string; quotas: Record<string, number>; request_quota: boolean }>({ name_en: '', name_th: '', quotas: {}, request_quota: false });
+      const [positionForm, setPositionForm] = useState<{ name_en: string; name_th: string; quotas: Record<string, number>; require_enddate: boolean }>({ name_en: '', name_th: '', quotas: {}, require_enddate: false });
   const [editingPositionId, setEditingPositionId] = useState<string | null>(null);
   const [positionError, setPositionError] = useState<string | null>(null);
 
@@ -65,7 +65,7 @@ const ManageAll: React.FC = () => {
         position_name_th: pos.position_name_th,
         quotas: quotasForBackend,
         new_year_quota: nextValue,
-                        request_quota: pos.request_quota,
+                        require_enddate: pos.require_enddate,
       });
       if (!data || !data.success) throw new Error('Failed to update');
       // Refresh positions
@@ -93,6 +93,9 @@ const ManageAll: React.FC = () => {
   // Manual reset quota state
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [manualResetLoading, setManualResetLoading] = useState(false);
+  
+  // Cleanup old records state
+  const [cleanupLoading, setCleanupLoading] = useState(false);
   const handleDepartmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setDepartmentForm({ ...departmentForm, [e.target.name]: e.target.value });
   };
@@ -286,9 +289,9 @@ const ManageAll: React.FC = () => {
     }
   };
 
-  // Toggle Request Quote switch for a position
+  // Toggle Require End Date switch for a position
   const handleToggleRequestQuote = async (pos: any) => {
-            const newValue = !pos.request_quota;
+            const newValue = !pos.require_enddate;
     try {
       // Build quotas payload from current row
       const quotasForBackend: Record<string, number> = {};
@@ -297,7 +300,7 @@ const ManageAll: React.FC = () => {
         position_name_en: pos.position_name_en,
         position_name_th: pos.position_name_th,
         quotas: quotasForBackend,
-                    request_quota: newValue
+                    require_enddate: newValue
       });
       if (!data || !data.success) throw new Error('Failed to update');
       // Refresh positions
@@ -450,7 +453,7 @@ const ManageAll: React.FC = () => {
           position_name_en: positionForm.name_en,
           position_name_th: positionForm.name_th,
           quotas: quotasForBackend,
-                      request_quota: positionForm.request_quota
+                      require_enddate: positionForm.require_enddate
         });
         if (!data || !data.success) {
           setPositionError(data?.message || 'Unknown error');
@@ -461,7 +464,7 @@ const ManageAll: React.FC = () => {
         if (positionsData.success && Array.isArray(positionsData.data)) {
           setPositions(positionsData.data);
         }
-        setPositionForm({ name_en: '', name_th: '', quotas: {}, request_quota: false });
+        setPositionForm({ name_en: '', name_th: '', quotas: {}, require_enddate: false });
         showToastMessage.crud.createSuccess('position', t);
       }
     } catch (err: any) {
@@ -476,7 +479,7 @@ const ManageAll: React.FC = () => {
         name_en: pos.position_name_en,
         name_th: pos.position_name_th,
         quotas: pos.quotas,
-                        request_quota: !!pos.request_quota
+                        require_enddate: !!pos.require_enddate
       });
       setEditingPositionId(id);
     }
@@ -577,6 +580,23 @@ const ManageAll: React.FC = () => {
     }
   };
 
+  const handleCleanupOldRecords = async () => {
+    setCleanupLoading(true);
+    try {
+      const response = await apiService.post('/api/superadmin/cleanup-old-leave-requests');
+
+      if (response.success) {
+        showToast.success(t('common.cleanupSuccess'));
+      } else {
+        showToast.error(t('common.cleanupError'));
+      }
+    } catch (error: any) {
+      showToast.error(t('common.cleanupError'));
+    } finally {
+      setCleanupLoading(false);
+    }
+  };
+
   // Confirm dialog for manual reset
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const openConfirmReset = () => {
@@ -665,8 +685,8 @@ const ManageAll: React.FC = () => {
                       <label className="flex items-center gap-3 ml-1">
                         <input
                           type="checkbox"
-                                              name="request_quota"
-                    checked={positionForm.request_quota}
+                                              name="require_enddate"
+                    checked={positionForm.require_enddate}
                           onChange={handlePositionChange}
                           className="accent-blue-600 h-5 w-5 rounded border-gray-300 focus:ring-2 focus:ring-blue-400 transition-all"
                         />
@@ -707,9 +727,9 @@ const ManageAll: React.FC = () => {
                                 </td>
                                 <td className="p-3 font-medium text-center">
                                   <label style={{ display: 'inline-block', position: 'relative', width: 40, height: 24 }}>
-                                    <input type="checkbox" checked={!!pos.request_quota} style={{ opacity: 0, width: 0, height: 0 }} tabIndex={-1} readOnly />
-                                    <span style={{ position: 'absolute', cursor: 'not-allowed', top: 0, left: 0, right: 0, bottom: 0, background: !!pos.request_quota ? '#64b5f6' : '#ccc', borderRadius: 24, transition: 'background 0.2s', display: 'block' }}>
-                                      <span style={{ position: 'absolute', left: !!pos.request_quota ? 20 : 2, top: 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} />
+                                    <input type="checkbox" checked={!!pos.require_enddate} style={{ opacity: 0, width: 0, height: 0 }} tabIndex={-1} readOnly />
+                                    <span style={{ position: 'absolute', cursor: 'not-allowed', top: 0, left: 0, right: 0, bottom: 0, background: !!pos.require_enddate ? '#64b5f6' : '#ccc', borderRadius: 24, transition: 'background 0.2s', display: 'block' }}>
+                                      <span style={{ position: 'absolute', left: !!pos.require_enddate ? 20 : 2, top: 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} />
                                     </span>
                                   </label>
                                 </td>
@@ -737,13 +757,13 @@ const ManageAll: React.FC = () => {
                                   <label style={{ display: 'inline-block', position: 'relative', width: 40, height: 24 }}>
                                     <input
                                       type="checkbox"
-                                      checked={!!pos.request_quota}
+                                      checked={!!pos.require_enddate}
                                       onChange={() => handleToggleRequestQuote(pos)}
                                       style={{ opacity: 0, width: 0, height: 0 }}
                                       tabIndex={-1}
                                     />
-                                    <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, background: !!pos.request_quota ? '#64b5f6' : '#ccc', borderRadius: 24, transition: 'background 0.2s', display: 'block' }}>
-                                      <span style={{ position: 'absolute', left: !!pos.request_quota ? 20 : 2, top: 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} />
+                                    <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, background: !!pos.require_enddate ? '#64b5f6' : '#ccc', borderRadius: 24, transition: 'background 0.2s', display: 'block' }}>
+                                      <span style={{ position: 'absolute', left: !!pos.require_enddate ? 20 : 2, top: 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} />
                                     </span>
                                   </label>
                                 </td>
@@ -796,6 +816,20 @@ const ManageAll: React.FC = () => {
                     <h3 className="text-blue-900 font-semibold mb-3">{t('leave.note')}</h3>
                     <p className="text-sm text-gray-700">{t('leave.noteDetail')}</p>
                   </div>
+                  
+                  {/* Cleanup old records section */}
+                          <div className="bg-white rounded-xl p-4 shadow-sm">
+          <h3 className="text-blue-900 font-semibold mb-3">{t('common.cleanupTitle')}</h3>
+          <p className="text-sm text-gray-700 mb-3">{t('common.cleanupDescription')}</p>
+          <Button
+            onClick={handleCleanupOldRecords}
+            disabled={cleanupLoading}
+            variant="outline"
+            className="border-orange-300 text-orange-700 hover:bg-orange-50"
+          >
+            {cleanupLoading ? t('common.cleanupButtonLoading') : t('common.cleanupButton')}
+          </Button>
+        </div>
                   <div className="bg-white rounded-xl p-4 shadow-sm">
                     <h3 className="text-blue-900 font-semibold mb-3">{t('positions.positions')}</h3>
                     <div className="overflow-x-auto rounded-xl">

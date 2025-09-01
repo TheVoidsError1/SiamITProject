@@ -134,7 +134,13 @@
     "warningDeleteLeaveType": "คำเตือน: การลบประเภทการลานี้จะลบโควต้าการลาที่เกี่ยวข้องด้วย",
     "confirmDeleteQuestion": "หรือไม่?",
     "deleteSuccess": "ลบสำเร็จ",
-    "deleteError": "ลบไม่สำเร็จ"
+    "deleteError": "ลบไม่สำเร็จ",
+            "cleanupSuccess": "ลบข้อมูลเก่าสำเร็จ",
+        "cleanupError": "เกิดข้อผิดพลาดในการลบข้อมูลเก่า",
+        "cleanupTitle": "ลบข้อมูลเก่า",
+        "cleanupDescription": "ลบข้อมูลคำขอลาพักงานที่เก่ากว่า 2 ปีเพื่อรักษาประสิทธิภาพของฐานข้อมูล",
+        "cleanupButton": "ลบข้อมูลเก่า",
+        "cleanupButtonLoading": "กำลังลบ..."
   },
   "line": {
     "linkAccount": "เชื่อมต่อบัญชี LINE",
@@ -376,7 +382,7 @@
     "notSpecified": "ไม่ระบุ",
     "noPosition": "ไม่มีตำแหน่ง",
     "selectPosition": "เลือกตำแหน่ง",
-    "requestQuote": "ขอโควต้า",
+    "requestQuote": "ต้องการวันที่สิ้นสุด",
     "newYearQuota": "รีเซ็ตต้นปี (0=รี,1=ไม่รี)"
   },
   "employeeTypes": {
@@ -430,7 +436,8 @@
     "noUpcomingHolidays": "ไม่มีวันหยุดที่กำลังจะมาถึง",
     "noCompanyHolidays": "ไม่มีวันหยุดบริษัทในเดือนนี้",
     "announcements": "ข่าวสาร",
-    "noAnnouncements": "ไม่มีข่าวสาร"
+    "noAnnouncements": "ไม่มีข่าวสาร",
+    "noRecentLeaveRequests": "ไม่มีคำขอลาล่าสุด"
   },
   "profile": {
     "personalInfo": "ข้อมูลส่วนตัว",

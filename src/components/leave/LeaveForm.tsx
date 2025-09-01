@@ -464,8 +464,8 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
       if (!response.ok) {
         // ถ้ามี message จาก backend ให้แสดงใน toast
         toast({
-          title: i18n.language.startsWith('en') ? 'Notice' : 'แจ้งเตือน',
-          description: data.message || t('leave.submitError'),
+          title: t('common.notice'),
+          description: data.message === 'You have exceeded your leave quota for this type.' ? t('common.quotaExceeded') : (data.message || t('leave.submitError')),
           variant: "default", // เปลี่ยนจาก destructive เป็น default (สีเทา)
         });
         return;

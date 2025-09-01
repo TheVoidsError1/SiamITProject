@@ -14,7 +14,7 @@ export interface Position {
   id: string;
   position_name_en: string;
   position_name_th: string;
-  request_quota: boolean;
+  require_enddate: boolean;
   quotas?: Record<string, number>;
 }
 
@@ -88,7 +88,7 @@ export interface PositionForm {
   name_en: string;
   name_th: string;
   quotas: Record<string, number>;
-  request_quota: boolean;
+  require_enddate: boolean;
 }
 
 export interface DepartmentForm {

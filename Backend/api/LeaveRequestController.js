@@ -61,18 +61,18 @@
        let days = 0;
        let hours = 0;
 
-       const isPersonalLeave = leaveTypeEntity && 
-         (leaveTypeEntity.leave_type_en?.toLowerCase() === 'personal' || 
-          leaveTypeEntity.leave_type_th === 'ลากิจ');
+               // Check if this leave type supports time-based calculation
+        // Instead of hard-coding specific leave types, we'll check if both startTime and endTime are provided
+        const isTimeBased = leave.startTime && leave.endTime;
 
-       if (isPersonalLeave && leave.startTime && leave.endTime) {
-         // Hour-based calculation for personal leave
-         const startMinutes = convertToMinutes(...leave.startTime.split(':').map(Number));
-         const endMinutes = convertToMinutes(...leave.endTime.split(':').map(Number));
-         let durationHours = (endMinutes - startMinutes) / 60;
-         if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
-         hours = durationHours;
-       } else if (leave.startDate && leave.endDate) {
+               if (isTimeBased) {
+          // Hour-based calculation for any leave type that has start/end times
+          const startMinutes = convertToMinutes(...leave.startTime.split(':').map(Number));
+          const endMinutes = convertToMinutes(...leave.endTime.split(':').map(Number));
+          let durationHours = (endMinutes - startMinutes) / 60;
+          if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
+          hours = durationHours;
+        } else if (leave.startDate && leave.endDate) {
          // Day-based calculation
          const start = new Date(leave.startDate);
          const end = new Date(leave.endDate);
@@ -295,14 +295,14 @@
          // ถ้าเป็น Emergency Leave ไม่ต้องตรวจสอบ quota
          if (
            leaveTypeEntity &&
-           (leaveTypeEntity.leave_type_en === 'Emergency' || leaveTypeEntity.leave_type_th === 'ลาฉุกเฉิน')
+           (leaveTypeEntity.leave_type_en === 'Emergency')
          ) {
            // ข้าม validation quota สำหรับ Emergency Leave
          } else {
            // ดึง quota ของ leaveType นี้
            const quotaRow = leaveTypeEntity ? await leaveQuotaRepo.findOne({ where: { positionId: employeeType, leaveTypeId: leaveTypeEntity.id } }) : null;
            if (!quotaRow) {
-             return res.status(400).json({ status: 'error', message: 'ไม่พบโควต้าการลาสำหรับประเภทนี้' });
+             return res.status(400).json({ status: 'error', message: 'Leave quota for this type not found.' });
            }
            const quota = quotaRow.quota;
            // 2. คำนวณ leave ที่ใช้ไปในปีนี้ (approved เฉพาะ leaveType นี้)
@@ -333,8 +333,12 @@
                leaveTypeName === leaveTypeEntity.leave_type_th ||
                leaveTypeName === leaveTypeEntity.leave_type_en
              ) {
-               // Personal leave: อาจเป็นชั่วโมงหรือวัน
-               if (leaveTypeEntity.leave_type_en === 'Personal' || leaveTypeEntity.leave_type_th === 'ลากิจ') {
+                               // Check if this leave type supports time-based calculation
+                // Instead of hard-coding specific leave types, we'll check if both startTime and endTime are provided
+                const isTimeBased = lr.startTime && lr.endTime;
+               
+               if (isTimeBased) {
+                 // Time-based leave types: can be hours or days
                  if (lr.startTime && lr.endTime) {
                    const startMinutes = convertToMinutes(...lr.startTime.split(':').map(Number));
                    const endMinutes = convertToMinutes(...lr.endTime.split(':').map(Number));
@@ -349,7 +353,7 @@
                    usedHours += days * config.business.workingHoursPerDay;
                  }
                } else {
-                 // อื่น ๆ: วันเท่านั้น
+                 // Day-based leave types: only days
                  if (lr.startDate && lr.endDate) {
                    const start = new Date(lr.startDate);
                    const end = new Date(lr.endDate);
@@ -362,7 +366,12 @@
            }
            // 4. คำนวณ leave ที่ขอใหม่ (ชั่วโมง)
            let requestHours = 0;
-           if (leaveTypeEntity.leave_type_en === 'Personal' || leaveTypeEntity.leave_type_th === 'ลากิจ') {
+           // Check if this leave type supports time-based calculation
+           // Instead of hard-coding specific leave types, we'll check if both startTime and endTime are provided
+           const isTimeBased = startTime && endTime;
+           
+           if (isTimeBased) {
+             // Time-based leave types: can be hours or days
              if (startTime && endTime) {
                const startMinutes = convertToMinutes(...startTime.split(':').map(Number));
                const endMinutes = convertToMinutes(...endTime.split(':').map(Number));
@@ -377,6 +386,7 @@
                requestHours += days * config.business.workingHoursPerDay;
              }
            } else {
+             // Day-based leave types: only days
              if (startDate && endDate) {
                const start = parseLocalDate(startDate);
                const end = parseLocalDate(endDate);
@@ -391,9 +401,7 @@
            if (usedHours + requestHours > totalQuotaHours) {
              return res.status(400).json({
                status: 'error',
-               message: lang === 'en'
-                 ? 'You have exceeded your leave quota for this type.'
-                 : 'คุณใช้วันลาประเภทนี้ครบโควต้าแล้ว ไม่สามารถขอใบลาเพิ่มได้'
+               message: lang === 'en' ? 'You have exceeded your leave quota for this type.' : 'คุณใช้วันลาประเภทนี้ครบโควต้าแล้ว ไม่สามารถขอใบลาเพิ่มได้'
              });
            }
          }
@@ -405,7 +413,7 @@
          if (!contact) {
            return res.status(400).json({
              status: 'error',
-             message: lang === 'en' ? 'Contact information is required.' : 'กรุณากรอกช่องทางติดต่อ'
+             message: 'Contact information is required.'
            });
          }
 
@@ -421,15 +429,13 @@
            if (startTime === endTime) {
              return res.status(400).json({
                status: 'error',
-               message: lang === 'en' ? 'Start time and end time must not be the same.' : 'เวลาเริ่มต้นและเวลาสิ้นสุดต้องไม่เหมือนกัน'
+               message: 'Start time and end time must not be the same.'
              });
            }
            if (!isTimeInRange(startTime) || !isTimeInRange(endTime)) {
              return res.status(400).json({
                status: 'error',
-               message: lang === 'en'
-                 ? `You can request leave only during working hours: ${config.business.workingStartHour}:00 to ${config.business.workingEndHour}:00.`
-                 : `สามารถลาได้เฉพาะช่วงเวลาทำงาน ${config.business.workingStartHour}:00 ถึง ${config.business.workingEndHour}:00 เท่านั้น`
+               message: `You can request leave only during working hours: ${config.business.workingStartHour}:00 to ${config.business.workingEndHour}:00.`
              });
            }
          }
@@ -622,11 +628,11 @@
              backdated: Number(leave.backdated),
            };
          }));
-         res.json({ status: 'success', data: result, total, page, totalPages: Math.ceil(total / limit), message: lang === 'th' ? 'ดึงข้อมูลสำเร็จ' : 'Fetch success' });
+         res.json({ status: 'success', data: result, total, page, totalPages: Math.ceil(total / limit), message: 'Fetch success' });
        } catch (err) {
          let lang = req.headers['accept-language'] || req.query.lang || 'th';
          lang = lang.split(',')[0].toLowerCase().startsWith('en') ? 'en' : 'th';
-         res.status(500).json({ status: 'error', message: lang === 'th' ? 'เกิดข้อผิดพลาด: ' + err.message : 'Error: ' + err.message });
+         res.status(500).json({ status: 'error', message: 'Error: ' + err.message });
        }
      });
 
@@ -913,11 +919,11 @@
              backdated: Number(leave.backdated),
            };
          }));
-         res.json({ status: 'success', data: result, total, page, totalPages: Math.ceil(total / limit), approvedCount, rejectedCount, message: lang === 'th' ? 'ดึงข้อมูลสำเร็จ' : 'Fetch success' });
+         res.json({ status: 'success', data: result, total, page, totalPages: Math.ceil(total / limit), approvedCount, rejectedCount, message: 'Fetch success' });
        } catch (err) {
          let lang = req.headers['accept-language'] || req.query.lang || 'th';
          lang = lang.split(',')[0].toLowerCase().startsWith('en') ? 'en' : 'th';
-         res.status(500).json({ status: 'error', message: lang === 'th' ? 'เกิดข้อผิดพลาด: ' + err.message : 'Error: ' + err.message });
+         res.status(500).json({ status: 'error', message: 'Error: ' + err.message });
        }
      });
 
@@ -1521,7 +1527,7 @@
              status: leave.status,
              statusBy: leave.statusBy, // ส่ง ID
              employeeId: leave.Repid,
-             message: status === 'approved' ? 'คำขอลาของคุณได้รับการอนุมัติ' : 'คำขอลาของคุณถูกปฏิเสธ'
+             message: status === 'approved' ? 'Your leave request has been approved' : 'Your leave request has been rejected'
            });
 
            // Emit to admin room for dashboard updates
@@ -1572,10 +1578,48 @@
      // DELETE /api/leave-request/:id
      router.delete('/:id', async (req, res) => {
        try {
+         // --- i18n: ตรวจจับภาษา ---
+         let lang = req.headers['accept-language'] || req.query.lang || 'th';
+         lang = lang.split(',')[0].toLowerCase().startsWith('en') ? 'en' : 'th';
+         
          const leaveRepo = AppDataSource.getRepository('LeaveRequest');
          const { id } = req.params;
          const leave = await leaveRepo.findOneBy({ id });
-         if (!leave) return res.status(404).json({ success: false, message: 'Leave request not found' });
+         if (!leave) return res.status(404).json({ 
+           success: false, 
+           message: 'Leave request not found'
+         });
+         
+                  // Check if leave request can be deleted based on status and date
+          // Allow deletion if: pending OR if it's the current day (can cancel today's leave)
+          if (leave.status !== 'pending') {
+            // If not pending, check if it's the current day
+            if (leave.startDate) {
+              const now = new Date();
+              now.setHours(0, 0, 0, 0);
+              const leaveStart = new Date(leave.startDate);
+              leaveStart.setHours(0, 0, 0, 0);
+              
+              // Allow deletion if it's the current day
+              if (leaveStart.getTime() === now.getTime()) {
+                // It's today, allow deletion
+              } else {
+                // Not today and not pending, cannot delete
+                return res.status(400).json({ 
+                  success: false, 
+                  message: 'Cannot delete leave request that has already been approved or rejected. Only pending requests or today\'s leave can be deleted.' 
+                });
+              }
+            } else {
+              // No start date and not pending, cannot delete
+              return res.status(400).json({ 
+                success: false, 
+                message: 'Cannot delete leave request that has already been approved or rejected. Only pending requests can be deleted.' 
+              });
+            }
+          }
+          
+
          
          // Adjust LeaveUsed if this leave had been approved
          try {
@@ -1594,25 +1638,30 @@
                  ]
                });
              }
-             if (leaveTypeEntity) {
-               let days = 0;
-               let hours = 0;
-               const isPersonalLeave = leaveTypeEntity &&
-                 (leaveTypeEntity.leave_type_en?.toLowerCase() === 'personal' || 
-                  leaveTypeEntity.leave_type_th === 'ลากิจ');
-               if (isPersonalLeave && leave.startTime && leave.endTime) {
-                 const startMinutes = convertToMinutes(...leave.startTime.split(':').map(Number));
-                 const endMinutes = convertToMinutes(...leave.endTime.split(':').map(Number));
-                 let durationHours = (endMinutes - startMinutes) / 60;
-                 if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
-                 hours = durationHours;
-               } else if (leave.startDate && leave.endDate) {
-                 const start = new Date(leave.startDate);
-                 const end = new Date(leave.endDate);
-                 let calculatedDays = calculateDaysBetween(start, end);
-                 if (calculatedDays < 0 || isNaN(calculatedDays)) calculatedDays = 0;
-                 days = calculatedDays;
-               }
+                            if (leaveTypeEntity) {
+                 let days = 0;
+                 let hours = 0;
+                 
+                                   // Check if this leave type supports time-based calculation
+                  // Instead of hard-coding specific leave types, we'll check if both startTime and endTime are provided
+                  const isTimeBased = leave.startTime && leave.endTime;
+                 
+                 // Calculate duration based on available data and leave type configuration
+                 if (isTimeBased && leave.startTime && leave.endTime) {
+                   // Time-based calculation for any leave type that supports it
+                   const startMinutes = convertToMinutes(...leave.startTime.split(':').map(Number));
+                   const endMinutes = convertToMinutes(...leave.endTime.split(':').map(Number));
+                   let durationHours = (endMinutes - startMinutes) / 60;
+                   if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
+                   hours = durationHours;
+                 } else if (leave.startDate && leave.endDate) {
+                   // Date-based calculation (default for most leave types)
+                   const start = new Date(leave.startDate);
+                   const end = new Date(leave.endDate);
+                   let calculatedDays = calculateDaysBetween(start, end);
+                   if (calculatedDays < 0 || isNaN(calculatedDays)) calculatedDays = 0;
+                   days = calculatedDays;
+                 }
                // Normalize hours to days
                let finalDays = days;
                let finalHours = hours;
@@ -1664,7 +1713,10 @@
          }
          
          await leaveRepo.delete({ id });
-         res.json({ success: true, message: 'Leave request deleted successfully' });
+         res.json({ 
+           success: true, 
+           message: 'Leave request deleted successfully'
+         });
        } catch (err) {
          res.status(500).json({ success: false, message: err.message });
        }
