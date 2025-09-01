@@ -98,6 +98,9 @@ const ManageAll: React.FC = () => {
   // Manual reset quota state
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [manualResetLoading, setManualResetLoading] = useState(false);
+  // Manual reset filter/search UI state
+  const [employeeSearch, setEmployeeSearch] = useState<string>('');
+  const [showSelectedOnly, setShowSelectedOnly] = useState<boolean>(false);
   const handleDepartmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setDepartmentForm({ ...departmentForm, [e.target.name]: e.target.value });
   };
@@ -617,6 +620,32 @@ const ManageAll: React.FC = () => {
     setSelectedUserIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
+  // Derived list with search / selected-only filters and stabilized order
+  const filteredEmployees = employeeOptions
+    .filter(e => {
+      if (showSelectedOnly && !selectedUserIds.includes(e.id)) return false;
+      if (!employeeSearch.trim()) return true;
+      const q = employeeSearch.trim().toLowerCase();
+      return (e.name || '').toLowerCase().includes(q) || String(e.id).toLowerCase().includes(q);
+    })
+    .sort((a, b) => {
+      // Selected first, then by name
+      const aSel = selectedUserIds.includes(a.id) ? 1 : 0;
+      const bSel = selectedUserIds.includes(b.id) ? 1 : 0;
+      if (aSel !== bSel) return bSel - aSel;
+      return (a.name || '').localeCompare(b.name || '');
+    });
+
+  const selectAllFiltered = () => {
+    const addIds = filteredEmployees.map(e => e.id);
+    setSelectedUserIds(prev => Array.from(new Set([...prev, ...addIds])));
+  };
+
+  const clearFilteredSelection = () => {
+    const removeSet = new Set(filteredEmployees.map(e => e.id));
+    setSelectedUserIds(prev => prev.filter(id => !removeSet.has(id)));
+  };
+
   const handleManualReset = async () => {
     if (selectedUserIds.length === 0) {
       showToast.warning(t('leave.selectUsersFirst'));
@@ -831,22 +860,53 @@ const ManageAll: React.FC = () => {
                 <div className="p-6 space-y-6">
                   {/* Manual reset section */}
                   <div className="bg-white rounded-xl p-4 shadow-sm">
-                    <h3 className="text-blue-900 font-semibold mb-3">{t('leave.manualReset', )}</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-64 overflow-auto border rounded p-2">
-                      {employeeOptions.map(e => (
-                        <label key={e.id} className="flex items-center gap-3 text-sm p-2 rounded hover:bg-blue-50 cursor-pointer">
-                          <input type="checkbox" className="mt-0.5" checked={selectedUserIds.includes(e.id)} onChange={() => toggleSelectUser(e.id)} />
-                          <span className="flex items-center gap-2">
-                            <img src={e.avatar || '/lovable-uploads/siamit.png'} alt={e.name} className="w-6 h-6 rounded-full object-cover border" />
-                            <span className="font-medium text-blue-900">{e.name}</span>
-                          </span>
+                    <h3 className="text-blue-900 font-semibold mb-3">{t('leave.manualReset')}</h3>
+                    {/* Controls */}
+                    <div className="flex flex-col md:flex-row md:items-center gap-3 mb-3">
+                      <div className="flex-1 flex gap-2">
+                        <Input
+                          value={employeeSearch}
+                          onChange={e => setEmployeeSearch(e.target.value)}
+                          placeholder={t('common.searchEmployee', 'Search employee by name or id')}
+                          className="md:w-80"
+                        />
+                        <label className="inline-flex items-center gap-2 text-sm px-3 py-2 rounded border bg-blue-50 text-blue-900">
+                          <input type="checkbox" checked={showSelectedOnly} onChange={e => setShowSelectedOnly(e.target.checked)} className="accent-blue-600" />
+                          {t('common.showSelectedOnly', 'Show selected only')}
                         </label>
-                      ))}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" onClick={selectAllFiltered}>{t('common.selectAllFiltered', 'Select all (filtered)')}</Button>
+                        <Button variant="outline" onClick={clearFilteredSelection}>{t('common.clearFiltered', 'Clear (filtered)')}</Button>
+                      </div>
                     </div>
-                    <div className="mt-3 flex gap-2">
-                      <Button onClick={openConfirmReset} disabled={manualResetLoading} className="btn-primary">
+                    {/* Counter */}
+                    <div className="text-sm text-gray-600 mb-2">
+                      {t('common.showing', 'Showing')}: <span className="font-medium">{filteredEmployees.length}</span> / {employeeOptions.length}
+                      {' · '}
+                      {t('common.selected', 'Selected')}: <span className="font-medium">{selectedUserIds.length}</span>
+                    </div>
+                    {/* List */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-64 overflow-auto border rounded p-2">
+                      {filteredEmployees.length === 0 ? (
+                        <div className="col-span-full text-center text-gray-500 py-6">{t('common.noResults', 'No results')}</div>
+                      ) : (
+                        filteredEmployees.map(e => (
+                          <label key={e.id} className="flex items-center gap-3 text-sm p-2 rounded hover:bg-blue-50 cursor-pointer">
+                            <input type="checkbox" className="mt-0.5" checked={selectedUserIds.includes(e.id)} onChange={() => toggleSelectUser(e.id)} />
+                            <span className="flex items-center gap-2">
+                              <img src={e.avatar || '/lovable-uploads/siamit.png'} alt={e.name} className="w-6 h-6 rounded-full object-cover border" />
+                              <span className="font-medium text-blue-900 truncate max-w-[220px]" title={e.name}>{e.name}</span>
+                            </span>
+                          </label>
+                        ))
+                      )}
+                    </div>
+                    <div className="mt-3 flex gap-2 flex-wrap">
+                      <Button onClick={openConfirmReset} disabled={manualResetLoading || selectedUserIds.length === 0} className="btn-primary">
                         {manualResetLoading ? t('common.loading') : t('leave.resetNow')}
                       </Button>
+                      
                     </div>
                   </div>
                   <div className="bg-white rounded-xl p-4 shadow-sm">

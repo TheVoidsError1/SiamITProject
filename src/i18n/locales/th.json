@@ -131,7 +131,15 @@
     "confirmDeleteDepartment": "คุณต้องการลบแผนก",
     "confirmDeleteLeaveType": "คุณต้องการลบประเภทการลา",
     "ห": "ลบสำเร็จ",
-    "deleteError": "ลบไม่สำเร็จ"
+    "deleteError": "ลบไม่สำเร็จ",
+    "search": "ค้นหา",
+    "searchEmployee": "ค้นหาพนักงานด้วยชื่อหรือไอดี",
+    "showSelectedOnly": "แสดงเฉพาะที่เลือก",
+    "selectAllFiltered": "เลือกทั้งหมด",
+    "clearFiltered": "ล้างที่กรอง",
+    "showing": "แสดง",
+    "selected": "เลือกแล้ว",
+    "noResults": "ไม่พบข้อมูล"
   },
           "line": {
           "linkAccount": "เชื่อมต่อบัญชี LINE",
