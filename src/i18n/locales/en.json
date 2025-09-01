@@ -194,6 +194,8 @@
     "manualReset": "Manual Reset",
     "resetNow": "Reset Now",
     "manualResetSuccess": "Manual reset successful",
+    "confirmManualResetTitle": "Confirm Manual Reset",
+    "confirmManualResetDesc": "Do you want to reset the quota for the selected users? This action will set leave usage (days/hour) to 0 without deleting past leave records.",
     "addLeaveTypeQuota": "Set quota per position",
     "fillQuotaForPositions": "Enter quota for this new leave type for each position",
     "loading": "Loading...",
