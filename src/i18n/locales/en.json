@@ -2,7 +2,7 @@
 {
   "auth": {
     "login": "Login",
-    "egister": "Register",
+    "register": "Register",
     "logout": "Logout",
     "email": "Email",
     "password": "Password",
@@ -74,8 +74,8 @@
     "addTitle": "Add Company Event",
     "editTitle": "Edit Company Event",
     "name": "Event Name",
-    "description": "Description",
-    "datePlaceholder": "Date",
+    "description": "Event Description (optional)",
+    "datePlaceholder": "Select Date",
     "event": "Company Event",
     "deleteConfirm": "Are you sure you want to delete this event?",
     "monthlyActivities": "Company Activities This Month"
@@ -149,7 +149,15 @@
     "confirmDeleteLeaveType": "Do you want to delete leave type",
     "confirmDeleteQuestion": "?",
     "deleteSuccess": "Deleted successfully",
-    "deleteError": "Failed to delete"
+    "deleteError": "Failed to delete",
+    "search": "Search",
+    "searchEmployee": "Search employee by name or id",
+    "showSelectedOnly": "Show selected only",
+    "selectAllFiltered": "Select all",
+    "clearFiltered": "Clear",
+    "showing": "Showing",
+    "selected": "Selected",
+    "noResults": "No results"
   },
           "line": {
           "linkAccount": "Link LINE Account",
@@ -229,8 +237,9 @@
     "resetNow": "Reset Now",
     "manualResetSuccess": "Manual reset successful",
     "confirmManualResetTitle": "Confirm Manual Reset",
-    "confirmManualResetDesc": "Do you want to reset the quota for the selected users? This action will set the leave usage (days/hours) to 0 without deleting previous leave records",
-    "selectUsersFirst": "Please select users first",
+    "confirmManualResetDesc": "Do you want to reset the quota for the selected users? This action will set leave usage (days/hour) to 0 without deleting past leave records.",
+    "addLeaveTypeQuota": "Set quota per position",
+    "fillQuotaForPositions": "Enter quota for this new leave type for each position",
     "loading": "Loading...",
     "clickToSelectFile": "Click to select file or drag file here",
     "supportedFormats": "Supports PDF, JPG, PNG, DOC, DOCX",
@@ -474,7 +483,8 @@
     "noUpcomingHolidays": "No upcoming holidays",
     "noCompanyHolidays": "No company holidays this month",
     "announcements": "Announcements",
-    "noAnnouncements": "No announcements"
+    "noAnnouncements": "No announcements",
+    "noRecentLeaveRequests": "No recent leave requests"
   },
   "profile": {
     "personalInfo": "Personal Information",
@@ -783,7 +793,9 @@
     "phoneNumber": "Phone Number",
     "internshipStartDate": "Start Work Date",
     "internshipEndDate": "End Work Date",
-    "selectBirthday": "Select Birthday",
+    "selectBirthday": "Select Date",
+    "selectStartWorkDate": "Select Date",
+    "selectEndWorkDate": "Select Date",
     "enterPhoneNumber": "Enter Phone Number",
     "selectInternshipStartDate": "Select Start Work Date",
     "selectInternshipEndDate": "Select End Work Date",
@@ -889,7 +901,7 @@
     "editTitle": "Edit Company Event",
     "name": "Event Name",
     "description": "Event Description (optional)",
-    "datePlaceholder": "yyyy-mm-dd",
+    "datePlaceholder": "Select Date",
     "save": "Save",
     "cancel": "Cancel",
     "edit": "Edit",
@@ -958,6 +970,13 @@
     "duration": "Duration",
     "days": "days",
     "hours": "hours",
+    "previousMonth": "Previous month",
+    "nextMonth": "Next month",
+    "today": "Today",
+    "clear": "Clear",
+    "previousYear": "Previous year",
+    "nextYear": "Next year",
+    "goToCurrentYear": "Go to current year",
     "months": {
       "january": "January",
       "february": "February",

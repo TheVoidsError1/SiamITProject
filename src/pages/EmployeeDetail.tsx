@@ -108,7 +108,7 @@ const EmployeeDetail = () => {
   // --- Move fetch leave history logic to a function ---
   const fetchLeaveHistory = async () => {
     if (!id) return;
-    let params = [];
+    const params = [];
     if (filterType && filterType !== "all") params.push(`leaveType=${encodeURIComponent(filterType)}`);
     if (filterMonth && filterMonth !== "all" && filterYear && filterYear !== "all") {
       params.push(`month=${filterMonth}`);

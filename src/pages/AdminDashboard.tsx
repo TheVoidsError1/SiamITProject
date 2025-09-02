@@ -1222,7 +1222,7 @@ const AdminDashboard = () => {
                                   const pages = [];
                                   const maxPageButtons = 5;
                                   let start = Math.max(1, pendingPage - 2);
-                                  let end = Math.min(pendingTotalPages, start + maxPageButtons - 1);
+                                  const end = Math.min(pendingTotalPages, start + maxPageButtons - 1);
                                   if (end - start < maxPageButtons - 1) {
                                     start = Math.max(1, end - maxPageButtons + 1);
                                   }
@@ -1528,7 +1528,7 @@ const AdminDashboard = () => {
                                   const pages = [];
                                   const maxPageButtons = 5;
                                   let start = Math.max(1, historyPage - 2);
-                                  let end = Math.min(historyTotalPages, start + maxPageButtons - 1);
+                                  const end = Math.min(historyTotalPages, start + maxPageButtons - 1);
                                   if (end - start < maxPageButtons - 1) {
                                     start = Math.max(1, end - maxPageButtons + 1);
                                   }

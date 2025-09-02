@@ -1,7 +1,9 @@
+import AvatarCropDialog from '@/components/dialogs/AvatarCropDialog';
 import ChangePasswordDialog from "@/components/dialogs/ChangePasswordDialog";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -9,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePushNotification } from '@/contexts/PushNotificationContext';
+import { useSocket } from '@/contexts/SocketContext';
 import { useToast } from '@/hooks/use-toast';
 import { apiEndpoints } from '@/constants/api';
 import { apiService } from '@/lib/api';
@@ -16,8 +19,6 @@ import { Bell, Building, Camera, Crown, Lock, Mail, Save, Shield } from 'lucide-
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "../components/ui/select";
-import AvatarCropDialog from '@/components/dialogs/AvatarCropDialog';
-import { useSocket } from '@/contexts/SocketContext';
 
 const Profile = () => {
   const { t, i18n } = useTranslation();
@@ -892,11 +893,10 @@ const Profile = () => {
                   </div>
                   <div className="space-y-3">
                     <Label htmlFor="dob" className="text-base text-blue-900 font-medium">{t('employee.birthday')}</Label>
-                    <Input
-                      id="dob"
-                      type="date"
-                      value={formData.dob}
-                      onChange={(e) => setFormData(prev => ({ ...prev, dob: e.target.value }))}
+                    <DatePicker
+                      date={formData.dob}
+                      onDateChange={(date) => setFormData(prev => ({ ...prev, dob: date }))}
+                      placeholder={t('employee.selectBirthday')}
                       className="input-blue"
                       disabled={!isEditing}
                     />
@@ -921,11 +921,10 @@ const Profile = () => {
                       <>
                         <div className="space-y-3">
                           <Label htmlFor="start_work" className="text-base text-blue-900 font-medium">{t('employee.startWorkDate')}</Label>
-                          <Input
-                            id="start_work"
-                            type="date"
-                            value={formData.start_work}
-                            onChange={(e) => setFormData(prev => ({ ...prev, start_work: e.target.value }))}
+                          <DatePicker
+                            date={formData.start_work}
+                            onDateChange={(date) => setFormData(prev => ({ ...prev, start_work: date }))}
+                            placeholder={t('employee.selectStartWorkDate')}
                             className="input-blue"
                             disabled={!isEditing}
                           />
@@ -933,11 +932,10 @@ const Profile = () => {
                         {showEndWorkDate && (
                           <div className="space-y-3">
                             <Label htmlFor="end_work" className="text-base text-blue-900 font-medium">{t('employee.endWorkDate')}</Label>
-                            <Input
-                              id="end_work"
-                              type="date"
-                              value={formData.end_work}
-                              onChange={(e) => setFormData(prev => ({ ...prev, end_work: e.target.value }))}
+                            <DatePicker
+                              date={formData.end_work}
+                              onDateChange={(date) => setFormData(prev => ({ ...prev, end_work: date }))}
+                              placeholder={t('employee.selectEndWorkDate')}
                               className="input-blue"
                               disabled={!isEditing}
                             />

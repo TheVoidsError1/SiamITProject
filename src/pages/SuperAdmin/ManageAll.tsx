@@ -1,14 +1,15 @@
 import {
-    AlertDialog,
-    AlertDialogAction,
-    AlertDialogCancel,
-    AlertDialogContent,
-    AlertDialogDescription,
-    AlertDialogFooter,
-    AlertDialogHeader,
-    AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -45,6 +46,10 @@ const ManageAll: React.FC = () => {
   const [leaveTypes, setLeaveTypes] = useState<any[]>([]);
   const [leaveTypeForm, setLeaveTypeForm] = useState<{ name_en: string; name_th: string; require_attachment: boolean }>({ name_en: '', name_th: '', require_attachment: false });
   const [editingLeaveTypeId, setEditingLeaveTypeId] = useState<string | null>(null);
+  // Add leave type dialog state (set quotas per position)
+  const [addLeaveTypeOpen, setAddLeaveTypeOpen] = useState<boolean>(false);
+  const [newLeaveTypeQuotas, setNewLeaveTypeQuotas] = useState<Record<string, number>>({}); // key = positionId
+  const [addLeaveTypeSubmitting, setAddLeaveTypeSubmitting] = useState<boolean>(false);
 
   // Add state for inline editing
   const [inlineEdit, setInlineEdit] = useState<null | {
@@ -94,6 +99,9 @@ const ManageAll: React.FC = () => {
   // Manual reset quota state
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [manualResetLoading, setManualResetLoading] = useState(false);
+  // Manual reset filter/search UI state
+  const [employeeSearch, setEmployeeSearch] = useState<string>('');
+  const [showSelectedOnly, setShowSelectedOnly] = useState<boolean>(false);
   const handleDepartmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setDepartmentForm({ ...departmentForm, [e.target.name]: e.target.value });
   };
@@ -209,27 +217,79 @@ const ManageAll: React.FC = () => {
           require_attachment: leaveTypeForm.require_attachment
         });
         setEditingLeaveTypeId(null);
+        // Refresh leave types
+        const data = await apiService.get(apiEndpoints.leaveTypes);
+        if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
+          setLeaveTypes(data.data);
+        }
+        setLeaveTypeForm({ name_en: '', name_th: '', require_attachment: false });
         showToastMessage.crud.updateSuccess('leaveType', t);
       } else {
-        await apiService.post(apiEndpoints.leaveTypes, {
-          leave_type_en: leaveTypeForm.name_en,
-          leave_type_th: leaveTypeForm.name_th,
-          require_attachment: leaveTypeForm.require_attachment
-        });
-        showToastMessage.crud.createSuccess('leaveType', t);
+        // เปิด dialog ให้กำหนดโควต้าต่อ position ก่อนสร้างจริง
+        setNewLeaveTypeQuotas({});
+        setAddLeaveTypeOpen(true);
       }
-      // Refresh leave types
-      const data = await apiService.get(apiEndpoints.leaveTypes);
-      if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
-        setLeaveTypes(data.data);
-      }
-      setLeaveTypeForm({ name_en: '', name_th: '', require_attachment: false });
     } catch (error) {
       if (editingLeaveTypeId) {
         showToastMessage.crud.updateError('leaveType', undefined, t);
-      } else {
-        showToastMessage.crud.createError('leaveType', undefined, t);
       }
+    }
+  };
+
+  // ยืนยันการเพิ่ม Leave Type พร้อมกำหนดโควต้าต่อแต่ละตำแหน่ง
+  const confirmCreateLeaveTypeWithQuotas = async () => {
+    setAddLeaveTypeSubmitting(true);
+    try {
+      // 1) สร้าง leave type ใหม่ เพื่อให้ได้ id กลับมา
+      const createRes = await apiService.post(apiEndpoints.leaveTypes, {
+        leave_type_en: leaveTypeForm.name_en,
+        leave_type_th: leaveTypeForm.name_th,
+        require_attachment: leaveTypeForm.require_attachment
+      });
+      if (!createRes || !(createRes.success || createRes.status === 'success') || !createRes.data?.id) {
+        throw new Error(createRes?.message || 'Failed to create leave type');
+      }
+      const newLeaveTypeId = createRes.data.id;
+
+      // 2) อัปเดตโควต้าของแต่ละตำแหน่ง โดยรวมโควต้าเดิม + ของ leave type ใหม่นี้
+      const updatePromises = positions.map((pos: any) => {
+        const quotasForBackend: Record<string, number> = {};
+        // โควต้าเดิมของตำแหน่ง
+        pos.quotas.forEach((q: any) => {
+          if (q.leaveTypeId) quotasForBackend[q.leaveTypeId] = q.quota ?? 0;
+        });
+        // เพิ่มค่าใหม่สำหรับ leave type ใหม่นี้ (ถ้ากรอก)
+        if (typeof newLeaveTypeQuotas[pos.id] === 'number') {
+          quotasForBackend[newLeaveTypeId] = Number(newLeaveTypeQuotas[pos.id]) || 0;
+        }
+        return apiService.put(`/api/positions-with-quotas/${pos.id}`, {
+          position_name_en: pos.position_name_en,
+          position_name_th: pos.position_name_th,
+          quotas: quotasForBackend,
+          request_quota: pos.request_quota
+        });
+      });
+      await Promise.all(updatePromises);
+
+      // รีเฟรชข้อมูล
+      const [leaveTypesData, positionsData] = await Promise.all([
+        apiService.get(apiEndpoints.leaveTypes),
+        apiService.get('/api/positions-with-quotas')
+      ]);
+      if ((leaveTypesData.success || leaveTypesData.status === 'success') && Array.isArray(leaveTypesData.data)) {
+        setLeaveTypes(leaveTypesData.data);
+      }
+      if (positionsData.success && Array.isArray(positionsData.data)) {
+        setPositions(positionsData.data);
+      }
+
+      setLeaveTypeForm({ name_en: '', name_th: '', require_attachment: false });
+      setAddLeaveTypeOpen(false);
+      showToastMessage.crud.createSuccess('leaveType', t);
+    } catch (err: any) {
+      showToastMessage.crud.createError('leaveType', err?.message, t);
+    } finally {
+      setAddLeaveTypeSubmitting(false);
     }
   };
 
@@ -561,6 +621,32 @@ const ManageAll: React.FC = () => {
     setSelectedUserIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
+  // Derived list with search / selected-only filters and stabilized order
+  const filteredEmployees = employeeOptions
+    .filter(e => {
+      if (showSelectedOnly && !selectedUserIds.includes(e.id)) return false;
+      if (!employeeSearch.trim()) return true;
+      const q = employeeSearch.trim().toLowerCase();
+      return (e.name || '').toLowerCase().includes(q) || String(e.id).toLowerCase().includes(q);
+    })
+    .sort((a, b) => {
+      // Selected first, then by name
+      const aSel = selectedUserIds.includes(a.id) ? 1 : 0;
+      const bSel = selectedUserIds.includes(b.id) ? 1 : 0;
+      if (aSel !== bSel) return bSel - aSel;
+      return (a.name || '').localeCompare(b.name || '');
+    });
+
+  const selectAllFiltered = () => {
+    const addIds = filteredEmployees.map(e => e.id);
+    setSelectedUserIds(prev => Array.from(new Set([...prev, ...addIds])));
+  };
+
+  const clearFilteredSelection = () => {
+    const removeSet = new Set(filteredEmployees.map(e => e.id));
+    setSelectedUserIds(prev => prev.filter(id => !removeSet.has(id)));
+  };
+
   const handleManualReset = async () => {
     if (selectedUserIds.length === 0) {
       showToast.warning(t('leave.selectUsersFirst'));
@@ -725,8 +811,8 @@ const ManageAll: React.FC = () => {
                                 <td className="p-3 font-medium text-center">
                                   <label style={{ display: 'inline-block', position: 'relative', width: 40, height: 24 }}>
                                     <input type="checkbox" checked={!!pos.request_quota} style={{ opacity: 0, width: 0, height: 0 }} tabIndex={-1} readOnly />
-                                    <span style={{ position: 'absolute', cursor: 'not-allowed', top: 0, left: 0, right: 0, bottom: 0, background: !!pos.request_quota ? '#64b5f6' : '#ccc', borderRadius: 24, transition: 'background 0.2s', display: 'block' }}>
-                                      <span style={{ position: 'absolute', left: !!pos.request_quota ? 20 : 2, top: 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} />
+                                    <span style={{ position: 'absolute', cursor: 'not-allowed', top: 0, left: 0, right: 0, bottom: 0, background: pos.request_quota ? '#64b5f6' : '#ccc', borderRadius: 24, transition: 'background 0.2s', display: 'block' }}>
+                                      <span style={{ position: 'absolute', left: pos.request_quota ? 20 : 2, top: 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} />
                                     </span>
                                   </label>
                                 </td>
@@ -759,8 +845,8 @@ const ManageAll: React.FC = () => {
                                       style={{ opacity: 0, width: 0, height: 0 }}
                                       tabIndex={-1}
                                     />
-                                    <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, background: !!pos.request_quota ? '#64b5f6' : '#ccc', borderRadius: 24, transition: 'background 0.2s', display: 'block' }}>
-                                      <span style={{ position: 'absolute', left: !!pos.request_quota ? 20 : 2, top: 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} />
+                                    <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, background: pos.request_quota ? '#64b5f6' : '#ccc', borderRadius: 24, transition: 'background 0.2s', display: 'block' }}>
+                                      <span style={{ position: 'absolute', left: pos.request_quota ? 20 : 2, top: 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} />
                                     </span>
                                   </label>
                                 </td>
@@ -791,58 +877,53 @@ const ManageAll: React.FC = () => {
                 <div className="p-6 space-y-6">
                   {/* Manual reset section */}
                   <div className="bg-white rounded-xl p-4 shadow-sm">
-                    <h3 className="text-blue-900 font-semibold mb-3">{t('leave.manualReset', )}</h3>
-                    {/* --- ช่องค้นหาชื่อ --- */}
-                    <div className="mb-2 flex flex-col md:flex-row gap-2 items-center">
-                      <Input
-                        placeholder={t('common.search', 'Search by name')}
-                        value={userSearch}
-                        onChange={e => { setUserSearch(e.target.value); setUserPage(1); }}
-                        className="w-full md:w-64"
-                      />
-                      {filteredEmployees.length > USERS_PER_PAGE && (
-                        <div className="flex gap-2 items-center ml-auto">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={userPage === 1}
-                            onClick={() => setUserPage(p => Math.max(1, p - 1))}
-                          >
-                            {t('common.prev', 'Prev')}
-                          </Button>
-                          <span className="text-sm font-medium">
-                            {userPage} / {totalPages}
-                          </span>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={userPage === totalPages}
-                            onClick={() => setUserPage(p => Math.min(totalPages, p + 1))}
-                          >
-                            {t('common.next', 'Next')}
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                    {/* --- Grid 3x5 --- */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-64 overflow-auto border rounded p-2">
-                      {pagedEmployees.map(e => (
-                        <label key={e.id} className="flex items-center gap-3 text-sm p-2 rounded hover:bg-blue-50 cursor-pointer">
-                          <input type="checkbox" className="mt-0.5" checked={selectedUserIds.includes(e.id)} onChange={() => toggleSelectUser(e.id)} />
-                          <span className="flex items-center gap-2">
-                            <img src={e.avatar || '/lovable-uploads/siamit.png'} alt={e.name} className="w-6 h-6 rounded-full object-cover border" />
-                            <span className="font-medium text-blue-900">{e.name}</span>
-                          </span>
+                    <h3 className="text-blue-900 font-semibold mb-3">{t('leave.manualReset')}</h3>
+                    {/* Controls */}
+                    <div className="flex flex-col md:flex-row md:items-center gap-3 mb-3">
+                      <div className="flex-1 flex gap-2">
+                        <Input
+                          value={employeeSearch}
+                          onChange={e => setEmployeeSearch(e.target.value)}
+                          placeholder={t('common.searchEmployee', 'Search employee by name or id')}
+                          className="md:w-80"
+                        />
+                        <label className="inline-flex items-center gap-2 text-sm px-3 py-2 rounded border bg-blue-50 text-blue-900">
+                          <input type="checkbox" checked={showSelectedOnly} onChange={e => setShowSelectedOnly(e.target.checked)} className="accent-blue-600" />
+                          {t('common.showSelectedOnly', 'Show selected only')}
                         </label>
-                      ))}
-                      {pagedEmployees.length === 0 && (
-                        <div className="col-span-3 text-center text-gray-400 py-6">{t('common.noData', 'No users found')}</div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button variant="outline" onClick={selectAllFiltered}>{t('common.selectAllFiltered', 'Select all (filtered)')}</Button>
+                        <Button variant="outline" onClick={clearFilteredSelection}>{t('common.clearFiltered', 'Clear (filtered)')}</Button>
+                      </div>
+                    </div>
+                    {/* Counter */}
+                    <div className="text-sm text-gray-600 mb-2">
+                      {t('common.showing', 'Showing')}: <span className="font-medium">{filteredEmployees.length}</span> / {employeeOptions.length}
+                      {' · '}
+                      {t('common.selected', 'Selected')}: <span className="font-medium">{selectedUserIds.length}</span>
+                    </div>
+                    {/* List */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-64 overflow-auto border rounded p-2">
+                      {filteredEmployees.length === 0 ? (
+                        <div className="col-span-full text-center text-gray-500 py-6">{t('common.noResults', 'No results')}</div>
+                      ) : (
+                        filteredEmployees.map(e => (
+                          <label key={e.id} className="flex items-center gap-3 text-sm p-2 rounded hover:bg-blue-50 cursor-pointer">
+                            <input type="checkbox" className="mt-0.5" checked={selectedUserIds.includes(e.id)} onChange={() => toggleSelectUser(e.id)} />
+                            <span className="flex items-center gap-2">
+                              <img src={e.avatar || '/lovable-uploads/siamit.png'} alt={e.name} className="w-6 h-6 rounded-full object-cover border" />
+                              <span className="font-medium text-blue-900 truncate max-w-[220px]" title={e.name}>{e.name}</span>
+                            </span>
+                          </label>
+                        ))
                       )}
                     </div>
-                    <div className="mt-3 flex gap-2">
-                      <Button onClick={openConfirmReset} disabled={manualResetLoading} className="btn-primary">
+                    <div className="mt-3 flex gap-2 flex-wrap">
+                      <Button onClick={openConfirmReset} disabled={manualResetLoading || selectedUserIds.length === 0} className="btn-primary">
                         {manualResetLoading ? t('common.loading') : t('leave.resetNow')}
                       </Button>
+                      
                     </div>
                   </div>
                   <div className="bg-white rounded-xl p-4 shadow-sm">
@@ -1060,7 +1141,7 @@ const ManageAll: React.FC = () => {
                                         left: 0,
                                         right: 0,
                                         bottom: 0,
-                                        background: !!lt.require_attachment ? '#64b5f6' : '#ccc',
+                                        background: lt.require_attachment ? '#64b5f6' : '#ccc',
                                         borderRadius: 24,
                                         transition: 'background 0.2s',
                                         display: 'block',
@@ -1069,7 +1150,7 @@ const ManageAll: React.FC = () => {
                                       <span
                                         style={{
                                           position: 'absolute',
-                                          left: !!lt.require_attachment ? 20 : 2,
+                                          left: lt.require_attachment ? 20 : 2,
                                           top: 2,
                                           width: 20,
                                           height: 20,
@@ -1105,7 +1186,56 @@ const ManageAll: React.FC = () => {
         </div>
       </div>
 
-      
+      {/* Add Leave Type with quotas dialog */}
+      <Dialog open={addLeaveTypeOpen} onOpenChange={setAddLeaveTypeOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>{t('leave.addLeaveTypeQuota', 'กำหนดโควต้าต่อแต่ละตำแหน่ง')}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="text-sm text-gray-600">
+              {t('leave.fillQuotaForPositions', 'กรอกจำนวนโควต้าของประเภทการลาใหม่นี้สำหรับแต่ละตำแหน่ง')}
+            </div>
+            <div className="overflow-x-auto rounded-xl">
+              <table className="w-full table-auto bg-white rounded-xl">
+                <thead>
+                  <tr className="bg-blue-100 text-blue-900">
+                    <th className="p-3 text-left">{t('positions.position')} (EN)</th>
+                    <th className="p-3 text-left">{t('positions.position')} (TH)</th>
+                    <th className="p-3 text-left">{t('leave.quota', 'Quota')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {positions.map((pos: any) => (
+                    <tr key={pos.id} className="hover:bg-blue-50">
+                      <td className="p-3 font-medium">{pos.position_name_en}</td>
+                      <td className="p-3 font-medium">{pos.position_name_th}</td>
+                      <td className="p-3">
+                        <Input
+                          type="number"
+                          min={0}
+                          value={newLeaveTypeQuotas[pos.id] ?? ''}
+                          onChange={(e) => setNewLeaveTypeQuotas(prev => ({ ...prev, [pos.id]: Number(e.target.value) }))}
+                          className="w-28"
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddLeaveTypeOpen(false)} disabled={addLeaveTypeSubmitting}>
+              {t('common.cancel', 'ยกเลิก')}
+            </Button>
+            <Button onClick={confirmCreateLeaveTypeWithQuotas} disabled={addLeaveTypeSubmitting} className="btn-primary">
+              {addLeaveTypeSubmitting ? t('common.loading') : t('common.save', 'บันทึก')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
 
       {/* Delete Confirmation Dialogs */}
       

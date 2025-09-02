@@ -259,7 +259,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
     e.preventDefault();
     setSubmitted(true);
     setTimeError("");
-    let newErrors = {
+    const newErrors = {
       leaveType: '',
       durationType: '', // dummy เพื่อให้ type ตรง
       startDate: '',

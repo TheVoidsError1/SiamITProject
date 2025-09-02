@@ -1,5 +1,6 @@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { SidebarTrigger } from '@/components/ui/sidebar';
@@ -614,11 +615,10 @@ const CompanyMonthDetailPage = () => {
               onChange={e => setNewEvent(prev => ({ ...prev, description: e.target.value }))} 
               className="break-all overflow-wrap-anywhere whitespace-pre-wrap"
             />
-            <Input 
-              type="date" 
+            <DatePicker 
+              date={newEvent.date}
+              onDateChange={(date) => setNewEvent(prev => ({ ...prev, date }))}
               placeholder={t('companyEvent.datePlaceholder')}
-              value={newEvent.date} 
-              onChange={e => setNewEvent(prev => ({ ...prev, date: e.target.value }))} 
             />
           </div>
           <DialogFooter>
@@ -646,10 +646,10 @@ const CompanyMonthDetailPage = () => {
               onChange={e => setEditingEvent(prev => prev ? { ...prev, description: e.target.value } : null)} 
               className="break-all overflow-wrap-anywhere whitespace-pre-wrap"
             />
-            <Input 
-              type="date" 
-              value={editingEvent?.date || ''} 
-              onChange={e => setEditingEvent(prev => prev ? { ...prev, date: e.target.value } : null)} 
+            <DatePicker 
+              date={editingEvent?.date || ''}
+              onDateChange={(date) => setEditingEvent(prev => prev ? { ...prev, date } : null)}
+              placeholder={t('companyEvent.datePlaceholder')}
             />
           </div>
           <DialogFooter>
