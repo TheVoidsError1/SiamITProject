@@ -248,10 +248,26 @@ module.exports = (AppDataSource) => {
         let approvedBy = null;
         let rejectedBy = null;
         if (leave.leaveType) {
-          const leaveType = await leaveTypeRepo.findOneBy({ id: leave.leaveType });
+          // Include soft-deleted leave types to get proper names
+          // Use raw query to include soft-deleted records
+          const leaveTypeQuery = `SELECT * FROM leave_type WHERE id = ?`;
+          const [leaveTypeResult] = await AppDataSource.query(leaveTypeQuery, [leave.leaveType]);
+          const leaveType = leaveTypeResult ? leaveTypeResult[0] : null;
           leaveTypeId = leave.leaveType;
-          leaveTypeName_th = leaveType ? leaveType.leave_type_th : leave.leaveType;
-          leaveTypeName_en = leaveType ? leaveType.leave_type_en : leave.leaveType;
+          // Use proper names even for soft-deleted types
+          if (leaveType) {
+            if (leaveType.is_active === false) {
+              // Handle soft-deleted leave types
+              leaveTypeName_th = 'ประเภทการลาที่ถูกลบ';
+              leaveTypeName_en = 'Deleted Leave Type';
+            } else {
+              leaveTypeName_th = leaveType.leave_type_th || leave.leaveType;
+              leaveTypeName_en = leaveType.leave_type_en || leave.leaveType;
+            }
+          } else {
+            leaveTypeName_th = leave.leaveType;
+            leaveTypeName_en = leave.leaveType;
+          }
         }
         if (leave.statusBy && leave.status === 'approved') {
           const admin = await adminRepo.findOneBy({ id: leave.statusBy });

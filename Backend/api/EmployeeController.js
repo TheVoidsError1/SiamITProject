@@ -466,10 +466,18 @@ module.exports = (AppDataSource) => {
           let typeName_th = l.leaveType;
           let typeName_en = l.leaveType;
           if (l.leaveType && l.leaveType.length > 20) {
-            const typeObj = await leaveTypeRepo.findOneBy({ id: l.leaveType });
+            // Use raw query to include soft-deleted records
+            const leaveTypeQuery = `SELECT * FROM leave_type WHERE id = ?`;
+            const [leaveTypeResult] = await AppDataSource.query(leaveTypeQuery, [l.leaveType]);
+            const typeObj = leaveTypeResult ? leaveTypeResult[0] : null;
             if (typeObj) {
-              typeName_th = typeObj.leave_type_th || l.leaveType;
-              typeName_en = typeObj.leave_type_en || l.leaveType;
+              if (typeObj.is_active === false) {
+                typeName_th = 'ประเภทการลาที่ถูกลบ';
+                typeName_en = 'Deleted Leave Type';
+              } else {
+                typeName_th = typeObj.leave_type_th || l.leaveType;
+                typeName_en = typeObj.leave_type_en || l.leaveType;
+              }
             }
           }
           return { ...l, _leaveTypeName_th: typeName_th, _leaveTypeName_en: typeName_en };
@@ -552,10 +560,18 @@ module.exports = (AppDataSource) => {
         let leaveTypeName_th = l.leaveType;
         let leaveTypeName_en = l.leaveType;
         if (l.leaveType && l.leaveType.length > 20) {
-          const leaveTypeObj = await leaveTypeRepo.findOneBy({ id: l.leaveType });
+          // Use raw query to include soft-deleted records
+          const leaveTypeQuery = `SELECT * FROM leave_type WHERE id = ?`;
+          const [leaveTypeResult] = await AppDataSource.query(leaveTypeQuery, [l.leaveType]);
+          const leaveTypeObj = leaveTypeResult ? leaveTypeResult[0] : null;
           if (leaveTypeObj) {
-            leaveTypeName_th = leaveTypeObj.leave_type_th || l.leaveType;
-            leaveTypeName_en = leaveTypeObj.leave_type_en || l.leaveType;
+            if (leaveTypeObj.is_active === false) {
+              leaveTypeName_th = 'ประเภทการลาที่ถูกลบ';
+              leaveTypeName_en = 'Deleted Leave Type';
+            } else {
+              leaveTypeName_th = leaveTypeObj.leave_type_th || l.leaveType;
+              leaveTypeName_en = leaveTypeObj.leave_type_en || l.leaveType;
+            }
           }
         }
         // --- เพิ่มการคำนวณ duration/durationType ---
