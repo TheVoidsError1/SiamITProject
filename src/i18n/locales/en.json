@@ -430,7 +430,8 @@
     "noUpcomingHolidays": "No upcoming holidays",
     "noCompanyHolidays": "No company holidays this month",
     "announcements": "Announcements",
-    "noAnnouncements": "No announcements"
+    "noAnnouncements": "No announcements",
+    "noRecentLeaveRequests": "No recent leave requests"
   },
   "profile": {
     "personalInfo": "Personal Information",

@@ -640,15 +640,15 @@ const Index = () => {
             <div className="text-sm text-blue-500">
               {loadingUserProfile ? t('common.loading') : (
                 i18n.language.startsWith('th') 
-                  ? userProfile?.position?.name_th || userProfile?.position?.name_en || t('main.noPosition')
-                  : userProfile?.position?.name_en || userProfile?.position?.name_th || t('main.noPosition')
+                  ? userProfile?.position?.name_th || userProfile?.position?.name_en || t('positions.noPosition')
+                  : userProfile?.position?.name_en || userProfile?.position?.name_th || t('positions.noPosition')
               )}
             </div>
             <div className="text-xs text-blue-400 mb-1">
               {loadingUserProfile ? t('common.loading') : (
                 i18n.language.startsWith('th') 
-                  ? userProfile?.department?.name_th || userProfile?.department?.name_en || t('main.noDepartment')
-                  : userProfile?.department?.name_en || userProfile?.department?.name_th || t('main.noDepartment')
+                  ? userProfile?.department?.name_th || userProfile?.department?.name_en || t('departments.noDepartment')
+                  : userProfile?.department?.name_en || userProfile?.department?.name_th || t('departments.noDepartment')
               )}
             </div>
             <div className="text-xs text-gray-500">
