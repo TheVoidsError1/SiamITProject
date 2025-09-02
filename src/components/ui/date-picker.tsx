@@ -55,7 +55,9 @@ export function DatePicker({
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
           {date ? (
-            format(selectedDate!, "dd MMMM yyyy", { locale: currentLocale })
+                        i18n.language === 'th' 
+              ? format(selectedDate!, "dd/MM/yy", { locale: currentLocale })
+              : format(selectedDate!, "dd/MM/yyyy", { locale: currentLocale })
           ) : (
             <span>{placeholder}</span>
           )}

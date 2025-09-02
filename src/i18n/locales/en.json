@@ -669,6 +669,8 @@
     "confirm": "Confirm",
     "cancel": "Cancel",
     "enterDateOfBirth": "Enter date of birth",
+    "enterStartWork": "dd/mm/yy",
+    "enterEndWork": "dd/mm/yy",
     "passwordStrength": {
       "weak": "Weak",
       "medium": "Medium",

@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Dialog, DialogContent, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { DatePicker } from '@/components/ui/date-picker';
 
 import { apiService } from '@/lib/api';
 import { showToastMessage } from '@/lib/toast';
@@ -483,16 +484,11 @@ const SuperAdminList: React.FC = () => {
                   {t('admin.dateOfBirth')}
                   <span className="text-red-500">*</span>
                 </Label>
-                <Input
-                  id="date_of_birth"
-                  name="date_of_birth"
-                  type="date"
+                <DatePicker
+                  date={form.date_of_birth}
+                  onDateChange={(date) => setForm(f => ({ ...f, date_of_birth: date }))}
                   placeholder={t('admin.enterDateOfBirth')}
-                  value={form.date_of_birth}
-                  onChange={handleChange}
-                  className={`pl-6 py-4 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm`}
-                  required
-                  autoComplete="bday"
+                  className={`py-4 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm`}
                 />
               </div>
           </div>
@@ -549,16 +545,11 @@ const SuperAdminList: React.FC = () => {
                   {t('admin.startWork')}
                   <span className="text-red-500">*</span>
                 </Label>
-                <Input
-                  id="start_work"
-                  name="start_work"
-                  type="date"
+                <DatePicker
+                  date={form.start_work}
+                  onDateChange={(date) => setForm(f => ({ ...f, start_work: date }))}
                   placeholder={t('admin.enterStartWork')}
-                  value={form.start_work}
-                  onChange={handleChange}
-                  className={`pl-6 py-4 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm`}
-                  required
-                  autoComplete="start-work"
+                  className={`py-4 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm`}
                 />
               </div>
               {/* End Work (conditionally rendered) */}
@@ -569,16 +560,11 @@ const SuperAdminList: React.FC = () => {
                     {t('admin.endWork')}
                     <span className="text-red-500">*</span>
                   </Label>
-                  <Input
-                    id="end_work"
-                    name="end_work"
-                    type="date"
+                  <DatePicker
+                    date={form.end_work}
+                    onDateChange={(date) => setForm(f => ({ ...f, end_work: date }))}
                     placeholder={t('admin.enterEndWork')}
-                    value={form.end_work}
-                    onChange={handleChange}
-                    className={`pl-6 py-4 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm`}
-                    required
-                    autoComplete="end-work"
+                    className={`py-4 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm`}
                   />
                 </div>
               )}
