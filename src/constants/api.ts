@@ -1,60 +1,70 @@
 // API Constants
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
-// API Endpoints
-export const API_ENDPOINTS = {
-  // Auth
-  LOGIN: '/api/login',
-  REGISTER: '/api/register',
-  PROFILE: '/api/profile',
-  AVATAR: '/api/avatar',
-  USER_PROFILE: '/api/user-profile',
-  
-  // Leave Management
-  LEAVE_REQUEST: '/api/leave-request',
-  LEAVE_PENDING: '/api/leave-request/pending',
-  LEAVE_DETAIL: (id: string) => `/api/leave-request/detail/${id}`,
-  LEAVE_STATUS: (id: string) => `/api/leave-request/${id}/status`,
-  LEAVE_DELETE: (id: string) => `/api/leave-request/${id}`,
-  LEAVE_CALENDAR: (year: number) => `/api/leave-request/calendar/${year}`,
-  LEAVE_CALENDAR_MONTH: (year: number, month: number) => `/api/leave-request/calendar/${year}?month=${month}`,
-  
-  // Employee Management
-  EMPLOYEES: '/api/employees',
-  EMPLOYEE_DETAIL: (id: string) => `/api/employee/${id}`,
-  EMPLOYEE_LEAVE_HISTORY: (id: string, query?: string) => `/api/employee/${id}/leave-history${query || ''}`,
-  
-  // Departments and Positions
-  DEPARTMENTS: '/api/departments',
-  POSITIONS: '/api/positions',
-  POSITIONS_WITH_QUOTAS: '/api/positions-with-quotas',
-  
-  // Leave Types
-  LEAVE_TYPES: '/api/leave-types',
-  LEAVE_TYPE: (id: string) => `/api/leave-types/${id}`,
-  
-  // Announcements
-  ANNOUNCEMENTS: '/api/announcements',
-  ANNOUNCEMENT: (id: string) => `/api/announcements/${id}`,
-  
-  // Company Calendar
-  CUSTOM_HOLIDAYS: '/api/custom-holidays',
-  CUSTOM_HOLIDAY: (id: string) => `/api/custom-holidays/${id}`,
-  CUSTOM_HOLIDAYS_YEAR: (year: number) => `/api/custom-holidays/year/${year}`,
-  CUSTOM_HOLIDAYS_YEAR_MONTH: (year: number, month: number) => `/api/custom-holidays/year/${year}/month/${month}`,
-  
-  // Notifications
-  NOTIFICATIONS: '/api/notifications',
-  MARK_AS_READ: (id: string) => `/api/notifications/${id}/read`,
-  MARK_ALL_AS_READ: '/api/notifications/read',
-  
-  // LINE Integration
-  LINE_LINK_STATUS: '/api/line/link-status',
-  LINE_LOGIN_URL: '/api/line/login-url',
-  LINE_UNLINK: '/api/line/unlink',
-  
-  // Dashboard
-  DASHBOARD_STATS: '/api/dashboard-stats',
-  RECENT_LEAVE_REQUESTS: '/api/recent-leave-requests',
-  MY_BACKDATED: '/api/my-backdated'
+// API Endpoints (centralized)
+export const apiEndpoints = {
+  auth: {
+    login: '/api/login',
+    register: '/api/register',
+    profile: '/api/profile',
+    avatar: '/api/avatar',
+    userProfile: '/api/user-profile',
+  },
+  leave: {
+    requests: '/api/leave-request',
+    pending: '/api/leave-request/pending',
+    detail: (id: string) => `/api/leave-request/detail/${id}`,
+    status: (id: string) => `/api/leave-request/${id}/status`,
+    delete: (id: string) => `/api/leave-request/${id}`,
+    calendar: (year: number) => `/api/leave-request/calendar/${year}`,
+    calendarWithMonth: (year: number, month: number) => `/api/leave-request/calendar/${year}?month=${month}`,
+  },
+  employees: {
+    list: '/api/employees',
+    detail: (id: string) => `/api/employee/${id}`,
+    leaveHistory: (id: string, query?: string) => `/api/employee/${id}/leave-history${query || ''}`,
+    avatar: (id: string) => `/api/employee/${id}/avatar`,
+  },
+  departments: '/api/departments',
+  positions: '/api/positions',
+  positionsWithQuotas: '/api/positions-with-quotas',
+  gender: '/api/genders',
+  leaveTypes: '/api/leave-types',
+  leaveType: (id: string) => `/api/leave-types/${id}`,
+  announcements: '/api/announcements',
+  announcement: (id: string) => `/api/announcements/${id}`,
+  customHolidays: '/api/custom-holidays',
+  customHoliday: (id: string) => `/api/custom-holidays/${id}`,
+  customHolidaysByYear: (year: number) => `/api/custom-holidays/year/${year}`,
+  customHolidaysByYearMonth: (year: number, month: number) => `/api/custom-holidays/year/${year}/month/${month}`,
+  notifications: '/api/notifications',
+  markAsRead: (id: string) => `/api/notifications/${id}/read`,
+  markAllAsRead: '/api/notifications/read',
+  line: {
+    linkStatus: '/api/line/link-status',
+    loginUrl: '/api/line/login-url',
+    unlink: '/api/line/unlink',
+  },
+  dashboard: {
+    stats: '/api/dashboard-stats',
+    recentLeaves: '/api/recent-leave-requests',
+    myBackdated: '/api/my-backdated',
+  },
+  leaveHistory: {
+    list: '/api/leave-history',
+    filters: '/api/leave-history/filters',
+  },
+  leaveQuota: {
+    me: '/api/leave-quota/me',
+  },
+  admin: {
+    leaveHistory: '/api/leave-request/history',
+    leavePending: '/api/leave-request/pending',
+    dashboardStats: '/api/leave-request/dashboard-stats',
+  },
+  superAdmin: {
+    delete: (id: string) => `/api/superadmin/${id}`,
+    admins: (id: string) => `/api/admins/${id}`,
+    users: (id: string) => `/api/users/${id}`,
+  },
 };

@@ -16,10 +16,11 @@ import { AlertCircle, Calendar, CalendarIcon, CheckCircle, ChevronLeft, ChevronR
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { monthNames } from '../constants/common';
-import { apiEndpoints, apiService, createAuthenticatedFileUrl } from '../lib/api';
+import { apiEndpoints } from '@/constants/api';
 import { showToastMessage } from '../lib/toast';
 import { formatDateLocalized, formatDateOnly } from '../lib/utils';
 import ImagePreviewDialog from '@/components/dialogs/ImagePreviewDialog';
+import { apiService, createAuthenticatedFileUrl } from '../lib/api';
 
 type LeaveRequest = {
   id: number;

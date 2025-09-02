@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DatePicker } from '@/components/ui/date-picker';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { apiService, apiEndpoints } from '@/lib/api';
+import { apiService } from '@/lib/api';
+import { apiEndpoints } from '@/constants/api';
 import { showToastMessage } from '@/lib/toast';
 import { Eye, EyeOff, Mail, Lock, User, Building } from 'lucide-react';
 import { useTranslation } from 'react-i18next';

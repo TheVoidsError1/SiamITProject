@@ -5,16 +5,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Dialog, DialogContent, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 
-import { apiEndpoints, apiService } from '@/lib/api';
+import { apiService } from '@/lib/api';
 import { showToastMessage } from '@/lib/toast';
 import { AlertCircle, Building, Calendar, CheckCircle, Crown, Eye, EyeOff, Info, Lock, Mail, Plus, Shield, User, Users, Phone } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { TABS, PASSWORD_STRENGTH, NO_DEPARTMENT, NO_POSITION, Tab, PasswordStrength } from '@/constants/roles';
+import { apiEndpoints } from '@/constants/api';
 
 const SuperAdminList: React.FC = () => {
   const { t, i18n } = useTranslation();
 
-  const [activeTab, setActiveTab] = useState<'employee' | 'admin' | 'superadmin'>('employee');
+  const [activeTab, setActiveTab] = useState<Tab>('employee');
   const [form, setForm] = useState({
     full_name: '',
     email: '',
@@ -36,7 +38,7 @@ const SuperAdminList: React.FC = () => {
   const [positions, setPositions] = useState<any[]>([]);
   const [genders, setGenders] = useState<any[]>([]);
   const [error, setError] = useState<{ email?: string; full_name?: string; general?: string }>({});
-  const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong'>('weak');
+  const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>('weak');
   const [selectedPositionRequestQuota, setSelectedPositionRequestQuota] = useState<boolean>(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
@@ -49,8 +51,8 @@ const SuperAdminList: React.FC = () => {
         const deptData = await apiService.get(apiEndpoints.departments);
         if (deptData && deptData.data && Array.isArray(deptData.data)) {
           const depts = deptData.data.map((d: any) => ({ id: d.id, department_name_th: d.department_name_th, department_name_en: d.department_name_en }));
-          const noDepartmentItem = depts.find(d => d.department_name_en === 'No Department');
-          const otherDepts = depts.filter(d => d.department_name_en !== 'No Department');
+          const noDepartmentItem = depts.find(d => d.department_name_en === NO_DEPARTMENT);
+          const otherDepts = depts.filter(d => d.department_name_en !== NO_DEPARTMENT);
           otherDepts.sort((a, b) => {
             const nameA = lang === 'th' ? a.department_name_th : a.department_name_en;
             const nameB = lang === 'th' ? b.department_name_th : b.department_name_en;
@@ -71,8 +73,8 @@ const SuperAdminList: React.FC = () => {
             position_name_en: p.position_name_en,
             request_quota: !!p.request_quota
           }));
-          const noPositionItem = pos.find(p => p.position_name_en === 'No Position');
-          const otherPos = pos.filter(p => p.position_name_en !== 'No Position');
+          const noPositionItem = pos.find(p => p.position_name_en === NO_POSITION);
+          const otherPos = pos.filter(p => p.position_name_en !== NO_POSITION);
           otherPos.sort((a, b) => {
             const nameA = lang === 'th' ? a.position_name_th : a.position_name_en;
             const nameB = lang === 'th' ? b.position_name_th : b.position_name_en;
@@ -117,7 +119,7 @@ const SuperAdminList: React.FC = () => {
     }
   };
 
-  const handleTabChange = (tab: 'employee' | 'admin' | 'superadmin') => {
+  const handleTabChange = (tab: Tab) => {
     setActiveTab(tab);
     setForm({ ...form, role: tab });
   };
@@ -249,7 +251,7 @@ const SuperAdminList: React.FC = () => {
     }
   };
 
-  const getTabConfig = (tab: 'employee' | 'admin' | 'superadmin') => {
+  const getTabConfig = (tab: Tab) => {
     const configs = {
       employee: {
         icon: Users,
@@ -344,7 +346,7 @@ const SuperAdminList: React.FC = () => {
         {/* Enhanced Role Selection Tabs */}
         <div className="mb-10 animate-fade-in-up-delay-1">
           <div className="bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl p-3 flex gap-3 border border-white/20">
-            {(['employee', 'admin', 'superadmin'] as const).map((tab) => {
+            {TABS.map((tab) => {
               const config = getTabConfig(tab);
               const IconComponent = config.icon;
               const isActive = activeTab === tab;

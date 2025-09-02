@@ -12,7 +12,8 @@ import { Calendar, Image, Newspaper, Plus, Settings, X } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { apiEndpoints, apiService } from '../lib/api';
+import { apiService } from '../lib/api';
+import { apiEndpoints } from '@/constants/api';
 import { formatDate, getImageUrl, handleFileSelect, handleImageError } from '../lib/utils';
 
 interface Announcement {

@@ -8,7 +8,8 @@ import { Eye, User, Users, ChevronUp, ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { apiEndpoints, apiService } from '../lib/api';
+import { apiService } from '../lib/api';
+import { apiEndpoints } from '@/constants/api';
 import { getImageUrl } from '../lib/utils';
 
 // เพิ่ม type สำหรับข้อมูลพนักงาน

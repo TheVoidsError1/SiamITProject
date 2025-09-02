@@ -6,7 +6,7 @@ export interface User {
   department: string;
   position: string;
   avatar?: string;
-  role: 'user' | 'admin' | 'superadmin';
+  role: Role;
 }
 
 // Position Types
@@ -42,7 +42,7 @@ export interface LeaveRequest {
   start_date: string;
   end_date: string;
   reason: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: LeaveStatus;
   attachments?: string[];
   created_at: string;
   updated_at: string;
@@ -124,7 +124,7 @@ export interface Notification {
   id: string;
   title: string;
   message: string;
-  type: 'info' | 'success' | 'warning' | 'error';
+  type: NotificationType;
   read: boolean;
   created_at: string;
 }
@@ -134,7 +134,7 @@ export interface CalendarEvent {
   id: string;
   title: string;
   date: string;
-  type: 'company' | 'annual' | 'employee';
+  type: CalendarType;
   isDual?: boolean;
 }
 
@@ -144,3 +144,5 @@ export interface ApiError {
   status?: number;
   code?: string;
 }
+
+import type { Role, LeaveStatus, NotificationType, CalendarType } from '@/constants/roles';

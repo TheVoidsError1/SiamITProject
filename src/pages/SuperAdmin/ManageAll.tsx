@@ -16,7 +16,8 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { useAuth } from '@/contexts/AuthContext';
-import { apiEndpoints, apiService } from '@/lib/api';
+import { apiService } from '@/lib/api';
+import { apiEndpoints } from '@/constants/api';
 import { showToast, showToastMessage } from '@/lib/toast';
 
 

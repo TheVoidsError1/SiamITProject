@@ -24,7 +24,8 @@ import { Calendar, Camera, ChevronLeft, Edit, Eye, Mail, Trash2, User } from "lu
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { API_BASE_URL, apiEndpoints, apiService } from '../lib/api';
+import { API_BASE_URL, apiService } from '../lib/api';
+import { apiEndpoints } from '@/constants/api';
 
 const EmployeeDetail = () => {
   const { id } = useParams();

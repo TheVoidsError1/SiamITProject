@@ -17,8 +17,9 @@ import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from 'react-router-dom';
 import { monthNames } from '../constants/common';
-import { apiEndpoints, apiService, createAuthenticatedFileUrl } from '../lib/api';
+import { apiEndpoints } from '@/constants/api';
 import { formatDateLocalized } from '../lib/utils';
+import { apiService, createAuthenticatedFileUrl } from '../lib/api';
 
 const LeaveHistory = () => {
 

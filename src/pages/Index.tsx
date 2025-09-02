@@ -11,7 +11,8 @@ import { Bell, Calendar, Clock, TrendingUp, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
-import { apiEndpoints, apiService } from '../lib/api';
+import { apiEndpoints } from '@/constants/api';
+import { apiService } from '../lib/api';
 import { showToastMessage } from '../lib/toast';
 import { config } from '@/config';
 
