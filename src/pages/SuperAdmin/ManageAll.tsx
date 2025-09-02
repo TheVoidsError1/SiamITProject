@@ -622,7 +622,7 @@ const ManageAll: React.FC = () => {
   };
 
   // Derived list with search / selected-only filters and stabilized order
-  const filteredEmployees = employeeOptions
+  const filteredEmployees2 = employeeOptions
     .filter(e => {
       if (showSelectedOnly && !selectedUserIds.includes(e.id)) return false;
       if (!employeeSearch.trim()) return true;
