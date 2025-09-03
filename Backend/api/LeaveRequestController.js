@@ -1603,10 +1603,11 @@
          const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
          const processRepo = AppDataSource.getRepository('ProcessCheck');
          const { id } = req.params;
+          // --- i18n: Detect language (fallback to 'th') ---
+          let lang = req.headers['accept-language'] || req.query.lang || 'th';
+          lang = String(lang).split(',')[0].toLowerCase().startsWith('en') ? 'en' : 'th';
 
-         // --- i18n: Detect language (fallback to 'th') ---
-         let lang = req.headers['accept-language'] || req.query.lang || 'th';
-         lang = String(lang).split(',')[0].toLowerCase().startsWith('en') ? 'en' : 'th';
+        
 
          const leave = await leaveRepo.findOneBy({ id });
          console.log('Detail API called for leave id:', id);
