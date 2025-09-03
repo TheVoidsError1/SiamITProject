@@ -2154,7 +2154,6 @@
                        // Get leave type information
             if (leave.leaveType) {
               // Try multiple approaches to get the leave type
-              let leaveTypeObj = null;
               
               // Approach 1: Try raw query with explicit soft-delete bypass
               try {
