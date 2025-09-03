@@ -52,8 +52,8 @@ module.exports = (AppDataSource) => {
             id: record.id,
             user_id: record.user_id,
             leave_type_id: record.leave_type_id,
-            leave_type_name_th: leaveType?.is_active === false ? 'ประเภทการลาที่ถูกลบ' : (leaveType?.leave_type_th || 'ไม่ระบุ'),
-            leave_type_name_en: leaveType?.is_active === false ? 'Deleted Leave Type' : (leaveType?.leave_type_en || 'Unknown'),
+            leave_type_name_th: leaveType?.is_active === false ? '[ลบ] ' + (leaveType?.leave_type_th || 'ไม่ระบุ') : (leaveType?.leave_type_th || 'ไม่ระบุ'),
+            leave_type_name_en: leaveType?.is_active === false ? '[DELETED] ' + (leaveType?.leave_type_en || 'Unknown') : (leaveType?.leave_type_en || 'Unknown'),
             days: record.days || 0,
             hours: record.hour || 0,
             created_at: record.created_at,
@@ -114,8 +114,8 @@ module.exports = (AppDataSource) => {
         id: leaveUsedRecord.id,
         user_id: leaveUsedRecord.user_id,
         leave_type_id: leaveUsedRecord.leave_type_id,
-        leave_type_name_th: leaveType?.is_active === false ? 'ประเภทการลาที่ถูกลบ' : (leaveType?.leave_type_th || 'ไม่ระบุ'),
-        leave_type_name_en: leaveType?.is_active === false ? 'Deleted Leave Type' : (leaveType?.leave_type_en || 'Unknown'),
+        leave_type_name_th: leaveType?.is_active === false ? '[ลบ] ' + (leaveType?.leave_type_th || 'ไม่ระบุ') : (leaveType?.leave_type_th || 'ไม่ระบุ'),
+        leave_type_name_en: leaveType?.is_active === false ? '[DELETED] ' + (leaveType?.leave_type_en || 'Unknown') : (leaveType?.leave_type_en || 'Unknown'),
         days: leaveUsedRecord.days || 0,
         hours: leaveUsedRecord.hour || 0,
         total_days: totalDays,
@@ -170,11 +170,12 @@ module.exports = (AppDataSource) => {
         const leaveType = leaveTypeResult ? leaveTypeResult[0] : null;
         let leaveTypeName = 'Unknown';
         if (leaveType) {
-          if (leaveType.is_active === false) {
-            leaveTypeName = 'ประเภทการลาที่ถูกลบ';
-          } else {
-            leaveTypeName = leaveType.leave_type_th || leaveType.leave_type_en || 'Unknown';
-          }
+                  if (leaveType.is_active === false) {
+          // Add [DELETED] prefix for inactive/deleted leave types
+          leaveTypeName = '[ลบ] ' + (leaveType.leave_type_th || leaveType.leave_type_en || 'Unknown');
+        } else {
+          leaveTypeName = leaveType.leave_type_th || leaveType.leave_type_en || 'Unknown';
+        }
         }
 
         if (!summary[leaveTypeName]) {

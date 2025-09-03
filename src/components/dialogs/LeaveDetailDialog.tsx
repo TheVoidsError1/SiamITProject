@@ -252,7 +252,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className={`text-3xl font-bold ${getTypeColor(leaveDetail.leaveTypeName || leaveDetail.leaveType || leaveDetail.type)}`}>
-                      {getLeaveTypeLabel(leaveDetail.leaveType || leaveDetail.type || leaveDetail.leaveTypeName || '')}
+                      {leaveDetail.leaveTypeName_th || leaveDetail.leaveTypeName_en || getLeaveTypeLabel(leaveDetail.leaveType || leaveDetail.type || leaveDetail.leaveTypeName || '')}
                     </div>
                   </div>
                   <div className="text-right">

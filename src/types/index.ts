@@ -48,6 +48,19 @@ export interface LeaveRequest {
   updated_at: string;
   user?: User;
   leave_type?: LeaveType;
+  // Additional fields for leave type names (for inactive/deleted types)
+  leaveTypeName_th?: string;
+  leaveTypeName_en?: string;
+  // Additional fields that might be present
+  leaveType?: string;
+  type?: string;
+  startDate?: string;
+  endDate?: string;
+  submittedDate?: string;
+  duration?: number;
+  durationType?: string;
+  durationHours?: number;
+  backdated?: number;
 }
 
 // Employee Types

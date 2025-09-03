@@ -254,19 +254,27 @@ module.exports = (AppDataSource) => {
           const [leaveTypeResult] = await AppDataSource.query(leaveTypeQuery, [leave.leaveType]);
           const leaveType = leaveTypeResult ? leaveTypeResult[0] : null;
           leaveTypeId = leave.leaveType;
+          
           // Use proper names even for soft-deleted types
           if (leaveType) {
-            if (leaveType.is_active === false) {
-              // Handle soft-deleted leave types
-              leaveTypeName_th = 'ประเภทการลาที่ถูกลบ';
-              leaveTypeName_en = 'Deleted Leave Type';
+            // Check if leave type is inactive or deleted
+            const isInactive = leaveType.is_active === false || leaveType.deleted_at;
+            
+            if (isInactive) {
+              // Add [DELETED] prefix for inactive/deleted leave types
+              const prefix_th = '[ลบ] ';
+              const prefix_en = '[DELETED] ';
+              
+              leaveTypeName_th = prefix_th + (leaveType.leave_type_th || leave.leaveType);
+              leaveTypeName_en = prefix_en + (leaveType.leave_type_en || leave.leaveType);
             } else {
               leaveTypeName_th = leaveType.leave_type_th || leave.leaveType;
               leaveTypeName_en = leaveType.leave_type_en || leave.leaveType;
             }
           } else {
-            leaveTypeName_th = leave.leaveType;
-            leaveTypeName_en = leave.leaveType;
+            // Fallback if leave type not found
+            leaveTypeName_th = `ประเภทการลาที่ถูกลบ (${leave.leaveType})`;
+            leaveTypeName_en = `Deleted Leave Type (${leave.leaveType})`;
           }
         }
         if (leave.statusBy && leave.status === 'approved') {
@@ -428,20 +436,41 @@ module.exports = (AppDataSource) => {
       // Months (1-12)
       const months = Array.from(new Set(leaves.map(l => l.createdAt && (new Date(l.createdAt).getMonth() + 1)))).filter(Boolean).sort((a, b) => a - b);
 
-      // ดึง leave types ทั้งหมดจาก database
-      const allLeaveTypes = await leaveTypeRepo.find({ order: { leave_type_th: 'ASC' } });
+      // ดึง leave types ทั้งหมดจาก database (including inactive/deleted)
+      const allLeaveTypes = await leaveTypeRepo.find({ 
+        order: { leave_type_th: 'ASC' },
+        withDeleted: true 
+      });
 
       res.json({
         status: 'success',
         statuses,
         years,
         months,
-        leaveTypes: allLeaveTypes.map(lt => ({
-          id: lt.id,
-          leave_type: lt.leave_type,
-          leave_type_th: lt.leave_type_th,
-          leave_type_en: lt.leave_type_en
-        }))
+        leaveTypes: allLeaveTypes.map(lt => {
+          // Check if leave type is inactive or deleted
+          const isInactive = lt.is_active === false || lt.deleted_at;
+          
+          if (isInactive) {
+            // Add [DELETED] prefix for inactive/deleted leave types
+            const prefix_th = '[ลบ] ';
+            const prefix_en = '[DELETED] ';
+            
+            return {
+              id: lt.id,
+              leave_type: lt.leave_type,
+              leave_type_th: prefix_th + (lt.leave_type_th || lt.leave_type),
+              leave_type_en: prefix_en + (lt.leave_type_en || lt.leave_type)
+            };
+          } else {
+            return {
+              id: lt.id,
+              leave_type: lt.leave_type,
+              leave_type_th: lt.leave_type_th,
+              leave_type_en: lt.leave_type_en
+            };
+          }
+        })
       });
     } catch (err) {
       res.status(500).json({ status: 'error', message: err.message });
