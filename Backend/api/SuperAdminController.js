@@ -664,6 +664,23 @@ module.exports = (AppDataSource) => {
     }
   });
 
+  // Add GET /api/superadmin to fetch all superadmins
+  router.get('/superadmin', async (req, res) => {
+    try {
+      const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+      const superadmins = await superadminRepo.find();
+      // Return only id and superadmin_name for dropdown
+      const result = superadmins.map(sa => ({
+        id: sa.id,
+        superadmin_name: sa.superadmin_name,
+        email: sa.email || '',
+      }));
+      sendSuccess(res, result, 'Fetched all superadmins');
+    } catch (err) {
+      sendError(res, err.message, 500);
+    }
+  });
+
   // Delete superadmin
   router.delete('/superadmin/:id', async (req, res) => {
     try {

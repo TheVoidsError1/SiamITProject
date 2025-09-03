@@ -27,6 +27,7 @@ import ManagePost from './pages/ManagePost';
 import CalendarPage from './pages/CalendarPage';
 import CompanyMonthDetailPage from './pages/CompanyMonthDetailPage';
 import AnnouncementsFeedPage from './pages/AnnouncementsFeedPage';
+import AdminLeaveRequest from './pages/AdminLeaveRequest';
 
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import ErrorBoundary from "@/components/ErrorBoundary";
@@ -107,6 +108,11 @@ const AppContent = () => {
             <Route path="/admin/employees/:id" element={
               <ProtectedRoute adminOnly>
                 <EmployeeDetail />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/leave-request" element={
+              <ProtectedRoute adminOnly>
+                <AdminLeaveRequest />
               </ProtectedRoute>
             } />
             <Route path="/superadmin/manage-all" element={

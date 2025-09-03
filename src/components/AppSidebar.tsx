@@ -65,6 +65,11 @@ const adminItems = [
     url: "/admin/employees",
     icon: Users,
   },
+  {
+    title: "navigation.adminLeaveRequest",
+    url: "/admin/leave-request",
+    icon: Calendar,
+  },
 ];
 
 const superadminItems = [
