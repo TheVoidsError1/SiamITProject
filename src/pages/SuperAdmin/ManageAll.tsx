@@ -20,6 +20,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { apiService } from '@/lib/api';
 import { apiEndpoints } from '@/constants/api';
 import { showToast, showToastMessage } from '@/lib/toast';
+import { config } from '@/config';
+import { QUOTA_RESET_STRATEGIES, POSITION_SETTINGS, CLEANUP_OPERATIONS } from '@/constants/business';
 
 
 
@@ -65,7 +67,7 @@ const ManageAll: React.FC = () => {
       // Build quotas payload from current row
       const quotasForBackend: Record<string, number> = {};
       pos.quotas.forEach((q: any) => { if (q.leaveTypeId) quotasForBackend[q.leaveTypeId] = q.quota ?? 0; });
-      const nextValue = Number(pos.new_year_quota) === 1 ? 0 : 1; // 0=รี,1=ไม่รี
+      const nextValue = Number(pos.new_year_quota) === POSITION_SETTINGS.NEW_YEAR_QUOTA.RESET ? POSITION_SETTINGS.NEW_YEAR_QUOTA.NO_RESET : POSITION_SETTINGS.NEW_YEAR_QUOTA.RESET; // 0=รี,1=ไม่รี
       const data = await apiService.put(`/api/positions-with-quotas/${pos.id}`, {
         position_name_en: pos.position_name_en,
         position_name_th: pos.position_name_th,
@@ -75,7 +77,7 @@ const ManageAll: React.FC = () => {
       });
       if (!data || !data.success) throw new Error('Failed to update');
       // Refresh positions
-      const positionsData = await apiService.get('/api/positions-with-quotas');
+      const positionsData = await apiService.get(apiEndpoints.positionsWithQuotas);
       if (positionsData.success && Array.isArray(positionsData.data)) {
         setPositions(positionsData.data);
       }
@@ -99,6 +101,10 @@ const ManageAll: React.FC = () => {
   // Manual reset quota state
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [manualResetLoading, setManualResetLoading] = useState(false);
+  
+  // Employee search and filter state
+  const [employeeSearch, setEmployeeSearch] = useState('');
+  const [showSelectedOnly, setShowSelectedOnly] = useState(false);
   
   // Cleanup old records state
   const [cleanupLoading, setCleanupLoading] = useState(false);
@@ -274,7 +280,7 @@ const ManageAll: React.FC = () => {
       // รีเฟรชข้อมูล
       const [leaveTypesData, positionsData] = await Promise.all([
         apiService.get(apiEndpoints.leaveTypes),
-        apiService.get('/api/positions-with-quotas')
+        apiService.get(apiEndpoints.positionsWithQuotas)
       ]);
       if ((leaveTypesData.success || leaveTypesData.status === 'success') && Array.isArray(leaveTypesData.data)) {
         setLeaveTypes(leaveTypesData.data);
@@ -325,7 +331,7 @@ const ManageAll: React.FC = () => {
         }
       });
       console.log('Submitting quotasForBackend:', quotasForBackend);
-      const data = await apiService.put(`/api/positions-with-quotas/${inlineEdit.id}`, {
+      const data = await apiService.put(`${apiEndpoints.positionsWithQuotas}/${inlineEdit.id}`, {
         position_name_en: inlineEdit.name_en,
         position_name_th: inlineEdit.name_th,
         quotas: quotasForBackend
@@ -335,7 +341,7 @@ const ManageAll: React.FC = () => {
         return;
       }
       // Refresh positions
-      const positionsData = await apiService.get('/api/positions-with-quotas');
+      const positionsData = await apiService.get(apiEndpoints.positionsWithQuotas);
       if (positionsData.success && Array.isArray(positionsData.data)) {
         setPositions(positionsData.data);
       }
@@ -354,7 +360,7 @@ const ManageAll: React.FC = () => {
       // Build quotas payload from current row
       const quotasForBackend: Record<string, number> = {};
       pos.quotas.forEach((q: any) => { if (q.leaveTypeId) quotasForBackend[q.leaveTypeId] = q.quota ?? 0; });
-      const data = await apiService.put(`/api/positions-with-quotas/${pos.id}`, {
+      const data = await apiService.put(`${apiEndpoints.positionsWithQuotas}/${pos.id}`, {
         position_name_en: pos.position_name_en,
         position_name_th: pos.position_name_th,
         quotas: quotasForBackend,
@@ -362,7 +368,7 @@ const ManageAll: React.FC = () => {
       });
       if (!data || !data.success) throw new Error('Failed to update');
       // Refresh positions
-      const positionsData = await apiService.get('/api/positions-with-quotas');
+      const positionsData = await apiService.get(apiEndpoints.positionsWithQuotas);
       if (positionsData.success && Array.isArray(positionsData.data)) {
         setPositions(positionsData.data);
       }
@@ -443,7 +449,7 @@ const ManageAll: React.FC = () => {
   useEffect(() => {
     const fetchPositions = async () => {
       try {
-        const data = await apiService.get('/api/positions-with-quotas');
+        const data = await apiService.get(apiEndpoints.positionsWithQuotas);
         if (data.success && Array.isArray(data.data)) {
           setPositions(data.data);
         }
@@ -507,7 +513,7 @@ const ManageAll: React.FC = () => {
             quotasForBackend[lt.id] = positionForm.quotas[lt.id];
           }
         });
-        const data = await apiService.post('/api/positions-with-quotas', {
+        const data = await apiService.post(apiEndpoints.positionsWithQuotas, {
           position_name_en: positionForm.name_en,
           position_name_th: positionForm.name_th,
           quotas: quotasForBackend,
@@ -518,7 +524,7 @@ const ManageAll: React.FC = () => {
           return;
         }
         // Refresh positions
-        const positionsData = await apiService.get('/api/positions-with-quotas');
+        const positionsData = await apiService.get(apiEndpoints.positionsWithQuotas);
         if (positionsData.success && Array.isArray(positionsData.data)) {
           setPositions(positionsData.data);
         }
@@ -553,9 +559,9 @@ const ManageAll: React.FC = () => {
     if (!deletePositionDialog.position) return;
     
     try {
-      await apiService.delete(`/api/positions-with-quotas/${deletePositionDialog.position.id}`);
+      await apiService.delete(`${apiEndpoints.positionsWithQuotas}/${deletePositionDialog.position.id}`);
       // Refresh positions
-      const data = await apiService.get('/api/positions-with-quotas');
+      const data = await apiService.get(apiEndpoints.positionsWithQuotas);
       if (data.success && Array.isArray(data.data)) {
         setPositions(data.data);
       }
@@ -603,9 +609,9 @@ const ManageAll: React.FC = () => {
   const [employeeOptions, setEmployeeOptions] = useState<{ id: string; name: string; avatar?: string | null }[]>([]);
   const fetchEmployeesForReset = async () => {
     try {
-      const data = await apiService.get('/api/employees');
+      const data = await apiService.get(apiEndpoints.employees.list);
       if ((data.success || data.status === 'success') && Array.isArray(data.data)) {
-        const baseUrl = import.meta.env.VITE_API_BASE_URL as string;
+        const baseUrl = config.api.baseUrl;
         const opts = data.data.map((e: any) => ({
           id: e.id,
           name: e.name || e.email || e.id,
@@ -638,12 +644,12 @@ const ManageAll: React.FC = () => {
     });
 
   const selectAllFiltered = () => {
-    const addIds = filteredEmployees.map(e => e.id);
+    const addIds = filteredEmployees2.map(e => e.id);
     setSelectedUserIds(prev => Array.from(new Set([...prev, ...addIds])));
   };
 
   const clearFilteredSelection = () => {
-    const removeSet = new Set(filteredEmployees.map(e => e.id));
+    const removeSet = new Set(filteredEmployees2.map(e => e.id));
     setSelectedUserIds(prev => prev.filter(id => !removeSet.has(id)));
   };
 
@@ -654,7 +660,7 @@ const ManageAll: React.FC = () => {
     }
     setManualResetLoading(true);
     try {
-      const res = await apiService.post('/api/leave-quota-reset/reset-by-users', { userIds: selectedUserIds, strategy: 'zero' });
+      const res = await apiService.post(apiEndpoints.leaveQuotaReset.resetByUsers, { userIds: selectedUserIds, strategy: QUOTA_RESET_STRATEGIES.ZERO });
       if (!res || !(res.success || res.status === 'success')) throw new Error(res?.message || 'Failed');
       showToast.success(t('leave.manualResetSuccess'));
     } catch (err: any) {
@@ -667,7 +673,7 @@ const ManageAll: React.FC = () => {
   const handleCleanupOldRecords = async () => {
     setCleanupLoading(true);
     try {
-      const response = await apiService.post('/api/superadmin/cleanup-old-leave-requests');
+      const response = await apiService.post(apiEndpoints.superAdmin.cleanupOldLeaveRequests, {});
 
       if (response.success) {
         showToast.success(t('common.cleanupSuccess'));
@@ -691,20 +697,7 @@ const ManageAll: React.FC = () => {
     setConfirmResetOpen(true);
   };
 
-  // --- เพิ่ม state สำหรับ filter และ pagination ---
-  const [userSearch, setUserSearch] = useState('');
-  const [userPage, setUserPage] = useState(1);
-  const USERS_PER_PAGE = 15;
 
-  // --- กรองและแบ่งหน้า ---
-  const filteredEmployees = employeeOptions.filter(e =>
-    e.name.toLowerCase().includes(userSearch.toLowerCase())
-  );
-  const totalPages = Math.ceil(filteredEmployees.length / USERS_PER_PAGE);
-  const pagedEmployees = filteredEmployees.slice(
-    (userPage - 1) * USERS_PER_PAGE,
-    userPage * USERS_PER_PAGE
-  );
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-100 via-indigo-50 to-white flex flex-col">
@@ -728,7 +721,7 @@ const ManageAll: React.FC = () => {
         </div>
         
         <div className="relative z-10 flex flex-col items-center justify-center py-10 md:py-16">
-          <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-24 h-24 rounded-full bg-white/80 shadow-2xl border-4 border-white mb-4" />
+          <img src={config.assets.logo} alt="Logo" className="w-24 h-24 rounded-full bg-white/80 shadow-2xl border-4 border-white mb-4" />
           <h1 className="text-4xl md:text-5xl font-extrabold text-indigo-900 drop-shadow mb-2 flex items-center gap-3">
             {t('navigation.manageAll')}
           </h1>
@@ -916,20 +909,20 @@ const ManageAll: React.FC = () => {
                     </div>
                     {/* Counter */}
                     <div className="text-sm text-gray-600 mb-2">
-                      {t('common.showing', 'Showing')}: <span className="font-medium">{filteredEmployees.length}</span> / {employeeOptions.length}
+                      {t('common.showing', 'Showing')}: <span className="font-medium">{filteredEmployees2.length}</span> / {employeeOptions.length}
                       {' · '}
                       {t('common.selected', 'Selected')}: <span className="font-medium">{selectedUserIds.length}</span>
                     </div>
                     {/* List */}
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-64 overflow-auto border rounded p-2">
-                      {filteredEmployees.length === 0 ? (
+                      {filteredEmployees2.length === 0 ? (
                         <div className="col-span-full text-center text-gray-500 py-6">{t('common.noResults', 'No results')}</div>
                       ) : (
-                        filteredEmployees.map(e => (
+                        filteredEmployees2.map(e => (
                           <label key={e.id} className="flex items-center gap-3 text-sm p-2 rounded hover:bg-blue-50 cursor-pointer">
                             <input type="checkbox" className="mt-0.5" checked={selectedUserIds.includes(e.id)} onChange={() => toggleSelectUser(e.id)} />
                             <span className="flex items-center gap-2">
-                              <img src={e.avatar || '/lovable-uploads/siamit.png'} alt={e.name} className="w-6 h-6 rounded-full object-cover border" />
+                              <img src={e.avatar || config.assets.defaultAvatar} alt={e.name} className="w-6 h-6 rounded-full object-cover border" />
                               <span className="font-medium text-blue-900 truncate max-w-[220px]" title={e.name}>{e.name}</span>
                             </span>
                           </label>
@@ -1354,7 +1347,7 @@ const ManageAll: React.FC = () => {
 
       {/* Footer */}
       <footer className="w-full mt-16 py-8 bg-gradient-to-r from-blue-100 via-indigo-50 to-white text-center text-gray-400 text-base font-medium shadow-inner flex flex-col items-center gap-2">
-        <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-10 h-10 rounded-full mx-auto mb-1" />
+        <img src={config.assets.logo} alt="Logo" className="w-10 h-10 rounded-full mx-auto mb-1" />
         <div className="font-bold text-gray-600">{t('footer.systemName')}</div>
         <div className="text-sm">{t('footer.copyright')}</div>
       </footer>

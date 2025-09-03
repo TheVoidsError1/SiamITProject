@@ -66,5 +66,9 @@ export const apiEndpoints = {
     delete: (id: string) => `/api/superadmin/${id}`,
     admins: (id: string) => `/api/admins/${id}`,
     users: (id: string) => `/api/users/${id}`,
+    cleanupOldLeaveRequests: '/api/superadmin/cleanup-old-leave-requests',
+  },
+  leaveQuotaReset: {
+    resetByUsers: '/api/leave-quota-reset/reset-by-users',
   },
 };
