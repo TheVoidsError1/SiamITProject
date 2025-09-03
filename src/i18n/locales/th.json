@@ -145,8 +145,7 @@
         "cleanupTitle": "ลบข้อมูลเก่า",
         "cleanupDescription": "ลบข้อมูลคำขอลาพักงานที่เก่ากว่า 2 ปีเพื่อรักษาประสิทธิภาพของฐานข้อมูล",
         "cleanupButton": "ลบข้อมูลเก่า",
-        "cleanupButtonLoading": "กำลังลบ..."
-    "ห": "ลบสำเร็จ",
+        "cleanupButtonLoading": "กำลังลบ...",
     "deleteError": "ลบไม่สำเร็จ",
     "search": "ค้นหา",
     "searchEmployee": "ค้นหาพนักงานด้วยชื่อหรือไอดี",
@@ -414,8 +413,6 @@
     "selectPosition": "เลือกตำแหน่ง",
     "requestQuote": "ต้องการ End Work Date",
     "newYearQuota": "รีเซ็ตต้นปี ปิด/เปิด"
-    "requestQuote": "ต้องการวันที่สิ้นสุด",
-    "newYearQuota": "รีเซ็ตต้นปี (0=รี,1=ไม่รี)"
   },
   "employeeTypes": {
     "employee": "พนักงาน",
@@ -469,8 +466,7 @@
     "noCompanyHolidays": "ไม่มีวันหยุดบริษัทในเดือนนี้",
     "announcements": "ข่าวสาร",
     "noAnnouncements": "ไม่มีข่าวสาร",
-    "noRecentLeaveRequests": "ไม่มีการลาล่าสุด"
-    "noAnnouncements": "ไม่มีข่าวสาร",
+    "noRecentLeaveRequests": "ไม่มีการลาล่าสุด",
     "noRecentLeaveRequests": "ไม่มีคำขอลาล่าสุด"
   },
   "profile": {
