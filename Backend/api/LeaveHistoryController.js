@@ -248,11 +248,31 @@ module.exports = (AppDataSource) => {
         let approvedBy = null;
         let rejectedBy = null;
         if (leave.leaveType) {
-          // Include soft-deleted leave types to get proper names
-          // Use raw query to include soft-deleted records
-          const leaveTypeQuery = `SELECT * FROM leave_type WHERE id = ?`;
-          const [leaveTypeResult] = await AppDataSource.query(leaveTypeQuery, [leave.leaveType]);
-          const leaveType = leaveTypeResult ? leaveTypeResult[0] : null;
+          // Try multiple approaches to get the leave type (including soft-deleted records)
+          let leaveType = null;
+          
+          // Approach 1: Try using TypeORM withDeleted option
+          try {
+            const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+            leaveType = await leaveTypeRepo.findOne({
+              where: { id: leave.leaveType },
+              withDeleted: true
+            });
+          } catch (error) {
+            // TypeORM withDeleted failed, continue to raw query
+          }
+          
+          // Approach 2: If that fails, try raw query
+          if (!leaveType) {
+            try {
+              const leaveTypeQuery = `SELECT * FROM leave_type WHERE id = ?`;
+              const [leaveTypeResult] = await AppDataSource.query(leaveTypeQuery, [leave.leaveType]);
+              leaveType = leaveTypeResult ? leaveTypeResult[0] : null;
+            } catch (error) {
+              // Raw query failed, leaveType will remain null
+            }
+          }
+          
           leaveTypeId = leave.leaveType;
           
           // Use proper names even for soft-deleted types
