@@ -439,7 +439,7 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
       </div>
 
       <form ref={formRef} onSubmit={handleSubmit} className="space-y-8">
-        {/* Employee Selection */}
+        {/* Employee Selection - Always visible */}
         <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
           <div className="flex items-center gap-3 mb-4">
             <div className="p-2 bg-blue-100 rounded-lg">
@@ -477,72 +477,74 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
           )}
         </div>
 
-        {/* Leave Details Section */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-green-100 rounded-lg">
-              <ClipboardList className="w-5 h-5 text-green-600" />
+        {/* Leave Details Section - Show when employee is selected */}
+        {selectedUserId && (
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-green-100 rounded-lg">
+                <ClipboardList className="w-5 h-5 text-green-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-800">{t('leave.leaveDetails')}</h3>
             </div>
-            <h3 className="text-lg font-semibold text-gray-800">{t('leave.leaveDetails')}</h3>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Leave Type */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                <ClipboardList className="w-4 h-4" />
-                {t('leave.leaveType')}
-              </label>
-              <Select value={leaveType} onValueChange={setLeaveType}>
-                <SelectTrigger className={`w-full h-12 ${errors.leaveType ? 'border-red-500 ring-red-200' : 'border-gray-200 hover:border-blue-300'}`}>
-                  <SelectValue placeholder={t('leave.selectLeaveType')}>
-                    {leaveType && (() => {
-                      const selectedType = leaveTypes.find(type => type.id === leaveType);
-                      return selectedType ? (i18n.language === 'th' ? selectedType.leave_type_th : selectedType.leave_type_en) : '';
-                    })()}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {leaveTypes.map((type) => (
-                    <SelectItem key={type.id} value={type.id}>
-                      <div className="flex items-center justify-between w-full">
-                        <span>{i18n.language === 'th' ? type.leave_type_th : type.leave_type_en}</span>
-                        {type.require_attachment && (
-                          <span className="text-xs text-blue-600 ml-2">({t('leave.requiresAttachment')})</span>
-                        )}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.leaveType && (
-                <p className="text-sm text-red-500">{errors.leaveType}</p>
-              )}
-            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Leave Type */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <ClipboardList className="w-4 h-4" />
+                  {t('leave.leaveType')}
+                </label>
+                <Select value={leaveType} onValueChange={setLeaveType}>
+                  <SelectTrigger className={`w-full h-12 ${errors.leaveType ? 'border-red-500 ring-red-200' : 'border-gray-200 hover:border-blue-300'}`}>
+                    <SelectValue placeholder={t('leave.selectLeaveType')}>
+                      {leaveType && (() => {
+                        const selectedType = leaveTypes.find(type => type.id === leaveType);
+                        return selectedType ? (i18n.language === 'th' ? selectedType.leave_type_th : selectedType.leave_type_en) : '';
+                      })()}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {leaveTypes.map((type) => (
+                      <SelectItem key={type.id} value={type.id}>
+                        <div className="flex items-center justify-between w-full">
+                          <span>{i18n.language === 'th' ? type.leave_type_th : type.leave_type_en}</span>
+                          {type.require_attachment && (
+                            <span className="text-xs text-blue-600 ml-2">({t('leave.requiresAttachment')})</span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {errors.leaveType && (
+                  <p className="text-sm text-red-500">{errors.leaveType}</p>
+                )}
+              </div>
 
-            {/* Duration Type */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                <Clock className="w-4 h-4" />
-                {t('leave.durationType')}
-              </label>
-              <Select value={durationType} onValueChange={handleDurationTypeChange}>
-                <SelectTrigger className={`w-full h-12 ${errors.durationType ? 'border-red-500 ring-red-200' : 'border-gray-200 hover:border-blue-300'}`}>
-                  <SelectValue placeholder={t('leave.selectDurationType')} />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="day">{t('leave.fullDay')}</SelectItem>
-                  <SelectItem value="hour">{t('leave.hourly')}</SelectItem>
-                </SelectContent>
-              </Select>
-              {errors.durationType && (
-                <p className="text-sm text-red-500">{errors.durationType}</p>
-              )}
+              {/* Duration Type */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <Clock className="w-4 h-4" />
+                  {t('leave.durationType')}
+                </label>
+                <Select value={durationType} onValueChange={handleDurationTypeChange}>
+                  <SelectTrigger className={`w-full h-12 ${errors.durationType ? 'border-red-500 ring-red-200' : 'border-gray-200 hover:border-blue-300'}`}>
+                    <SelectValue placeholder={t('leave.selectDurationType')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="day">{t('leave.fullDay')}</SelectItem>
+                    <SelectItem value="hour">{t('leave.hourly')}</SelectItem>
+                  </SelectContent>
+                </Select>
+                {errors.durationType && (
+                  <p className="text-sm text-red-500">{errors.durationType}</p>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* Date Selection */}
+        {/* Date Selection - Show when duration type is selected */}
         {durationType && (
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <div className="flex items-center gap-3 mb-6">
@@ -660,173 +662,177 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
           </div>
         )}
 
-        {/* Approval Section */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-orange-100 rounded-lg">
-              <UserCheck className="w-5 h-5 text-orange-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-800">{t('leave.approvalSection')}</h3>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Approval Status */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                <CheckCircle className="w-4 h-4" />
-                {t('leave.approvalStatus')}
-              </label>
-              <Select value={approvalStatus} onValueChange={(value: "pending" | "approved" | "rejected") => setApprovalStatus(value)}>
-                <SelectTrigger className="w-full h-12 border-gray-200 hover:border-blue-300">
-                  <SelectValue>
-                    {approvalStatus && (() => {
-                      switch (approvalStatus) {
-                        case 'pending':
-                          return (
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                              {t('leave.pending')}
-                            </div>
-                          );
-                        case 'approved':
-                          return (
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                              {t('leave.approved')}
-                            </div>
-                          );
-                        case 'rejected':
-                          return (
-                            <div className="flex items-center gap-2">
-                              <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                              {t('leave.rejected')}
-                            </div>
-                          );
-                        default:
-                          return '';
-                      }
-                    })()}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pending">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                      {t('leave.pending')}
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="approved">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      {t('leave.approved')}
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="rejected">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                      {t('leave.rejected')}
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+        {/* Approval Section - Show when date is selected */}
+        {((durationType === 'day' && startDate && endDate) || (durationType === 'hour' && leaveDate)) && (
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-orange-100 rounded-lg">
+                <UserCheck className="w-5 h-5 text-orange-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-800">{t('leave.approvalSection')}</h3>
             </div>
 
-            {/* Approver Name Select - Only show when approved or rejected */}
-            {(approvalStatus === 'approved' || approvalStatus === 'rejected') && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Approval Status */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <User className="w-4 h-4" />
-                  {t('leave.approverName')}
+                  <CheckCircle className="w-4 h-4" />
+                  {t('leave.approvalStatus')}
                 </label>
-                <Select value={approverId} onValueChange={setApproverId}>
-                  <SelectTrigger className={`h-12 w-full ${errors.approverName ? 'border-red-500 ring-red-200' : 'border-gray-200 hover:border-blue-300'}`}>
-                    <SelectValue placeholder={t('leave.enterApproverName')}>
-                      {approverId && (() => {
-                        const selectedApprover = approverList.find(appr => appr.id === approverId);
-                        return selectedApprover ? `${selectedApprover.name} (${selectedApprover.role})` : '';
+                <Select value={approvalStatus} onValueChange={(value: "pending" | "approved" | "rejected") => setApprovalStatus(value)}>
+                  <SelectTrigger className="w-full h-12 border-gray-200 hover:border-blue-300">
+                    <SelectValue>
+                      {approvalStatus && (() => {
+                        switch (approvalStatus) {
+                          case 'pending':
+                            return (
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                                {t('leave.pending')}
+                              </div>
+                            );
+                          case 'approved':
+                            return (
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                {t('leave.approved')}
+                              </div>
+                            );
+                          case 'rejected':
+                            return (
+                              <div className="flex items-center gap-2">
+                                <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                                {t('leave.rejected')}
+                              </div>
+                            );
+                          default:
+                            return '';
+                        }
                       })()}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {approverList.map((appr) => (
-                      <SelectItem key={appr.id} value={appr.id}>
-                        {appr.name} <span className="text-xs text-gray-400 ml-2">({appr.role})</span>
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="pending">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                        {t('leave.pending')}
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="approved">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        {t('leave.approved')}
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="rejected">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-red-500 rounded-full"></div>
+                        {t('leave.rejected')}
+                      </div>
+                    </SelectItem>
                   </SelectContent>
                 </Select>
-                {errors.approverName && (
-                  <p className="text-sm text-red-500">{errors.approverName}</p>
-                )}
+              </div>
+
+              {/* Approver Name Select - Only show when approved or rejected */}
+              {(approvalStatus === 'approved' || approvalStatus === 'rejected') && (
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    {t('leave.approverName')}
+                  </label>
+                  <Select value={approverId} onValueChange={setApproverId}>
+                    <SelectTrigger className={`h-12 w-full ${errors.approverName ? 'border-red-500 ring-red-200' : 'border-gray-200 hover:border-blue-300'}`}>
+                      <SelectValue placeholder={t('leave.enterApproverName')}>
+                        {approverId && (() => {
+                          const selectedApprover = approverList.find(appr => appr.id === approverId);
+                          return selectedApprover ? `${selectedApprover.name} (${selectedApprover.role})` : '';
+                        })()}
+                      </SelectValue>
+                    </SelectTrigger>
+                    <SelectContent>
+                      {approverList.map((appr) => (
+                        <SelectItem key={appr.id} value={appr.id}>
+                          {appr.name} <span className="text-xs text-gray-400 ml-2">({appr.role})</span>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.approverName && (
+                    <p className="text-sm text-red-500">{errors.approverName}</p>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Approval Note - Only show when rejected */}
+            {approvalStatus === 'rejected' && (
+              <div className="mt-6 space-y-2">
+                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  หมายเหตุไม่อนุมัติ
+                </label>
+                <Textarea
+                  placeholder="กรุณาระบุเหตุผลที่ไม่อนุมัติ"
+                  value={approvalNote}
+                  onChange={(e) => setApprovalNote(e.target.value)}
+                  className="min-h-[100px] border-gray-200 hover:border-blue-300"
+                />
               </div>
             )}
           </div>
+        )}
 
-          {/* Approval Note - Only show when rejected */}
-          {approvalStatus === 'rejected' && (
-            <div className="mt-6 space-y-2">
-              <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                หมายเหตุไม่อนุมัติ
-              </label>
-              <Textarea
-                placeholder="กรุณาระบุเหตุผลที่ไม่อนุมัติ"
-                value={approvalNote}
-                onChange={(e) => setApprovalNote(e.target.value)}
-                className="min-h-[100px] border-gray-200 hover:border-blue-300"
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Reason and Contact */}
-        <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="p-2 bg-indigo-100 rounded-lg">
-              <FileText className="w-5 h-5 text-indigo-600" />
-            </div>
-            <h3 className="text-lg font-semibold text-gray-800">{t('leave.additionalInfo')}</h3>
-          </div>
-
-          <div className="space-y-6">
-            {/* Reason field (show always) */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                <FileText className="w-4 h-4" />
-                {t('leave.reason')}
-              </label>
-              <Textarea
-                placeholder={t('leave.reasonPlaceholder')}
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                className={`min-h-[100px] ${errors.reason ? 'border-red-500 ring-red-200' : 'border-gray-200 hover:border-blue-300'}`}
-              />
-              {errors.reason && (
-                <p className="text-sm text-red-500">{errors.reason}</p>
-              )}
+        {/* Reason and Contact - Show when leave type and duration type are selected */}
+        {leaveType && durationType && (
+          <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="p-2 bg-indigo-100 rounded-lg">
+                <FileText className="w-5 h-5 text-indigo-600" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-800">{t('leave.additionalInfo')}</h3>
             </div>
 
-            {/* Contact Information */}
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                <Phone className="w-4 h-4" />
-                {t('leave.contactInfo')}
-              </label>
-              <Input
-                type="text"
-                placeholder={t('leave.contactPlaceholder')}
-                value={contact}
-                onChange={(e) => setContact(e.target.value)}
-                className={`h-12 ${errors.contact ? 'border-red-500 ring-red-200' : 'border-gray-200 hover:border-blue-300'}`}
-              />
-              {errors.contact && (
-                <p className="text-sm text-red-500">{errors.contact}</p>
-              )}
+            <div className="space-y-6">
+              {/* Reason field (show always) */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <FileText className="w-4 h-4" />
+                  {t('leave.reason')}
+                </label>
+                <Textarea
+                  placeholder={t('leave.reasonPlaceholder')}
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  className={`min-h-[100px] ${errors.reason ? 'border-red-500 ring-red-200' : 'border-gray-200 hover:border-blue-300'}`}
+                />
+                {errors.reason && (
+                  <p className="text-sm text-red-500">{errors.reason}</p>
+                )}
+              </div>
+
+              {/* Contact Information */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <Phone className="w-4 h-4" />
+                  {t('leave.contactInfo')}
+                </label>
+                <Input
+                  type="text"
+                  placeholder={t('leave.contactPlaceholder')}
+                  value={contact}
+                  onChange={(e) => setContact(e.target.value)}
+                  className={`h-12 ${errors.contact ? 'border-red-500 ring-red-200' : 'border-gray-200 hover:border-blue-300'}`}
+                />
+                {errors.contact && (
+                  <p className="text-sm text-red-500">{errors.contact}</p>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
-        {/* File Upload */}
+        {/* File Upload - Show when leave type requires attachment */}
         {selectedLeaveType?.require_attachment && (
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-100">
             <FileUpload
@@ -842,26 +848,28 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
           </div>
         )}
 
-        {/* Submit Button */}
-        <div className="flex justify-end space-x-4 pt-6">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => navigate('/admin')}
-            className="flex items-center gap-2 h-12 px-6 border-gray-300 hover:border-gray-400 hover:bg-gray-50"
-          >
-            <ArrowLeftCircle className="w-4 h-4" />
-            {t('common.cancel')}
-          </Button>
-          <Button
-            type="submit"
-            disabled={loading}
-            className="flex items-center gap-2 h-12 px-8 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
-          >
-            <Send className="w-4 h-4" />
-            {loading ? t('leave.submitting') : t('leave.submitLeave')}
-          </Button>
-        </div>
+        {/* Submit Button - Show when all required fields are filled */}
+        {selectedUserId && leaveType && durationType && approvalStatus && reason && contact && (
+          <div className="flex justify-end space-x-4 pt-6">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate('/admin')}
+              className="flex items-center gap-2 h-12 px-6 border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+            >
+              <ArrowLeftCircle className="w-4 h-4" />
+              {t('common.cancel')}
+            </Button>
+            <Button
+              type="submit"
+              disabled={loading}
+              className="flex items-center gap-2 h-12 px-8 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl transition-all duration-200"
+            >
+              <Send className="w-4 h-4" />
+              {loading ? t('leave.submitting') : t('leave.submitLeave')}
+            </Button>
+          </div>
+        )}
       </form>
     </div>
   );
