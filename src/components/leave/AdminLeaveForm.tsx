@@ -65,8 +65,8 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
   const [leaveDate, setLeaveDate] = useState<string>("");
   const [leaveType, setLeaveType] = useState("");
   const [durationType, setDurationType] = useState("");
-  const [startTime, setStartTime] = useState("09:00");
-  const [endTime, setEndTime] = useState("18:00");
+  const [startTime, setStartTime] = useState("09:00"); // Default business start time
+  const [endTime, setEndTime] = useState("18:00"); // Default business end time
   const [reason, setReason] = useState("");
   const [employeeType, setEmployeeType] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
@@ -309,7 +309,7 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
         return;
       }
 
-      // Check if time is within business hours (9:00-18:00)
+      // Check if time is within business hours
       const startHour = start.getHours();
       const endHour = end.getHours();
       const startMinute = start.getMinutes();
@@ -318,11 +318,11 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
       const startTimeMinutes = startHour * 60 + startMinute;
       const endTimeMinutes = endHour * 60 + endMinute;
       
-      const businessStartMinutes = 9 * 60; // 9:00
-      const businessEndMinutes = 18 * 60; // 18:00
+      const businessStartMinutes = 9 * 60; // Business start time (9:00)
+      const businessEndMinutes = 18 * 60; // Business end time (18:00)
       
       if (startTimeMinutes < businessStartMinutes || endTimeMinutes > businessEndMinutes) {
-        setTimeError('เวลาเริ่มและเวลาสิ้นสุดต้องอยู่ในช่วง 9:00 - 18:00 เท่านั้น');
+        setTimeError(t('leave.businessHoursError'));
         return;
       }
     }
@@ -418,10 +418,41 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
   const handleDurationTypeChange = (value: string) => {
     setDurationType(value);
     if (value === 'hour') {
-      setStartTime("09:00");
-      setEndTime("18:00");
+      setStartTime("09:00"); // Reset to business start time
+      setEndTime("18:00"); // Reset to business end time
     }
     setTimeError(""); // Clear any previous time errors
+  };
+
+  // Function to check if leave is backdated, advance, or current
+  const getLeaveNotice = (startDate: string | undefined, endDate: string | undefined) => {
+    if (!startDate) return null;
+    
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const startDateOnly = new Date(startDate);
+    startDateOnly.setHours(0, 0, 0, 0);
+    
+    // ถ้าวันที่เริ่มลาน้อยกว่าวันนี้ (ไม่รวมวันนี้) = ลาย้อนหลัง
+    if (startDateOnly < today) {
+      return {
+        type: 'backdated',
+        message: t('leave.backdatedNotice'),
+        className: 'bg-yellow-50 border-yellow-200 text-yellow-800'
+      };
+    }
+    
+    // ถ้าวันที่เริ่มลามากกว่าวันนี้ = ลาล่วงหน้า
+    if (startDateOnly > today) {
+      return {
+        type: 'advance',
+        message: t('leave.advanceNotice'),
+        className: 'bg-blue-50 border-blue-200 text-blue-800'
+      };
+    }
+    
+    // ถ้าเป็นวันนี้ = ไม่แสดงแจ้งเตือน
+    return null;
   };
 
   return (
@@ -555,38 +586,64 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
             </div>
 
             {durationType === 'day' ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                    <CalendarDays className="w-4 h-4" />
-                    {t('leave.startDate')}
-                  </label>
-                  <DatePicker
-                    date={startDate}
-                    onDateChange={setStartDate}
-                    placeholder={t('leave.selectStartDate')}
-                    className={errors.startDate ? 'border-red-500' : ''}
-                  />
-                  {errors.startDate && (
-                    <p className="text-sm text-red-500">{errors.startDate}</p>
-                  )}
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                      <CalendarDays className="w-4 h-4" />
+                      {t('leave.startDate')}
+                    </label>
+                    <DatePicker
+                      date={startDate}
+                      onDateChange={setStartDate}
+                      placeholder={t('leave.selectStartDate')}
+                      className={errors.startDate ? 'border-red-500' : ''}
+                    />
+                    {errors.startDate && (
+                      <p className="text-sm text-red-500">{errors.startDate}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                      <CalendarDays className="w-4 h-4" />
+                      {t('leave.endDate')}
+                    </label>
+                    <DatePicker
+                      date={endDate}
+                      onDateChange={setEndDate}
+                      placeholder={t('leave.selectEndDate')}
+                      className={errors.endDate ? 'border-red-500' : ''}
+                    />
+                    {errors.endDate && (
+                      <p className="text-sm text-red-500">{errors.endDate}</p>
+                    )}
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                    <CalendarDays className="w-4 h-4" />
-                    {t('leave.endDate')}
-                  </label>
-                  <DatePicker
-                    date={endDate}
-                    onDateChange={setEndDate}
-                    placeholder={t('leave.selectEndDate')}
-                    className={errors.endDate ? 'border-red-500' : ''}
-                  />
-                  {errors.endDate && (
-                    <p className="text-sm text-red-500">{errors.endDate}</p>
-                  )}
-                </div>
+                {/* แจ้งเตือนเมื่อมีการลาย้อนหลังหรือลาล่วงหน้า */}
+                {(() => {
+                  const notice = getLeaveNotice(startDate, endDate);
+                  if (!notice) return null;
+                  
+                  const iconColor = notice.type === 'backdated' ? 'text-yellow-600' : 'text-blue-600';
+                  const iconPath = notice.type === 'backdated' 
+                    ? "M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                    : "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z";
+                  
+                  return (
+                    <div className={`p-3 border rounded-lg ${notice.className}`}>
+                      <div className="flex items-center gap-2">
+                        <svg className={`w-4 h-4 ${iconColor}`} fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d={iconPath} clipRule="evenodd" />
+                        </svg>
+                        <span className="text-sm font-medium">
+                          {notice.message}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             ) : durationType === 'hour' ? (
               <div className="space-y-6">
@@ -646,10 +703,34 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
                 <div className="text-sm text-blue-600 bg-blue-50 p-3 rounded-lg border border-blue-200">
                   <div className="flex items-center gap-2 mb-1">
                     <Clock className="w-4 h-4" />
-                    <span className="font-medium">เวลาทำการ</span>
+                    <span className="font-medium">{t('leave.businessHours')}</span>
                   </div>
-                  <p>เวลาเริ่มและเวลาสิ้นสุดต้องอยู่ในช่วง 9:00 - 18:00 เท่านั้น</p>
+                  <p>{t('leave.businessHoursDescription')}</p>
                 </div>
+
+                {/* แจ้งเตือนเมื่อมีการลาย้อนหลังหรือลาล่วงหน้า */}
+                {(() => {
+                  const notice = getLeaveNotice(leaveDate, leaveDate);
+                  if (!notice) return null;
+                  
+                  const iconColor = notice.type === 'backdated' ? 'text-yellow-600' : 'text-blue-600';
+                  const iconPath = notice.type === 'backdated' 
+                    ? "M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                    : "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z";
+                  
+                  return (
+                    <div className={`p-3 border rounded-lg ${notice.className}`}>
+                      <div className="flex items-center gap-2">
+                        <svg className={`w-4 h-4 ${iconColor}`} fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d={iconPath} clipRule="evenodd" />
+                        </svg>
+                        <span className="text-sm font-medium">
+                          {notice.message}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
 
                 {timeError && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -770,10 +851,10 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
               <div className="mt-6 space-y-2">
                 <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
                   <FileText className="w-4 h-4" />
-                  หมายเหตุไม่อนุมัติ
+                  {t('leave.rejectionNote')}
                 </label>
                 <Textarea
-                  placeholder="กรุณาระบุเหตุผลที่ไม่อนุมัติ"
+                  placeholder={t('leave.rejectionNotePlaceholder')}
                   value={approvalNote}
                   onChange={(e) => setApprovalNote(e.target.value)}
                   className="min-h-[100px] border-gray-200 hover:border-blue-300"

@@ -40,15 +40,15 @@ const AdminLeaveRequest = () => {
           <div className="flex items-center gap-8 mt-8">
             <div className="flex items-center gap-2 text-blue-100">
               <Users className="w-5 h-5" />
-              <span className="text-sm font-medium">Employee Selection</span>
+              <span className="text-sm font-medium">{t('leave.employeeSelection')}</span>
             </div>
             <div className="flex items-center gap-2 text-blue-100">
               <Calendar className="w-5 h-5" />
-              <span className="text-sm font-medium">Date Management</span>
+              <span className="text-sm font-medium">{t('leave.dateManagement')}</span>
             </div>
             <div className="flex items-center gap-2 text-blue-100">
               <FileText className="w-5 h-5" />
-              <span className="text-sm font-medium">Approval Control</span>
+              <span className="text-sm font-medium">{t('leave.approvalControl')}</span>
             </div>
           </div>
         </div>
@@ -82,7 +82,7 @@ const AdminLeaveRequest = () => {
           </div>
           
           <div className="text-sm text-gray-400 mt-4">
-            <p>Powered by Siam IT - Advanced Leave Management System</p>
+            <p>{t('footer.poweredBy')}</p>
           </div>
         </div>
       </footer>

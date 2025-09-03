@@ -64,7 +64,8 @@
     "calendar": "ปฏิทิน",
     "companyCalendar": "ปฏิทินทางบริษัท",
     "companyCalendarTitle": "ปฏิทินกิจกรรมและวันสำคัญของบริษัท",
-    "companyCalendarDescription": "ดูปฎิทินกิจกรรมและวันสำคัญของบริษัท"
+    "companyCalendarDescription": "ดูปฎิทินกิจกรรมและวันสำคัญของบริษัท",
+    "adminLeaveRequest": "ขอลาโดยผู้ดูแลระบบ"
   },
   "common": {
     "logo": "โลโก้",
