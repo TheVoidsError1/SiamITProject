@@ -9,7 +9,8 @@ import { Calendar, CheckCircle, Clock, FileText, History, User, XCircle } from "
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatDateLocalized } from '../../lib/utils';
-import { createAuthenticatedFileUrl } from '../../lib/api';
+import { createAuthenticatedFileUrl, apiService } from '../../lib/api';
+import { apiEndpoints } from '@/constants/api';
 import ImagePreviewDialog from '@/components/dialogs/ImagePreviewDialog';
 
 interface LeaveRequest {
@@ -61,14 +62,13 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
   const [leaveTypesError, setLeaveTypesError] = useState<string | null>(null);
   const [preview, setPreview] = useState<{ url: string; name: string } | null>(null);
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+  // Use centralized API service and endpoints (avoid hard-coded URLs)
 
   useEffect(() => {
     if (open && leaveRequest?.id) {
       setLoading(true);
-      fetch(`${API_BASE_URL}/api/leave-request/detail/${leaveRequest.id}`)
-        .then(res => res.json())
-        .then(data => {
+      apiService.get(apiEndpoints.leave.detail(leaveRequest.id))
+        .then((data: any) => {
           if (data.success) {
             console.log('Leave Detail Data:', data.data);
             console.log('Days from API:', data.data.days);
@@ -94,8 +94,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
       setLeaveTypesLoading(true);
       setLeaveTypesError(null);
       try {
-        const res = await fetch(`${API_BASE_URL}/api/leave-types`);
-        const data = await res.json();
+        const data = await apiService.get(apiEndpoints.leaveTypes);
         if (data.success) {
           setLeaveTypes(data.data);
         } else {

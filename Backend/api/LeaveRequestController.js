@@ -1604,6 +1604,10 @@
          const processRepo = AppDataSource.getRepository('ProcessCheck');
          const { id } = req.params;
 
+         // --- i18n: Detect language (fallback to 'th') ---
+         let lang = req.headers['accept-language'] || req.query.lang || 'th';
+         lang = String(lang).split(',')[0].toLowerCase().startsWith('en') ? 'en' : 'th';
+
          const leave = await leaveRepo.findOneBy({ id });
          console.log('Detail API called for leave id:', id);
          if (!leave) return res.status(404).json({ success: false, message: 'Not found' });
@@ -2154,7 +2158,6 @@
                        // Get leave type information
             if (leave.leaveType) {
               // Try multiple approaches to get the leave type
-              let leaveTypeObj = null;
               
               // Approach 1: Try raw query with explicit soft-delete bypass
               try {
