@@ -36,7 +36,7 @@ const Register = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [departments, setDepartments] = useState<{ id: string; department_name_en: string; department_name_th: string }[]>([]);
-      const [positions, setPositions] = useState<{ id: string; position_name_en: string; position_name_th: string; request_quota?: boolean }[]>([]);
+      const [positions, setPositions] = useState<{ id: string; position_name_en: string; position_name_th: string; require_enddate?: boolean }[]>([]);
   const [newDepartment, setNewDepartment] = useState('');
   const [newPosition, setNewPosition] = useState('');
   const [error, setError] = useState<{ email?: string; full_name?: string; general?: string }>({});
@@ -73,7 +73,7 @@ const Register = () => {
         // Fetch positions
         const posData = await apiService.get(apiEndpoints.positions);
         if (posData && posData.data && Array.isArray(posData.data)) {
-          const pos = posData.data.map((p: any) => ({ id: p.id, position_name_th: p.position_name_th, position_name_en: p.position_name_en, request_quota: !!p.request_quota }));
+          const pos = posData.data.map((p: any) => ({ id: p.id, position_name_th: p.position_name_th, position_name_en: p.position_name_en, require_enddate: !!p.require_enddate }));
           const noPositionItem = pos.find(p => p.position_name_en === 'No Position');
           const otherPos = pos.filter(p => p.position_name_en !== 'No Position');
           otherPos.sort((a, b) => {
@@ -173,7 +173,7 @@ const Register = () => {
 
     // ตรวจว่าตำแหน่งต้องการ End Work Date หรือไม่
     const selectedPos = positions.find(p => p.id === formData.position);
-            const requiresEndWorkDate = selectedPos ? !!selectedPos.request_quota : false;
+            const requiresEndWorkDate = selectedPos ? !!selectedPos.require_enddate : false;
 
     if (requiresEndWorkDate) {
       if (!formData.start_work || !formData.end_work) {
@@ -348,7 +348,7 @@ const Register = () => {
               {/* Start/End work dates: Start Work Date always shows; End Work Date shows only when position has Request Quote enabled */}
               {(() => {
                 const selectedPos = positions.find(p => p.id === formData.position);
-                const showEndWorkDate = selectedPos ? !!selectedPos.request_quota : false;
+                const showEndWorkDate = selectedPos ? !!selectedPos.require_enddate : false;
                 return (
                   <div className={`grid grid-cols-1 ${showEndWorkDate ? 'md:grid-cols-2' : ''} gap-4`}>
                     <div className="space-y-2">

@@ -33,7 +33,7 @@ const ManageAll: React.FC = () => {
   const lang = i18n.language.startsWith('th') ? 'th' : 'en';
   // Position state
   const [positions, setPositions] = useState<any[]>([]);
-      const [positionForm, setPositionForm] = useState<{ name_en: string; name_th: string; quotas: Record<string, number>; request_quota: boolean }>({ name_en: '', name_th: '', quotas: {}, request_quota: false });
+      const [positionForm, setPositionForm] = useState<{ name_en: string; name_th: string; quotas: Record<string, number>; require_enddate: boolean }>({ name_en: '', name_th: '', quotas: {}, require_enddate: false });
   const [editingPositionId, setEditingPositionId] = useState<string | null>(null);
   const [positionError, setPositionError] = useState<string | null>(null);
 
@@ -71,7 +71,7 @@ const ManageAll: React.FC = () => {
         position_name_th: pos.position_name_th,
         quotas: quotasForBackend,
         new_year_quota: nextValue,
-                        request_quota: pos.request_quota,
+                        require_enddate: pos.require_enddate,
       });
       if (!data || !data.success) throw new Error('Failed to update');
       // Refresh positions
@@ -99,9 +99,9 @@ const ManageAll: React.FC = () => {
   // Manual reset quota state
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [manualResetLoading, setManualResetLoading] = useState(false);
-  // Manual reset filter/search UI state
-  const [employeeSearch, setEmployeeSearch] = useState<string>('');
-  const [showSelectedOnly, setShowSelectedOnly] = useState<boolean>(false);
+  
+  // Cleanup old records state
+  const [cleanupLoading, setCleanupLoading] = useState(false);
   const handleDepartmentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setDepartmentForm({ ...departmentForm, [e.target.name]: e.target.value });
   };
@@ -347,9 +347,9 @@ const ManageAll: React.FC = () => {
     }
   };
 
-  // Toggle Request Quote switch for a position
+  // Toggle Require End Date switch for a position
   const handleToggleRequestQuote = async (pos: any) => {
-            const newValue = !pos.request_quota;
+            const newValue = !pos.require_enddate;
     try {
       // Build quotas payload from current row
       const quotasForBackend: Record<string, number> = {};
@@ -358,7 +358,7 @@ const ManageAll: React.FC = () => {
         position_name_en: pos.position_name_en,
         position_name_th: pos.position_name_th,
         quotas: quotasForBackend,
-                    request_quota: newValue
+                    require_enddate: newValue
       });
       if (!data || !data.success) throw new Error('Failed to update');
       // Refresh positions
@@ -511,7 +511,7 @@ const ManageAll: React.FC = () => {
           position_name_en: positionForm.name_en,
           position_name_th: positionForm.name_th,
           quotas: quotasForBackend,
-                      request_quota: positionForm.request_quota
+                      require_enddate: positionForm.require_enddate
         });
         if (!data || !data.success) {
           setPositionError(data?.message || 'Unknown error');
@@ -522,7 +522,7 @@ const ManageAll: React.FC = () => {
         if (positionsData.success && Array.isArray(positionsData.data)) {
           setPositions(positionsData.data);
         }
-        setPositionForm({ name_en: '', name_th: '', quotas: {}, request_quota: false });
+        setPositionForm({ name_en: '', name_th: '', quotas: {}, require_enddate: false });
         showToastMessage.crud.createSuccess('position', t);
       }
     } catch (err: any) {
@@ -537,7 +537,7 @@ const ManageAll: React.FC = () => {
         name_en: pos.position_name_en,
         name_th: pos.position_name_th,
         quotas: pos.quotas,
-                        request_quota: !!pos.request_quota
+                        require_enddate: !!pos.require_enddate
       });
       setEditingPositionId(id);
     }
@@ -664,6 +664,23 @@ const ManageAll: React.FC = () => {
     }
   };
 
+  const handleCleanupOldRecords = async () => {
+    setCleanupLoading(true);
+    try {
+      const response = await apiService.post('/api/superadmin/cleanup-old-leave-requests');
+
+      if (response.success) {
+        showToast.success(t('common.cleanupSuccess'));
+      } else {
+        showToast.error(t('common.cleanupError'));
+      }
+    } catch (error: any) {
+      showToast.error(t('common.cleanupError'));
+    } finally {
+      setCleanupLoading(false);
+    }
+  };
+
   // Confirm dialog for manual reset
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const openConfirmReset = () => {
@@ -716,7 +733,7 @@ const ManageAll: React.FC = () => {
             {t('navigation.manageAll')}
           </h1>
           <p className="text-lg md:text-xl text-blue-900/70 mb-2 font-medium text-center max-w-2xl">
-            {t('main.manageAllDesc', 'Manage positions, departments, and leave types for your organization.')}
+            {t('main.manageAllDesc')}
           </p>
         </div>
       </div>
@@ -725,22 +742,22 @@ const ManageAll: React.FC = () => {
           <Tabs defaultValue="positions" className="w-full">
             <TabsList className="mb-10 bg-indigo-50 rounded-2xl shadow-inner flex gap-4 justify-center py-3">
               <TabsTrigger value="positions" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg text-indigo-700 font-bold text-xl py-3 px-6 rounded-2xl transition-all flex items-center gap-2">
-                <span role="img" aria-label="positions">🧑‍💼</span> {t('positions.positions', 'Positions')}
+                <span role="img" aria-label="positions">🧑‍💼</span> {t('positions.positions')}
               </TabsTrigger>
               <TabsTrigger value="departments" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg text-indigo-700 font-bold text-xl py-3 px-6 rounded-2xl transition-all flex items-center gap-2">
-                <span role="img" aria-label="departments">🏢</span> {t('departments.departments', 'Departments')}
+                <span role="img" aria-label="departments">🏢</span> {t('departments.departments')}
               </TabsTrigger>
               <TabsTrigger value="leaveTypes" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg text-indigo-700 font-bold text-xl py-3 px-6 rounded-2xl transition-all flex items-center gap-2">
-                <span role="img" aria-label="leaveTypes">📝</span> {t('leave.leaveType', 'Leave Types')}
+                <span role="img" aria-label="leaveTypes">📝</span> {t('leave.leaveType')}
               </TabsTrigger>
               <TabsTrigger value="quota" className="data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-lg text-indigo-700 font-bold text-xl py-3 px-6 rounded-2xl transition-all flex items-center gap-2">
-                <span role="img" aria-label="quota">📊</span> {t('leave.quota', 'Quota')}
+                <span role="img" aria-label="quota">📊</span> {t('leave.quota')}
               </TabsTrigger>
             </TabsList>
             <TabsContent value="positions">
               <div className="rounded-2xl shadow overflow-hidden mb-8">
                 <div className="bg-blue-600 px-6 py-3">
-                  <h2 className="text-lg font-bold text-white">{t('positions.positions', 'Positions')}</h2>
+                  <h2 className="text-lg font-bold text-white">{t('positions.positions')}</h2>
                 </div>
                 <div className="p-6">
                   <form onSubmit={handlePositionSubmit} className="mb-6 flex flex-col gap-4 bg-blue-50 rounded-xl p-6 shadow-sm">
@@ -768,17 +785,17 @@ const ManageAll: React.FC = () => {
                       <label className="flex items-center gap-3 ml-1">
                         <input
                           type="checkbox"
-                          name="request_quota"
-                    checked={positionForm.request_quota}
+                                              name="require_enddate"
+                    checked={positionForm.require_enddate}
                           onChange={handlePositionChange}
                           className="accent-blue-600 h-5 w-5 rounded border-gray-300 focus:ring-2 focus:ring-blue-400 transition-all"
                         />
                         <span className="text-base font-medium select-none cursor-pointer whitespace-nowrap">
-                          {t('positions.requestQuote', 'Request Quote')}
+                          {t('positions.requestQuote')}
                         </span>
                       </label>
                       
-                      <Button type="submit" className="btn-primary w-24">{editingPositionId ? t('common.update', 'Update') : t('common.add', 'Add')}</Button>
+                      <Button type="submit" className="btn-primary w-24">{editingPositionId ? t('common.update') : t('common.add')}</Button>
                     </div>
                     {positionError && (
                       <div className="text-red-600 font-semibold mt-2">{positionError}</div>
@@ -790,11 +807,11 @@ const ManageAll: React.FC = () => {
                         <tr className="bg-blue-100 text-blue-900">
                           <th className="p-3">{t('positions.position')} (EN)</th>
                           <th className="p-3">{t('positions.position')} (TH)</th>
-                          <th className="p-3">{t('positions.requestQuote', 'Request Quote')}</th>
+                          <th className="p-3">{t('positions.requestQuote')}</th>
                           {filteredLeaveTypes.map(lt => (
                             <th key={lt.id} className="p-3">{lang === 'th' ? lt.leave_type_th : lt.leave_type_en}</th>
                           ))}
-                          <th className="p-3 text-center">{t('common.actions', 'Actions')}</th>
+                          <th className="p-3 text-center">{t('common.actions')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -810,9 +827,9 @@ const ManageAll: React.FC = () => {
                                 </td>
                                 <td className="p-3 font-medium text-center">
                                   <label style={{ display: 'inline-block', position: 'relative', width: 40, height: 24 }}>
-                                    <input type="checkbox" checked={!!pos.request_quota} style={{ opacity: 0, width: 0, height: 0 }} tabIndex={-1} readOnly />
-                                    <span style={{ position: 'absolute', cursor: 'not-allowed', top: 0, left: 0, right: 0, bottom: 0, background: pos.request_quota ? '#64b5f6' : '#ccc', borderRadius: 24, transition: 'background 0.2s', display: 'block' }}>
-                                      <span style={{ position: 'absolute', left: pos.request_quota ? 20 : 2, top: 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} />
+                                    <input type="checkbox" checked={!!pos.require_enddate} style={{ opacity: 0, width: 0, height: 0 }} tabIndex={-1} readOnly />
+                                    <span style={{ position: 'absolute', cursor: 'not-allowed', top: 0, left: 0, right: 0, bottom: 0, background: !!pos.require_enddate ? '#64b5f6' : '#ccc', borderRadius: 24, transition: 'background 0.2s', display: 'block' }}>
+                                      <span style={{ position: 'absolute', left: !!pos.require_enddate ? 20 : 2, top: 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} />
                                     </span>
                                   </label>
                                 </td>
@@ -840,13 +857,13 @@ const ManageAll: React.FC = () => {
                                   <label style={{ display: 'inline-block', position: 'relative', width: 40, height: 24 }}>
                                     <input
                                       type="checkbox"
-                                      checked={!!pos.request_quota}
+                                      checked={!!pos.require_enddate}
                                       onChange={() => handleToggleRequestQuote(pos)}
                                       style={{ opacity: 0, width: 0, height: 0 }}
                                       tabIndex={-1}
                                     />
-                                    <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, background: pos.request_quota ? '#64b5f6' : '#ccc', borderRadius: 24, transition: 'background 0.2s', display: 'block' }}>
-                                      <span style={{ position: 'absolute', left: pos.request_quota ? 20 : 2, top: 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} />
+                                    <span style={{ position: 'absolute', cursor: 'pointer', top: 0, left: 0, right: 0, bottom: 0, background: !!pos.require_enddate ? '#64b5f6' : '#ccc', borderRadius: 24, transition: 'background 0.2s', display: 'block' }}>
+                                      <span style={{ position: 'absolute', left: !!pos.require_enddate ? 20 : 2, top: 2, width: 20, height: 20, background: '#fff', borderRadius: '50%', transition: 'left 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }} />
                                     </span>
                                   </label>
                                 </td>
@@ -856,8 +873,8 @@ const ManageAll: React.FC = () => {
                                   </td>
                                 ))}
                                 <td className="p-3 flex gap-2 justify-center">
-                                  <Button variant="outline" onClick={() => startInlineEdit(pos)}>{t('common.edit', 'Edit')}</Button>
-                                  <Button variant="destructive" onClick={() => handleDeletePosition(pos.id)}>{t('common.delete', 'Delete')}</Button>
+                                  <Button variant="outline" onClick={() => startInlineEdit(pos)}>{t('common.edit')}</Button>
+                                  <Button variant="destructive" onClick={() => handleDeletePosition(pos.id)}>{t('common.delete')}</Button>
                                 </td>
                               </>
                             )}
@@ -872,7 +889,7 @@ const ManageAll: React.FC = () => {
             <TabsContent value="quota">
               <div className="rounded-2xl shadow overflow-hidden mb-8">
                 <div className="bg-blue-600 px-6 py-3">
-                  <h2 className="text-lg font-bold text-white">{t('leave.quota', 'Quota')}</h2>
+                  <h2 className="text-lg font-bold text-white">{t('leave.quota')}</h2>
                 </div>
                 <div className="p-6 space-y-6">
                   {/* Manual reset section */}
@@ -927,18 +944,32 @@ const ManageAll: React.FC = () => {
                     </div>
                   </div>
                   <div className="bg-white rounded-xl p-4 shadow-sm">
-                    <h3 className="text-blue-900 font-semibold mb-3">{t('leave.note', 'Note')}</h3>
-                    <p className="text-sm text-gray-700">{t('leave.noteDetail', 'Positions with new_year_quota = 0 will be included when no position is selected.')}</p>
+                    <h3 className="text-blue-900 font-semibold mb-3">{t('leave.note')}</h3>
+                    <p className="text-sm text-gray-700">{t('leave.noteDetail')}</p>
                   </div>
+                  
+                  {/* Cleanup old records section */}
+                          <div className="bg-white rounded-xl p-4 shadow-sm">
+          <h3 className="text-blue-900 font-semibold mb-3">{t('common.cleanupTitle')}</h3>
+          <p className="text-sm text-gray-700 mb-3">{t('common.cleanupDescription')}</p>
+          <Button
+            onClick={handleCleanupOldRecords}
+            disabled={cleanupLoading}
+            variant="outline"
+            className="border-orange-300 text-orange-700 hover:bg-orange-50"
+          >
+            {cleanupLoading ? t('common.cleanupButtonLoading') : t('common.cleanupButton')}
+          </Button>
+        </div>
                   <div className="bg-white rounded-xl p-4 shadow-sm">
-                    <h3 className="text-blue-900 font-semibold mb-3">{t('positions.positions', 'Positions')}</h3>
+                    <h3 className="text-blue-900 font-semibold mb-3">{t('positions.positions')}</h3>
                     <div className="overflow-x-auto rounded-xl">
                       <table className="w-full table-auto bg-white rounded-xl">
                         <thead>
                           <tr className="bg-blue-100 text-blue-900">
                             <th className="p-3">{t('positions.position')} (EN)</th>
                             <th className="p-3">{t('positions.position')} (TH)</th>
-                            <th className="p-3 text-center">{t('positions.newYearQuota', 'New Year Reset (0=Reset,1=No)')}</th>
+                            <th className="p-3 text-center">{t('positions.newYearQuota')}</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -972,21 +1003,21 @@ const ManageAll: React.FC = () => {
             <TabsContent value="departments">
               <div className="rounded-2xl shadow overflow-hidden mb-8">
                 <div className="bg-blue-600 px-6 py-3">
-                  <h2 className="text-lg font-bold text-white">{t('departments.departments', 'Departments')}</h2>
+                  <h2 className="text-lg font-bold text-white">{t('departments.departments')}</h2>
                 </div>
                 <div className="p-6">
                   <form onSubmit={handleDepartmentSubmit} className="mb-6 flex gap-2 items-end bg-blue-50 rounded-xl p-6 shadow-sm">
                     <Input name="name_en" value={departmentForm.name_en} onChange={handleDepartmentChange} placeholder="Department Name (EN)" required className="md:w-64" />
                     <Input name="name_th" value={departmentForm.name_th} onChange={handleDepartmentChange} placeholder="Department Name (TH)" required className="md:w-64" />
-                    <Button type="submit" className="btn-primary">{editingDepartmentId ? t('common.update', 'Update') : t('common.add', 'Add')}</Button>
+                    <Button type="submit" className="btn-primary">{editingDepartmentId ? t('common.update') : t('common.add')}</Button>
                   </form>
                   <div className="overflow-x-auto rounded-xl shadow">
                     <table className="w-full table-auto bg-white rounded-xl">
                       <thead>
                         <tr className="bg-blue-100 text-blue-900">
-                                                  <th className="p-3">{t('departments.departments')} (EN)</th>
-                        <th className="p-3">{t('departments.departments')} (TH)</th>
-                          <th className="p-3 text-center">{t('common.actions', 'Actions')}</th>
+                          <th className="p-3">{t('departments.departments')} (EN)</th>
+                          <th className="p-3">{t('departments.departments')} (TH)</th>
+                          <th className="p-3 text-center">{t('common.actions')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1010,8 +1041,8 @@ const ManageAll: React.FC = () => {
                                 <td className="p-3 font-medium">{dep.department_name_en}</td>
                                 <td className="p-3 font-medium">{dep.department_name_th}</td>
                                 <td className="p-3 flex gap-2 justify-center">
-                                  <Button variant="outline" onClick={() => startInlineDepartmentEdit(dep)}>{t('common.edit', 'Edit')}</Button>
-                                  <Button variant="destructive" onClick={() => handleDeleteDepartment(dep.id)}>{t('common.delete', 'Delete')}</Button>
+                                                                  <Button variant="outline" onClick={() => startInlineDepartmentEdit(dep)}>{t('common.edit')}</Button>
+                                <Button variant="destructive" onClick={() => handleDeleteDepartment(dep.id)}>{t('common.delete')}</Button>
                                 </td>
                               </>
                             )}
@@ -1029,7 +1060,7 @@ const ManageAll: React.FC = () => {
             <TabsContent value="leaveTypes">
               <div className="rounded-2xl shadow overflow-hidden mb-8">
                 <div className="bg-blue-600 px-6 py-3">
-                  <h2 className="text-lg font-bold text-white">{t('leave.leaveType', 'Leave Types')}</h2>
+                  <h2 className="text-lg font-bold text-white">{t('leave.leaveType')}</h2>
                 </div>
                 <div className="p-6">
                   <form onSubmit={handleLeaveTypeSubmit} className="mb-6 flex items-end bg-blue-50 rounded-xl p-6 shadow-sm">
@@ -1046,22 +1077,22 @@ const ManageAll: React.FC = () => {
                           id="require-attachment-checkbox"
                         />
                         <label htmlFor="require-attachment-checkbox" className="text-base font-medium select-none cursor-pointer whitespace-nowrap">
-                          {t('leave.requiresAttachment', 'Require Attachment')}
+                          {t('leave.requiresAttachment')}
                         </label>
                       </div>
                     </div>
                     <div className="flex-1 flex justify-end">
-                      <Button type="submit" className="btn-primary">{editingLeaveTypeId ? t('common.update', 'Update') : t('common.add', 'Add')}</Button>
+                      <Button type="submit" className="btn-primary">{editingLeaveTypeId ? t('common.update') : t('common.add')}</Button>
                     </div>
                   </form>
                   <div className="overflow-x-auto rounded-xl shadow">
                     <table className="w-full table-auto bg-white rounded-xl">
                       <thead>
                         <tr className="bg-blue-100 text-blue-900">
-                                                  <th className="p-3">{t('leave.leaveType')} (EN)</th>
-                        <th className="p-3">{t('leave.leaveType')} (TH)</th>
-                          <th className="p-3">{t('leave.requiresAttachment', 'Require Attachment')}</th>
-                          <th className="p-3 text-center">{t('common.actions', 'Actions')}</th>
+                          <th className="p-3">{t('leave.leaveType')} (EN)</th>
+                          <th className="p-3">{t('leave.leaveType')} (TH)</th>
+                          <th className="p-3">{t('leave.requiresAttachment')}</th>
+                          <th className="p-3 text-center">{t('common.actions')}</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -1165,8 +1196,8 @@ const ManageAll: React.FC = () => {
                                 </td>
                                 <td className="p-3 text-center">
                                   <div className="flex gap-2 justify-center">
-                                    <Button variant="outline" onClick={() => startInlineLeaveTypeEdit(lt)}>{t('common.edit', 'Edit')}</Button>
-                                    <Button variant="destructive" onClick={() => handleDeleteLeaveType(lt.id)}>{t('common.delete', 'Delete')}</Button>
+                                                                    <Button variant="outline" onClick={() => startInlineLeaveTypeEdit(lt)}>{t('common.edit')}</Button>
+                                <Button variant="destructive" onClick={() => handleDeleteLeaveType(lt.id)}>{t('common.delete')}</Button>
                                   </div>
                                 </td>
                               </>
@@ -1306,6 +1337,10 @@ const ManageAll: React.FC = () => {
               {t('common.confirmDeleteLeaveType')} "
               {getLeaveTypeDisplayName(deleteLeaveTypeDialog.leaveType, lang)}"
               {t('common.confirmDeleteQuestion')}
+              <br />
+              <span className="text-red-600 font-semibold">
+                {t('common.warningDeleteLeaveType')}
+              </span>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

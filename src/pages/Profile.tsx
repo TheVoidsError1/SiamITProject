@@ -47,7 +47,7 @@ const Profile = () => {
   });
   const [saving, setSaving] = useState(false);
   const [departments, setDepartments] = useState<any[]>([]);
-      const [positions, setPositions] = useState<{ id: string; position_name_en: string; position_name_th: string; request_quota?: boolean }[]>([]);
+      const [positions, setPositions] = useState<{ id: string; position_name_en: string; position_name_th: string; require_enddate?: boolean }[]>([]);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [positionsLoaded, setPositionsLoaded] = useState(false);
   const [departmentsLoaded, setDepartmentsLoaded] = useState(false);
@@ -177,7 +177,7 @@ const Profile = () => {
           id: p.id,
           position_name_en: p.position_name_en,
           position_name_th: p.position_name_th,
-                          request_quota: !!p.request_quota
+                          require_enddate: !!p.require_enddate
         }));
         setPositions(pos);
         setPositionsLoaded(true);
@@ -523,7 +523,7 @@ const Profile = () => {
       
       // ตรวจสอบว่าตำแหน่งต้องการ End Work Date หรือไม่
       const selectedPos = positions.find(p => String(p.id) === formData.position);
-              const requiresEndWorkDate = selectedPos ? !!selectedPos.request_quota : false;
+              const requiresEndWorkDate = selectedPos ? !!selectedPos.require_enddate : false;
 
       // Validation สำหรับ End Work Date
       if (requiresEndWorkDate && formData.start_work && formData.end_work) {
@@ -575,7 +575,7 @@ const Profile = () => {
         dob: formData.dob || null,
         phone_number: formData.phone_number || null,
         start_work: formData.start_work || null,
-                    end_work: (positions.find(p => String(p.id) === formData.position)?.request_quota ? (formData.end_work || null) : null),
+                    end_work: (positions.find(p => String(p.id) === formData.position)?.require_enddate ? (formData.end_work || null) : null),
       };
       
       console.log('Sending profile update data:', requestData);
@@ -916,7 +916,7 @@ const Profile = () => {
                   {/* Start/End work dates: Start Work Date always shows; End Work Date shows only when position has Request Quote enabled */}
                   {(() => {
                     const selectedPos = positions.find(p => String(p.id) === formData.position);
-                    const showEndWorkDate = selectedPos ? !!selectedPos.request_quota : false;
+                    const showEndWorkDate = selectedPos ? !!selectedPos.require_enddate : false;
                     return (
                       <>
                         <div className="space-y-3">

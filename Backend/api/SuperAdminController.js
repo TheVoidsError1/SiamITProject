@@ -80,6 +80,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const config = require('../config');
 const { BaseController, sendSuccess, sendError, sendNotFound, sendValidationError } = require('../utils');
+const { manualCleanup } = require('../utils/cleanupOldLeaveRequests');
 
 module.exports = (AppDataSource) => {
   const router = require('express').Router();
@@ -389,7 +390,7 @@ module.exports = (AppDataSource) => {
    *         description: Internal server error
    */
   router.post('/positions-with-quotas', async (req, res) => {
-            const { position_name_en, position_name_th, quotas, request_quota = false } = req.body;
+            const { position_name_en, position_name_th, quotas, require_enddate = false } = req.body;
     console.log('Received quotas:', quotas);
     if (!position_name_en || !position_name_th || typeof quotas !== 'object') {
       return sendValidationError(res, 'position_name_en, position_name_th, and quotas are required');
@@ -402,7 +403,7 @@ module.exports = (AppDataSource) => {
       const leaveTypeRepo = queryRunner.manager.getRepository('LeaveType');
       const leaveQuotaRepo = queryRunner.manager.getRepository('LeaveQuota');
       // 1. Create position with both languages
-              const position = positionRepo.create({ position_name_en, position_name_th, request_quota: !!request_quota });
+              const position = positionRepo.create({ position_name_en, position_name_th, require_enddate: !!require_enddate });
       await positionRepo.save(position);
       // 2. Get all leave types except 'emergency'
       const leaveTypes = await leaveTypeRepo.find();
@@ -478,7 +479,7 @@ module.exports = (AppDataSource) => {
           id: pos.id,
           position_name_en: pos.position_name_en,
           position_name_th: pos.position_name_th,
-                      request_quota: !!pos.request_quota,
+                      require_enddate: !!pos.require_enddate,
           new_year_quota: typeof pos.new_year_quota === 'number' ? pos.new_year_quota : (pos.new_year_quota ? 1 : 0),
           quotas: posQuotas
         };
@@ -539,7 +540,7 @@ module.exports = (AppDataSource) => {
    */
   router.put('/positions-with-quotas/:id', async (req, res) => {
     const { id } = req.params;
-            const { position_name_en, position_name_th, quotas, request_quota, new_year_quota } = req.body;
+            const { position_name_en, position_name_th, quotas, require_enddate, new_year_quota } = req.body;
     if (!position_name_en || !position_name_th || typeof quotas !== 'object') {
       return res.status(400).json({ success: false, message: 'position_name_en, position_name_th, and quotas are required' });
     }
@@ -557,7 +558,7 @@ module.exports = (AppDataSource) => {
       }
       position.position_name_en = position_name_en;
       position.position_name_th = position_name_th;
-              position.request_quota = typeof request_quota === 'boolean' ? request_quota : !!position.request_quota;
+              position.require_enddate = typeof require_enddate === 'boolean' ? require_enddate : !!position.require_enddate;
       if (new_year_quota !== undefined && new_year_quota !== null) {
         // Expect 0 = reset, 1 = not reset
         position.new_year_quota = Number(new_year_quota) === 1 ? 1 : 0;
@@ -642,6 +643,24 @@ module.exports = (AppDataSource) => {
       sendError(res, err.message, 500);
     } finally {
       await queryRunner.release();
+    }
+  });
+
+  // POST /api/superadmin/cleanup-old-leave-requests
+  router.post('/cleanup-old-leave-requests', async (req, res) => {
+    try {
+      const result = await manualCleanup(AppDataSource);
+      
+      if (result.success) {
+        sendSuccess(res, {
+          deletedCount: result.deletedCount,
+          message: result.message
+        }, 'Cleanup completed successfully');
+      } else {
+        sendError(res, result.message, 500);
+      }
+    } catch (err) {
+      sendError(res, err.message, 500);
     }
   });
 

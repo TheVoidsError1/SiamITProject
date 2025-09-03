@@ -14,6 +14,9 @@ module.exports = new EntitySchema({
         leave_type_en: { type: 'varchar' },
         leave_type_th: { type: 'varchar' },
         require_attachment: { type: 'boolean', default: false, nullable: false },
+        // Add soft delete fields
+        deleted_at: { type: 'timestamp', nullable: true },
+        is_active: { type: 'boolean', default: true, nullable: false },
     },
 
 })

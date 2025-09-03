@@ -70,6 +70,7 @@
     "logo": "โลโก้",
     "submit": "ส่ง",
     "cancel": "ยกเลิก",
+    "notice": "คำเตือน",
     "save": "บันทึก",
     "saving": "กำลังบันทึก...",
     "edit": "แก้ไข",
@@ -115,7 +116,6 @@
     "add": "เพิ่ม",
     "update": "อัปเดต",
     "me": "ฉัน",
-    "year": "ปี",
     "characters": "ตัวอักษร",
     "page": "หน้า",
     "of": "จาก",
@@ -136,6 +136,16 @@
     "confirmDeletePosition": "คุณต้องการลบตำแหน่ง",
     "confirmDeleteDepartment": "คุณต้องการลบแผนก",
     "confirmDeleteLeaveType": "คุณต้องการลบประเภทการลา",
+    "warningDeleteLeaveType": "คำเตือน: การลบประเภทการลานี้จะลบโควต้าการลาที่เกี่ยวข้องด้วย",
+    "confirmDeleteQuestion": "หรือไม่?",
+    "deleteSuccess": "ลบสำเร็จ",
+    "deleteError": "ลบไม่สำเร็จ",
+            "cleanupSuccess": "ลบข้อมูลเก่าสำเร็จ",
+        "cleanupError": "เกิดข้อผิดพลาดในการลบข้อมูลเก่า",
+        "cleanupTitle": "ลบข้อมูลเก่า",
+        "cleanupDescription": "ลบข้อมูลคำขอลาพักงานที่เก่ากว่า 2 ปีเพื่อรักษาประสิทธิภาพของฐานข้อมูล",
+        "cleanupButton": "ลบข้อมูลเก่า",
+        "cleanupButtonLoading": "กำลังลบ..."
     "ห": "ลบสำเร็จ",
     "deleteError": "ลบไม่สำเร็จ",
     "search": "ค้นหา",
@@ -147,19 +157,19 @@
     "selected": "เลือกแล้ว",
     "noResults": "ไม่พบข้อมูล"
   },
-          "line": {
-          "linkAccount": "เชื่อมต่อบัญชี LINE",
-          "linked": "เชื่อมต่อ LINE แล้ว ✓",
-          "linking": "กำลังเชื่อมต่อ...",
-          "loginError": "ไม่สามารถเริ่มการเชื่อมต่อ LINE ได้",
-          "unlinkAccount": "ยกเลิกการเชื่อมต่อ LINE",
-          "unlinking": "กำลังยกเลิกการเชื่อมต่อ...",
-          "unlinkError": "ไม่สามารถยกเลิกการเชื่อมต่อ LINE ได้",
-          "unlinkSuccess": "ยกเลิกการเชื่อมต่อ LINE สำเร็จ",
-          "linkSuccess": "เชื่อมต่อบัญชี LINE สำเร็จ!",
-          "linkSuccessDesc": "บัญชี LINE ของคุณได้ถูกเชื่อมต่อกับโปรไฟล์เรียบร้อยแล้ว",
-          "linkSuccessMessage": "เชื่อมต่อบัญชีสำเร็จ! คุณสามารถใช้ฟีเจอร์ LINE bot ได้แล้ว"
-        },
+  "line": {
+    "linkAccount": "เชื่อมต่อบัญชี LINE",
+    "linked": "เชื่อมต่อ LINE แล้ว ✓",
+    "linking": "กำลังเชื่อมต่อ...",
+    "loginError": "ไม่สามารถเริ่มการเชื่อมต่อ LINE ได้",
+    "unlinkAccount": "ยกเลิกการเชื่อมต่อ LINE",
+    "unlinking": "กำลังยกเลิกการเชื่อมต่อ...",
+    "unlinkError": "ไม่สามารถยกเลิกการเชื่อมต่อ LINE ได้",
+    "unlinkSuccess": "ยกเลิกการเชื่อมต่อ LINE สำเร็จ",
+    "linkSuccess": "เชื่อมต่อบัญชี LINE สำเร็จ!",
+    "linkSuccessDesc": "บัญชี LINE ของคุณได้ถูกเชื่อมต่อกับโปรไฟล์เรียบร้อยแล้ว",
+    "linkSuccessMessage": "เชื่อมต่อบัญชีสำเร็จ! คุณสามารถใช้ฟีเจอร์ LINE bot ได้แล้ว"
+  },
   "approved": "อนุมัติแล้ว",
   "rejected": "ปฏิเสธแล้ว",
   "markAllAsRead": "อ่านทั้งหมด",
@@ -177,8 +187,12 @@
     "force": "บังคับ (อนุญาตนอกวัน 1 ม.ค.)",
     "triggerReset": "สั่งรีเซ็ต",
     "note": "หมายเหตุ",
-    "noteDetail": "หากไม่เลือกตำแหน่ง จะรวมตำแหน่งที่  ทั้งหมด และตำหน้าทั่งหมดที่ เปิด จะรีเซ็ตการใช้สิทธิ์ลาทุกปี",
-    "allNewYearPositions": "ทุกตำแหน่งที่ ",
+    "noteDetail": "ตำแหน่งที่มี new_year_quota = 0 จะถูกรวมเมื่อไม่มีการเลือกตำแหน่ง",
+    "allNewYearPositions": "ทุกตำแหน่ง",
+    "confirmManualResetTitle": "ยืนยันการรีโควต้า",
+    "confirmManualResetDesc": "คุณต้องการรีโควต้าของผู้ใช้ที่เลือกใช่หรือไม่? การกระทำนี้จะตั้งค่าการใช้สิทธิ์ลา (days/hour) เป็น 0 โดยไม่ลบใบลาที่ผ่านมา",
+    "selectUsersFirst": "กรุณาเลือกผู้ใช้ก่อน",
+    "manualResetFailed": "การรีโควต้าไม่สำเร็จ",
     "type": "ประเภทการลา",
     "date": "วันที่ลา",
     "duration": "ระยะเวลา",
@@ -400,6 +414,8 @@
     "selectPosition": "เลือกตำแหน่ง",
     "requestQuote": "ต้องการ End Work Date",
     "newYearQuota": "รีเซ็ตต้นปี ปิด/เปิด"
+    "requestQuote": "ต้องการวันที่สิ้นสุด",
+    "newYearQuota": "รีเซ็ตต้นปี (0=รี,1=ไม่รี)"
   },
   "employeeTypes": {
     "employee": "พนักงาน",
@@ -454,6 +470,8 @@
     "announcements": "ข่าวสาร",
     "noAnnouncements": "ไม่มีข่าวสาร",
     "noRecentLeaveRequests": "ไม่มีการลาล่าสุด"
+    "noAnnouncements": "ไม่มีข่าวสาร",
+    "noRecentLeaveRequests": "ไม่มีคำขอลาล่าสุด"
   },
   "profile": {
     "personalInfo": "ข้อมูลส่วนตัว",

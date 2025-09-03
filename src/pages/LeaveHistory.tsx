@@ -728,18 +728,9 @@ const LeaveHistory = () => {
       return false;
     }
     
-    // ตรวจสอบว่าวันลาอยู่ห่างจากวันปัจจุบันมากกว่า 1 วัน
-    const leaveStartDate = new Date(leave.startDate);
-    const currentDate = new Date();
-    const oneDayInMs = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-    
-    // Reset time to start of day for accurate comparison
-    const leaveStartDateOnly = new Date(leaveStartDate.getFullYear(), leaveStartDate.getMonth(), leaveStartDate.getDate());
-    const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-    
-    const daysDifference = Math.abs(leaveStartDateOnly.getTime() - currentDateOnly.getTime()) / oneDayInMs;
-    
-    return daysDifference > 1;
+    // Allow deletion of pending requests regardless of date
+    // (Backend will handle any additional date restrictions if needed)
+    return true;
   };
 
   // เพิ่มฟังก์ชันสำหรับกำหนดประเภทไฟล์

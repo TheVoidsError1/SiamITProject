@@ -208,10 +208,19 @@ To link your account for full access, please visit the web application and use L
           let leaveTypeNameEn = lr.leaveType;
           
           if (lr.leaveType && lr.leaveType.length > 20) {
-            // ID-based leave type
-            const leaveType = await leaveTypeRepo.findOneBy({ id: lr.leaveType });
-            leaveTypeNameTh = leaveType ? leaveType.leave_type_th : lr.leaveType;
-            leaveTypeNameEn = leaveType ? leaveType.leave_type_en : lr.leaveType;
+            // ID-based leave type - Use raw query to include soft-deleted records
+            const leaveTypeQuery = `SELECT * FROM leave_type WHERE id = ?`;
+            const [leaveTypeResult] = await AppDataSource.query(leaveTypeQuery, [lr.leaveType]);
+            const leaveType = leaveTypeResult ? leaveTypeResult[0] : null;
+            if (leaveType) {
+              if (leaveType.is_active === false) {
+                leaveTypeNameTh = 'ประเภทการลาที่ถูกลบ';
+                leaveTypeNameEn = 'Deleted Leave Type';
+              } else {
+                leaveTypeNameTh = leaveType.leave_type_th || lr.leaveType;
+                leaveTypeNameEn = leaveType.leave_type_en || lr.leaveType;
+              }
+            }
           } else {
             // String-based leave type
             const leaveType = await leaveTypeRepo.findOne({
