@@ -2149,35 +2149,20 @@
              }
            }
            
-                       // Get leave type information
-            if (leave.leaveType) {
-              // Try multiple approaches to get the leave type
-              let leaveTypeObj = null;
-              
-              // Approach 1: Try raw query with explicit soft-delete bypass
-              try {
-                const leaveTypeQuery = `SELECT * FROM leave_type WHERE id = ?`;
-                const [leaveTypeResult] = await AppDataSource.query(leaveTypeQuery, [leave.leaveType]);
-                if (leaveTypeResult && leaveTypeResult[0]) {
-                  leaveTypeObj = leaveTypeResult[0];
-                }
-              } catch (error) {
-                // Raw query failed, continue to TypeORM approach
-              }
-              
-              // Approach 2: If raw query fails, try with withDeleted option
-              if (!leaveTypeObj) {
-                try {
-                  const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
-                  leaveTypeObj = await leaveTypeRepo.findOne({
-                    where: { id: leave.leaveType },
-                    withDeleted: true
-                  });
-                } catch (error) {
-                  // TypeORM withDeleted failed, leaveTypeObj will remain null
-                }
-              }
-            }
+           // Get leave type information
+           if (leave.leaveType) {
+             try {
+               // Use raw query to get leave type (including soft-deleted ones for historical data)
+               const leaveTypeQuery = `SELECT id, leave_type_en, leave_type_th FROM leave_type WHERE id = ?`;
+               const leaveTypeResult = await AppDataSource.query(leaveTypeQuery, [leave.leaveType]);
+               if (leaveTypeResult && leaveTypeResult.length > 0) {
+                 leaveTypeObj = leaveTypeResult[0];
+               }
+             } catch (error) {
+               console.error('Error fetching leave type:', error);
+               // If query fails, leaveTypeObj will remain null and we'll use the ID as fallback
+             }
+           }
            
            // Calculate duration
            let duration = '';
