@@ -2237,6 +2237,194 @@
            message: err.message 
          });
        }
-     });
-     return router;
-   };
+         });
+
+    // POST /api/leave-request/admin - Admin creates leave request for other users
+    router.post('/admin', leaveAttachmentsUpload.array('attachments', 10), async (req, res) => {
+      try {
+        const leaveRepo = AppDataSource.getRepository('LeaveRequest');
+        let adminUserId = null;
+        let adminRole = null;
+        
+        // ดึง admin userId จาก JWT
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          const token = authHeader.split(' ')[1];
+          try {
+            const decoded = verifyToken(token);
+            adminUserId = decoded.userId;
+            adminRole = decoded.role;
+          } catch (err) {
+            return sendUnauthorized(res, 'Invalid or expired token');
+          }
+        }
+
+        // ตรวจสอบว่าเป็น admin หรือ superadmin
+        if (adminRole !== 'admin' && adminRole !== 'superadmin') {
+          return sendUnauthorized(res, 'Admin access required');
+        }
+
+        // กำหนดภาษา
+        const lang = (req.headers['accept-language'] || '').toLowerCase().startsWith('en') ? 'en' : 'th';
+        
+        const {
+          repid, // User ID ที่ admin ต้องการสร้าง leave request ให้
+          leaveType, 
+          durationType, 
+          startDate, 
+          endDate, 
+          startTime, 
+          endTime, 
+          reason, 
+          contact,
+          approvalStatus,
+          approverId,
+          approverName,
+          approvalNote
+        } = req.body;
+
+        // Validation
+        if (!repid) {
+          return sendValidationError(res, 'User ID is required');
+        }
+        if (!leaveType) {
+          return sendValidationError(res, 'Leave type is required');
+        }
+        if (!durationType) {
+          return sendValidationError(res, 'Duration type is required');
+        }
+        if (!startDate) {
+          return sendValidationError(res, 'Start date is required');
+        }
+        if (durationType === 'day' && !endDate) {
+          return sendValidationError(res, 'End date is required for day leave');
+        }
+        if (durationType === 'hour' && (!startTime || !endTime)) {
+          return sendValidationError(res, 'Start time and end time are required for hourly leave');
+        }
+        if (!reason) {
+          return sendValidationError(res, 'Reason is required');
+        }
+        if (!contact) {
+          return sendValidationError(res, 'Contact information is required');
+        }
+        if (!approvalStatus) {
+          return sendValidationError(res, 'Approval status is required');
+        }
+
+        // ตรวจสอบว่า user ที่จะสร้าง leave request ให้มีอยู่จริง
+        const userRepo = AppDataSource.getRepository('User');
+        let targetUser = await userRepo.findOneBy({ id: repid });
+        if (!targetUser) {
+          const adminRepo = AppDataSource.getRepository('Admin');
+          targetUser = await adminRepo.findOneBy({ id: repid });
+        }
+        if (!targetUser) {
+          const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+          targetUser = await superadminRepo.findOneBy({ id: repid });
+        }
+        if (!targetUser) {
+          return sendNotFound(res, 'Target user not found');
+        }
+
+        // ดึง leave type entity
+        const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+        let leaveTypeEntity = null;
+        if (leaveType && leaveType.length > 20) {
+          try {
+            leaveTypeEntity = await leaveTypeRepo.findOne({
+              where: { id: leaveType },
+              withDeleted: true
+            });
+          } catch (error) {
+            // Try raw query if withDeleted fails
+            try {
+              const leaveTypeQuery = `SELECT * FROM leave_type WHERE id = ?`;
+              const [leaveTypeResult] = await AppDataSource.query(leaveTypeQuery, [leaveType]);
+              if (leaveTypeResult && leaveTypeResult[0]) {
+                leaveTypeEntity = leaveTypeResult[0];
+              }
+            } catch (error) {
+              // Raw query failed
+            }
+          }
+        } else {
+          leaveTypeEntity = await leaveTypeRepo.findOne({
+            where: [
+              { leave_type_th: leaveType },
+              { leave_type_en: leaveType }
+            ]
+          });
+        }
+
+        if (!leaveTypeEntity) {
+          return sendNotFound(res, 'Leave type not found');
+        }
+
+        // สร้าง leave request
+        const leaveRequest = leaveRepo.create({
+          Repid: repid,
+          leaveType: leaveTypeEntity.id,
+          startDate: startDate,
+          endDate: durationType === 'hour' ? startDate : endDate,
+          startTime: startTime || null,
+          endTime: endTime || null,
+          reason: reason,
+          contact: contact,
+          status: approvalStatus,
+          approverId: approverId || null,
+          approverName: approverName || null,
+          approvalNote: approvalNote || null,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+
+        // Handle attachments
+        if (req.files && req.files.length > 0) {
+          const attachmentPaths = req.files.map(file => file.path);
+          leaveRequest.attachments = JSON.stringify(attachmentPaths);
+        }
+
+        const savedLeaveRequest = await leaveRepo.save(leaveRequest);
+
+        // Update LeaveUsed table if approved
+        if (approvalStatus === 'approved') {
+          await updateLeaveUsed(savedLeaveRequest);
+        }
+
+        // Get leave type names for response
+        const leaveTypeNames = getLeaveTypeNames(leaveTypeEntity, lang);
+
+        res.json({
+          success: true,
+          message: lang === 'en' ? 'Leave request created successfully' : 'สร้างคำขอลาสำเร็จ',
+          data: {
+            id: savedLeaveRequest.id,
+            userId: savedLeaveRequest.Repid,
+            leaveType: leaveTypeNames.leaveTypeName_th,
+            leaveTypeEn: leaveTypeNames.leaveTypeName_en,
+            startDate: savedLeaveRequest.startDate,
+            endDate: savedLeaveRequest.endDate,
+            startTime: savedLeaveRequest.startTime,
+            endTime: savedLeaveRequest.endTime,
+            reason: savedLeaveRequest.reason,
+            contact: savedLeaveRequest.contact,
+            status: savedLeaveRequest.status,
+            approverId: savedLeaveRequest.approverId,
+            approverName: savedLeaveRequest.approverName,
+            approvalNote: savedLeaveRequest.approvalNote,
+            createdAt: savedLeaveRequest.createdAt
+          }
+        });
+
+      } catch (error) {
+        console.error('Error creating admin leave request:', error);
+        res.status(500).json({
+          success: false,
+          message: error.message || 'Internal server error'
+        });
+      }
+    });
+
+    return router;
+  };

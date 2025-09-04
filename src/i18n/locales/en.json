@@ -375,6 +375,9 @@
     "pending": "Pending",
     "approved": "Approved",
     "rejected": "Rejected",
+    "employeeSelection": "Select Employee",
+    "dateManagement": "Select Date",
+    "approvalControl": "Select Approver",
     "additionalInfo": "Additional Information"
   },
   "leaveTypes": {

@@ -4,6 +4,16 @@ import { initReactI18next } from 'react-i18next';
 import enTranslations from './locales/en.json';
 import thTranslations from './locales/th.json';
 
+// Safe localStorage access
+const getStoredLanguage = () => {
+  try {
+    return localStorage.getItem('i18nextLng') || 'th';
+  } catch (error) {
+    console.warn('Failed to access localStorage for i18n:', error);
+    return 'th';
+  }
+};
+
 i18n
   .use(initReactI18next)
   .init({
@@ -15,11 +25,15 @@ i18n
         translation: enTranslations
       }
     },
-    lng: localStorage.getItem('i18nextLng') || 'th', // default language is Thai or last selected
+    lng: getStoredLanguage(), // default language is Thai or last selected
     fallbackLng: 'th', // fallback is Thai
     interpolation: {
       escapeValue: false
-    }
+    },
+    react: {
+      useSuspense: false, // Disable suspense to prevent loading issues
+    },
+    debug: false, // Disable debug mode in production
   });
 
 export default i18n;

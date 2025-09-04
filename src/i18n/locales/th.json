@@ -345,7 +345,6 @@
     "leaveRequestForm": "แบบฟอร์มขอลา",
     "dateInformation":"ข้อมูลวันที่",
     "statusAndApproval":"สถานะและการอนุมัติ",
-
     "contactInformation":"ข้อมูลการติดต่อ",
     "day": "วัน",
     "days": "วัน",
@@ -379,6 +378,9 @@
     "pending": "รอดำเนินการ",
     "approved": "อนุมัติแล้ว",
     "rejected": "ไม่อนุมัติ",
+    "employeeSelection": "เลือกพนักงาน",
+    "dateManagement": "เลือกวันที่",
+    "approvalControl": "เลือกผู้อนุมัติ",
     "additionalInfo": "ข้อมูลเพิ่มเติม"
 
   },
