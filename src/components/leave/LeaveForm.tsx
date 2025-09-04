@@ -121,16 +121,8 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
       };
     }
     
-    // ถ้าวันที่เริ่มลามากกว่าวันนี้ = ลาล่วงหน้า
-    if (startDateOnly > today) {
-      return {
-        type: 'advance',
-        message: t('leave.advanceNotice'),
-        className: 'bg-blue-50 border-blue-200 text-blue-800'
-      };
-    }
-    
-    // ถ้าเป็นวันนี้ = ไม่แสดงแจ้งเตือน
+    // ไม่แสดงแจ้งเตือนสำหรับการลาล่วงหน้า
+    // ถ้าเป็นวันนี้หรืออนาคต = ไม่แสดงแจ้งเตือน
     return null;
   };
 
