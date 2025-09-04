@@ -279,4 +279,6 @@ server.listen(port, '0.0.0.0', () => {
   console.log('Socket.io server is ready');
   // Register scheduled jobs (yearly quota reset)
   scheduler.registerScheduledJobs(config);
+  // Schedule leave type cleanup
+  scheduler.scheduleLeaveTypeCleanup(AppDataSource);
 }); 

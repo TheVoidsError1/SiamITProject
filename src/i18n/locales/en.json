@@ -90,6 +90,7 @@
     "warning": "Warning",
     "quotaExceeded": "You have exceeded your leave quota for this type.",
     "hour": "hour",
+    "days": "days",
     "date": "Date",
     "status": "Status",
     "reason": "Reason",

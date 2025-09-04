@@ -76,14 +76,19 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
             console.log('EndDate:', data.data.endDate);
             setLeaveDetail(data.data);
           } else {
-            setLeaveDetail(null); // do not fallback to leaveRequest
+            // Fallback to leaveRequest if API call fails
+            setLeaveDetail(leaveRequest);
           }
           setLoading(false);
         })
         .catch(() => {
-          setLeaveDetail(null);
+          // Fallback to leaveRequest if API call fails
+          setLeaveDetail(leaveRequest);
           setLoading(false);
         });
+    } else if (open && leaveRequest) {
+      // If no ID but we have leaveRequest data, use it directly
+      setLeaveDetail(leaveRequest);
     } else {
       setLeaveDetail(null);
     }
@@ -154,17 +159,36 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
 
   const getLeaveTypeLabel = (typeId: string) => {
     if (!typeId) return '';
+    
+    // First try to find in leaveTypes array
     const found = leaveTypes.find(lt => lt.id === typeId || lt.leave_type === typeId);
     if (found) {
       return i18n.language.startsWith('th') ? found.leave_type_th : found.leave_type_en;
     }
-    // fallback: i18n string หรือ id
+    
+    // Fallback: try i18n translation
     if (t(`leaveTypes.${typeId}`) !== `leaveTypes.${typeId}`) {
       return t(`leaveTypes.${typeId}`);
     }
     
-    // ถ้าไม่มีใน i18n ให้ส่งคืนค่าเดิม
+    // Final fallback: return the typeId as is
     return typeId;
+  };
+
+  // Helper function to get the correct leave type display
+  const getLeaveTypeDisplay = (leaveDetail: LeaveRequest) => {
+    // If we have direct Thai/English names, use them based on language
+    if (leaveDetail.leaveTypeName_th && leaveDetail.leaveTypeName_en) {
+      return i18n.language.startsWith('th') ? leaveDetail.leaveTypeName_th : leaveDetail.leaveTypeName_en;
+    }
+    
+    // If we have leaveTypeName (single field), use it
+    if (leaveDetail.leaveTypeName) {
+      return leaveDetail.leaveTypeName;
+    }
+    
+    // Fallback to getLeaveTypeLabel function
+    return getLeaveTypeLabel(leaveDetail.leaveType || leaveDetail.type || '');
   };
 
   const isRetroactiveLeave = (leave: LeaveRequest) => {
@@ -251,7 +275,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className={`text-3xl font-bold ${getTypeColor(leaveDetail.leaveTypeName || leaveDetail.leaveType || leaveDetail.type)}`}>
-                      {getLeaveTypeLabel(leaveDetail.leaveType || leaveDetail.type || leaveDetail.leaveTypeName || '')}
+                      {getLeaveTypeDisplay(leaveDetail)}
                     </div>
                   </div>
                   <div className="text-right">

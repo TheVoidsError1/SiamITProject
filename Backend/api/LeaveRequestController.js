@@ -280,19 +280,32 @@
 
      // Helper function to get leave type names (always return actual names regardless of active status)
      const getLeaveTypeNames = (leaveTypeObj, fallbackValue, lang = 'th') => {
-    if (!leaveTypeObj) {
-      return {
-        leaveTypeName_th: fallbackValue,
-        leaveTypeName_en: fallbackValue
-      };
-    }
-    
-    // Always return the actual names from the database, regardless of active status
-    return {
-      leaveTypeName_th: leaveTypeObj.leave_type_th || fallbackValue,
-      leaveTypeName_en: leaveTypeObj.leave_type_en || fallbackValue
-    };
-  };
+       if (!leaveTypeObj) {
+         // If no leave type object found, return a more descriptive fallback
+         return {
+           leaveTypeName_th: `ประเภทการลาที่ถูกลบ (${fallbackValue})`,
+           leaveTypeName_en: `Deleted Leave Type (${fallbackValue})`
+         };
+       }
+       
+       // Check if this is an inactive/deleted leave type
+       const isInactive = leaveTypeObj.deleted_at || leaveTypeObj.is_active === false;
+       
+       // Always return the actual names from the database, regardless of active status
+       let thName = leaveTypeObj.leave_type_th || fallbackValue;
+       let enName = leaveTypeObj.leave_type_en || fallbackValue;
+       
+       // If inactive/deleted, add a prefix to indicate status
+       if (isInactive) {
+         thName = `[ลบ] ${thName}`;
+         enName = `[DELETED] ${enName}`;
+       }
+       
+       return {
+         leaveTypeName_th: thName,
+         leaveTypeName_en: enName
+       };
+     };
 
   module.exports = (AppDataSource) => {
     const router = express.Router();
@@ -732,15 +745,15 @@
              // Try multiple approaches to get the leave type
              let leaveTypeObj = null;
              
-             // Approach 1: Try raw query with explicit soft-delete bypass
+             // Approach 1: Try raw query with explicit soft-delete bypass (including deleted records)
              try {
                const leaveTypeQuery = `SELECT * FROM leave_type WHERE id = ?`;
                const [leaveTypeResult] = await AppDataSource.query(leaveTypeQuery, [leave.leaveType]);
-               if (leaveTypeResult && leaveTypeResult[0]) {
+               if (leaveTypeResult && leaveTypeResult.length > 0) {
                  leaveTypeObj = leaveTypeResult[0];
                }
              } catch (error) {
-               // Raw query failed, continue to TypeORM approach
+               console.log('Raw query failed for leave type:', leave.leaveType, error.message);
              }
              
              // Approach 2: If raw query fails, try with withDeleted option
@@ -752,7 +765,19 @@
                    withDeleted: true
                  });
                } catch (error) {
-                 // TypeORM withDeleted failed, leaveTypeObj will remain null
+                 console.log('TypeORM withDeleted failed for leave type:', leave.leaveType, error.message);
+               }
+             }
+             
+             // Approach 3: Final fallback - try to get any record with this ID
+             if (!leaveTypeObj) {
+               try {
+                 const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+                 leaveTypeObj = await leaveTypeRepo.findOne({
+                   where: { id: leave.leaveType }
+                 });
+               } catch (error) {
+                 console.log('Final TypeORM attempt failed for leave type:', leave.leaveType, error.message);
                }
              }
              
@@ -1908,34 +1933,7 @@
            message: 'Leave request not found'
          });
          
-                  // Check if leave request can be deleted based on status and date
-          // Allow deletion if: pending OR if it's the current day (can cancel today's leave)
-          if (leave.status !== 'pending') {
-            // If not pending, check if it's the current day
-            if (leave.startDate) {
-              const now = new Date();
-              now.setHours(0, 0, 0, 0);
-              const leaveStart = new Date(leave.startDate);
-              leaveStart.setHours(0, 0, 0, 0);
-              
-              // Allow deletion if it's the current day
-              if (leaveStart.getTime() === now.getTime()) {
-                // It's today, allow deletion
-              } else {
-                // Not today and not pending, cannot delete
-                return res.status(400).json({ 
-                  success: false, 
-                  message: 'Cannot delete leave request that has already been approved or rejected. Only pending requests or today\'s leave can be deleted.' 
-                });
-              }
-            } else {
-              // No start date and not pending, cannot delete
-              return res.status(400).json({ 
-                success: false, 
-                message: 'Cannot delete leave request that has already been approved or rejected. Only pending requests can be deleted.' 
-              });
-            }
-          }
+                  // No restrictions - admins can delete any leave request
           
 
          
@@ -2156,34 +2154,20 @@
              }
            }
            
-                       // Get leave type information
-            if (leave.leaveType) {
-              // Try multiple approaches to get the leave type
-              
-              // Approach 1: Try raw query with explicit soft-delete bypass
-              try {
-                const leaveTypeQuery = `SELECT * FROM leave_type WHERE id = ?`;
-                const [leaveTypeResult] = await AppDataSource.query(leaveTypeQuery, [leave.leaveType]);
-                if (leaveTypeResult && leaveTypeResult[0]) {
-                  leaveTypeObj = leaveTypeResult[0];
-                }
-              } catch (error) {
-                // Raw query failed, continue to TypeORM approach
-              }
-              
-              // Approach 2: If raw query fails, try with withDeleted option
-              if (!leaveTypeObj) {
-                try {
-                  const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
-                  leaveTypeObj = await leaveTypeRepo.findOne({
-                    where: { id: leave.leaveType },
-                    withDeleted: true
-                  });
-                } catch (error) {
-                  // TypeORM withDeleted failed, leaveTypeObj will remain null
-                }
-              }
-            }
+           // Get leave type information
+           if (leave.leaveType) {
+             try {
+               // Use raw query to get leave type (including soft-deleted ones for historical data)
+               const leaveTypeQuery = `SELECT id, leave_type_en, leave_type_th FROM leave_type WHERE id = ?`;
+               const leaveTypeResult = await AppDataSource.query(leaveTypeQuery, [leave.leaveType]);
+               if (leaveTypeResult && leaveTypeResult.length > 0) {
+                 leaveTypeObj = leaveTypeResult[0];
+               }
+             } catch (error) {
+               console.error('Error fetching leave type:', error);
+               // If query fails, leaveTypeObj will remain null and we'll use the ID as fallback
+             }
+           }
            
            // Calculate duration
            let duration = '';
