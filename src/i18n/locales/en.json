@@ -384,7 +384,6 @@
     "pending": "Pending",
     "approved": "Approved",
     "rejected": "Rejected",
-<<<<<<< HEAD
     "additionalInfo": "Additional Information",
     "employeeSelection": "Employee Selection",
     "dateManagement": "Date Management",
@@ -393,12 +392,6 @@
     "businessHoursDescription": "Please select the business hours",
     "businessHoursError": "Leave time must be within business hours (09:00 AM - 06:00 PM)",
     "endTimeMustBeAfterStartTime": "End time must be after start time"
-=======
-    "employeeSelection": "Select Employee",
-    "dateManagement": "Select Date",
-    "approvalControl": "Select Approver",
-    "additionalInfo": "Additional Information"
->>>>>>> b1ed24177349727f31176cbcd6c3020a710a437c
   },
   "leaveTypes": {
     "all": "All Types",

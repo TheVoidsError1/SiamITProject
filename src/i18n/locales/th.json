@@ -380,7 +380,6 @@
     "pending": "รอดำเนินการ",
     "approved": "อนุมัติแล้ว",
     "rejected": "ไม่อนุมัติ",
-<<<<<<< HEAD
     "additionalInfo": "ข้อมูลเพิ่มเติม",
     "employeeSelection": "เลือกพนักงาน",
     "dateManagement": "จัดการวันที่",
@@ -389,12 +388,6 @@
     "businessHoursDescription": "กรุณาเลือกช่วงเวลาทำงาน",
     "businessHoursError": "เวลาลาต้องอยู่ในช่วงเวลาทำงาน (09:00 น. - 18:00 น.)",
     "endTimeMustBeAfterStartTime": "เวลาสิ้นสุดต้องมากกว่าเวลาเริ่มต้น"
-=======
-    "employeeSelection": "เลือกพนักงาน",
-    "dateManagement": "เลือกวันที่",
-    "approvalControl": "เลือกผู้อนุมัติ",
-    "additionalInfo": "ข้อมูลเพิ่มเติม"
->>>>>>> b1ed24177349727f31176cbcd6c3020a710a437c
 
   },
   "leaveTypes": {
