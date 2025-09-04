@@ -178,8 +178,8 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
   // Helper function to get the correct leave type display
   const getLeaveTypeDisplay = (leaveDetail: LeaveRequest) => {
     // If we have direct Thai/English names, use them based on language
-    if (leaveDetail.leaveTypeName_th && leaveDetail.leaveTypeName_en) {
-      return i18n.language.startsWith('th') ? leaveDetail.leaveTypeName_th : leaveDetail.leaveTypeName_en;
+    if (leaveDetail.leaveTypeName && leaveDetail.leaveTypeEn) {
+      return i18n.language.startsWith('th') ? leaveDetail.leaveTypeName : leaveDetail.leaveTypeEn;
     }
     
     // If we have leaveTypeName (single field), use it
