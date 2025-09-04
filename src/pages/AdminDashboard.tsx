@@ -582,12 +582,24 @@ const AdminDashboard = () => {
   // --- ฟังก์ชันกลางสำหรับแสดงชื่อประเภทการลา ---
   function getLeaveTypeDisplay(typeIdOrName: string) {
     if (!typeIdOrName) return '';
+    
+    // First, try to find in pendingLeaveTypes (active leave types)
     const found = pendingLeaveTypes.find(
       lt => lt.id === typeIdOrName || lt.leave_type === typeIdOrName || lt.leave_type_th === typeIdOrName || lt.leave_type_en === typeIdOrName
     );
     if (found) {
       return i18n.language.startsWith('th') ? found.leave_type_th : found.leave_type_en;
     }
+    
+    // If not found in active types, check if it's a UUID (inactive/deleted leave type)
+    if (typeIdOrName.length > 20) {
+      // This is likely a UUID of an inactive/deleted leave type
+      // The backend should have provided leaveTypeName_th and leaveTypeName_en
+      // For now, return a fallback message
+      return i18n.language.startsWith('th') ? 'ประเภทการลาที่ถูกลบ' : 'Deleted Leave Type';
+    }
+    
+    // Fallback to translation or original value
     return String(t('leaveTypes.' + typeIdOrName, typeIdOrName));
   }
 
@@ -1154,7 +1166,10 @@ const AdminDashboard = () => {
                             <div className="font-bold text-lg text-blue-900 mb-1 truncate animate-slide-in-left">{typeof request.user === "string" ? JSON.parse(request.user).User_name : request.user?.User_name || "-"}</div>
                             {/* ประเภทการลา (leaveType) */}
                             <span className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold mb-1 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-                              {getLeaveTypeDisplay(request.leaveType || request.leaveTypeName)}
+                              {request.leaveTypeName_th && request.leaveTypeName_en 
+                                ? (i18n.language.startsWith('th') ? request.leaveTypeName_th : request.leaveTypeName_en)
+                                : getLeaveTypeDisplay(request.leaveType || request.leaveTypeName)
+                              }
                             </span>
                             {(request.backdated === 1 || request.backdated === "1" || request.backdated === true) && (
                               <Badge className="ml-2 bg-purple-100 text-purple-800 border-purple-200 rounded-full px-3 py-1 text-xs font-bold shadow animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
@@ -1462,9 +1477,12 @@ const AdminDashboard = () => {
                             <div className="flex-1 min-w-0">
                               <div className="font-bold text-lg text-blue-900 mb-1 truncate animate-slide-in-left">{request.user?.User_name || "-"}</div>
                               {/* ประเภทการลา (leaveType) */}
-                              <span className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold mb-1 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-                                {getLeaveTypeDisplay(request.leaveType || request.leaveTypeName)}
-                              </span>
+                                                          <span className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold mb-1 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                              {request.leaveTypeName_th && request.leaveTypeName_en 
+                                ? (i18n.language.startsWith('th') ? request.leaveTypeName_th : request.leaveTypeName_en)
+                                : getLeaveTypeDisplay(request.leaveType || request.leaveTypeName)
+                              }
+                            </span>
                               {(request.backdated === 1 || request.backdated === "1" || request.backdated === true) && (
                                 <Badge className="ml-2 bg-purple-100 text-purple-800 border-purple-200 rounded-full px-3 py-1 text-xs font-bold shadow animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
                                   {t('leave.backdated')}
@@ -1644,7 +1662,10 @@ const AdminDashboard = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className={`text-3xl font-bold text-blue-900`}>
-                        {getLeaveTypeDisplay(selectedRequest.leaveType || selectedRequest.leaveTypeName || selectedRequest.leaveTypeName_th || selectedRequest.leaveTypeName_en)}
+                                                    {selectedRequest.leaveTypeName_th && selectedRequest.leaveTypeName_en 
+                              ? (i18n.language.startsWith('th') ? selectedRequest.leaveTypeName_th : selectedRequest.leaveTypeName_en)
+                              : getLeaveTypeDisplay(selectedRequest.leaveType || selectedRequest.leaveTypeName)
+                            }
                       </div>
                     </div>
                     <div className="text-right">

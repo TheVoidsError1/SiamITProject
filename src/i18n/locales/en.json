@@ -90,6 +90,7 @@
     "warning": "Warning",
     "quotaExceeded": "You have exceeded your leave quota for this type.",
     "hour": "hour",
+    "days": "days",
     "date": "Date",
     "status": "Status",
     "reason": "Reason",
@@ -147,6 +148,12 @@
     "searchEmployee": "Search employee by name or id",
     "showSelectedOnly": "Show selected only",
     "selectAllFiltered": "Select all",
+                "cleanupSuccess": "Deleted successfully",
+        "cleanupError": "Error deleting old data",
+        "cleanupTitle": "Delete old data",
+        "cleanupDescription": "Delete old leave request data older than 2 years to maintain database performance",
+        "cleanupButton": "Delete",
+        "cleanupButtonLoading": "Deleting...",
     "clearFiltered": "Clear",
     "showing": "Showing",
     "selected": "Selected",
@@ -175,6 +182,8 @@
     "leaveHistory": "Leave History",
     "leaveType": "Leave Type",
     "quota": "Quota",
+    "businessHours": "Business Hours",
+    "businessHoursDescription": "Business Hours",
     "resetByPosition": "Reset leave usage by position",
     "strategy": "Strategy",
     "strategyZero": "Set to zero",
@@ -182,7 +191,7 @@
     "force": "Force (allow outside Jan 1)",
     "triggerReset": "Trigger Reset",
     "note": "Note",
-    "noteDetail": "Positions with new_year_quota = 0 will be included when no position is selected.",
+    "noteDetail": "Positions with open will be included when no position is selected.",
     "allNewYearPositions": "All positions",
     "confirmManualResetTitle": "Confirm Manual Reset",
     "confirmManualResetDesc": "Do you want to reset the quotas of selected users? This action will set leave usage (days/hours) to 0 without deleting past leave records.",
@@ -375,6 +384,7 @@
     "pending": "Pending",
     "approved": "Approved",
     "rejected": "Rejected",
+<<<<<<< HEAD
     "additionalInfo": "Additional Information",
     "employeeSelection": "Employee Selection",
     "dateManagement": "Date Management",
@@ -383,6 +393,12 @@
     "businessHoursDescription": "Please select the business hours",
     "businessHoursError": "Leave time must be within business hours (09:00 AM - 06:00 PM)",
     "endTimeMustBeAfterStartTime": "End time must be after start time"
+=======
+    "employeeSelection": "Select Employee",
+    "dateManagement": "Select Date",
+    "approvalControl": "Select Approver",
+    "additionalInfo": "Additional Information"
+>>>>>>> b1ed24177349727f31176cbcd6c3020a710a437c
   },
   "leaveTypes": {
     "all": "All Types",

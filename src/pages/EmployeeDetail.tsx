@@ -26,6 +26,7 @@ import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { API_BASE_URL, apiService } from '../lib/api';
 import { apiEndpoints } from '@/constants/api';
+import { LeaveRequest } from '@/types';
 
 const EmployeeDetail = () => {
   const { id } = useParams();
@@ -56,7 +57,7 @@ const EmployeeDetail = () => {
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [leaveHistory, setLeaveHistory] = useState([]);
+  const [leaveHistory, setLeaveHistory] = useState<LeaveRequest[]>([]);
   const [leaveSummary, setLeaveSummary] = useState<{ days: number, hours: number, totalLeaveDays: number } | null>(null); // <--- เพิ่ม state
   // เพิ่ม state สำหรับ processCheckId
   const [processCheckId, setProcessCheckId] = useState(null);
@@ -315,10 +316,34 @@ const EmployeeDetail = () => {
     });
   };
 
-  const handleViewLeaveDetails = (leave) => {
+  const handleViewLeaveDetails = async (leave) => {
     console.log('View Details clicked. leave:', leave, 'leave.id:', leave.id);
-    setSelectedLeave(leave);
+    
+    // First try to use the existing leave data
+    const leaveData = leaveHistory.find(l => l.id === leave.id);
+    if (leaveData) {
+      setSelectedLeave(leaveData);
+      setLeaveDialogOpen(true);
+      return;
+    }
+
+    // If not found in existing data, try to fetch from API
+    setSelectedLeave(null);
     setLeaveDialogOpen(true);
+
+    try {
+      const data = await apiService.get(apiEndpoints.leave.detail(leave.id), undefined, showSessionExpiredDialog);
+      if (data && data.success) {
+        const leaveDetail = {
+          ...data.data,
+          startDate: data.data.startDate || data.data.leaveDate || '-',
+          submittedDate: data.data.createdAt || data.data.submittedDate || '-',
+        };
+        setSelectedLeave(leaveDetail);
+      }
+    } catch (e) {
+      console.error('Error fetching leave detail:', e);
+    }
   };
 
   // เพิ่มฟังก์ชันนี้ด้านบน component
@@ -964,14 +989,18 @@ const EmployeeDetail = () => {
                   </TableHeader>
                   <TableBody>
                     {Array.isArray(leaveHistory) && leaveHistory.map((leave, idx) => {
-                      // เพิ่ม debug log
-                      console.log(`🎨 Rendering leave ${idx}:`, { id: leave.id, backdated: leave.backdated, leaveType: leave.leaveType });
+
                       
                       return (
                         <TableRow key={leave.id} className="hover:bg-blue-50/60 group animate-fade-in-up border-b border-gray-100" style={{ animationDelay: `${idx * 60}ms` }}>
                           <TableCell className="font-medium text-blue-900 px-4 py-3">
                             <div className="flex items-center gap-2">
-                              <span className="font-semibold text-sm whitespace-nowrap">{getLeaveTypeLabel(leave.leaveType)}</span>
+                              <span className="font-semibold text-sm whitespace-nowrap">
+                                {i18n.language.startsWith('th') 
+                                  ? (leave.leaveTypeName_th || leave.leaveTypeName_en || getLeaveTypeLabel(leave.leaveType))
+                                  : (leave.leaveTypeName_en || leave.leaveTypeName_th || getLeaveTypeLabel(leave.leaveType))
+                                }
+                              </span>
                               {isBackdatedLeave(leave) && (
                                 <Badge className="bg-red-100 text-red-700 border-red-200 text-xs px-1.5 py-0.5 w-fit whitespace-nowrap">
                                   {t('leave.backdated')}

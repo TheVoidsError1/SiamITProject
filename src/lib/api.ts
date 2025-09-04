@@ -73,6 +73,34 @@ const fetchWithAuth = async (
   }
 };
 
+// Helper function to safely parse JSON response
+const safeJsonParse = async (response: Response) => {
+  try {
+    const text = await response.text();
+    if (!text) {
+      return { success: false, message: 'Empty response' };
+    }
+    
+    // Check if response is HTML (error page)
+    if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+      return { 
+        success: false, 
+        message: 'Server returned HTML instead of JSON. This usually indicates a server error.',
+        status: response.status 
+      };
+    }
+    
+    return JSON.parse(text);
+  } catch (error) {
+    console.error('JSON parsing error:', error);
+    return { 
+      success: false, 
+      message: 'Invalid JSON response from server',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+};
+
 // API Service object with common HTTP methods
 export const apiService = {
   // GET request
@@ -81,7 +109,8 @@ export const apiService = {
     const response = await fetchWithAuth(url, {
       method: 'GET'
     }, logoutFn, sessionExpiredFn);
-    return response?.json();
+    if (!response) return { success: false, message: 'No response received' };
+    return await safeJsonParse(response);
   },
 
   // POST request
@@ -93,7 +122,8 @@ export const apiService = {
       body: isFormData ? data : JSON.stringify(data),
       headers: isFormData ? undefined : undefined // let createAuthHeaders handle
     }, logoutFn, sessionExpiredFn);
-    return response?.json();
+    if (!response) return { success: false, message: 'No response received' };
+    return await safeJsonParse(response);
   },
 
   // PUT request
@@ -105,7 +135,8 @@ export const apiService = {
       body: isFormData ? data : JSON.stringify(data),
       headers: isFormData ? undefined : undefined
     }, logoutFn, sessionExpiredFn);
-    return response?.json();
+    if (!response) return { success: false, message: 'No response received' };
+    return await safeJsonParse(response);
   },
 
   // DELETE request
@@ -114,7 +145,8 @@ export const apiService = {
     const response = await fetchWithAuth(url, {
       method: 'DELETE'
     }, logoutFn, sessionExpiredFn);
-    return response?.json();
+    if (!response) return { success: false, message: 'No response received' };
+    return await safeJsonParse(response);
   },
 
   // PATCH request
@@ -126,7 +158,8 @@ export const apiService = {
       body: isFormData ? data : JSON.stringify(data),
       headers: isFormData ? undefined : undefined
     }, logoutFn, sessionExpiredFn);
-    return response?.json();
+    if (!response) return { success: false, message: 'No response received' };
+    return await safeJsonParse(response);
   }
 };
 

@@ -1569,7 +1569,7 @@ const LeaveHistory = () => {
 
                       <div className={`text-xl font-bold ${getTypeColor(leave.leaveTypeName_th || leave.leaveTypeName_en || leave.type)}`}>
 
-                        {getLeaveTypeLabel(leave.type) || leave.leaveTypeName_th || leave.leaveTypeName_en || translateLeaveType(leave.type)}
+                        {leave.leaveTypeName_th || leave.leaveTypeName_en || getLeaveTypeLabel(leave.type) || translateLeaveType(leave.type)}
 
                       </div>
 
@@ -2196,7 +2196,7 @@ const LeaveHistory = () => {
 
                       <div className={`text-3xl font-bold ${getTypeColor(selectedLeave.leaveTypeName_th || selectedLeave.leaveTypeName_en || selectedLeave.type)}`}>
 
-                        {getLeaveTypeLabel(selectedLeave.type) || selectedLeave.leaveTypeName_th || selectedLeave.leaveTypeName_en || translateLeaveType(selectedLeave.type)}
+                        {selectedLeave.leaveTypeName_th || selectedLeave.leaveTypeName_en || getLeaveTypeLabel(selectedLeave.type) || translateLeaveType(selectedLeave.type)}
 
                       </div>
 

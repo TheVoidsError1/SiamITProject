@@ -127,11 +127,12 @@ module.exports = (AppDataSource) => {
           const [leaveTypeResult] = await AppDataSource.query(leaveTypeQuery, [leaveTypeName]);
           const leaveType = leaveTypeResult ? leaveTypeResult[0] : null;
           if (leaveType) {
-            if (leaveType.is_active === false) {
-              leaveTypeName = 'ประเภทการลาที่ถูกลบ';
-            } else {
-              leaveTypeName = leaveType.leave_type_th || leaveTypeName;
-            }
+                      if (leaveType.is_active === false) {
+            // Add [DELETED] prefix for inactive/deleted leave types
+            leaveTypeName = '[ลบ] ' + (leaveType.leave_type_th || leaveTypeName);
+          } else {
+            leaveTypeName = leaveType.leave_type_th || leaveTypeName;
+          }
           }
         }
         

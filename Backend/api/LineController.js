@@ -213,13 +213,16 @@ To link your account for full access, please visit the web application and use L
             const [leaveTypeResult] = await AppDataSource.query(leaveTypeQuery, [lr.leaveType]);
             const leaveType = leaveTypeResult ? leaveTypeResult[0] : null;
             if (leaveType) {
-              if (leaveType.is_active === false) {
-                leaveTypeNameTh = 'ประเภทการลาที่ถูกลบ';
-                leaveTypeNameEn = 'Deleted Leave Type';
-              } else {
-                leaveTypeNameTh = leaveType.leave_type_th || lr.leaveType;
-                leaveTypeNameEn = leaveType.leave_type_en || lr.leaveType;
-              }
+                          if (leaveType.is_active === false) {
+              // Add [DELETED] prefix for inactive/deleted leave types
+              const prefix_th = '[ลบ] ';
+              const prefix_en = '[DELETED] ';
+              leaveTypeNameTh = prefix_th + (leaveType.leave_type_th || lr.leaveType);
+              leaveTypeNameEn = prefix_en + (leaveType.leave_type_en || lr.leaveType);
+            } else {
+              leaveTypeNameTh = leaveType.leave_type_th || lr.leaveType;
+              leaveTypeNameEn = leaveType.leave_type_en || lr.leaveType;
+            }
             }
           } else {
             // String-based leave type

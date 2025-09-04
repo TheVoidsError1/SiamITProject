@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { BaseController, sendSuccess, sendError, sendNotFound } = require('../utils');
 const { In } = require('typeorm');
+const LeaveTypeCleanupService = require('../utils/leaveTypeCleanupService');
 
 /**
  * @swagger
@@ -327,6 +328,45 @@ module.exports = (AppDataSource) => {
       sendError(res, err.message, 500);
     } finally {
       await queryRunner.release();
+    }
+  });
+
+  // GET check if leave type can be permanently deleted
+  router.get('/leave-types/:id/can-delete-permanently', async (req, res) => {
+    try {
+      const cleanupService = new LeaveTypeCleanupService(AppDataSource);
+      const result = await cleanupService.canPermanentlyDeleteLeaveType(req.params.id);
+      
+      sendSuccess(res, result, 'Deletion eligibility checked successfully');
+    } catch (err) {
+      sendError(res, err.message, 500);
+    }
+  });
+
+  // DELETE permanently with safety check
+  router.delete('/leave-types/:id/permanent-safe', async (req, res) => {
+    try {
+      const cleanupService = new LeaveTypeCleanupService(AppDataSource);
+      const result = await cleanupService.permanentlyDeleteLeaveType(req.params.id);
+      
+      sendSuccess(res, result, 'Leave type permanently deleted safely');
+    } catch (err) {
+      if (err.message.includes('Cannot delete leave type')) {
+        return sendError(res, err.message, 400);
+      }
+      sendError(res, err.message, 500);
+    }
+  });
+
+  // POST trigger auto-cleanup
+  router.post('/leave-types/auto-cleanup', async (req, res) => {
+    try {
+      const cleanupService = new LeaveTypeCleanupService(AppDataSource);
+      const results = await cleanupService.autoCleanupOrphanedLeaveTypes();
+      
+      sendSuccess(res, results, 'Auto-cleanup completed successfully');
+    } catch (err) {
+      sendError(res, err.message, 500);
     }
   });
 

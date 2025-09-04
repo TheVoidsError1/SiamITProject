@@ -280,19 +280,32 @@
 
      // Helper function to get leave type names (always return actual names regardless of active status)
      const getLeaveTypeNames = (leaveTypeObj, fallbackValue, lang = 'th') => {
-    if (!leaveTypeObj) {
-      return {
-        leaveTypeName_th: fallbackValue,
-        leaveTypeName_en: fallbackValue
-      };
-    }
-    
-    // Always return the actual names from the database, regardless of active status
-    return {
-      leaveTypeName_th: leaveTypeObj.leave_type_th || fallbackValue,
-      leaveTypeName_en: leaveTypeObj.leave_type_en || fallbackValue
-    };
-  };
+       if (!leaveTypeObj) {
+         // If no leave type object found, return a more descriptive fallback
+         return {
+           leaveTypeName_th: `ประเภทการลาที่ถูกลบ (${fallbackValue})`,
+           leaveTypeName_en: `Deleted Leave Type (${fallbackValue})`
+         };
+       }
+       
+       // Check if this is an inactive/deleted leave type
+       const isInactive = leaveTypeObj.deleted_at || leaveTypeObj.is_active === false;
+       
+       // Always return the actual names from the database, regardless of active status
+       let thName = leaveTypeObj.leave_type_th || fallbackValue;
+       let enName = leaveTypeObj.leave_type_en || fallbackValue;
+       
+       // If inactive/deleted, add a prefix to indicate status
+       if (isInactive) {
+         thName = `[ลบ] ${thName}`;
+         enName = `[DELETED] ${enName}`;
+       }
+       
+       return {
+         leaveTypeName_th: thName,
+         leaveTypeName_en: enName
+       };
+     };
 
   module.exports = (AppDataSource) => {
     const router = express.Router();
@@ -732,15 +745,15 @@
              // Try multiple approaches to get the leave type
              let leaveTypeObj = null;
              
-             // Approach 1: Try raw query with explicit soft-delete bypass
+             // Approach 1: Try raw query with explicit soft-delete bypass (including deleted records)
              try {
                const leaveTypeQuery = `SELECT * FROM leave_type WHERE id = ?`;
                const [leaveTypeResult] = await AppDataSource.query(leaveTypeQuery, [leave.leaveType]);
-               if (leaveTypeResult && leaveTypeResult[0]) {
+               if (leaveTypeResult && leaveTypeResult.length > 0) {
                  leaveTypeObj = leaveTypeResult[0];
                }
              } catch (error) {
-               // Raw query failed, continue to TypeORM approach
+               console.log('Raw query failed for leave type:', leave.leaveType, error.message);
              }
              
              // Approach 2: If raw query fails, try with withDeleted option
@@ -752,7 +765,19 @@
                    withDeleted: true
                  });
                } catch (error) {
-                 // TypeORM withDeleted failed, leaveTypeObj will remain null
+                 console.log('TypeORM withDeleted failed for leave type:', leave.leaveType, error.message);
+               }
+             }
+             
+             // Approach 3: Final fallback - try to get any record with this ID
+             if (!leaveTypeObj) {
+               try {
+                 const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+                 leaveTypeObj = await leaveTypeRepo.findOne({
+                   where: { id: leave.leaveType }
+                 });
+               } catch (error) {
+                 console.log('Final TypeORM attempt failed for leave type:', leave.leaveType, error.message);
                }
              }
              
@@ -1908,34 +1933,7 @@
            message: 'Leave request not found'
          });
          
-                  // Check if leave request can be deleted based on status and date
-          // Allow deletion if: pending OR if it's the current day (can cancel today's leave)
-          if (leave.status !== 'pending') {
-            // If not pending, check if it's the current day
-            if (leave.startDate) {
-              const now = new Date();
-              now.setHours(0, 0, 0, 0);
-              const leaveStart = new Date(leave.startDate);
-              leaveStart.setHours(0, 0, 0, 0);
-              
-              // Allow deletion if it's the current day
-              if (leaveStart.getTime() === now.getTime()) {
-                // It's today, allow deletion
-              } else {
-                // Not today and not pending, cannot delete
-                return res.status(400).json({ 
-                  success: false, 
-                  message: 'Cannot delete leave request that has already been approved or rejected. Only pending requests or today\'s leave can be deleted.' 
-                });
-              }
-            } else {
-              // No start date and not pending, cannot delete
-              return res.status(400).json({ 
-                success: false, 
-                message: 'Cannot delete leave request that has already been approved or rejected. Only pending requests can be deleted.' 
-              });
-            }
-          }
+                  // No restrictions - admins can delete any leave request
           
 
          
@@ -2156,34 +2154,20 @@
              }
            }
            
-                       // Get leave type information
-            if (leave.leaveType) {
-              // Try multiple approaches to get the leave type
-              
-              // Approach 1: Try raw query with explicit soft-delete bypass
-              try {
-                const leaveTypeQuery = `SELECT * FROM leave_type WHERE id = ?`;
-                const [leaveTypeResult] = await AppDataSource.query(leaveTypeQuery, [leave.leaveType]);
-                if (leaveTypeResult && leaveTypeResult[0]) {
-                  leaveTypeObj = leaveTypeResult[0];
-                }
-              } catch (error) {
-                // Raw query failed, continue to TypeORM approach
-              }
-              
-              // Approach 2: If raw query fails, try with withDeleted option
-              if (!leaveTypeObj) {
-                try {
-                  const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
-                  leaveTypeObj = await leaveTypeRepo.findOne({
-                    where: { id: leave.leaveType },
-                    withDeleted: true
-                  });
-                } catch (error) {
-                  // TypeORM withDeleted failed, leaveTypeObj will remain null
-                }
-              }
-            }
+           // Get leave type information
+           if (leave.leaveType) {
+             try {
+               // Use raw query to get leave type (including soft-deleted ones for historical data)
+               const leaveTypeQuery = `SELECT id, leave_type_en, leave_type_th FROM leave_type WHERE id = ?`;
+               const leaveTypeResult = await AppDataSource.query(leaveTypeQuery, [leave.leaveType]);
+               if (leaveTypeResult && leaveTypeResult.length > 0) {
+                 leaveTypeObj = leaveTypeResult[0];
+               }
+             } catch (error) {
+               console.error('Error fetching leave type:', error);
+               // If query fails, leaveTypeObj will remain null and we'll use the ID as fallback
+             }
+           }
            
            // Calculate duration
            let duration = '';
@@ -2237,6 +2221,194 @@
            message: err.message 
          });
        }
-     });
-     return router;
-   };
+         });
+
+    // POST /api/leave-request/admin - Admin creates leave request for other users
+    router.post('/admin', leaveAttachmentsUpload.array('attachments', 10), async (req, res) => {
+      try {
+        const leaveRepo = AppDataSource.getRepository('LeaveRequest');
+        let adminUserId = null;
+        let adminRole = null;
+        
+        // ดึง admin userId จาก JWT
+        const authHeader = req.headers.authorization;
+        if (authHeader && authHeader.startsWith('Bearer ')) {
+          const token = authHeader.split(' ')[1];
+          try {
+            const decoded = verifyToken(token);
+            adminUserId = decoded.userId;
+            adminRole = decoded.role;
+          } catch (err) {
+            return sendUnauthorized(res, 'Invalid or expired token');
+          }
+        }
+
+        // ตรวจสอบว่าเป็น admin หรือ superadmin
+        if (adminRole !== 'admin' && adminRole !== 'superadmin') {
+          return sendUnauthorized(res, 'Admin access required');
+        }
+
+        // กำหนดภาษา
+        const lang = (req.headers['accept-language'] || '').toLowerCase().startsWith('en') ? 'en' : 'th';
+        
+        const {
+          repid, // User ID ที่ admin ต้องการสร้าง leave request ให้
+          leaveType, 
+          durationType, 
+          startDate, 
+          endDate, 
+          startTime, 
+          endTime, 
+          reason, 
+          contact,
+          approvalStatus,
+          approverId,
+          approverName,
+          approvalNote
+        } = req.body;
+
+        // Validation
+        if (!repid) {
+          return sendValidationError(res, 'User ID is required');
+        }
+        if (!leaveType) {
+          return sendValidationError(res, 'Leave type is required');
+        }
+        if (!durationType) {
+          return sendValidationError(res, 'Duration type is required');
+        }
+        if (!startDate) {
+          return sendValidationError(res, 'Start date is required');
+        }
+        if (durationType === 'day' && !endDate) {
+          return sendValidationError(res, 'End date is required for day leave');
+        }
+        if (durationType === 'hour' && (!startTime || !endTime)) {
+          return sendValidationError(res, 'Start time and end time are required for hourly leave');
+        }
+        if (!reason) {
+          return sendValidationError(res, 'Reason is required');
+        }
+        if (!contact) {
+          return sendValidationError(res, 'Contact information is required');
+        }
+        if (!approvalStatus) {
+          return sendValidationError(res, 'Approval status is required');
+        }
+
+        // ตรวจสอบว่า user ที่จะสร้าง leave request ให้มีอยู่จริง
+        const userRepo = AppDataSource.getRepository('User');
+        let targetUser = await userRepo.findOneBy({ id: repid });
+        if (!targetUser) {
+          const adminRepo = AppDataSource.getRepository('Admin');
+          targetUser = await adminRepo.findOneBy({ id: repid });
+        }
+        if (!targetUser) {
+          const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+          targetUser = await superadminRepo.findOneBy({ id: repid });
+        }
+        if (!targetUser) {
+          return sendNotFound(res, 'Target user not found');
+        }
+
+        // ดึง leave type entity
+        const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+        let leaveTypeEntity = null;
+        if (leaveType && leaveType.length > 20) {
+          try {
+            leaveTypeEntity = await leaveTypeRepo.findOne({
+              where: { id: leaveType },
+              withDeleted: true
+            });
+          } catch (error) {
+            // Try raw query if withDeleted fails
+            try {
+              const leaveTypeQuery = `SELECT * FROM leave_type WHERE id = ?`;
+              const [leaveTypeResult] = await AppDataSource.query(leaveTypeQuery, [leaveType]);
+              if (leaveTypeResult && leaveTypeResult[0]) {
+                leaveTypeEntity = leaveTypeResult[0];
+              }
+            } catch (error) {
+              // Raw query failed
+            }
+          }
+        } else {
+          leaveTypeEntity = await leaveTypeRepo.findOne({
+            where: [
+              { leave_type_th: leaveType },
+              { leave_type_en: leaveType }
+            ]
+          });
+        }
+
+        if (!leaveTypeEntity) {
+          return sendNotFound(res, 'Leave type not found');
+        }
+
+        // สร้าง leave request
+        const leaveRequest = leaveRepo.create({
+          Repid: repid,
+          leaveType: leaveTypeEntity.id,
+          startDate: startDate,
+          endDate: durationType === 'hour' ? startDate : endDate,
+          startTime: startTime || null,
+          endTime: endTime || null,
+          reason: reason,
+          contact: contact,
+          status: approvalStatus,
+          approverId: approverId || null,
+          approverName: approverName || null,
+          approvalNote: approvalNote || null,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+
+        // Handle attachments
+        if (req.files && req.files.length > 0) {
+          const attachmentPaths = req.files.map(file => file.path);
+          leaveRequest.attachments = JSON.stringify(attachmentPaths);
+        }
+
+        const savedLeaveRequest = await leaveRepo.save(leaveRequest);
+
+        // Update LeaveUsed table if approved
+        if (approvalStatus === 'approved') {
+          await updateLeaveUsed(savedLeaveRequest);
+        }
+
+        // Get leave type names for response
+        const leaveTypeNames = getLeaveTypeNames(leaveTypeEntity, lang);
+
+        res.json({
+          success: true,
+          message: lang === 'en' ? 'Leave request created successfully' : 'สร้างคำขอลาสำเร็จ',
+          data: {
+            id: savedLeaveRequest.id,
+            userId: savedLeaveRequest.Repid,
+            leaveType: leaveTypeNames.leaveTypeName_th,
+            leaveTypeEn: leaveTypeNames.leaveTypeName_en,
+            startDate: savedLeaveRequest.startDate,
+            endDate: savedLeaveRequest.endDate,
+            startTime: savedLeaveRequest.startTime,
+            endTime: savedLeaveRequest.endTime,
+            reason: savedLeaveRequest.reason,
+            contact: savedLeaveRequest.contact,
+            status: savedLeaveRequest.status,
+            approverId: savedLeaveRequest.approverId,
+            approverName: savedLeaveRequest.approverName,
+            approvalNote: savedLeaveRequest.approvalNote,
+            createdAt: savedLeaveRequest.createdAt
+          }
+        });
+
+      } catch (error) {
+        console.error('Error creating admin leave request:', error);
+        res.status(500).json({
+          success: false,
+          message: error.message || 'Internal server error'
+        });
+      }
+    });
+
+    return router;
+  };
