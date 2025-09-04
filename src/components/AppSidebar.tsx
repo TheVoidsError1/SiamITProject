@@ -187,7 +187,7 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       
-      <SidebarContent>
+      <SidebarContent className="overflow-hidden">
         <SidebarGroup>
           <SidebarGroupLabel className="text-sidebar-foreground/70 font-semibold tracking-wide uppercase mb-2">
             {t('navigation.mainMenu')}

@@ -1,19 +1,17 @@
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { DatePicker } from "@/components/ui/date-picker";
+import { apiEndpoints } from '@/constants/api';
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { format } from "date-fns";
-import { ArrowLeftCircle, CalendarDays, ClipboardList, Clock, FileText, Phone, Send, User, CheckCircle, XCircle, Shield, UserCheck } from "lucide-react";
+import { apiService } from '@/lib/api';
+import { ArrowLeftCircle, CalendarDays, CheckCircle, ClipboardList, Clock, FileText, Phone, Send, Shield, User, UserCheck, XCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from 'react-router-dom';
-import { DateRangePicker } from "./DateRangePicker";
 import { FileUpload } from "./FileUpload";
-import { apiService } from '@/lib/api';
-import { apiEndpoints } from '@/constants/api';
 
 // ฟังก์ชัน validate เวลา HH:mm (24 ชั่วโมง)
 function isValidTimeFormat(timeStr: string): boolean {
@@ -84,7 +82,7 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
   const [admins, setAdmins] = useState<{ id: string; name: string; role: string }[]>([]);
   const [superadmins, setSuperadmins] = useState<{ id: string; name: string; role: string }[]>([]);
   const approverList = [...admins, ...superadmins];
-  const [users, setUsers] = useState<{ id: string; name: string; email: string; role: string; department_name_th?: string; position_name_th?: string }[]>([]);
+  const [users, setUsers] = useState<{ id: string; name: string; email: string; role: string; department_name_th?: string; department_name_en?: string; position_name_th?: string; position_name_en?: string }[]>([]);
   const { user } = useAuth();
   const [timeError, setTimeError] = useState("");
   const [errors, setErrors] = useState({
@@ -119,7 +117,9 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
             email: item.email || '',
             role: item.role || 'employee',
             department_name_th: item.department_name_th || '',
+            department_name_en: item.department_name_en || item.department_name_th || '',
             position_name_th: item.position_name_th || '',
+            position_name_en: item.position_name_en || item.position_name_th || '',
           }));
           setUsers(usersList);
         }
@@ -483,21 +483,77 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
               <SelectValue placeholder={t('leave.selectEmployeePlaceholder')}>
                 {selectedUserId && (() => {
                   const selectedUser = users.find(u => u.id === selectedUserId);
-                  return selectedUser ? `${selectedUser.name} • ${selectedUser.email} • ${selectedUser.role} • ${selectedUser.department_name_th} • ${selectedUser.position_name_th}` : '';
+                  if (!selectedUser) return '';
+                  
+                  // Get localized role name
+                  const getLocalizedRole = (role: string) => {
+                    switch (role) {
+                      case 'user':
+                        return t('auth.roles.user');
+                      case 'employee':
+                        return t('auth.roles.employee');
+                      case 'admin':
+                        return t('auth.roles.admin');
+                      case 'superadmin':
+                        return t('auth.roles.superadmin');
+                      default:
+                        return role;
+                    }
+                  };
+
+                  // Get localized department and position names
+                  const departmentName = i18n.language === 'th' 
+                    ? selectedUser.department_name_th 
+                    : selectedUser.department_name_en || selectedUser.department_name_th;
+                  const positionName = i18n.language === 'th' 
+                    ? selectedUser.position_name_th 
+                    : selectedUser.position_name_en || selectedUser.position_name_th;
+                  
+                  const localizedRole = getLocalizedRole(selectedUser.role);
+                  
+                  return `${selectedUser.name} • ${selectedUser.email} • ${localizedRole} • ${departmentName} • ${positionName}`;
                 })()}
               </SelectValue>
             </SelectTrigger>
             <SelectContent className="max-h-60">
-              {users.map((user) => (
-                <SelectItem key={user.id} value={user.id}>
-                  <div className="flex flex-col py-1">
-                    <span className="font-medium text-gray-900">{user.name}</span>
-                    <span className="text-sm text-gray-500">
-                      {user.email} • {user.role} • {user.department_name_th} • {user.position_name_th}
-                    </span>
-                  </div>
-                </SelectItem>
-              ))}
+              {users.map((user) => {
+                // Get localized role name for each user
+                const getLocalizedRole = (role: string) => {
+                  switch (role) {
+                    case 'user':
+                      return t('auth.roles.user');
+                    case 'employee':
+                      return t('auth.roles.employee');
+                    case 'admin':
+                      return t('auth.roles.admin');
+                    case 'superadmin':
+                      return t('auth.roles.superadmin');
+                    default:
+                      return role;
+                  }
+                };
+
+                // Get localized department and position names
+                const departmentName = i18n.language === 'th' 
+                  ? user.department_name_th 
+                  : user.department_name_en || user.department_name_th;
+                const positionName = i18n.language === 'th' 
+                  ? user.position_name_th 
+                  : user.position_name_en || user.position_name_th;
+                
+                const localizedRole = getLocalizedRole(user.role);
+
+                return (
+                  <SelectItem key={user.id} value={user.id}>
+                    <div className="flex flex-col py-1">
+                      <span className="font-medium text-gray-900">{user.name}</span>
+                      <span className="text-sm text-gray-500">
+                        {user.email} • {localizedRole} • {departmentName} • {positionName}
+                      </span>
+                    </div>
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
           {errors.selectedUserId && (
@@ -832,11 +888,31 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
                       </SelectValue>
                     </SelectTrigger>
                     <SelectContent>
-                      {approverList.map((appr) => (
-                        <SelectItem key={appr.id} value={appr.id}>
-                          {appr.name} <span className="text-xs text-gray-400 ml-2">({appr.role})</span>
-                        </SelectItem>
-                      ))}
+                      {approverList.map((appr) => {
+                        // Get localized role name
+                        const getLocalizedRole = (role: string) => {
+                          switch (role) {
+                            case 'user':
+                              return t('auth.roles.user');
+                            case 'employee':
+                              return t('auth.roles.employee');
+                            case 'admin':
+                              return t('auth.roles.admin');
+                            case 'superadmin':
+                              return t('auth.roles.superadmin');
+                            default:
+                              return role;
+                          }
+                        };
+
+                        const localizedRole = getLocalizedRole(appr.role);
+
+                        return (
+                          <SelectItem key={appr.id} value={appr.id}>
+                            {appr.name} <span className="text-xs text-gray-400 ml-2">({localizedRole})</span>
+                          </SelectItem>
+                        );
+                      })}
                     </SelectContent>
                   </Select>
                   {errors.approverName && (
