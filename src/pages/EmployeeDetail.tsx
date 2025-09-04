@@ -316,10 +316,34 @@ const EmployeeDetail = () => {
     });
   };
 
-  const handleViewLeaveDetails = (leave) => {
+  const handleViewLeaveDetails = async (leave) => {
     console.log('View Details clicked. leave:', leave, 'leave.id:', leave.id);
-    setSelectedLeave(leave);
+    
+    // First try to use the existing leave data
+    const leaveData = leaveHistory.find(l => l.id === leave.id);
+    if (leaveData) {
+      setSelectedLeave(leaveData);
+      setLeaveDialogOpen(true);
+      return;
+    }
+
+    // If not found in existing data, try to fetch from API
+    setSelectedLeave(null);
     setLeaveDialogOpen(true);
+
+    try {
+      const data = await apiService.get(apiEndpoints.leave.detail(leave.id), undefined, showSessionExpiredDialog);
+      if (data && data.success) {
+        const leaveDetail = {
+          ...data.data,
+          startDate: data.data.startDate || data.data.leaveDate || '-',
+          submittedDate: data.data.createdAt || data.data.submittedDate || '-',
+        };
+        setSelectedLeave(leaveDetail);
+      }
+    } catch (e) {
+      console.error('Error fetching leave detail:', e);
+    }
   };
 
   // เพิ่มฟังก์ชันนี้ด้านบน component
