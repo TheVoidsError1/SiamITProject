@@ -81,6 +81,7 @@ const jwt = require('jsonwebtoken');
 const config = require('../config');
 const { BaseController, sendSuccess, sendError, sendNotFound, sendValidationError } = require('../utils');
 const { manualCleanup } = require('../utils/cleanupOldLeaveRequests');
+const authMiddleware = require('../middleware/authMiddleware');
 
 module.exports = (AppDataSource) => {
   const router = require('express').Router();
@@ -647,7 +648,7 @@ module.exports = (AppDataSource) => {
   });
 
   // POST /api/superadmin/cleanup-old-leave-requests
-  router.post('/cleanup-old-leave-requests', async (req, res) => {
+  router.post('/superadmin/cleanup-old-leave-requests', authMiddleware, async (req, res) => {
     try {
       const result = await manualCleanup(AppDataSource);
       
@@ -665,7 +666,7 @@ module.exports = (AppDataSource) => {
   });
 
   // Add GET /api/superadmin to fetch all superadmins
-  router.get('/superadmin', async (req, res) => {
+  router.get('/superadmin', authMiddleware, async (req, res) => {
     try {
       const superadminRepo = AppDataSource.getRepository('SuperAdmin');
       const superadmins = await superadminRepo.find();
@@ -682,7 +683,7 @@ module.exports = (AppDataSource) => {
   });
 
   // Delete superadmin
-  router.delete('/superadmin/:id', async (req, res) => {
+  router.delete('/superadmin/:id', authMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       const superadminRepo = AppDataSource.getRepository('SuperAdmin');
