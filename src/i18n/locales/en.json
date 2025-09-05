@@ -663,6 +663,7 @@
     "enterDateOfBirth": "Enter date of birth",
     "enterStartWork": "dd/mm/yy",
     "enterEndWork": "dd/mm/yy",
+    "results": "results",
     "passwordStrength": {
       "weak": "Weak",
       "medium": "Medium",
