@@ -697,6 +697,10 @@ const ManageAll: React.FC = () => {
     setConfirmResetOpen(true);
   };
 
+  // Confirm dialog for cleanup old records
+  const [confirmCleanupOpen, setConfirmCleanupOpen] = useState(false);
+  const openConfirmCleanup = () => setConfirmCleanupOpen(true);
+
 
 
   return (
@@ -946,7 +950,7 @@ const ManageAll: React.FC = () => {
           <h3 className="text-blue-900 font-semibold mb-3">{t('common.cleanupTitle')}</h3>
           <p className="text-sm text-gray-700 mb-3">{t('common.cleanupDescription')}</p>
           <Button
-            onClick={handleCleanupOldRecords}
+            onClick={openConfirmCleanup}
             disabled={cleanupLoading}
             variant="outline"
             className="border-orange-300 text-orange-700 hover:bg-orange-50"
@@ -1296,6 +1300,24 @@ const ManageAll: React.FC = () => {
             <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
             <AlertDialogAction onClick={() => { setConfirmResetOpen(false); handleManualReset(); }} className="bg-blue-600 hover:bg-blue-700">
               {t('leave.resetNow')}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm cleanup old records dialog */}
+      <AlertDialog open={confirmCleanupOpen} onOpenChange={setConfirmCleanupOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t('common.cleanupTitle')}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t('common.cleanupDescription')}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { setConfirmCleanupOpen(false); handleCleanupOldRecords(); }} className="bg-red-600 hover:bg-red-700">
+              {t('common.cleanupButton')}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
