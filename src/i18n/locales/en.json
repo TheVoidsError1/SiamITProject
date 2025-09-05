@@ -526,6 +526,7 @@
     "contactAdmin": "Please contact your administrator to set up leave quotas for your position."
   },
   "history": {
+    "days": "days",
     "leaveHistoryTitle": "View your leave history",
     "totalLeaveDays": "Total Leave Days",
     "totalLeaveHours": "Total Leave Hours",

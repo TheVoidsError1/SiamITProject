@@ -2367,9 +2367,16 @@
           return sendNotFound(res, 'Leave type not found');
         }
 
+        // ดึง employeeType จาก target user
+        let employeeType = null;
+        if (targetUser.position) {
+          employeeType = targetUser.position;
+        }
+
         // สร้าง leave request
         const leaveRequest = leaveRepo.create({
           Repid: repid,
+          employeeType: employeeType,
           leaveType: leaveTypeEntity.id,
           startDate: startDate,
           endDate: durationType === 'hour' ? startDate : endDate,

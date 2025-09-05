@@ -1569,7 +1569,10 @@ const LeaveHistory = () => {
 
                       <div className={`text-xl font-bold ${getTypeColor(leave.leaveTypeName_th || leave.leaveTypeName_en || leave.type)}`}>
 
-                        {leave.leaveTypeName_th || leave.leaveTypeName_en || getLeaveTypeLabel(leave.type) || translateLeaveType(leave.type)}
+                        {leave.leaveTypeName_th && leave.leaveTypeName_en 
+                          ? (i18n.language.startsWith('th') ? leave.leaveTypeName_th : leave.leaveTypeName_en)
+                          : (getLeaveTypeLabel(leave.type) || translateLeaveType(leave.type))
+                        }
 
                       </div>
 
@@ -2196,7 +2199,10 @@ const LeaveHistory = () => {
 
                       <div className={`text-3xl font-bold ${getTypeColor(selectedLeave.leaveTypeName_th || selectedLeave.leaveTypeName_en || selectedLeave.type)}`}>
 
-                        {selectedLeave.leaveTypeName_th || selectedLeave.leaveTypeName_en || getLeaveTypeLabel(selectedLeave.type) || translateLeaveType(selectedLeave.type)}
+                        {selectedLeave.leaveTypeName_th && selectedLeave.leaveTypeName_en 
+                          ? (i18n.language.startsWith('th') ? selectedLeave.leaveTypeName_th : selectedLeave.leaveTypeName_en)
+                          : (getLeaveTypeLabel(selectedLeave.type) || translateLeaveType(selectedLeave.type))
+                        }
 
                       </div>
 
@@ -2245,7 +2251,7 @@ const LeaveHistory = () => {
 
                       <Calendar className="w-5 h-5 text-blue-600" />
 
-                      <h3 className="text-lg font-semibold">{t('history.dateInformation')}</h3>
+                      <h3 className="text-lg font-semibold">{t('leave.dateInformation')}</h3>
 
                     </div>
 
@@ -2396,7 +2402,7 @@ const LeaveHistory = () => {
 
                       <CheckCircle className="w-5 h-5 text-green-600" />
 
-                      <h3 className="text-lg font-semibold">{t('history.statusAndApproval')}</h3>
+                      <h3 className="text-lg font-semibold">{t('leave.statusAndApproval')}</h3>
 
                     </div>
 
@@ -2525,7 +2531,7 @@ const LeaveHistory = () => {
 
                       <User className="w-5 h-5 text-teal-600" />
 
-                      <h3 className="text-lg font-semibold">{t('history.contactInformation')}</h3>
+                      <h3 className="text-lg font-semibold">{t('leave.contactInformation')}</h3>
 
                     </div>
 
