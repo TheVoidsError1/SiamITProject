@@ -46,18 +46,49 @@ async function deleteUserData(AppDataSource, userId, userRole) {
     // Get process check info for avatar cleanup
     const processCheck = await processRepo.findOneBy({ Repid: userId, Role: userRole });
 
-    // Delete avatar file if exists
+    // HARD DELETE avatar file if exists
     if (processCheck && processCheck.avatar_url) {
       try {
         const avatarPath = path.join(config.getAvatarsUploadPath(), path.basename(processCheck.avatar_url));
+        
         if (fs.existsSync(avatarPath)) {
+          // Force delete the avatar file (hard delete)
           fs.unlinkSync(avatarPath);
-          deletionSummary.avatarDeleted = true;
-          console.log(`Deleted avatar file: ${avatarPath}`);
+          
+          // Verify file is actually deleted
+          if (!fs.existsSync(avatarPath)) {
+            deletionSummary.avatarDeleted = true;
+            console.log(`✅ HARD DELETED avatar: ${path.basename(processCheck.avatar_url)}`);
+          } else {
+            console.error(`❌ FAILED to delete avatar: ${path.basename(processCheck.avatar_url)} - file still exists`);
+            
+            // Try alternative deletion method
+            try {
+              fs.rmSync(avatarPath, { force: true });
+              deletionSummary.avatarDeleted = true;
+              console.log(`✅ Force deleted avatar: ${path.basename(processCheck.avatar_url)}`);
+            } catch (forceDeleteError) {
+              console.error(`❌ Force delete also failed for avatar: ${path.basename(processCheck.avatar_url)}:`, forceDeleteError.message);
+              deletionSummary.errors.push(`Avatar force delete error: ${forceDeleteError.message}`);
+            }
+          }
+        } else {
+          console.log(`⚠️  Avatar file not found (already deleted?): ${path.basename(processCheck.avatar_url)}`);
         }
       } catch (avatarError) {
-        console.error('Error deleting avatar file:', avatarError);
+        console.error('❌ Error deleting avatar file:', avatarError);
         deletionSummary.errors.push(`Avatar deletion error: ${avatarError.message}`);
+        
+        // Try alternative deletion method
+        try {
+          const avatarPath = path.join(config.getAvatarsUploadPath(), path.basename(processCheck.avatar_url));
+          fs.rmSync(avatarPath, { force: true });
+          deletionSummary.avatarDeleted = true;
+          console.log(`✅ Force deleted avatar: ${path.basename(processCheck.avatar_url)}`);
+        } catch (forceDeleteError) {
+          console.error(`❌ Force delete also failed for avatar: ${path.basename(processCheck.avatar_url)}:`, forceDeleteError.message);
+          deletionSummary.errors.push(`Avatar force delete error: ${forceDeleteError.message}`);
+        }
       }
     }
 

@@ -426,12 +426,44 @@ module.exports = (AppDataSource) => {
           const avatarUrl = `/uploads/avatars/${req.file.filename}`;
           const proc = await processRepo.findOne({ where: { Repid: id } });
           if (!proc) return sendNotFound(res, 'ProcessCheck not found');
-          // delete old avatar file if any
+          // HARD DELETE old avatar file if any
           if (proc.avatar_url) {
             try {
               const oldPath = require('path').join(config.getAvatarsUploadPath(), require('path').basename(proc.avatar_url));
-              if (fs.existsSync(oldPath)) fs.unlinkSync(oldPath);
-            } catch {}
+              
+              if (fs.existsSync(oldPath)) {
+                // Force delete the old avatar file (hard delete)
+                fs.unlinkSync(oldPath);
+                
+                // Verify file is actually deleted
+                if (!fs.existsSync(oldPath)) {
+                  console.log(`✅ HARD DELETED old avatar: ${require('path').basename(proc.avatar_url)}`);
+                } else {
+                  console.error(`❌ FAILED to delete old avatar: ${require('path').basename(proc.avatar_url)} - file still exists`);
+                  
+                  // Try alternative deletion method
+                  try {
+                    fs.rmSync(oldPath, { force: true });
+                    console.log(`✅ Force deleted old avatar: ${require('path').basename(proc.avatar_url)}`);
+                  } catch (forceDeleteError) {
+                    console.error(`❌ Force delete also failed for old avatar: ${require('path').basename(proc.avatar_url)}:`, forceDeleteError.message);
+                  }
+                }
+              } else {
+                console.log(`⚠️  Old avatar file not found (already deleted?): ${require('path').basename(proc.avatar_url)}`);
+              }
+            } catch (avatarDeleteError) {
+              console.error(`❌ Error deleting old avatar file ${require('path').basename(proc.avatar_url)}:`, avatarDeleteError.message);
+              
+              // Try alternative deletion method
+              try {
+                const oldPath = require('path').join(config.getAvatarsUploadPath(), require('path').basename(proc.avatar_url));
+                fs.rmSync(oldPath, { force: true });
+                console.log(`✅ Force deleted old avatar: ${require('path').basename(proc.avatar_url)}`);
+              } catch (forceDeleteError) {
+                console.error(`❌ Force delete also failed for old avatar: ${require('path').basename(proc.avatar_url)}:`, forceDeleteError.message);
+              }
+            }
           }
           proc.avatar_url = avatarUrl;
           await processRepo.save(proc);

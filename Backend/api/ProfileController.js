@@ -617,11 +617,42 @@ module.exports = (AppDataSource) => {
         return res.status(404).json({ success: false, message: 'User not found in ProcessCheck' });
       }
 
-      // 4. Delete the file if it exists
+      // 4. HARD DELETE the avatar file if it exists
       if (processCheck.avatar_url) {
         const filePath = path.join(config.getAvatarsUploadPath(), path.basename(processCheck.avatar_url));
-        if (fs.existsSync(filePath)) {
-          fs.unlinkSync(filePath);
+        
+        try {
+          if (fs.existsSync(filePath)) {
+            // Force delete the avatar file (hard delete)
+            fs.unlinkSync(filePath);
+            
+            // Verify file is actually deleted
+            if (!fs.existsSync(filePath)) {
+              console.log(`✅ HARD DELETED avatar: ${path.basename(processCheck.avatar_url)}`);
+            } else {
+              console.error(`❌ FAILED to delete avatar: ${path.basename(processCheck.avatar_url)} - file still exists`);
+              
+              // Try alternative deletion method
+              try {
+                fs.rmSync(filePath, { force: true });
+                console.log(`✅ Force deleted avatar: ${path.basename(processCheck.avatar_url)}`);
+              } catch (forceDeleteError) {
+                console.error(`❌ Force delete also failed for avatar: ${path.basename(processCheck.avatar_url)}:`, forceDeleteError.message);
+              }
+            }
+          } else {
+            console.log(`⚠️  Avatar file not found (already deleted?): ${path.basename(processCheck.avatar_url)}`);
+          }
+        } catch (fileDeleteError) {
+          console.error(`❌ Error deleting avatar file ${path.basename(processCheck.avatar_url)}:`, fileDeleteError.message);
+          
+          // Try alternative deletion method
+          try {
+            fs.rmSync(filePath, { force: true });
+            console.log(`✅ Force deleted avatar: ${path.basename(processCheck.avatar_url)}`);
+          } catch (forceDeleteError) {
+            console.error(`❌ Force delete also failed for avatar: ${path.basename(processCheck.avatar_url)}:`, forceDeleteError.message);
+          }
         }
       }
 
