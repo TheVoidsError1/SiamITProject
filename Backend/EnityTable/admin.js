@@ -17,9 +17,11 @@ module.exports = new EntitySchema({
       },
       department: {
         type: 'varchar',
+        nullable: true,
       },
       position: {
         type: 'varchar',
+        nullable: true,
       },
       gender: {
         type: 'varchar',

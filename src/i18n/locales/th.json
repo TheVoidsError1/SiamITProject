@@ -70,6 +70,7 @@
   "common": {
     "logo": "โลโก้",
     "submit": "ส่ง",
+    "all": "ทั้งหมด",
     "cancel": "ยกเลิก",
     "notice": "คำเตือน",
     "save": "บันทึก",
@@ -373,8 +374,11 @@
     "businessHours": "ช่วงเวลาทำงาน",
     "businessHoursDescription": "กรุณาเลือกช่วงเวลาทำงาน",
     "businessHoursError": "เวลาลาต้องอยู่ในช่วงเวลาทำงาน (09:00 น. - 18:00 น.)",
-    "endTimeMustBeAfterStartTime": "เวลาสิ้นสุดต้องมากกว่าเวลาเริ่มต้น"
-
+    "endTimeMustBeAfterStartTime": "เวลาสิ้นสุดต้องมากกว่าเวลาเริ่มต้น",
+    "day": "วัน",
+    "days": "วัน",
+    "hour": "ชั่วโมง",
+    "hours": "ชั่วโมง"
   },
   "leaveTypes": {
     "all": "ทั้งหมด",
@@ -770,6 +774,9 @@
     "saveSuccess": "บันทึกสำเร็จ!",
     "updateSuccess": "อัปเดตข้อมูลพนักงานสำเร็จ",
     "saveError": "บันทึกข้อมูลพนักงานไม่สำเร็จ",
+    "avatarUpdateSuccess": "อัปเดตรูปโปรไฟล์สำเร็จ",
+    "avatarUpdateSuccessDesc": "อัปเดตรูปโปรไฟล์เรียบร้อยแล้ว",
+    "avatarUpdateError": "ไม่สามารถอัปเดตรูปโปรไฟล์ได้",
     "noProcessCheckId": "ไม่พบ process check ID",
     "newPassword": "รหัสผ่านใหม่",
     "noPassword": "ยังไม่ได้ตั้งรหัสผ่าน",

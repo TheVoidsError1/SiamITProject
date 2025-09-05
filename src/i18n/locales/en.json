@@ -72,6 +72,7 @@
   },
   "common": {
     "logo": "Logo",
+    "all": "All",
     "submit": "Submit",
     "cancel": "Cancel",
     "save": "Save",
@@ -282,7 +283,6 @@
     "department": "Department",
     "attachment": "Attachment",
     "day": "day",
-    "hours": "hours",
     "leaveTime": "Leave Time:",
     "noHourlyLeave": "No hourly leave.",
     "attachmentPreview": "Attachment Preview",
@@ -380,7 +380,11 @@
     "businessHours": "Business Hours",
     "businessHoursDescription": "Please select the business hours",
     "businessHoursError": "Leave time must be within business hours (09:00 AM - 06:00 PM)",
-    "endTimeMustBeAfterStartTime": "End time must be after start time"
+    "endTimeMustBeAfterStartTime": "End time must be after start time",
+    "day": "day",
+    "days": "days",
+    "hour": "hour",
+    "hours": "hours"
   },
   "leaveTypes": {
     "all": "All Types",
@@ -764,6 +768,9 @@
     "saveError": "Save failed",
     "saveErrorDesc": "Unable to save data",
     "updateSuccess": "Update successful",
+    "avatarUpdateSuccess": "Avatar Updated",
+    "avatarUpdateSuccessDesc": "Profile picture updated successfully",
+    "avatarUpdateError": "Failed to update avatar",
     "cancel": "Cancel",
     "adminCannotEditSuperadmin": "Admin cannot edit superadmin",
     "noEmployeesFound": "No employees found",

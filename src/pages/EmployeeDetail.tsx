@@ -94,7 +94,9 @@ const EmployeeDetail = () => {
   const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
   const [avatarPreviewSrc, setAvatarPreviewSrc] = useState<string | null>(null);
   const [avatarLocalGif, setAvatarLocalGif] = useState<File | null>(null);
-  const withCacheBust = (url: string) => `${url}${url.includes('?') ? '&' : '?'}v=${Date.now()}`;
+  const [avatarKey, setAvatarKey] = useState(0); // Add key to force re-render
+  const [avatarTimestamp, setAvatarTimestamp] = useState(Date.now()); // Add timestamp for cache busting
+  const withCacheBust = (url: string) => `${url}${url.includes('?') ? '&' : '?'}v=${avatarTimestamp}&k=${avatarKey}&t=${Date.now()}`;
 
   // เพิ่ม state สำหรับ force render เมื่อเปลี่ยนภาษา
   const [langVersion, setLangVersion] = useState(0);
@@ -520,6 +522,7 @@ const EmployeeDetail = () => {
                 <div className="relative w-36 h-36 mb-10">
                   {employee.avatar ? (
                     <img
+                      key={`avatar-${employee.id}-${avatarKey}`}
                       src={withCacheBust(`${API_BASE_URL}${employee.avatar}`)}
                       alt={employee.name}
                       className="w-full h-full rounded-full object-cover shadow-2xl border-4 border-white"
@@ -568,7 +571,29 @@ const EmployeeDetail = () => {
                     form.append('avatar', file);
                     const res = await apiService.post(apiEndpoints.employees.avatar(String(id)), form);
                     if (res?.success) {
-                      setEmployee((prev: any) => prev ? ({ ...prev, avatar: res.avatar_url }) : prev);
+                      console.log('Avatar upload successful:', res.avatar_url);
+                      
+                      // Update employee data with new avatar URL immediately
+                      setEmployee((prev: any) => {
+                        if (!prev) return prev;
+                        return { ...prev, avatar: res.avatar_url };
+                      });
+                      
+                      // Force cache bust to ensure new image loads
+                      setAvatarKey(prev => prev + 1);
+                      setAvatarTimestamp(Date.now());
+                      
+                      // Show success message
+                      toast({
+                        title: t('employee.avatarUpdateSuccess') || 'Avatar Updated',
+                        description: t('employee.avatarUpdateSuccessDesc') || 'Profile picture updated successfully',
+                      });
+                    } else {
+                      toast({
+                        title: t('error.title') || 'Error',
+                        description: res?.message || t('employee.avatarUpdateError') || 'Failed to update avatar',
+                        variant: 'destructive'
+                      });
                     }
                     setAvatarPreviewSrc(null);
                     setAvatarLocalGif(null);
