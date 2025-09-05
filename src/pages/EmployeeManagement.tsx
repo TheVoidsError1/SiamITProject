@@ -8,7 +8,8 @@ import { Eye, User, Users, ChevronUp, ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { apiEndpoints, apiService } from '../lib/api';
+import { apiService } from '../lib/api';
+import { apiEndpoints } from '@/constants/api';
 import { getImageUrl } from '../lib/utils';
 
 // เพิ่ม type สำหรับข้อมูลพนักงาน
@@ -318,8 +319,8 @@ const EmployeeManagement = () => {
     // ตรวจสอบสิทธิ์ก่อนลบ
     if (!canDeleteEmployee(deleteTarget)) {
       toast({
-        title: t('system.deleteFailed', 'ลบไม่สำเร็จ'),
-        description: t('system.noPermissionToDelete', 'ไม่มีสิทธิ์ในการลบผู้ใช้นี้'),
+        title: t('system.deleteFailed'),
+        description: t('system.noPermissionToDelete'),
         variant: "destructive",
       });
       setDeleteTarget(null);
@@ -357,21 +358,21 @@ const EmployeeManagement = () => {
         }
         
         toast({
-          title: t('system.deleteSuccess', 'ลบสำเร็จ'),
-          description: t('system.deleteUserSuccessDesc', 'ลบผู้ใช้งานสำเร็จ'),
+                  title: t('system.deleteSuccess'),
+        description: t('system.deleteUserSuccessDesc'),
           className: 'border-green-500 bg-green-50 text-green-900'
         });
       } else {
         toast({
-          title: t('system.deleteFailed', 'ลบไม่สำเร็จ'),
-          description: data.message || t('system.deleteFailed', 'Delete failed'),
+                  title: t('system.deleteFailed'),
+        description: data.message || t('system.deleteFailed'),
           variant: "destructive",
         });
       }
     } catch (e) {
       toast({
-        title: t('system.deleteFailed', 'ลบไม่สำเร็จ'),
-        description: t('system.deleteFailed', 'Delete failed'),
+        title: t('system.deleteFailed'),
+        description: t('system.deleteFailed'),
         variant: "destructive",
       });
     } finally {
@@ -509,7 +510,7 @@ const EmployeeManagement = () => {
                       setRoleFilter(pendingRoleFilter);
                     }}
                   >
-                    {t('common.confirm', 'ยืนยัน')}
+                    {t('common.confirm')}
                   </button>
                   <button
                     className="min-h-[42px] min-w-[90px] px-4 py-2.5 rounded-lg font-bold border-2 border-blue-400 text-blue-600 bg-white hover:bg-blue-50 hover:border-blue-500 hover:shadow-md transition-all duration-200 transform hover:scale-105 text-sm"
@@ -522,7 +523,7 @@ const EmployeeManagement = () => {
                       setRoleFilter("");
                     }}
                   >
-                    {t('common.reset', 'รีเซ็ต')}
+                    {t('common.reset')}
                   </button>
                 </div>
               </div>
@@ -646,9 +647,9 @@ const EmployeeManagement = () => {
                                   <span className="font-semibold text-blue-900 text-sm">{employee.full_name}</span>
                                   {/* แสดง "Me" badge สำหรับผู้ใช้ปัจจุบัน */}
                                   {user && employee.id === user.id && (
-                                    <span className="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-green-500 to-emerald-400 text-white font-bold shadow-sm animate-pulse">
-                                      {t('common.me', 'Me')}
-                                    </span>
+                                                                      <span className="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-green-500 to-emerald-400 text-white font-bold shadow-sm animate-pulse">
+                                    {t('common.me')}
+                                  </span>
                                   )}
                                 </div>
                               </td>

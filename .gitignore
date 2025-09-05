@@ -29,3 +29,4 @@ README.md
 public
 Backend/.env
 Backend/scripts/*
+Backend/config.js

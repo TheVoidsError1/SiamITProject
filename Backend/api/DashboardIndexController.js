@@ -122,8 +122,18 @@ module.exports = (AppDataSource) => {
         
         // Get leave type name if it's an ID
         if (leaveTypeName && leaveTypeName.length > 20) {
-          const leaveType = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
-          leaveTypeName = leaveType ? leaveType.leave_type_th : leaveTypeName;
+          // Use raw query to include soft-deleted records
+          const leaveTypeQuery = `SELECT * FROM leave_type WHERE id = ?`;
+          const [leaveTypeResult] = await AppDataSource.query(leaveTypeQuery, [leaveTypeName]);
+          const leaveType = leaveTypeResult ? leaveTypeResult[0] : null;
+          if (leaveType) {
+                      if (leaveType.is_active === false) {
+            // Add [DELETED] prefix for inactive/deleted leave types
+            leaveTypeName = '[ลบ] ' + (leaveType.leave_type_th || leaveTypeName);
+          } else {
+            leaveTypeName = leaveType.leave_type_th || leaveTypeName;
+          }
+          }
         }
         
         if (!leaveTypeStats[leaveTypeName]) {
@@ -261,6 +271,9 @@ module.exports = (AppDataSource) => {
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
       const month = req.query.month ? parseInt(req.query.month) : null;
       const year = req.query.year ? parseInt(req.query.year) : null;
+      
+
+      
       let where = { Repid: userId };
       if (month && year) {
         where = {
@@ -279,62 +292,89 @@ module.exports = (AppDataSource) => {
           )
         };
       }
+      
       // Find 3 most recent leave requests
       const leaveRequests = await leaveRepo.find({ where, order: { createdAt: 'DESC' }, take: 3 });
-      // Helper to calculate duration - using utility function
       
       const result = [];
       for (const lr of leaveRequests) {
-        let leaveTypeName = lr.leaveType;
-        let leaveTypeNameTh = lr.leaveType;
-        let leaveTypeNameEn = lr.leaveType;
-        if (leaveTypeName && leaveTypeName.length > 20) {
-          const leaveType = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
-          leaveTypeNameTh = leaveType ? leaveType.leave_type_th : leaveTypeName;
-          leaveTypeNameEn = leaveType ? leaveType.leave_type_en : leaveTypeName;
-        } else {
-          // Try to find by name (for string-based leaveType)
-          const leaveType = await leaveTypeRepo.findOne({
-            where: [
-              { leave_type_th: leaveTypeName },
-              { leave_type_en: leaveTypeName }
-            ]
-          });
-          if (leaveType) {
-            leaveTypeNameTh = leaveType.leave_type_th;
-            leaveTypeNameEn = leaveType.leave_type_en;
+        let leaveTypeId = lr.leaveType;
+        let leaveTypeNameTh = '';
+        let leaveTypeNameEn = '';
+        
+        // Always try to resolve leave type names from the leave_types table
+        if (leaveTypeId) {
+          try {
+            // Try using the repository first (more reliable)
+            let leaveType = null;
+            try {
+              leaveType = await leaveTypeRepo.findOne({ where: { id: leaveTypeId } });
+            } catch (repoError) {
+              // Fallback to raw query
+              const leaveTypeQuery = `SELECT id, leave_type_th, leave_type_en, is_active FROM leave_type WHERE id = ?`;
+              const [leaveTypeResult] = await AppDataSource.query(leaveTypeQuery, [leaveTypeId]);
+              
+              if (leaveTypeResult && leaveTypeResult.length > 0) {
+                leaveType = leaveTypeResult[0];
+              }
+            }
+            
+            if (leaveType) {
+              // Always use the actual names from the database, regardless of active status
+              leaveTypeNameTh = leaveType.leave_type_th || leaveTypeId;
+              leaveTypeNameEn = leaveType.leave_type_en || leaveTypeId;
+            } else {
+              // If no leave type found, use the ID as fallback
+              leaveTypeNameTh = leaveTypeId;
+              leaveTypeNameEn = leaveTypeId;
+            }
+          } catch (error) {
+            console.error('Error fetching leave type:', error);
+            // Fallback to ID if there's an error
+            leaveTypeNameTh = leaveTypeId;
+            leaveTypeNameEn = leaveTypeId;
           }
+        } else {
+          // If no leaveType, set default values
+          leaveTypeNameTh = 'ไม่ระบุประเภท';
+          leaveTypeNameEn = 'Unknown Type';
         }
+        
         // Calculate duration
         let duration = '';
         if (lr.startTime && lr.endTime) {
-          // Hour-based (ทุกประเภท)
+          // Hour-based leave
           const startMinutes = convertToMinutes(...lr.startTime.split(':').map(Number));
           const endMinutes = convertToMinutes(...lr.endTime.split(':').map(Number));
           let durationHours = (endMinutes - startMinutes) / 60;
           if (durationHours < 0 || isNaN(durationHours)) durationHours = 0;
-          // แสดงเป็นจำนวนเต็มเท่านั้น (ปัดเศษทิ้ง)
+          // Show only whole numbers (round down)
           duration = `${Math.floor(durationHours)} hour`;
           
         } else if (lr.startDate && lr.endDate) {
-          // Day-based
+          // Day-based leave
           const start = new Date(lr.startDate);
           const end = new Date(lr.endDate);
           let days = calculateDaysBetween(start, end);
           if (days < 0 || isNaN(days)) days = 0;
           duration = `${days} day`;
         }
-        result.push({
-          leavetype: leaveTypeNameTh, // for backward compatibility
-          leavetype_th: leaveTypeNameTh,
-          leavetype_en: leaveTypeNameEn,
+        
+        const resultItem = {
+          leavetype: leaveTypeId, // Keep the original ID for reference
+          leavetype_th: leaveTypeNameTh, // Thai name
+          leavetype_en: leaveTypeNameEn, // English name
           duration,
           startdate: lr.startDate,
           status: lr.status
-        });
+        };
+        
+        result.push(resultItem);
       }
+      
       res.json({ status: 'success', data: result });
     } catch (err) {
+      console.error('Error in recent-leave-requests:', err);
       res.status(500).json({ status: 'error', message: err.message });
     }
   });

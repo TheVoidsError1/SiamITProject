@@ -3,17 +3,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { Dialog, DialogContent, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { DatePicker } from '@/components/ui/date-picker';
 
-import { apiEndpoints, apiService } from '@/lib/api';
+import { apiService } from '@/lib/api';
 import { showToastMessage } from '@/lib/toast';
-import { AlertCircle, Building, CheckCircle, Crown, Eye, EyeOff, Info, Lock, Mail, Plus, Shield, User, Users } from 'lucide-react';
+import { AlertCircle, Building, Calendar, CheckCircle, Crown, Eye, EyeOff, Info, Lock, Mail, Plus, Shield, User, Users, Phone } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { TABS, PASSWORD_STRENGTH, NO_DEPARTMENT, NO_POSITION, Tab, PasswordStrength } from '@/constants/roles';
+import { apiEndpoints } from '@/constants/api';
 
 const SuperAdminList: React.FC = () => {
   const { t, i18n } = useTranslation();
 
-  const [activeTab, setActiveTab] = useState<'employee' | 'admin' | 'superadmin'>('employee');
+  const [activeTab, setActiveTab] = useState<Tab>('employee');
   const [form, setForm] = useState({
     full_name: '',
     email: '',
@@ -21,15 +25,23 @@ const SuperAdminList: React.FC = () => {
     confirmPassword: '',
     department: '',
     position: '',
+    gender: '',
+    date_of_birth: '',
+    start_work: '',
+    end_work: '',
     role: 'employee', // ตั้งค่าเริ่มต้นให้ตรงกับ activeTab
+    phone_number: '', // เพิ่มตรงนี้
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [departments, setDepartments] = useState<any[]>([]);
   const [positions, setPositions] = useState<any[]>([]);
+  const [genders, setGenders] = useState<any[]>([]);
   const [error, setError] = useState<{ email?: string; full_name?: string; general?: string }>({});
-  const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong'>('weak');
+  const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>('weak');
+  const [selectedPositionRequestQuota, setSelectedPositionRequestQuota] = useState<boolean>(false);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const lang = i18n.language.startsWith('th') ? 'th' : 'en';
 
@@ -40,8 +52,8 @@ const SuperAdminList: React.FC = () => {
         const deptData = await apiService.get(apiEndpoints.departments);
         if (deptData && deptData.data && Array.isArray(deptData.data)) {
           const depts = deptData.data.map((d: any) => ({ id: d.id, department_name_th: d.department_name_th, department_name_en: d.department_name_en }));
-          const noDepartmentItem = depts.find(d => d.department_name_en === 'No Department');
-          const otherDepts = depts.filter(d => d.department_name_en !== 'No Department');
+          const noDepartmentItem = depts.find(d => d.department_name_en === NO_DEPARTMENT);
+          const otherDepts = depts.filter(d => d.department_name_en !== NO_DEPARTMENT);
           otherDepts.sort((a, b) => {
             const nameA = lang === 'th' ? a.department_name_th : a.department_name_en;
             const nameB = lang === 'th' ? b.department_name_th : b.department_name_en;
@@ -56,9 +68,14 @@ const SuperAdminList: React.FC = () => {
         // Fetch positions
         const posData = await apiService.get(apiEndpoints.positions);
         if (posData && posData.data && Array.isArray(posData.data)) {
-          const pos = posData.data.map((p: any) => ({ id: p.id, position_name_th: p.position_name_th, position_name_en: p.position_name_en }));
-          const noPositionItem = pos.find(p => p.position_name_en === 'No Position');
-          const otherPos = pos.filter(p => p.position_name_en !== 'No Position');
+          const pos = posData.data.map((p: any) => ({ 
+            id: p.id, 
+            position_name_th: p.position_name_th, 
+            position_name_en: p.position_name_en,
+            request_quota: !!p.request_quota
+          }));
+          const noPositionItem = pos.find(p => p.position_name_en === NO_POSITION);
+          const otherPos = pos.filter(p => p.position_name_en !== NO_POSITION);
           otherPos.sort((a, b) => {
             const nameA = lang === 'th' ? a.position_name_th : a.position_name_en;
             const nameB = lang === 'th' ? b.position_name_th : b.position_name_en;
@@ -70,9 +87,12 @@ const SuperAdminList: React.FC = () => {
           }
           setPositions(sortedPositions);
         }
+        // Skip fetching genders (no backend endpoint). Use static options defined in UI.
+        setGenders([]);
       } catch {
         setDepartments([]);
         setPositions([]);
+        setGenders([]);
       }
     };
     fetchData();
@@ -100,9 +120,15 @@ const SuperAdminList: React.FC = () => {
     }
   };
 
-  const handleTabChange = (tab: 'employee' | 'admin' | 'superadmin') => {
+  const handleTabChange = (tab: Tab) => {
     setActiveTab(tab);
     setForm({ ...form, role: tab });
+  };
+
+  const handlePositionChange = (positionId: string) => {
+    setForm(f => ({ ...f, position: positionId }));
+    const selectedPos = positions.find(p => p.id === positionId);
+    setSelectedPositionRequestQuota(selectedPos ? !!selectedPos.request_quota : false);
   };
 
   const getPasswordStrengthColor = () => {
@@ -123,8 +149,8 @@ const SuperAdminList: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setError({});
     
     // Validation    
@@ -135,6 +161,11 @@ const SuperAdminList: React.FC = () => {
     
     if (!form.email.trim()) {
       showToastMessage.validation.requiredField('email', t);
+      return;
+    }
+    
+    if (!form.phone_number.trim()) {
+      showToastMessage.validation.requiredField('phoneNumber', t);
       return;
     }
     
@@ -163,6 +194,12 @@ const SuperAdminList: React.FC = () => {
       return;
     }
     
+    // Check if end_work is required based on position's request_quota
+    if (selectedPositionRequestQuota && !form.end_work) {
+      showToastMessage.validation.requiredField('endWork', t);
+      return;
+    }
+    
     setLoading(true);
     try {
       // Map frontend role to backend role
@@ -179,6 +216,11 @@ const SuperAdminList: React.FC = () => {
         position: form.position,
         email: form.email,
         password: form.password,
+        gender_name_th: form.gender,
+        date_of_birth: form.date_of_birth,
+        start_work: form.start_work,
+        end_work: selectedPositionRequestQuota ? form.end_work : null,
+        phone_number: form.phone_number,
       };
       
       const data = await apiService.post('/api/create-user-with-role', payload);
@@ -192,8 +234,14 @@ const SuperAdminList: React.FC = () => {
           department: '',
           position: '',
           role: form.role,
+          gender: '',
+          start_work: '',
+          end_work: '',
+          date_of_birth: '',
+          phone_number: '',
         });
         setPasswordStrength('weak');
+        setSelectedPositionRequestQuota(false);
       } else {
         showToastMessage.crud.createError('user', data?.message, t);
       }
@@ -204,7 +252,7 @@ const SuperAdminList: React.FC = () => {
     }
   };
 
-  const getTabConfig = (tab: 'employee' | 'admin' | 'superadmin') => {
+  const getTabConfig = (tab: Tab) => {
     const configs = {
       employee: {
         icon: Users,
@@ -299,7 +347,7 @@ const SuperAdminList: React.FC = () => {
         {/* Enhanced Role Selection Tabs */}
         <div className="mb-8 animate-fade-in-up-delay-1">
           <div className="bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl p-3 flex gap-3 border border-white/20">
-            {(['employee', 'admin', 'superadmin'] as const).map((tab) => {
+            {TABS.map((tab) => {
               const config = getTabConfig(tab);
               const IconComponent = config.icon;
               const isActive = activeTab === tab;
@@ -326,30 +374,12 @@ const SuperAdminList: React.FC = () => {
         </div>
 
         {/* Enhanced Form Container */}
-        <div className={`bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-10 animate-slide-up hover:shadow-3xl transition-all duration-500 hover:scale-[1.01] border-2 ${currentConfig.borderColor} relative overflow-hidden`}>
-          {/* Background Pattern */}
-          <div className="absolute inset-0 opacity-5">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full -translate-y-16 translate-x-16"></div>
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-indigo-400 to-blue-500 rounded-full translate-y-12 -translate-x-12"></div>
-          </div>
-          
-          {/* Form Header */}
-          <div className="text-center mb-10 animate-fade-in-up-delay-2 relative z-10">
-            <div className={`inline-flex items-center justify-center w-20 h-20 rounded-full bg-gradient-to-r ${currentConfig.gradient} mb-6 shadow-xl ${currentConfig.shadow}`}>
-              <currentConfig.icon className="w-10 h-10 text-white" />
-            </div>
-            <h3 className={`text-3xl font-bold ${currentConfig.textColor} mb-3`}>
-              {t('admin.createUserTitle')} {currentConfig.title}
-            </h3>
-            <p className="text-gray-600 text-lg max-w-md mx-auto">
-              {t('admin.fillInfoToCreate')} {currentConfig.title} {t('admin.inSystem')}
-            </p>
-          </div>
-
-          <form onSubmit={handleSubmit} className="space-y-8 relative z-10">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Full Name */}
-              <div className="space-y-3 animate-fade-in-up-delay-3">
+        <div className={`bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl p-10 animate-slide-up hover:shadow-3xl transition-all duration-500 hover:scale-[1.01] border-2 ${currentConfig.borderColor} relative overflow-hidden max-w-3xl mx-auto`}>  
+          {/* Section: ข้อมูลส่วนตัว */}
+          <h4 className="text-xl font-bold mb-4 text-blue-700">{t('admin.personalInfo')}</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            {/* Full Name */}
+            <div className="space-y-3 animate-fade-in-up-delay-3">
                 <Label htmlFor="full_name" className={`mb-3 block ${currentConfig.textColor} font-bold text-lg transition-all duration-300 hover:text-opacity-80 flex items-center gap-2`}>
                   <User className="w-5 h-5" />
                   {t('auth.fullName')}
@@ -397,30 +427,77 @@ const SuperAdminList: React.FC = () => {
                   )}
                 </div>
               </div>
-
-              {/* Position */}
-              <div className="space-y-3 animate-fade-in-up-delay-5">
-                <Label htmlFor="position" className={`mb-3 block ${currentConfig.textColor} font-bold text-lg transition-all duration-300 hover:text-opacity-80 flex items-center gap-2`}>
-                  <Building className="w-5 h-5" />
-                  {t('auth.position')}
+              {/* Phone Number */}
+              <div className="space-y-3 animate-fade-in-up-delay-4">
+                <Label htmlFor="phone_number" className={`mb-3 block ${currentConfig.textColor} font-bold text-lg transition-all duration-300 hover:text-opacity-80 flex items-center gap-2`}>
+                  <Phone className="w-5 h-5" />
+                  {t('admin.phoneNumber')}
                   <span className="text-red-500">*</span>
                 </Label>
-                <Select value={form.position} onValueChange={value => setForm(f => ({ ...f, position: value }))}>
-                  <SelectTrigger id="position" className={`rounded-xl shadow-sm text-lg transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm py-4`}>
-                    <SelectValue placeholder={t('admin.selectPosition')} />
+                <div className="relative group">
+                  <Input
+                    id="phone_number"
+                    name="phone_number"
+                    type="tel"
+                    placeholder={t('admin.enterPhoneNumber')}
+                    value={form.phone_number}
+                    onChange={handleChange}
+                    className={`pl-6 py-4 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm`}
+                    required
+                    autoComplete="tel"
+                  />
+                </div>
+              </div>
+
+              {/* Gender */}
+              <div className="space-y-3 animate-fade-in-up-delay-7">
+                <Label htmlFor="gender" className={`mb-3 block ${currentConfig.textColor} font-bold text-lg transition-all duration-300 hover:text-opacity-80 flex items-center gap-2`}>
+                  <User className="w-5 h-5" />
+                  {t('admin.gender')} 
+                </Label>
+                <Select value={form.gender} onValueChange={value => setForm(f => ({ ...f, gender: value }))}>
+                  <SelectTrigger id="gender" className={`rounded-xl shadow-sm text-lg transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm py-4`}>
+                    <SelectValue placeholder={t('admin.selectGender')} />
                   </SelectTrigger>
                   <SelectContent className="bg-white/95 backdrop-blur-md border-2 border-gray-200 rounded-xl">
-                    {positions.map((pos) => (
-                      <SelectItem key={pos.id} value={pos.id} className="hover:bg-indigo-50 transition-colors duration-200 rounded-lg">
-                        {lang === 'th' ? pos.position_name_th : pos.position_name_en}
-                      </SelectItem>
-                    ))}
+                    {genders && genders.length > 0 ? (
+                      genders.map((g: any) => (
+                        <SelectItem key={g.id || g.value || g.gender_name_th} value={g.gender_name_th || g.value} className="hover:bg-indigo-50 transition-colors duration-200 rounded-lg">
+                          {lang === 'th' ? (g.gender_name_th || g.label || g.value) : (g.gender_name_en || g.label || g.value)}
+                        </SelectItem>
+                      ))
+                    ) : (
+                      <>
+                        <SelectItem value="male">{t('admin.male')}</SelectItem>
+                        <SelectItem value="female">{t('admin.female')}</SelectItem> 
+                        <SelectItem value="other">{t('admin.other')}</SelectItem>
+                      </>
+                    )}
                   </SelectContent>
                 </Select>
               </div>
-
-              {/* Department */}
+              
+              {/* Date of Birth */}
               <div className="space-y-3 animate-fade-in-up-delay-6">
+                <Label htmlFor="date_of_birth" className={`mb-3 block ${currentConfig.textColor} font-bold text-lg transition-all duration-300 hover:text-opacity-80 flex items-center gap-2`}>
+                  <Calendar className="w-5 h-5" />
+                  {t('admin.dateOfBirth')}
+                  <span className="text-red-500">*</span>
+                </Label>
+                <DatePicker
+                  date={form.date_of_birth}
+                  onDateChange={(date) => setForm(f => ({ ...f, date_of_birth: date }))}
+                  placeholder={t('admin.enterDateOfBirth')}
+                  className={`py-4 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm`}
+                />
+              </div>
+          </div>
+          <hr className="my-6" />
+          {/* Section: ข้อมูลการทำงาน */}
+          <h4 className="text-xl font-bold mb-4 text-purple-700">{t('admin.workInfo')}</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            {/* Department */}
+            <div className="space-y-3 animate-fade-in-up-delay-6">
                 <Label htmlFor="department" className={`mb-3 block ${currentConfig.textColor} font-bold text-lg transition-all duration-300 hover:text-opacity-80 flex items-center gap-2`}>
                   <Building className="w-5 h-5" />
                   {t('auth.department')}
@@ -439,12 +516,65 @@ const SuperAdminList: React.FC = () => {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
 
-            {/* Password Fields */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-              {/* Password */}
+              {/* Position */}
+              <div className="space-y-3 animate-fade-in-up-delay-5">
+                <Label htmlFor="position" className={`mb-3 block ${currentConfig.textColor} font-bold text-lg transition-all duration-300 hover:text-opacity-80 flex items-center gap-2`}>
+                  <Building className="w-5 h-5" />
+                  {t('auth.position')}
+                  <span className="text-red-500">*</span>
+                </Label>
+                <Select value={form.position} onValueChange={handlePositionChange}>
+                  <SelectTrigger id="position" className={`rounded-xl shadow-sm text-lg transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm py-4`}>
+                    <SelectValue placeholder={t('admin.selectPosition')} />
+                  </SelectTrigger>
+                  <SelectContent className="bg-white/95 backdrop-blur-md border-2 border-gray-200 rounded-xl">
+                    {positions.map((pos) => (
+                      <SelectItem key={pos.id} value={pos.id} className="hover:bg-indigo-50 transition-colors duration-200 rounded-lg">
+                        {lang === 'th' ? pos.position_name_th : pos.position_name_en}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Start Work */}
               <div className="space-y-3 animate-fade-in-up-delay-7">
+                <Label htmlFor="start_work" className={`mb-3 block ${currentConfig.textColor} font-bold text-lg transition-all duration-300 hover:text-opacity-80 flex items-center gap-2`}>
+                  <Calendar className="w-5 h-5" />
+                  {t('admin.startWork')}
+                  <span className="text-red-500">*</span>
+                </Label>
+                <DatePicker
+                  date={form.start_work}
+                  onDateChange={(date) => setForm(f => ({ ...f, start_work: date }))}
+                  placeholder={t('admin.enterStartWork')}
+                  className={`py-4 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm`}
+                />
+              </div>
+              {/* End Work (conditionally rendered) */}
+              {selectedPositionRequestQuota && (
+                <div className="space-y-3 animate-fade-in-up-delay-7">
+                  <Label htmlFor="end_work" className={`mb-3 block ${currentConfig.textColor} font-bold text-lg transition-all duration-300 hover:text-opacity-80 flex items-center gap-2`}>
+                    <Calendar className="w-5 h-5" />
+                    {t('admin.endWork')}
+                    <span className="text-red-500">*</span>
+                  </Label>
+                  <DatePicker
+                    date={form.end_work}
+                    onDateChange={(date) => setForm(f => ({ ...f, end_work: date }))}
+                    placeholder={t('admin.enterEndWork')}
+                    className={`py-4 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 ${currentConfig.borderColor} border-2 bg-white/80 backdrop-blur-sm`}
+                  />
+                </div>
+              )}
+          </div>
+          <hr className="my-6" />
+          {/* Section: ข้อมูลเข้าสู่ระบบ */}
+          <h4 className="text-xl font-bold mb-4 text-indigo-700">{t('admin.loginInfo')}</h4>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+            {/* Password */}
+            <div className="space-y-3 animate-fade-in-up-delay-7">
                 <Label htmlFor="password" className={`mb-3 block ${currentConfig.textColor} font-bold text-lg transition-all duration-300 hover:text-opacity-80 flex items-center gap-2`}>
                   <Lock className="w-5 h-5" />
                   {t('auth.password')}
@@ -540,32 +670,52 @@ const SuperAdminList: React.FC = () => {
                   </div>
                 )}
               </div>
-            </div>
-
-            {/* Enhanced Submit Button */}
-            <div className="animate-fade-in-up-delay-9 pt-6">
-              <Button 
-                type="submit" 
-                className={`w-full py-6 text-xl font-bold rounded-2xl shadow-2xl bg-gradient-to-r ${currentConfig.gradient} hover:shadow-3xl text-white transition-all duration-500 hover:scale-105 active:scale-95 transform relative overflow-hidden group`}
-                disabled={loading}
-              >
-                {loading ? (
-                  <div className="flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-4"></div>
-                    <span>{t('admin.creatingUser')}</span>
-                  </div>
-                ) : (
-                  <>
-                    <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
-                    <span className="flex items-center justify-center gap-3 relative z-10">
-                      <Plus className="w-6 h-6" />
-                      {t('admin.createUser')}
-                    </span>
-                  </>
-                )}
-              </Button>
-            </div>
-          </form>
+          </div>
+          {/* Enhanced Submit Button */}
+          <div className="flex justify-center mt-8 animate-fade-in-up-delay-9">
+            <Button 
+              type="button" 
+              className={`w-full md:w-1/2 py-6 text-xl font-bold rounded-2xl shadow-2xl bg-gradient-to-r ${currentConfig.gradient} hover:shadow-3xl text-white transition-all duration-500 hover:scale-105 active:scale-95 transform relative overflow-hidden group`}
+              disabled={loading}
+              onClick={() => setShowConfirmModal(true)}
+            >
+              {loading ? (
+                <div className="flex items-center justify-center">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white mr-4"></div>
+                  <span>{t('admin.creatingUser')}</span>
+                </div>
+              ) : (
+                <>
+                  <div className="absolute inset-0 bg-white/20 transform -skew-x-12 -translate-x-full group-hover:translate-x-full transition-transform duration-1000"></div>
+                  <span className="flex items-center justify-center gap-3 relative z-10">
+                    <Plus className="w-6 h-6" />
+                    {t('admin.createUser')}
+                  </span>
+                </>
+              )}
+            </Button>
+          </div>
+          {/* Confirm Create User Dialog */}
+          <Dialog open={showConfirmModal} onOpenChange={setShowConfirmModal}>
+            <DialogContent>
+              <DialogTitle>{t('admin.confirmCreateUserTitle')}</DialogTitle>
+              <div>{t('admin.confirmCreateUserMessage')}</div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowConfirmModal(false)}>
+                  {t('admin.cancel')}
+                </Button>
+                <Button
+                  onClick={(e) => {
+                    setShowConfirmModal(false);
+                    handleSubmit();
+                  }}
+                  disabled={loading}
+                >
+                  {t('admin.confirm')}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
       

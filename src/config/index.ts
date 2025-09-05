@@ -25,6 +25,13 @@ export const config = {
     publicPath: import.meta.env.VITE_PUBLIC_PATH || '/public',
   },
 
+  // Assets Configuration
+  assets: {
+    defaultAvatar: '/lovable-uploads/siamit.png',
+    logo: '/lovable-uploads/siamit.png',
+    favicon: '/favicon.ico',
+  },
+
   // Authentication Configuration
   auth: {
     tokenKey: import.meta.env.VITE_TOKEN_KEY || 'token',

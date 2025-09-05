@@ -1,14 +1,16 @@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { apiEndpoints } from '@/constants/api';
 import { monthNames } from '@/constants/common';
 import { getThaiHolidaysByMonth } from '@/constants/getThaiHolidays';
 import { useAuth } from '@/contexts/AuthContext';
-import { apiEndpoints, apiService } from '@/lib/api';
+import { apiService } from '@/lib/api';
 import { showToastMessage } from '@/lib/toast';
 import { Building2, ChevronLeft, Edit2, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
@@ -28,6 +30,7 @@ interface CompanyEvent {
   createdAt: string;
   createdBy: string;
   type?: 'company' | 'annual';
+  createdByName?: string;
 }
 
 interface ThaiHoliday {
@@ -73,6 +76,7 @@ interface CalendarEvent {
     duration: string;
     durationType: string;
   };
+  createdByName?: string;
 }
 
 const CompanyMonthDetailPage = () => {
@@ -268,6 +272,25 @@ const CompanyMonthDetailPage = () => {
       return `${userName}\n${leaveType}\n${t('calendar.period')}: ${start} - ${end}\n${t('calendar.duration')}: ${durationText}`;
     }
     return event.title;
+  };
+
+  // Get display title for list: strip trailing UUID in parentheses or use createdByName
+  const getDisplayTitle = (event: CalendarEvent): string => {
+    // Employee leave uses composed title elsewhere
+    if (event.type === 'employee' && event.employeeInfo) {
+      return `${event.employeeInfo.userName} (${event.employeeInfo.leaveType})`;
+    }
+    const title = event.title || '';
+    // Match a trailing space and UUID in parentheses, e.g. " (2dcd81d9-669c-4aac-84fa-0fc42e1ef36b)"
+    const uuidParenPattern = /\s*\(([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\)\s*$/i;
+    if (uuidParenPattern.test(title)) {
+      const cleaned = title.replace(uuidParenPattern, '').trim();
+      if (cleaned.length > 0) return cleaned;
+      if (event.createdByName) return event.createdByName;
+    }
+    // Fallback to createdByName if title is missing
+    if (!title && event.createdByName) return event.createdByName;
+    return title;
   };
 
   // Get weekday names based on current language
@@ -544,12 +567,7 @@ const CompanyMonthDetailPage = () => {
                             : 'bg-blue-400'
                     }`}></span>
                     <div className="flex-1">
-                      <div className="font-semibold">
-                        {eventType === 'employee' && event.employeeInfo 
-                          ? `${event.employeeInfo.userName} (${event.employeeInfo.leaveType})`
-                          : event.title
-                        }
-                      </div>
+                      <div className="font-semibold">{getDisplayTitle(event)}</div>
                       {event.description && (
                         <div className={`text-sm mt-1 ${
                           event.isDual
@@ -613,11 +631,10 @@ const CompanyMonthDetailPage = () => {
               onChange={e => setNewEvent(prev => ({ ...prev, description: e.target.value }))} 
               className="break-all overflow-wrap-anywhere whitespace-pre-wrap"
             />
-            <Input 
-              type="date" 
+            <DatePicker 
+              date={newEvent.date}
+              onDateChange={(date) => setNewEvent(prev => ({ ...prev, date }))}
               placeholder={t('companyEvent.datePlaceholder')}
-              value={newEvent.date} 
-              onChange={e => setNewEvent(prev => ({ ...prev, date: e.target.value }))} 
             />
           </div>
           <DialogFooter>
@@ -645,10 +662,10 @@ const CompanyMonthDetailPage = () => {
               onChange={e => setEditingEvent(prev => prev ? { ...prev, description: e.target.value } : null)} 
               className="break-all overflow-wrap-anywhere whitespace-pre-wrap"
             />
-            <Input 
-              type="date" 
-              value={editingEvent?.date || ''} 
-              onChange={e => setEditingEvent(prev => prev ? { ...prev, date: e.target.value } : null)} 
+            <DatePicker 
+              date={editingEvent?.date || ''}
+              onDateChange={(date) => setEditingEvent(prev => prev ? { ...prev, date } : null)}
+              placeholder={t('companyEvent.datePlaceholder')}
             />
           </div>
           <DialogFooter>

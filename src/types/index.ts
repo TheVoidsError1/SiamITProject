@@ -6,7 +6,7 @@ export interface User {
   department: string;
   position: string;
   avatar?: string;
-  role: 'user' | 'admin' | 'superadmin';
+  role: Role;
 }
 
 // Position Types
@@ -14,7 +14,7 @@ export interface Position {
   id: string;
   position_name_en: string;
   position_name_th: string;
-  request_quota: boolean;
+  require_enddate: boolean;
   quotas?: Record<string, number>;
 }
 
@@ -42,12 +42,25 @@ export interface LeaveRequest {
   start_date: string;
   end_date: string;
   reason: string;
-  status: 'pending' | 'approved' | 'rejected';
+  status: LeaveStatus;
   attachments?: string[];
   created_at: string;
   updated_at: string;
   user?: User;
   leave_type?: LeaveType;
+  // Additional fields for leave type names (for inactive/deleted types)
+  leaveTypeName_th?: string;
+  leaveTypeName_en?: string;
+  // Additional fields that might be present
+  leaveType?: string;
+  type?: string;
+  startDate?: string;
+  endDate?: string;
+  submittedDate?: string;
+  duration?: number;
+  durationType?: string;
+  durationHours?: number;
+  backdated?: number;
 }
 
 // Employee Types
@@ -88,7 +101,7 @@ export interface PositionForm {
   name_en: string;
   name_th: string;
   quotas: Record<string, number>;
-  request_quota: boolean;
+  require_enddate: boolean;
 }
 
 export interface DepartmentForm {
@@ -124,7 +137,7 @@ export interface Notification {
   id: string;
   title: string;
   message: string;
-  type: 'info' | 'success' | 'warning' | 'error';
+  type: NotificationType;
   read: boolean;
   created_at: string;
 }
@@ -134,7 +147,7 @@ export interface CalendarEvent {
   id: string;
   title: string;
   date: string;
-  type: 'company' | 'annual' | 'employee';
+  type: CalendarType;
   isDual?: boolean;
 }
 
@@ -144,3 +157,5 @@ export interface ApiError {
   status?: number;
   code?: string;
 }
+
+import type { Role, LeaveStatus, NotificationType, CalendarType } from '@/constants/roles';

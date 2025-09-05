@@ -5,7 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { Switch } from '@/components/ui/switch';
 import { getAllThaiHolidays } from '@/constants/getThaiHolidays';
 import { monthNames } from '@/constants/common';
-import { apiService, apiEndpoints } from '@/lib/api';
+import { apiService } from '@/lib/api';
+import { apiEndpoints } from '@/constants/api';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 
 function getDaysInMonth(year: number, month: number) {

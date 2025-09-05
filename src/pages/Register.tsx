@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { DatePicker } from '@/components/ui/date-picker';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { apiService, apiEndpoints } from '@/lib/api';
+import { apiService } from '@/lib/api';
+import { apiEndpoints } from '@/constants/api';
 import { showToastMessage } from '@/lib/toast';
 import { Eye, EyeOff, Mail, Lock, User, Building } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -36,7 +37,7 @@ const Register = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [departments, setDepartments] = useState<{ id: string; department_name_en: string; department_name_th: string }[]>([]);
-      const [positions, setPositions] = useState<{ id: string; position_name_en: string; position_name_th: string; request_quota?: boolean }[]>([]);
+      const [positions, setPositions] = useState<{ id: string; position_name_en: string; position_name_th: string; require_enddate?: boolean }[]>([]);
   const [newDepartment, setNewDepartment] = useState('');
   const [newPosition, setNewPosition] = useState('');
   const [error, setError] = useState<{ email?: string; full_name?: string; general?: string }>({});
@@ -73,7 +74,7 @@ const Register = () => {
         // Fetch positions
         const posData = await apiService.get(apiEndpoints.positions);
         if (posData && posData.data && Array.isArray(posData.data)) {
-          const pos = posData.data.map((p: any) => ({ id: p.id, position_name_th: p.position_name_th, position_name_en: p.position_name_en, request_quota: !!p.request_quota }));
+          const pos = posData.data.map((p: any) => ({ id: p.id, position_name_th: p.position_name_th, position_name_en: p.position_name_en, require_enddate: !!p.require_enddate }));
           const noPositionItem = pos.find(p => p.position_name_en === 'No Position');
           const otherPos = pos.filter(p => p.position_name_en !== 'No Position');
           otherPos.sort((a, b) => {
@@ -173,7 +174,7 @@ const Register = () => {
 
     // ตรวจว่าตำแหน่งต้องการ End Work Date หรือไม่
     const selectedPos = positions.find(p => p.id === formData.position);
-            const requiresEndWorkDate = selectedPos ? !!selectedPos.request_quota : false;
+            const requiresEndWorkDate = selectedPos ? !!selectedPos.require_enddate : false;
 
     if (requiresEndWorkDate) {
       if (!formData.start_work || !formData.end_work) {
@@ -215,10 +216,10 @@ const Register = () => {
       });
       navigate('/login');
     } catch (error: any) {
-      let errMsg = error.message || t('common.error');
+      const errMsg = error.message || t('common.error');
       console.log('Registration error object:', error);
       console.log('Registration error message:', errMsg);
-      let newError: { email?: string; full_name?: string; general?: string } = {};
+      const newError: { email?: string; full_name?: string; general?: string } = {};
       const lowerMsg = errMsg.toLowerCase();
       if (lowerMsg.includes('user') || lowerMsg.includes('ชื่อผู้ใช')) {
         newError.full_name = errMsg;
@@ -370,7 +371,7 @@ const Register = () => {
               {/* Start/End work dates: Start Work Date always shows; End Work Date shows only when position has Request Quote enabled */}
               {(() => {
                 const selectedPos = positions.find(p => p.id === formData.position);
-                const showEndWorkDate = selectedPos ? !!selectedPos.request_quota : false;
+                const showEndWorkDate = selectedPos ? !!selectedPos.require_enddate : false;
                 return (
                   <div className={`grid grid-cols-1 ${showEndWorkDate ? 'md:grid-cols-2' : ''} gap-4`}>
                     <div className="space-y-2">
@@ -383,7 +384,7 @@ const Register = () => {
                     </div>
                     {showEndWorkDate && (
                       <div className="space-y-2">
-                        <Label htmlFor="end_work" className="mb-2 block">{t('employee.endWorkDate', 'End Work Date')}</Label>
+                        <Label htmlFor="end_work" className="mb-2 block">{t('employee.endWorkDate')}</Label>
                         <DatePicker 
                           date={formData.end_work} 
                           onDateChange={(date) => setFormData(prev => ({ ...prev, end_work: date }))}

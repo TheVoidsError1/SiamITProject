@@ -27,6 +27,35 @@ class BaseController {
    */
   async findAll(AppDataSource, options = {}) {
     const repo = this.getRepository(AppDataSource);
+    
+    // If this is LeaveType, automatically filter out inactive records
+    if (this.repositoryName === 'LeaveType') {
+      try {
+        // Simple approach: try to use soft delete filtering, fallback if it fails
+        const defaultOptions = {
+          where: { is_active: true, deleted_at: null },
+          ...options
+        };
+        return await repo.find(defaultOptions);
+      } catch (error) {
+        // Fallback to original logic if soft delete columns don't exist
+        console.warn('Soft delete columns not found, using original findAll logic:', error.message);
+        return await repo.find(options);
+      }
+    }
+    
+    // For other entities, use original logic
+    return await repo.find(options);
+  }
+
+  /**
+   * Find all records including soft-deleted (for LeaveType admin operations)
+   * @param {Object} AppDataSource - Database connection
+   * @param {Object} options - Query options
+   * @returns {Promise<Array>} Array of all records
+   */
+  async findAllIncludingDeleted(AppDataSource, options = {}) {
+    const repo = this.getRepository(AppDataSource);
     return await repo.find(options);
   }
 
@@ -96,6 +125,72 @@ class BaseController {
       throw new Error('Record not found');
     }
     return await repo.delete({ id });
+  }
+
+  /**
+   * Soft delete a record
+   * @param {Object} AppDataSource - Database connection
+   * @param {string|number} id - Record ID
+   * @returns {Promise<Object>} Soft deletion result
+   */
+  async softDelete(AppDataSource, id) {
+    const repo = this.getRepository(AppDataSource);
+    const entity = await repo.findOneBy({ id });
+    if (!entity) {
+      throw new Error('Record not found');
+    }
+    
+    try {
+      // Check if soft delete columns exist
+      if (entity.hasOwnProperty('deleted_at')) {
+        entity.deleted_at = new Date();
+        // Also set is_active to false for soft delete
+        if (entity.hasOwnProperty('is_active')) {
+          entity.is_active = false;
+        }
+        return await repo.save(entity);
+      } else {
+        // Fallback to hard delete if soft delete columns don't exist
+        console.warn('Soft delete columns not found, falling back to hard delete');
+        return await repo.delete({ id });
+      }
+    } catch (error) {
+      console.error('Soft delete failed:', error);
+      // If soft delete fails, fall back to hard delete
+      console.warn('Falling back to hard delete');
+      return await repo.delete({ id });
+    }
+  }
+
+  /**
+   * Restore a soft-deleted record
+   * @param {Object} AppDataSource - Database connection
+   * @param {string|number} id - Record ID
+   * @returns {Promise<Object>} Restoration result
+   */
+  async restore(AppDataSource, id) {
+    const repo = this.getRepository(AppDataSource);
+    const entity = await repo.findOneBy({ id });
+    if (!entity) {
+      throw new Error('Record not found');
+    }
+    
+    try {
+      // Check if soft delete columns exist
+      if (entity.hasOwnProperty('deleted_at')) {
+        entity.deleted_at = null;
+        // Also set is_active back to true when restoring
+        if (entity.hasOwnProperty('is_active')) {
+          entity.is_active = true;
+        }
+        return await repo.save(entity);
+      } else {
+        throw new Error('Soft delete columns not available for restoration');
+      }
+    } catch (error) {
+      console.error('Restore failed:', error);
+      throw error;
+    }
   }
 
   /**

@@ -15,13 +15,9 @@ export default defineConfig({
     port: parseInt(process.env.VITE_DEV_SERVER_PORT || '8081'),
     host: process.env.VITE_DEV_SERVER_HOST || 'localhost',
     open: true,
-    allowedHosts: [
-      "localhost",
-      "127.0.0.1",
-      "tasty-sites-fly.loca.lt",
-      "easy-buckets-pull.loca.lt",
-      "*.loca.lt"
-    ],
+    hmr: {
+      overlay: false, // Disable error overlay to prevent HMR issues
+    },
     proxy: {
       "/api": {
         target: process.env.VITE_API_BASE_URL || "http://localhost:3001",
@@ -33,5 +29,8 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-i18next', 'i18next'],
   },
 });

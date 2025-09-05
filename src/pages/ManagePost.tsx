@@ -12,7 +12,8 @@ import { Calendar, ChevronLeft, Clock, Edit, Eye, FileText, Image, Newspaper, Pl
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { apiEndpoints, apiService } from '../lib/api';
+import { apiService } from '../lib/api';
+import { apiEndpoints } from '@/constants/api';
 import { showToastMessage } from '../lib/toast';
 import { formatDate, getImageUrl, handleFileSelect, handleImageError } from '../lib/utils';
 

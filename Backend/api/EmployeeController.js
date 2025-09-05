@@ -466,17 +466,49 @@ module.exports = (AppDataSource) => {
           let typeName_th = l.leaveType;
           let typeName_en = l.leaveType;
           if (l.leaveType && l.leaveType.length > 20) {
-            const typeObj = await leaveTypeRepo.findOneBy({ id: l.leaveType });
+            // Try multiple approaches to get the leave type (including soft-deleted records)
+            let typeObj = null;
+            
+            // Approach 1: Try using TypeORM withDeleted option
+            try {
+              const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+              typeObj = await leaveTypeRepo.findOne({
+                where: { id: l.leaveType },
+                withDeleted: true
+              });
+            } catch (error) {
+              // TypeORM withDeleted failed, continue to raw query
+            }
+            
+            // Approach 2: If that fails, try raw query
+            if (!typeObj) {
+              try {
+                const leaveTypeQuery = `SELECT * FROM leave_type WHERE id = ?`;
+                const [leaveTypeResult] = await AppDataSource.query(leaveTypeQuery, [l.leaveType]);
+                typeObj = leaveTypeResult ? leaveTypeResult[0] : null;
+              } catch (error) {
+                // Raw query failed, typeObj will remain null
+              }
+            }
+            
             if (typeObj) {
-              typeName_th = typeObj.leave_type_th || l.leaveType;
-              typeName_en = typeObj.leave_type_en || l.leaveType;
+              if (typeObj.is_active === false) {
+                // Add [DELETED] prefix for inactive/deleted leave types
+                const prefix_th = '[ลบ] ';
+                const prefix_en = '[DELETED] ';
+                typeName_th = prefix_th + (typeObj.leave_type_th || l.leaveType);
+                typeName_en = prefix_en + (typeObj.leave_type_en || l.leaveType);
+              } else {
+                typeName_th = typeObj.leave_type_th || l.leaveType;
+                typeName_en = typeObj.leave_type_en || l.leaveType;
+              }
             }
           }
-          return { ...l, _leaveTypeName_th: typeName_th, _leaveTypeName_en: typeName_en };
+          return { ...l, leaveTypeName_th: typeName_th, leaveTypeName_en: typeName_en };
         }));
         leaves = leaves.filter(l => 
-          (l._leaveTypeName_th && String(l._leaveTypeName_th).trim().toLowerCase().includes(leaveTypeLower)) ||
-          (l._leaveTypeName_en && String(l._leaveTypeName_en).trim().toLowerCase().includes(leaveTypeLower)) ||
+          (l.leaveTypeName_th && String(l.leaveTypeName_th).trim().toLowerCase().includes(leaveTypeLower)) ||
+          (l.leaveTypeName_en && String(l.leaveTypeName_en).trim().toLowerCase().includes(leaveTypeLower)) ||
           (l.leaveType && String(l.leaveType).trim().toLowerCase().includes(leaveTypeLower))
         );
       }
@@ -552,10 +584,42 @@ module.exports = (AppDataSource) => {
         let leaveTypeName_th = l.leaveType;
         let leaveTypeName_en = l.leaveType;
         if (l.leaveType && l.leaveType.length > 20) {
-          const leaveTypeObj = await leaveTypeRepo.findOneBy({ id: l.leaveType });
+          // Try multiple approaches to get the leave type (including soft-deleted records)
+          let leaveTypeObj = null;
+          
+          // Approach 1: Try using TypeORM withDeleted option
+          try {
+            const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+            leaveTypeObj = await leaveTypeRepo.findOne({
+              where: { id: l.leaveType },
+              withDeleted: true
+            });
+          } catch (error) {
+            // TypeORM withDeleted failed, continue to raw query
+          }
+          
+          // Approach 2: If that fails, try raw query
+          if (!leaveTypeObj) {
+            try {
+              const leaveTypeQuery = `SELECT * FROM leave_type WHERE id = ?`;
+              const [leaveTypeResult] = await AppDataSource.query(leaveTypeQuery, [l.leaveType]);
+              leaveTypeObj = leaveTypeResult ? leaveTypeResult[0] : null;
+            } catch (error) {
+              // Raw query failed, leaveTypeObj will remain null
+            }
+          }
+          
           if (leaveTypeObj) {
-            leaveTypeName_th = leaveTypeObj.leave_type_th || l.leaveType;
-            leaveTypeName_en = leaveTypeObj.leave_type_en || l.leaveType;
+            if (leaveTypeObj.is_active === false) {
+              // Add [DELETED] prefix for inactive/deleted leave types
+              const prefix_th = '[ลบ] ';
+              const prefix_en = '[DELETED] ';
+              leaveTypeName_th = prefix_th + (leaveTypeObj.leave_type_th || l.leaveType);
+              leaveTypeName_en = prefix_en + (leaveTypeObj.leave_type_en || l.leaveType);
+            } else {
+              leaveTypeName_th = leaveTypeObj.leave_type_th || l.leaveType;
+              leaveTypeName_en = leaveTypeObj.leave_type_en || l.leaveType;
+            }
           }
         }
         // --- เพิ่มการคำนวณ duration/durationType ---

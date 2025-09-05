@@ -2,6 +2,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { config } from '@/config';
+import { apiEndpoints } from '@/constants/api';
 import { getThaiHolidaysByMonth, getUpcomingThaiHolidays } from "@/constants/getThaiHolidays";
 import { useAuth } from '@/contexts/AuthContext';
 import { useSocket } from '@/contexts/SocketContext';
@@ -11,9 +13,8 @@ import { Bell, Calendar, Clock, TrendingUp, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
-import { apiEndpoints, apiService } from '../lib/api';
+import { apiService } from '../lib/api';
 import { showToastMessage } from '../lib/toast';
-import { config } from '@/config';
 
 
 const Index = () => {
@@ -640,15 +641,15 @@ const Index = () => {
             <div className="text-sm text-blue-500">
               {loadingUserProfile ? t('common.loading') : (
                 i18n.language.startsWith('th') 
-                  ? userProfile?.position?.name_th || userProfile?.position?.name_en || t('main.noPosition')
-                  : userProfile?.position?.name_en || userProfile?.position?.name_th || t('main.noPosition')
+                  ? userProfile?.position?.name_th || userProfile?.position?.name_en || t('positions.noPosition')
+                  : userProfile?.position?.name_en || userProfile?.position?.name_th || t('positions.noPosition')
               )}
             </div>
             <div className="text-xs text-blue-400 mb-1">
               {loadingUserProfile ? t('common.loading') : (
                 i18n.language.startsWith('th') 
-                  ? userProfile?.department?.name_th || userProfile?.department?.name_en || t('main.noDepartment')
-                  : userProfile?.department?.name_en || userProfile?.department?.name_th || t('main.noDepartment')
+                  ? userProfile?.department?.name_th || userProfile?.department?.name_en || t('departments.noDepartment')
+                  : userProfile?.department?.name_en || userProfile?.department?.name_th || t('departments.noDepartment')
               )}
             </div>
             <div className="text-xs text-gray-500">

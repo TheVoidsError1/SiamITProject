@@ -1,4 +1,3 @@
-import { FileUpload } from '@/components/leave/FileUpload';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -6,19 +5,21 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
+import ImagePreviewDialog from '@/components/dialogs/ImagePreviewDialog';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { format } from "date-fns";
-import { AlertCircle, Calendar, CheckCircle, ChevronLeft, ChevronRight, Clock, FileText, Filter, History, Trash2, User, X, XCircle } from "lucide-react";
+import { AlertCircle, Calendar, CheckCircle, ChevronLeft, ChevronRight, Clock, Eye, FileText, Filter, History, Trash2, User, X, XCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from 'react-router-dom';
 import { monthNames } from '../constants/common';
-import { apiEndpoints, apiService, createAuthenticatedFileUrl } from '../lib/api';
+import { apiEndpoints } from '@/constants/api';
 import { formatDateLocalized } from '../lib/utils';
+import { apiService, createAuthenticatedFileUrl } from '../lib/api';
 
 const LeaveHistory = () => {
 
@@ -65,6 +66,7 @@ const LeaveHistory = () => {
   const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
   const [showImagePreview, setShowImagePreview] = useState(false);
+  const [previewImage, setPreviewImage] = useState<{ url: string; name: string } | null>(null);
 
   // --- เพิ่ม state สำหรับ items per page ---
 
@@ -425,7 +427,7 @@ const LeaveHistory = () => {
 
           <History className="w-3 h-3 mr-1" />
 
-          {t('history.retroactiveLeave', 'การลาย้อนหลัง')}
+          {t('history.retroactiveLeave')}
 
         </Badge>
 
@@ -726,18 +728,9 @@ const LeaveHistory = () => {
       return false;
     }
     
-    // ตรวจสอบว่าวันลาอยู่ห่างจากวันปัจจุบันมากกว่า 1 วัน
-    const leaveStartDate = new Date(leave.startDate);
-    const currentDate = new Date();
-    const oneDayInMs = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
-    
-    // Reset time to start of day for accurate comparison
-    const leaveStartDateOnly = new Date(leaveStartDate.getFullYear(), leaveStartDate.getMonth(), leaveStartDate.getDate());
-    const currentDateOnly = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-    
-    const daysDifference = Math.abs(leaveStartDateOnly.getTime() - currentDateOnly.getTime()) / oneDayInMs;
-    
-    return daysDifference > 1;
+    // Allow deletion of pending requests regardless of date
+    // (Backend will handle any additional date restrictions if needed)
+    return true;
   };
 
   // เพิ่มฟังก์ชันสำหรับกำหนดประเภทไฟล์
@@ -763,55 +756,31 @@ const LeaveHistory = () => {
 
   return (
 
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-100 page-transition">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-100 to-purple-100 relative overflow-x-hidden">
 
-      {/* Hero Section (replace old top bar) */}
-
-      <div className="relative overflow-hidden">
-
-        <div className="absolute inset-0 z-0">
-          <svg viewBox="0 0 1440 200" className="w-full h-24 md:h-32 wave-animation" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path fill="url(#waveGradient)" fillOpacity="1" d="M0,160L60,170.7C120,181,240,203,360,197.3C480,192,600,160,720,133.3C840,107,960,85,1080,101.3C1200,117,1320,171,1380,197.3L1440,224L1440,0L1380,0C1320,0,1200,0,1080,0C960,0,840,0,720,0C600,0,480,0,360,0C240,0,120,0,60,0L0,0Z" />
-            <defs>
-              <linearGradient id="waveGradient" x1="0" y1="0" x2="1440" y2="0" gradientUnits="userSpaceOnUse">
-                <stop stopColor="#3b82f6" />
-                <stop offset="1" stopColor="#6366f1" />
-              </linearGradient>
-            </defs>
-          </svg>
+      {/* Floating/Parallax Background Shapes */}
+      <div className="absolute inset-0 z-0 pointer-events-none">
+        <div className="absolute -top-32 -left-32 w-[350px] h-[350px] rounded-full bg-gradient-to-br from-blue-200 via-indigo-100 to-purple-100 opacity-30 blur-2xl animate-float" />
+        <div className="absolute bottom-0 right-0 w-[250px] h-[250px] rounded-full bg-gradient-to-tr from-purple-200 via-blue-100 to-indigo-100 opacity-20 blur-xl animate-float" />
+        <div className="absolute top-1/2 left-1/2 w-24 h-24 rounded-full bg-blue-100 opacity-10 blur-xl animate-pulse" style={{transform:'translate(-50%,-50%)'}} />
         </div>
         
-        {/* Sidebar Trigger */}
-        <div className="absolute top-4 left-4 z-20">
+      {/* Topbar */}
+      <div className="border-b bg-white/80 backdrop-blur-sm z-10 relative shadow-lg animate-fade-in-up">
+        <div className="flex h-16 items-center justify-between px-6">
+          <div className="flex items-center gap-4">
           <SidebarTrigger className="bg-white/90 hover:bg-white text-blue-700 border border-blue-200 hover:border-blue-300 shadow-lg backdrop-blur-sm" />
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
+                <History className="w-5 h-5 text-white" />
         </div>
-        
-        <div className="relative z-10 flex flex-col items-center justify-center py-6 md:py-10">
-
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-white/90 to-white/70 shadow-xl border-4 border-white/50 backdrop-blur-sm flex items-center justify-center mb-4 animate-bounce-in">
-
-            <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-12 h-12 rounded-full" />
-
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">{t('leave.leaveHistory')}</h1>
+                <p className="text-sm text-gray-600">{t('history.leaveHistoryTitle')}</p>
           </div>
-
-          <h1 className="text-3xl md:text-4xl font-extrabold bg-gradient-to-r from-indigo-900 via-blue-800 to-indigo-900 bg-clip-text text-transparent drop-shadow mb-2 flex items-center gap-2 animate-fade-in-up">
-
-            <History className="w-8 h-8 text-blue-600" />
-
-            {t('leave.leaveHistory')}
-
-          </h1>
-
-          <p className="text-base md:text-lg text-blue-900/80 mb-2 font-medium text-center max-w-2xl leading-relaxed animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-
-            {t('history.leaveHistoryTitle')}
-
-          </p>
-
-          <div className="w-20 h-1 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full mt-3 animate-scale-in" style={{ animationDelay: '0.4s' }}></div>
-
         </div>
-
+          </div>
+        </div>
       </div>
 
       <div className="p-4 md:p-6 animate-fade-in">
@@ -822,7 +791,7 @@ const LeaveHistory = () => {
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
 
-            <Card className="border-0 shadow-lg bg-gradient-to-br from-white/90 via-blue-50/50 to-blue-100/30 backdrop-blur rounded-xl hover:shadow-xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105 animate-stagger-1 card-entrance">
+            <Card className="glass shadow-xl border-0 hover:scale-[1.03] hover:shadow-2xl transition-all duration-300 animate-fade-in-up hover-lift">
 
               <CardContent className="p-5 flex items-center gap-4">
 
@@ -844,7 +813,7 @@ const LeaveHistory = () => {
 
             </Card>
 
-            <Card className="border-0 shadow-lg bg-gradient-to-br from-white/90 via-indigo-50/50 to-indigo-100/30 backdrop-blur rounded-xl hover:shadow-xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105 animate-stagger-2 card-entrance">
+            <Card className="glass shadow-xl border-0 hover:scale-[1.03] hover:shadow-2xl transition-all duration-300 animate-fade-in-up hover-lift">
 
               <CardContent className="p-5 flex items-center gap-4">
 
@@ -866,7 +835,7 @@ const LeaveHistory = () => {
 
             </Card>
 
-            <Card className="border-0 shadow-lg bg-gradient-to-br from-white/90 via-green-50/50 to-green-100/30 backdrop-blur rounded-xl hover:shadow-xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105 animate-stagger-3 card-entrance">
+            <Card className="glass shadow-xl border-0 hover:scale-[1.03] hover:shadow-2xl transition-all duration-300 animate-fade-in-up hover-lift">
 
               <CardContent className="p-5 flex items-center gap-4">
 
@@ -888,7 +857,7 @@ const LeaveHistory = () => {
 
             </Card>
 
-            <Card className="border-0 shadow-lg bg-gradient-to-br from-white/90 via-yellow-50/50 to-yellow-100/30 backdrop-blur rounded-xl hover:shadow-xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105 animate-stagger-4 card-entrance">
+            <Card className="glass shadow-xl border-0 hover:scale-[1.03] hover:shadow-2xl transition-all duration-300 animate-fade-in-up hover-lift">
 
               <CardContent className="p-5 flex items-center gap-4">
 
@@ -910,7 +879,7 @@ const LeaveHistory = () => {
 
             </Card>
 
-            <Card className="border-0 shadow-lg bg-gradient-to-br from-white/90 via-red-50/50 to-red-100/30 backdrop-blur rounded-xl hover:shadow-xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105 animate-stagger-5 card-entrance">
+            <Card className="glass shadow-xl border-0 hover:scale-[1.03] hover:shadow-2xl transition-all duration-300 animate-fade-in-up hover-lift">
 
               <CardContent className="p-5 flex items-center gap-4">
 
@@ -932,7 +901,7 @@ const LeaveHistory = () => {
 
             </Card>
 
-            <Card className="border-0 shadow-lg bg-gradient-to-br from-white/90 via-purple-50/50 to-purple-100/30 backdrop-blur rounded-xl hover:shadow-xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-105 animate-stagger-6 card-entrance">
+            <Card className="glass shadow-xl border-0 hover:scale-[1.03] hover:shadow-2xl transition-all duration-300 animate-fade-in-up hover-lift">
 
               <CardContent className="p-5 flex items-center gap-4">
 
@@ -960,7 +929,7 @@ const LeaveHistory = () => {
 
           {/* Enhanced Filter Section */}
 
-          <Card className="border-0 shadow-lg bg-gradient-to-br from-white/90 via-blue-50/50 to-indigo-100/30 backdrop-blur-sm rounded-xl animate-fade-in-up filter-toggle">
+          <Card className="glass shadow-2xl border-0 animate-fade-in-up filter-toggle">
 
             <CardHeader className="pb-4">
 
@@ -1122,13 +1091,13 @@ const LeaveHistory = () => {
 
                           leaveTypesLoading 
 
-                            ? t('common.loading', 'กำลังโหลด...') 
+                            ? t('common.loading') 
 
                             : leaveTypesError 
 
-                              ? t('common.error', 'เกิดข้อผิดพลาด') 
+                              ? t('common.error') 
 
-                              : t('leaveTypes.all', 'ทั้งหมด')
+                              : t('leaveTypes.all')
 
                         } />
 
@@ -1138,7 +1107,7 @@ const LeaveHistory = () => {
 
                         <SelectItem value="all" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">
 
-                          {t('leaveTypes.all', 'ทั้งหมด')}
+                          {t('leaveTypes.all')}
 
                         </SelectItem>
 
@@ -1150,7 +1119,7 @@ const LeaveHistory = () => {
 
                               <div className="w-4 h-4 border-2 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
 
-                              {t('common.loading', 'กำลังโหลด...')}
+                              {t('common.loading')}
 
                             </div>
 
@@ -1164,7 +1133,7 @@ const LeaveHistory = () => {
 
                               <XCircle className="w-4 h-4" />
 
-                              {t('common.error', 'เกิดข้อผิดพลาด')}
+                              {t('common.error')}
 
                             </div>
 
@@ -1206,7 +1175,7 @@ const LeaveHistory = () => {
 
                       <AlertCircle className="w-4 h-4 text-yellow-600" />
 
-                      {t('leave.status', 'สถานะ')}
+                      {t('leave.status')}
 
                     </Label>
 
@@ -1214,13 +1183,13 @@ const LeaveHistory = () => {
 
                       <SelectTrigger className="bg-white/80 backdrop-blur border-yellow-200 hover:bg-yellow-50 hover:border-yellow-300 transition-all duration-200 rounded-lg h-11 text-sm">
 
-                        <SelectValue placeholder={t('history.allStatuses', 'ทั้งหมด')} />
+                        <SelectValue placeholder={t('history.allStatuses')} />
 
                       </SelectTrigger>
 
                       <SelectContent className="border-0 shadow-xl rounded-xl">
 
-                        <SelectItem value="all" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{t('leave.statusAll', 'ทุกสถานะ')}</SelectItem>
+                        <SelectItem value="all" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{t('leave.statusAll')}</SelectItem>
 
                         {statusOptions.map(status => (
 
@@ -1248,7 +1217,7 @@ const LeaveHistory = () => {
 
                       <History className="w-4 h-4 text-purple-600" />
 
-                      {t('history.retroactiveLeave', 'การลาย้อนหลัง')}
+                      {t('history.retroactiveLeave')}
 
                     </Label>
 
@@ -1256,7 +1225,7 @@ const LeaveHistory = () => {
 
                       <SelectTrigger className="bg-white/80 backdrop-blur border-purple-200 hover:bg-purple-50 hover:border-purple-300 transition-all duration-200 rounded-lg h-11 text-sm">
 
-                        <SelectValue placeholder={t('history.allTypes', 'ทั้งหมด')} />
+                        <SelectValue placeholder={t('history.allTypes')} />
 
                       </SelectTrigger>
 
@@ -1268,7 +1237,7 @@ const LeaveHistory = () => {
 
                             <div className="w-3 h-3 rounded-full bg-gray-400"></div>
 
-                            {t('history.allTypes', 'ทั้งหมด')}
+                            {t('history.allTypes')}
 
                           </div>
 
@@ -1282,7 +1251,7 @@ const LeaveHistory = () => {
 
                             <CheckCircle className="w-4 h-4 text-green-600" />
 
-                            {t('history.normalLeave', 'การลาปกติ')}
+                            {t('history.normalLeave')}
 
                           </div>
 
@@ -1296,7 +1265,7 @@ const LeaveHistory = () => {
 
                             <History className="w-4 h-4 text-purple-600" />
 
-                            {t('history.retroactiveLeave', 'การลาย้อนหลัง')}
+                            {t('history.retroactiveLeave')}
 
                           </div>
 
@@ -1318,7 +1287,7 @@ const LeaveHistory = () => {
 
                       <Clock className="w-4 h-4 text-indigo-600" />
 
-                      {t('history.monthYear', 'เดือน/ปี')}
+                      {t('history.monthYear')}
 
                     </Label>
 
@@ -1336,13 +1305,13 @@ const LeaveHistory = () => {
 
                         <SelectTrigger className="w-20 bg-white/80 backdrop-blur border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-200 rounded-lg h-11 text-sm">
 
-                          <SelectValue placeholder={t('history.month', 'เดือน')} />
+                          <SelectValue placeholder={t('history.month')} />
 
                         </SelectTrigger>
 
                         <SelectContent className="border-0 shadow-xl rounded-xl">
 
-                          <SelectItem value="all" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{t('history.allMonths', 'ทุกเดือน')}</SelectItem>
+                          <SelectItem value="all" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{t('history.allMonths')}</SelectItem>
 
                           {allMonths.map(m => (
 
@@ -1366,13 +1335,13 @@ const LeaveHistory = () => {
 
                         <SelectTrigger className="w-20 bg-white/80 backdrop-blur border-indigo-200 hover:bg-indigo-50 hover:border-indigo-300 transition-all duration-200 rounded-lg h-11 text-sm">
 
-                          <SelectValue placeholder={t('history.year', 'ปี')} />
+                          <SelectValue placeholder={t('history.year')} />
 
                         </SelectTrigger>
 
                         <SelectContent className="border-0 shadow-xl rounded-xl">
 
-                          <SelectItem value="all" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{t('history.allYears', 'ทุกปี')}</SelectItem>
+                          <SelectItem value="all" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{t('history.allYears')}</SelectItem>
 
                           {allYears.map(y => (
 
@@ -1432,7 +1401,7 @@ const LeaveHistory = () => {
 
                             <History className="w-4 h-4 text-purple-600" />
 
-                            {t('history.showingRetroactive', 'แสดงเฉพาะการลาย้อนหลัง')}
+                            {t('history.showingRetroactive')}
 
                           </span>
 
@@ -1442,13 +1411,13 @@ const LeaveHistory = () => {
 
                             <CheckCircle className="w-4 h-4 text-green-600" />
 
-                            {t('history.showingNormal', 'แสดงเฉพาะการลาปกติ')}
+                            {t('history.showingNormal')}
 
                           </span>
 
                         ) : (
 
-                          t('history.activeFilters', 'มีตัวกรองที่ใช้งานอยู่')
+                          t('history.activeFilters')
 
                         )}
 
@@ -1462,7 +1431,7 @@ const LeaveHistory = () => {
 
                     <div className="text-sm text-gray-600">
 
-                      {leaveHistory.length} {t('history.results', 'ผลลัพธ์')}
+                      {leaveHistory.length} {t('history.results')}
 
                     </div>
 
@@ -1496,9 +1465,9 @@ const LeaveHistory = () => {
 
                   <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto mb-3 loading-pulse"></div>
 
-                  <p className="text-base font-medium text-blue-600 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>{t('common.loading', 'กำลังโหลด...')}</p>
+                  <p className="text-base font-medium text-blue-600 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>{t('common.loading')}</p>
 
-                  <p className="text-xs text-gray-500 mt-1 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>{t('history.loadingData', 'กำลังดึงข้อมูลประวัติการลา')}</p>
+                  <p className="text-xs text-gray-500 mt-1 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>{t('history.loadingData')}</p>
 
                 </div>
 
@@ -1516,7 +1485,7 @@ const LeaveHistory = () => {
 
                   </div>
 
-                  <p className="text-base font-medium text-red-600 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>{t('common.error', 'เกิดข้อผิดพลาด')}</p>
+                  <p className="text-base font-medium text-red-600 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>{t('common.error')}</p>
 
                   <p className="text-xs text-gray-500 mt-1 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>{error}</p>
 
@@ -1536,9 +1505,9 @@ const LeaveHistory = () => {
 
                   </div>
 
-                  <p className="text-base font-medium text-gray-600 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>{t('history.noLeaveHistory', 'ไม่พบประวัติการลา')}</p>
+                  <p className="text-base font-medium text-gray-600 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>{t('history.noLeaveHistory')}</p>
 
-                  <p className="text-xs text-gray-500 mt-1 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>{t('history.noLeaveHistoryDesc', 'ยังไม่มีประวัติการลาในระบบ')}</p>
+                  <p className="text-xs text-gray-500 mt-1 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>{t('history.noLeaveHistoryDesc')}</p>
 
                 </div>
 
@@ -1556,9 +1525,9 @@ const LeaveHistory = () => {
 
                   </div>
 
-                  <p className="text-base font-medium text-gray-700 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>{t('history.noResultsForFilter', 'ไม่พบผลลัพธ์สำหรับตัวกรองที่เลือก')}</p>
+                  <p className="text-base font-medium text-gray-700 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>{t('history.noResultsForFilter')}</p>
 
-                  <p className="text-xs text-gray-500 mt-1 mb-3 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>{t('history.tryDifferentFilter', 'ลองเปลี่ยนตัวกรองหรือล้างตัวกรองทั้งหมด')}</p>
+                  <p className="text-xs text-gray-500 mt-1 mb-3 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>{t('history.tryDifferentFilter')}</p>
 
                   <Button
 
@@ -1576,7 +1545,7 @@ const LeaveHistory = () => {
 
                     <X className="w-3 h-3 mr-1" />
 
-                    {t('history.clearAllFilters', 'ล้างตัวกรองทั้งหมด')}
+                    {t('history.clearAllFilters')}
 
                   </Button>
 
@@ -1589,13 +1558,9 @@ const LeaveHistory = () => {
               leaveHistory.map((leave, index) => (
 
                 <Card 
-
                   key={leave.id} 
-
-                  className="border-0 shadow-lg bg-white/90 backdrop-blur rounded-xl hover:shadow-xl hover:-translate-y-1 transition-all duration-300 transform hover:scale-[1.02] hover-lift card-entrance"
-
+                  className="glass shadow-xl border-0 hover:scale-[1.02] transition-all duration-300 hover-lift card-entrance"
                   style={{ animationDelay: `${index * 0.1}s` }}
-
                 >
 
                   <CardHeader className="pb-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
@@ -1604,7 +1569,7 @@ const LeaveHistory = () => {
 
                       <div className={`text-xl font-bold ${getTypeColor(leave.leaveTypeName_th || leave.leaveTypeName_en || leave.type)}`}>
 
-                        {getLeaveTypeLabel(leave.type) || leave.leaveTypeName_th || leave.leaveTypeName_en || translateLeaveType(leave.type)}
+                        {leave.leaveTypeName_th || leave.leaveTypeName_en || getLeaveTypeLabel(leave.type) || translateLeaveType(leave.type)}
 
                       </div>
 
@@ -1737,8 +1702,8 @@ const LeaveHistory = () => {
                                     className="text-blue-600 hover:text-blue-800 text-xs font-medium mt-1 transition-colors"
                                   >
                                     {expandedReason === leave.id 
-                                      ? t('common.showLess', 'แสดงน้อยลง') 
-                                      : t('common.showMore', 'แสดงเพิ่มเติม')
+                                      ? t('common.showLess') 
+                                      : t('common.showMore')
                                     }
                                   </button>
                                 </div>
@@ -1804,10 +1769,10 @@ const LeaveHistory = () => {
                                           onClick={() => setExpandedReject(expandedReject === leave.id ? null : leave.id)}
                                           className="text-red-600 hover:text-red-800 text-xs font-medium mt-1 transition-colors block"
                                         >
-                                          {expandedReject === leave.id 
-                                            ? t('common.showLess', 'แสดงน้อยลง') 
-                                            : t('common.showMore', 'แสดงเพิ่มเติม')
-                                          }
+                                                                                  {expandedReject === leave.id 
+                                          ? t('common.showLess') 
+                                          : t('common.showMore')
+                                        }
                                         </button>
                                       </div>
                                     ) : (
@@ -1827,19 +1792,13 @@ const LeaveHistory = () => {
                         <div className="flex justify-end mt-6 gap-2">
 
                           <Button 
-
                             size="sm" 
-
                             variant="outline" 
-
                             onClick={() => handleViewDetails(leave.id)}
-
                             className="transition-all duration-300 transform hover:scale-105 hover:shadow-md hover:bg-blue-50 hover:border-blue-300 btn-press hover-glow text-sm px-4 py-2"
-
                           >
-
+                              <Eye className="w-4 h-4 mr-1" />
                             {t('common.viewDetails')}
-
                           </Button>
 
                           {canDeleteLeave(leave) && (
@@ -1921,8 +1880,8 @@ const LeaveHistory = () => {
                               </Button>
                               <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">
                                 {leave.status !== 'pending' 
-                                  ? t('history.cannotDeleteNonPending', 'Only pending requests can be deleted')
-                                  : t('history.cannotDeleteNearDate', 'Cannot delete requests within 1 day of leave date')
+                                  ? t('history.cannotDeleteNonPending')
+                                  : t('history.cannotDeleteNearDate')
                                 }
                                 <div className="absolute top-full left-1/2 transform -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900"></div>
                               </div>
@@ -1947,7 +1906,7 @@ const LeaveHistory = () => {
 
             {(totalPages >= 1 || leaveHistory.length > 0) && (
 
-              <div className="flex flex-col sm:flex-row justify-center items-center mt-8 gap-4 p-6 bg-gradient-to-r from-white/90 via-blue-50/30 to-indigo-50/30 backdrop-blur rounded-xl border border-blue-100 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
+              <div className="flex flex-col sm:flex-row justify-center items-center mt-8 gap-4 p-6 glass shadow-xl border-0 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
 
                 {/* Pagination Info */}
 
@@ -2183,7 +2142,7 @@ const LeaveHistory = () => {
 
                   </Select>
 
-                  <span className="text-sm text-gray-600">{t('admin.itemsPerPage', 'รายการต่อหน้า')}</span>
+                  <span className="text-sm text-gray-600">{t('admin.itemsPerPage')}</span>
 
                 </div>
 
@@ -2213,7 +2172,7 @@ const LeaveHistory = () => {
 
             <DialogDescription>
 
-              {t('leave.detailDescription', 'Detailed information about this leave request.')}
+              {t('leave.detailDescription')}
 
             </DialogDescription>
 
@@ -2227,7 +2186,7 @@ const LeaveHistory = () => {
 
               {/* Header Section */}
 
-              <Card className="border-0 shadow-lg bg-gradient-to-r from-blue-50 to-indigo-50">
+              <Card className="glass shadow-2xl border-0">
 
                 <CardContent className="p-6">
 
@@ -2237,7 +2196,7 @@ const LeaveHistory = () => {
 
                       <div className={`text-3xl font-bold ${getTypeColor(selectedLeave.leaveTypeName_th || selectedLeave.leaveTypeName_en || selectedLeave.type)}`}>
 
-                        {getLeaveTypeLabel(selectedLeave.type) || selectedLeave.leaveTypeName_th || selectedLeave.leaveTypeName_en || translateLeaveType(selectedLeave.type)}
+                        {selectedLeave.leaveTypeName_th || selectedLeave.leaveTypeName_en || getLeaveTypeLabel(selectedLeave.type) || translateLeaveType(selectedLeave.type)}
 
                       </div>
 
@@ -2278,8 +2237,7 @@ const LeaveHistory = () => {
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
                 {/* Left Column - Basic Info */}
-
-                <Card className="border-0 shadow-md">
+                <Card className="glass shadow-2xl border-0">
 
                   <CardHeader className="pb-3">
 
@@ -2430,8 +2388,7 @@ const LeaveHistory = () => {
 
 
                 {/* Right Column - Status & Approval */}
-
-                <Card className="border-0 shadow-md">
+                <Card className="glass shadow-2xl border-0">
 
                   <CardHeader className="pb-3">
 
@@ -2526,8 +2483,7 @@ const LeaveHistory = () => {
 
 
               {/* Reason Section */}
-
-              <Card className="border-0 shadow-md">
+              <Card className="glass shadow-2xl border-0">
 
                 <CardHeader className="pb-3">
 
@@ -2588,78 +2544,91 @@ const LeaveHistory = () => {
 
 
               {/* Attachments Section */}
+              {(() => {
+                const files =
+                  (Array.isArray(selectedLeave.attachments) && selectedLeave.attachments.length > 0)
+                    ? selectedLeave.attachments
+                    : (typeof selectedLeave.attachments === 'string' && selectedLeave.attachments)
+                      ? [selectedLeave.attachments]
+                      : (Array.isArray(selectedLeave.attachment) && selectedLeave.attachment.length > 0)
+                        ? selectedLeave.attachment
+                        : (typeof selectedLeave.attachment === 'string' && selectedLeave.attachment)
+                          ? [selectedLeave.attachment]
+                          : (Array.isArray(selectedLeave.file) && selectedLeave.file.length > 0)
+                            ? selectedLeave.file
+                            : (typeof selectedLeave.file === 'string' && selectedLeave.file)
+                              ? [selectedLeave.file]
+                              : [];
+                if (files.length > 0) {
+                  return (
+                    <Card className="glass shadow-2xl border-0">
+                      <CardHeader className="pb-3">
+                        <div className="flex items-center gap-2">
+                          <FileText className="w-5 h-5 text-indigo-600" />
+                          <h3 className="text-lg font-semibold">{t('leave.attachments')}</h3>
+                          <Badge variant="secondary" className="ml-2">
+                            {files.length} {t('leave.files')}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          {files.map((file: string, idx: number) => {
+                            const fileName = file.split('/').pop() || file;
+                            const ext = fileName.split('.').pop()?.toLowerCase();
+                            const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext || '');
+                            // Construct the correct file path - always prepend /leave-uploads/ if not already present
+                            const fileUrl = file.startsWith('/leave-uploads/') ? file : `/leave-uploads/${file}`;
+                            const authenticatedFileUrl = createAuthenticatedFileUrl(fileUrl);
+                            return (
+                              <div key={file} className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
+                                {isImage ? (
+                                  <div className="space-y-3">
+                                    <img
+                                      src={authenticatedFileUrl}
+                                      alt={fileName}
+                                      className="w-full h-32 object-cover rounded-lg border"
+                                      onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        target.style.display = 'none';
+                                      }}
+                                    />
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-sm text-gray-600 truncate">{fileName}</span>
+                                      <Button size="sm" variant="outline" onClick={() => setPreviewImage({ url: authenticatedFileUrl, name: fileName })}>{t('common.view')}</Button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="space-y-3">
+                                    <div className="w-full h-32 bg-gray-200 rounded-lg flex items-center justify-center">
+                                      <FileText className="w-8 h-8 text-gray-400" />
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-sm text-gray-600 truncate">{fileName}</span>
+                                      <Button size="sm" variant="outline" onClick={() => window.open(authenticatedFileUrl, '_blank')}>{t('common.view')}</Button>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  );
+                }
+                return null;
+              })()}
 
-              {selectedLeave.attachments && Array.isArray(selectedLeave.attachments) && selectedLeave.attachments.length > 0 && (
-
-                <Card className="border-0 shadow-md">
-
-                  <CardHeader className="pb-3">
-
-                    <div className="flex items-center gap-2">
-
-                      <FileText className="w-5 h-5 text-indigo-600" />
-
-                      <h3 className="text-lg font-semibold">{t('leave.attachments')}</h3>
-
-                      <Badge variant="secondary" className="ml-2">
-
-                        {selectedLeave.attachments.length} {t('leave.files')}
-
-                      </Badge>
-
-                    </div>
-
-                  </CardHeader>
-
-                  <CardContent>
-
-                    <FileUpload
-
-                      attachments={selectedLeave.attachments.map((attachment: string) => {
-
-                        const fileName = attachment.split('/').pop() || attachment;
-
-                        const filePath = attachment.startsWith('/leave-uploads/') ? attachment : `/leave-uploads/${attachment}`;
-
-                        const authenticatedFilePath = createAuthenticatedFileUrl(filePath);
-
-                        // สร้าง File object จาก URL สำหรับ FileUpload component
-                        
-                        const file = new File([], fileName, {
-
-                          type: getFileType(fileName)
-
-                        });
-
-                        // เพิ่ม custom properties สำหรับ URL
-
-                        Object.defineProperty(file, 'url', {
-
-                          value: authenticatedFilePath,
-
-                          writable: false
-
-                        });
-
-                        return file;
-
-                      })}
-
-                      onFileUpload={() => {}} // ไม่ต้องทำอะไรในโหมด view
-
-                      onRemoveAttachment={() => {}} // ไม่ต้องทำอะไรในโหมด view
-
-                      readOnly={true} // เพิ่ม prop สำหรับโหมด read-only
-
-                    />
-
-                  </CardContent>
-
-                </Card>
-
-              )}
-
-
+      {previewImage && (
+        <ImagePreviewDialog
+          isOpen={!!previewImage}
+          onClose={() => setPreviewImage(null)}
+          imageUrl={previewImage.url}
+          imageName={previewImage.name}
+          title={t('leave.attachmentPreview', 'ตัวอย่างไฟล์แนบ')}
+        />
+      )}
 
 
 
@@ -2685,84 +2654,15 @@ const LeaveHistory = () => {
 
 
 
-      {/* Image Preview Dialog */}
-
-      <Dialog open={showImagePreview} onOpenChange={setShowImagePreview}>
-
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-hidden p-0 bg-black/95">
-
-          <DialogHeader className="absolute top-4 right-4 z-10">
-
-            <DialogTitle className="sr-only">Image Preview</DialogTitle>
-
-            <Button
-
-              variant="outline"
-
-              size="sm"
-
-              onClick={() => setShowImagePreview(false)}
-
-              className="bg-white/20 text-white border-white/30 hover:bg-white/30"
-
-            >
-
-              <X className="w-4 h-4" />
-
-            </Button>
-
-          </DialogHeader>
-
-          
-
-          {selectedImage && (
-
-            <div className="flex items-center justify-center h-full p-4">
-
-              <img 
-
-                src={selectedImage} 
-
-                alt="Preview"
-
-                className="max-w-full max-h-full object-contain rounded-lg shadow-2xl"
-
-                onError={(e) => {
-
-                  const target = e.target as HTMLImageElement;
-
-                  target.style.display = 'none';
-
-                }}
-
-              />
-
-            </div>
-
-          )}
-
-        </DialogContent>
-
-      </Dialog>
-
-
-
       <style>{`
 
-        .glass-card-history {
-
+        .glass {
           background: rgba(255,255,255,0.8);
-
           box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.10);
-
           backdrop-filter: blur(12px);
-
           -webkit-backdrop-filter: blur(12px);
-
           border-radius: 2rem;
-
           border: 1px solid rgba(255,255,255,0.18);
-
         }
 
 

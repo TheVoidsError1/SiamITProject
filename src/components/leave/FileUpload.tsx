@@ -131,22 +131,7 @@ export const FileUpload = ({
                       >
                         {t('common.view')}
                       </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          if ((file as any).url) {
-                            const link = document.createElement('a');
-                            link.href = (file as any).url;
-                            link.download = file.name.includes('/') ? file.name.split('/').pop() : file.name;
-                            link.click();
-                          }
-                        }}
-                        className="text-xs px-2 py-1"
-                      >
-                        {t('common.download')}
-                      </Button>
+
                     </>
                   )}
                   {/* Hide remove button in read-only mode */}

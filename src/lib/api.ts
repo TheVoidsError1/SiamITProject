@@ -1,6 +1,8 @@
 // Centralized API Service
 // This file provides a centralized way to handle all API calls with proper authentication
 
+import { apiEndpoints } from '@/constants/api';
+
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 // Helper function to get auth token
@@ -71,6 +73,34 @@ const fetchWithAuth = async (
   }
 };
 
+// Helper function to safely parse JSON response
+const safeJsonParse = async (response: Response) => {
+  try {
+    const text = await response.text();
+    if (!text) {
+      return { success: false, message: 'Empty response' };
+    }
+    
+    // Check if response is HTML (error page)
+    if (text.trim().startsWith('<!DOCTYPE') || text.trim().startsWith('<html')) {
+      return { 
+        success: false, 
+        message: 'Server returned HTML instead of JSON. This usually indicates a server error.',
+        status: response.status 
+      };
+    }
+    
+    return JSON.parse(text);
+  } catch (error) {
+    console.error('JSON parsing error:', error);
+    return { 
+      success: false, 
+      message: 'Invalid JSON response from server',
+      error: error instanceof Error ? error.message : 'Unknown error'
+    };
+  }
+};
+
 // API Service object with common HTTP methods
 export const apiService = {
   // GET request
@@ -79,7 +109,8 @@ export const apiService = {
     const response = await fetchWithAuth(url, {
       method: 'GET'
     }, logoutFn, sessionExpiredFn);
-    return response?.json();
+    if (!response) return { success: false, message: 'No response received' };
+    return await safeJsonParse(response);
   },
 
   // POST request
@@ -91,7 +122,8 @@ export const apiService = {
       body: isFormData ? data : JSON.stringify(data),
       headers: isFormData ? undefined : undefined // let createAuthHeaders handle
     }, logoutFn, sessionExpiredFn);
-    return response?.json();
+    if (!response) return { success: false, message: 'No response received' };
+    return await safeJsonParse(response);
   },
 
   // PUT request
@@ -103,7 +135,8 @@ export const apiService = {
       body: isFormData ? data : JSON.stringify(data),
       headers: isFormData ? undefined : undefined
     }, logoutFn, sessionExpiredFn);
-    return response?.json();
+    if (!response) return { success: false, message: 'No response received' };
+    return await safeJsonParse(response);
   },
 
   // DELETE request
@@ -112,7 +145,8 @@ export const apiService = {
     const response = await fetchWithAuth(url, {
       method: 'DELETE'
     }, logoutFn, sessionExpiredFn);
-    return response?.json();
+    if (!response) return { success: false, message: 'No response received' };
+    return await safeJsonParse(response);
   },
 
   // PATCH request
@@ -124,103 +158,14 @@ export const apiService = {
       body: isFormData ? data : JSON.stringify(data),
       headers: isFormData ? undefined : undefined
     }, logoutFn, sessionExpiredFn);
-    return response?.json();
+    if (!response) return { success: false, message: 'No response received' };
+    return await safeJsonParse(response);
   }
 };
 
 // Specific API endpoints for better organization
-export const apiEndpoints = {
-  // Auth endpoints
-  auth: {
-    login: '/api/login',
-    register: '/api/register',
-    profile: '/api/profile',
-    avatar: '/api/avatar',
-    userProfile: '/api/user-profile'
-  },
-
-  // Leave management
-  leave: {
-    requests: '/api/leave-request',
-    pending: '/api/leave-request/pending',
-    detail: (id: string) => `/api/leave-request/detail/${id}`,
-    status: (id: string) => `/api/leave-request/${id}/status`,
-    delete: (id: string) => `/api/leave-request/${id}`,
-    calendar: (year: number) => `/api/leave-request/calendar/${year}`,
-    calendarWithMonth: (year: number, month: number) => `/api/leave-request/calendar/${year}?month=${month}`
-  },
-
-  // Employee management
-  employees: {
-    list: '/api/employees',
-    detail: (id: string) => `/api/employee/${id}`,
-    leaveHistory: (id: string, query?: string) => `/api/employee/${id}/leave-history${query || ''}`,
-    avatar: (id: string) => `/api/employee/${id}/avatar`
-  },
-
-  // Departments and positions
-  departments: '/api/departments',
-  positions: '/api/positions',
-  positionsWithQuotas: '/api/positions-with-quotas',
-
-  // Leave types
-  leaveTypes: '/api/leave-types',
-  leaveType: (id: string) => `/api/leave-types/${id}`,
-
-  // Announcements
-  announcements: '/api/announcements',
-  announcement: (id: string) => `/api/announcements/${id}`,
-
-  // Company calendar
-  customHolidays: '/api/custom-holidays',
-  customHoliday: (id: string) => `/api/custom-holidays/${id}`,
-  customHolidaysByYear: (year: number) => `/api/custom-holidays/year/${year}`,
-  customHolidaysByYearMonth: (year: number, month: number) => `/api/custom-holidays/year/${year}/month/${month}`,
-
-  // Notifications
-  notifications: '/api/notifications',
-  markAsRead: (id: string) => `/api/notifications/${id}/read`,
-  markAllAsRead: '/api/notifications/read',
-
-  // LINE integration
-  line: {
-    linkStatus: '/api/line/link-status',
-    loginUrl: '/api/line/login-url',
-    unlink: '/api/line/unlink'
-  },
-
-  // Dashboard
-  dashboard: {
-    stats: '/api/dashboard-stats',
-    recentLeaves: '/api/recent-leave-requests',
-    myBackdated: '/api/my-backdated'
-  },
-
-  // Leave History
-  leaveHistory: {
-    list: '/api/leave-history',
-    filters: '/api/leave-history/filters'
-  },
-
-  // Leave Quota
-  leaveQuota: {
-    me: '/api/leave-quota/me'
-  },
-
-  // Admin
-  admin: {
-    leaveHistory: '/api/leave-request/history',
-    leavePending: '/api/leave-request/pending',
-    dashboardStats: '/api/leave-request/dashboard-stats'
-  },
-
-  // Super Admin
-  superAdmin: {
-    delete: (id: string) => `/api/superadmin/${id}`,
-    admins: (id: string) => `/api/admins/${id}`,
-    users: (id: string) => `/api/users/${id}`
-  }
-};
+// ลบส่วนนี้ออก (ย้ายไป constants แล้ว)
+// export const apiEndpoints = { ... }
 
 // Export the fetchWithAuth function for backward compatibility
 export { fetchWithAuth }; 

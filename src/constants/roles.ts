@@ -1,37 +1,27 @@
-// Role constants used throughout the application
+// Roles
+export const ROLES = ['user', 'admin', 'superadmin'] as const;
+export type Role = typeof ROLES[number];
 
-export const ROLES = {
-  EMPLOYEE: 'employee',
-  ADMIN: 'admin',
-  SUPER_ADMIN: 'superadmin'
-} as const;
+// Tabs (frontend role labels)
+export const TABS = ['employee', 'admin', 'superadmin'] as const;
+export type Tab = typeof TABS[number];
 
-export type UserRole = typeof ROLES[keyof typeof ROLES];
+// Password Strength
+export const PASSWORD_STRENGTH = ['weak', 'medium', 'strong'] as const;
+export type PasswordStrength = typeof PASSWORD_STRENGTH[number];
 
-// Role display names for different languages
-export const ROLE_DISPLAY_NAMES = {
-  [ROLES.EMPLOYEE]: {
-    th: 'พนักงาน',
-    en: 'Employee'
-  },
-  [ROLES.ADMIN]: {
-    th: 'ผู้ดูแลระบบ',
-    en: 'Administrator'
-  },
-  [ROLES.SUPER_ADMIN]: {
-    th: 'ผู้ดูแลระบบสูงสุด',
-    en: 'Super Administrator'
-  }
-} as const;
+// Status
+export const LEAVE_STATUS = ['pending', 'approved', 'rejected'] as const;
+export type LeaveStatus = typeof LEAVE_STATUS[number];
 
-// Role hierarchy for permissions
-export const ROLE_HIERARCHY = {
-  [ROLES.EMPLOYEE]: 1,
-  [ROLES.ADMIN]: 2,
-  [ROLES.SUPER_ADMIN]: 3
-} as const;
+// Notification Type
+export const NOTIFICATION_TYPE = ['info', 'success', 'warning', 'error'] as const;
+export type NotificationType = typeof NOTIFICATION_TYPE[number];
 
-// Check if a role has permission over another
-export const hasRolePermission = (userRole: UserRole, requiredRole: UserRole): boolean => {
-  return ROLE_HIERARCHY[userRole] >= ROLE_HIERARCHY[requiredRole];
-};
+// Calendar Event Type
+export const CALENDAR_TYPE = ['company', 'annual', 'employee'] as const;
+export type CalendarType = typeof CALENDAR_TYPE[number];
+
+// Special values
+export const NO_DEPARTMENT = 'No Department';
+export const NO_POSITION = 'No Position';

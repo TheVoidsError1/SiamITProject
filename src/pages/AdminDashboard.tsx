@@ -16,10 +16,11 @@ import { AlertCircle, Calendar, CalendarIcon, CheckCircle, ChevronLeft, ChevronR
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { monthNames } from '../constants/common';
-import { apiEndpoints, apiService, createAuthenticatedFileUrl } from '../lib/api';
+import { apiEndpoints } from '@/constants/api';
 import { showToastMessage } from '../lib/toast';
 import { formatDateLocalized, formatDateOnly } from '../lib/utils';
 import ImagePreviewDialog from '@/components/dialogs/ImagePreviewDialog';
+import { apiService, createAuthenticatedFileUrl } from '../lib/api';
 
 type LeaveRequest = {
   id: number;
@@ -581,12 +582,24 @@ const AdminDashboard = () => {
   // --- ฟังก์ชันกลางสำหรับแสดงชื่อประเภทการลา ---
   function getLeaveTypeDisplay(typeIdOrName: string) {
     if (!typeIdOrName) return '';
+    
+    // First, try to find in pendingLeaveTypes (active leave types)
     const found = pendingLeaveTypes.find(
       lt => lt.id === typeIdOrName || lt.leave_type === typeIdOrName || lt.leave_type_th === typeIdOrName || lt.leave_type_en === typeIdOrName
     );
     if (found) {
       return i18n.language.startsWith('th') ? found.leave_type_th : found.leave_type_en;
     }
+    
+    // If not found in active types, check if it's a UUID (inactive/deleted leave type)
+    if (typeIdOrName.length > 20) {
+      // This is likely a UUID of an inactive/deleted leave type
+      // The backend should have provided leaveTypeName_th and leaveTypeName_en
+      // For now, return a fallback message
+      return i18n.language.startsWith('th') ? 'ประเภทการลาที่ถูกลบ' : 'Deleted Leave Type';
+    }
+    
+    // Fallback to translation or original value
     return String(t('leaveTypes.' + typeIdOrName, typeIdOrName));
   }
 
@@ -1016,7 +1029,7 @@ const AdminDashboard = () => {
                 </div>
                 {/* Date Filter */}
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.4s' }}>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.date', 'วันที่')}</label>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.date')}</label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -1055,7 +1068,7 @@ const AdminDashboard = () => {
                 </div>
                 {/* Month Filter */}
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.5s' }}>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.month', 'เดือน')}</label>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.month')}</label>
                   <select
                     className={`border border-blue-200 rounded-xl px-3 py-2 w-32 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press ${
                       pendingPendingSingleDate 
@@ -1074,7 +1087,7 @@ const AdminDashboard = () => {
                 </div>
                 {/* Year Filter */}
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.6s' }}>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.year', 'ปี')}</label>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.year')}</label>
                   <input
                     type="number"
                     min={2000}
@@ -1153,11 +1166,14 @@ const AdminDashboard = () => {
                             <div className="font-bold text-lg text-blue-900 mb-1 truncate animate-slide-in-left">{typeof request.user === "string" ? JSON.parse(request.user).User_name : request.user?.User_name || "-"}</div>
                             {/* ประเภทการลา (leaveType) */}
                             <span className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold mb-1 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-                              {getLeaveTypeDisplay(request.leaveType || request.leaveTypeName)}
+                              {request.leaveTypeName_th && request.leaveTypeName_en 
+                                ? (i18n.language.startsWith('th') ? request.leaveTypeName_th : request.leaveTypeName_en)
+                                : getLeaveTypeDisplay(request.leaveType || request.leaveTypeName)
+                              }
                             </span>
                             {(request.backdated === 1 || request.backdated === "1" || request.backdated === true) && (
                               <Badge className="ml-2 bg-purple-100 text-purple-800 border-purple-200 rounded-full px-3 py-1 text-xs font-bold shadow animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-                                {t('leave.backdated', 'ลาย้อนหลัง')}
+                                {t('leave.backdated')}
                               </Badge>
                             )}
                             <div className="text-sm text-gray-700 mb-1 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>{t('leave.date')}: {request.startDate} - {request.endDate}</div>
@@ -1197,7 +1213,7 @@ const AdminDashboard = () => {
                             <div className="w-px h-4 bg-gray-300"></div>
                             <div className="flex items-center gap-2">
                               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                              <span>{pendingRequests.length} {t('admin.results', 'ผลลัพธ์')}</span>
+                              <span>{pendingRequests.length} {t('admin.results')}</span>
                             </div>
                           </div>
 
@@ -1221,7 +1237,7 @@ const AdminDashboard = () => {
                                   const pages = [];
                                   const maxPageButtons = 5;
                                   let start = Math.max(1, pendingPage - 2);
-                                  let end = Math.min(pendingTotalPages, start + maxPageButtons - 1);
+                                  const end = Math.min(pendingTotalPages, start + maxPageButtons - 1);
                                   if (end - start < maxPageButtons - 1) {
                                     start = Math.max(1, end - maxPageButtons + 1);
                                   }
@@ -1305,7 +1321,7 @@ const AdminDashboard = () => {
                                 ))}
                               </SelectContent>
                             </Select>
-                            <span className="text-sm text-gray-600">{t('admin.itemsPerPage', 'รายการต่อหน้า')}</span>
+                            <span className="text-sm text-gray-600">{t('admin.itemsPerPage')}</span>
                           </div>
                         </div>
                       )}
@@ -1335,7 +1351,7 @@ const AdminDashboard = () => {
                 </div>
                 {/* Month Filter */}
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.5s' }}>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.month', 'เดือน')}</label>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.month')}</label>
                   <select
                     className="border border-blue-200 rounded-xl px-3 py-2 w-32 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
                     value={pendingFilterMonth}
@@ -1349,7 +1365,7 @@ const AdminDashboard = () => {
                 </div>
                 {/* Year Filter */}
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.6s' }}>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.year', 'ปี')}</label>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.year')}</label>
                   <input
                     type="number"
                     min={2000}
@@ -1461,12 +1477,15 @@ const AdminDashboard = () => {
                             <div className="flex-1 min-w-0">
                               <div className="font-bold text-lg text-blue-900 mb-1 truncate animate-slide-in-left">{request.user?.User_name || "-"}</div>
                               {/* ประเภทการลา (leaveType) */}
-                              <span className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold mb-1 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-                                {getLeaveTypeDisplay(request.leaveType || request.leaveTypeName)}
-                              </span>
+                                                          <span className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold mb-1 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                              {request.leaveTypeName_th && request.leaveTypeName_en 
+                                ? (i18n.language.startsWith('th') ? request.leaveTypeName_th : request.leaveTypeName_en)
+                                : getLeaveTypeDisplay(request.leaveType || request.leaveTypeName)
+                              }
+                            </span>
                               {(request.backdated === 1 || request.backdated === "1" || request.backdated === true) && (
                                 <Badge className="ml-2 bg-purple-100 text-purple-800 border-purple-200 rounded-full px-3 py-1 text-xs font-bold shadow animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-                                  {t('leave.backdated', 'ลาย้อนหลัง')}
+                                  {t('leave.backdated')}
                                 </Badge>
                               )}
                               <div className="text-sm text-gray-700 mb-1 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>{t('leave.date')}: {startStr} - {endStr} ({leaveDays} {t('leave.days')})</div>
@@ -1503,7 +1522,7 @@ const AdminDashboard = () => {
                             <div className="w-px h-4 bg-gray-300"></div>
                             <div className="flex items-center gap-2">
                               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                              <span>{historyRequests.length} {t('admin.results', 'ผลลัพธ์')}</span>
+                              <span>{historyRequests.length} {t('admin.results')}</span>
                             </div>
                           </div>
 
@@ -1527,7 +1546,7 @@ const AdminDashboard = () => {
                                   const pages = [];
                                   const maxPageButtons = 5;
                                   let start = Math.max(1, historyPage - 2);
-                                  let end = Math.min(historyTotalPages, start + maxPageButtons - 1);
+                                  const end = Math.min(historyTotalPages, start + maxPageButtons - 1);
                                   if (end - start < maxPageButtons - 1) {
                                     start = Math.max(1, end - maxPageButtons + 1);
                                   }
@@ -1611,7 +1630,7 @@ const AdminDashboard = () => {
                                 ))}
                               </SelectContent>
                             </Select>
-                            <span className="text-sm text-gray-600">{t('admin.itemsPerPage', 'รายการต่อหน้า')}</span>
+                            <span className="text-sm text-gray-600">{t('admin.itemsPerPage')}</span>
                           </div>
                         </div>
                       )}
@@ -1643,7 +1662,10 @@ const AdminDashboard = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className={`text-3xl font-bold text-blue-900`}>
-                        {getLeaveTypeDisplay(selectedRequest.leaveType || selectedRequest.leaveTypeName || selectedRequest.leaveTypeName_th || selectedRequest.leaveTypeName_en)}
+                                                    {selectedRequest.leaveTypeName_th && selectedRequest.leaveTypeName_en 
+                              ? (i18n.language.startsWith('th') ? selectedRequest.leaveTypeName_th : selectedRequest.leaveTypeName_en)
+                              : getLeaveTypeDisplay(selectedRequest.leaveType || selectedRequest.leaveTypeName)
+                            }
                       </div>
                     </div>
                     <div className="text-right">
@@ -1667,7 +1689,7 @@ const AdminDashboard = () => {
                     )}
                     {/* Badge ลาย้อนหลัง */}
                     {(selectedRequest.backdated === 1 || selectedRequest.backdated === "1" || selectedRequest.backdated === true) && (
-                      <Badge className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 border-purple-200 shadow-sm hover:shadow-md transition-all duration-200"><History className="w-3 h-3 mr-1" />{t('history.retroactiveLeave', 'การลาย้อนหลัง')}</Badge>
+                      <Badge className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 border-purple-200 shadow-sm hover:shadow-md transition-all duration-200"><History className="w-3 h-3 mr-1" />{t('history.retroactiveLeave')}</Badge>
                     )}
                   </div>
                 </CardContent>
@@ -1725,13 +1747,13 @@ const AdminDashboard = () => {
                     )}
                     {/* ลาเป็น ชม. */}
                     <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-600">{t('leave.leaveTime', 'ลาเป็น ชม.')}</Label>
+                      <Label className="text-sm font-medium text-gray-600">{t('leave.leaveTime')}</Label>
                       <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
                         <Clock className="w-4 h-4 text-blue-500" />
                         <span className="font-medium text-blue-900">
                           {selectedRequest.startTime && selectedRequest.endTime
                             ? `${selectedRequest.startTime} - ${selectedRequest.endTime} (${calcHours(selectedRequest.startTime, selectedRequest.endTime)} ${hourUnit})`
-                            : t('leave.noHourlyLeave', 'ไม่มีการลาเป็น ชม.')}
+                            : t('leave.noHourlyLeave')}
                         </span>
                       </div>
                     </div>
@@ -1921,7 +1943,7 @@ const AdminDashboard = () => {
           onClose={() => setPreviewImage(null)}
           imageUrl={previewImage.url}
           imageName={previewImage.name}
-          title={t('leave.attachmentPreview', 'ตัวอย่างไฟล์แนบ')}
+                          title={t('leave.attachmentPreview')}
         />
       )}
 
@@ -1929,17 +1951,17 @@ const AdminDashboard = () => {
       <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{t('admin.rejectReasonTitle', 'กรุณาระบุเหตุผลในการไม่อนุมัติ')}</DialogTitle>
+            <DialogTitle>{t('admin.rejectReasonTitle')}</DialogTitle>
           </DialogHeader>
           <textarea
             className="w-full border rounded p-2 mt-2 break-all overflow-wrap-anywhere whitespace-pre-wrap"
             rows={3}
-            placeholder={t('admin.rejectReasonPlaceholder', 'กรอกเหตุผล...')}
+                          placeholder={t('admin.rejectReasonPlaceholder')}
             value={rejectReason}
             onChange={e => setRejectReason(e.target.value)}
           />
           <DialogFooter className="flex gap-2 justify-end mt-4">
-            <Button variant="outline" onClick={() => setShowRejectDialog(false)}>{t('common.back', 'ย้อนกลับ')}</Button>
+            <Button variant="outline" onClick={() => setShowRejectDialog(false)}>{t('common.back')}</Button>
             <Button variant="destructive" onClick={confirmReject} disabled={!rejectReason.trim()}>{t('common.confirm')}</Button>
           </DialogFooter>
         </DialogContent>
@@ -1949,13 +1971,13 @@ const AdminDashboard = () => {
       <Dialog open={showApproveDialog} onOpenChange={setShowApproveDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{t('admin.approveConfirmTitle', 'ยืนยันการอนุมัติ')}</DialogTitle>
+            <DialogTitle>{t('admin.approveConfirmTitle')}</DialogTitle>
             <DialogDescription>
               {t('admin.approveConfirmDesc', { name: approvingRequest?.employeeName || '' })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2 justify-end mt-4">
-            <Button variant="outline" onClick={() => setShowApproveDialog(false)}>{t('common.cancel', 'ยกเลิก')}</Button>
+            <Button variant="outline" onClick={() => setShowApproveDialog(false)}>{t('common.cancel')}</Button>
             <Button className="bg-green-600 hover:bg-green-700" onClick={confirmApprove}>{t('common.confirm')}</Button>
           </DialogFooter>
         </DialogContent>
@@ -1965,13 +1987,13 @@ const AdminDashboard = () => {
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{t('system.confirmDeleteLeave', 'ยืนยันการลบใบลา')}</DialogTitle>
+            <DialogTitle>{t('system.confirmDeleteLeave')}</DialogTitle>
             <DialogDescription>
-              {t('system.confirmDeleteLeaveDesc', 'คุณต้องการลบใบลานี้หรือไม่?')}
+              {t('system.confirmDeleteLeaveDesc')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2 justify-end mt-4">
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>{t('common.cancel', 'ยกเลิก')}</Button>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>{t('common.cancel')}</Button>
             <Button variant="destructive" onClick={confirmDelete}>{t('common.confirm', 'ยืนยัน')}</Button>
           </DialogFooter>
         </DialogContent>

@@ -24,7 +24,9 @@ import { Calendar, Camera, ChevronLeft, Edit, Eye, Mail, Trash2, User } from "lu
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
-import { API_BASE_URL, apiEndpoints, apiService } from '../lib/api';
+import { API_BASE_URL, apiService } from '../lib/api';
+import { apiEndpoints } from '@/constants/api';
+import { LeaveRequest } from '@/types';
 
 const EmployeeDetail = () => {
   const { id } = useParams();
@@ -55,7 +57,7 @@ const EmployeeDetail = () => {
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [leaveHistory, setLeaveHistory] = useState([]);
+  const [leaveHistory, setLeaveHistory] = useState<LeaveRequest[]>([]);
   const [leaveSummary, setLeaveSummary] = useState<{ days: number, hours: number, totalLeaveDays: number } | null>(null); // <--- เพิ่ม state
   // เพิ่ม state สำหรับ processCheckId
   const [processCheckId, setProcessCheckId] = useState(null);
@@ -107,7 +109,7 @@ const EmployeeDetail = () => {
   // --- Move fetch leave history logic to a function ---
   const fetchLeaveHistory = async () => {
     if (!id) return;
-    let params = [];
+    const params = [];
     if (filterType && filterType !== "all") params.push(`leaveType=${encodeURIComponent(filterType)}`);
     if (filterMonth && filterMonth !== "all" && filterYear && filterYear !== "all") {
       params.push(`month=${filterMonth}`);
@@ -241,7 +243,7 @@ const EmployeeDetail = () => {
     if (user?.role === 'admin' && (employee?.role === 'superadmin' || role === 'superadmin')) {
       toast({
         title: t('error.title'),
-        description: t('employee.adminCannotEditSuperadmin', 'Admins cannot edit superadmin information.'),
+        description: t('employee.adminCannotEditSuperadmin'),
         variant: 'destructive',
       });
       return;
@@ -314,10 +316,34 @@ const EmployeeDetail = () => {
     });
   };
 
-  const handleViewLeaveDetails = (leave) => {
+  const handleViewLeaveDetails = async (leave) => {
     console.log('View Details clicked. leave:', leave, 'leave.id:', leave.id);
-    setSelectedLeave(leave);
+    
+    // First try to use the existing leave data
+    const leaveData = leaveHistory.find(l => l.id === leave.id);
+    if (leaveData) {
+      setSelectedLeave(leaveData);
+      setLeaveDialogOpen(true);
+      return;
+    }
+
+    // If not found in existing data, try to fetch from API
+    setSelectedLeave(null);
     setLeaveDialogOpen(true);
+
+    try {
+      const data = await apiService.get(apiEndpoints.leave.detail(leave.id), undefined, showSessionExpiredDialog);
+      if (data && data.success) {
+        const leaveDetail = {
+          ...data.data,
+          startDate: data.data.startDate || data.data.leaveDate || '-',
+          submittedDate: data.data.createdAt || data.data.submittedDate || '-',
+        };
+        setSelectedLeave(leaveDetail);
+      }
+    } catch (e) {
+      console.error('Error fetching leave detail:', e);
+    }
   };
 
   // เพิ่มฟังก์ชันนี้ด้านบน component
@@ -882,7 +908,7 @@ const EmployeeDetail = () => {
                   {/* Backdated Filter */}
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
-                      {t('leave.backdatedOnly', 'เฉพาะย้อนหลัง')}
+                      {t('leave.backdatedOnly')}
                     </label>
                     <select
                       className="w-full py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
@@ -890,8 +916,8 @@ const EmployeeDetail = () => {
                       onChange={(e) => setPendingFilterBackdated(e.target.value)}
                     >
                       <option value="all">{t('common.all')}</option>
-                      <option value="1">{t('leave.backdated', 'ลาย้อนหลัง')}</option>
-                      <option value="0">{t('leave.notBackdated', 'ไม่ใช่ลาย้อนหลัง')}</option>
+                      <option value="1">{t('leave.backdated')}</option>
+                      <option value="0">{t('leave.notBackdated')}</option>
                     </select>
                   </div>
 
@@ -924,14 +950,14 @@ const EmployeeDetail = () => {
                       }}
                       type="button"
                     >
-                      {t('common.confirm', 'ยืนยัน')}
+                      {t('common.confirm')}
                     </button>
                     <button
                       className="min-h-[42px] min-w-[100px] px-5 py-2.5 rounded-lg font-bold border border-blue-300 text-blue-700 bg-white hover:bg-blue-50 shadow transition-all duration-200 text-sm"
                       onClick={resetFilters}
                       type="button"
                     >
-                      {t('common.reset', 'รีเซ็ต')}
+                      {t('common.reset')}
                     </button>
                   </div>
                 </div>
@@ -963,17 +989,21 @@ const EmployeeDetail = () => {
                   </TableHeader>
                   <TableBody>
                     {Array.isArray(leaveHistory) && leaveHistory.map((leave, idx) => {
-                      // เพิ่ม debug log
-                      console.log(`🎨 Rendering leave ${idx}:`, { id: leave.id, backdated: leave.backdated, leaveType: leave.leaveType });
+
                       
                       return (
                         <TableRow key={leave.id} className="hover:bg-blue-50/60 group animate-fade-in-up border-b border-gray-100" style={{ animationDelay: `${idx * 60}ms` }}>
                           <TableCell className="font-medium text-blue-900 px-4 py-3">
                             <div className="flex items-center gap-2">
-                              <span className="font-semibold text-sm whitespace-nowrap">{getLeaveTypeLabel(leave.leaveType)}</span>
+                              <span className="font-semibold text-sm whitespace-nowrap">
+                                {i18n.language.startsWith('th') 
+                                  ? (leave.leaveTypeName_th || leave.leaveTypeName_en || getLeaveTypeLabel(leave.leaveType))
+                                  : (leave.leaveTypeName_en || leave.leaveTypeName_th || getLeaveTypeLabel(leave.leaveType))
+                                }
+                              </span>
                               {isBackdatedLeave(leave) && (
                                 <Badge className="bg-red-100 text-red-700 border-red-200 text-xs px-1.5 py-0.5 w-fit whitespace-nowrap">
-                                  {t('leave.backdated', 'ลาย้อนหลัง')}
+                                  {t('leave.backdated')}
                                 </Badge>
                               )}
                             </div>
@@ -1089,7 +1119,7 @@ const EmployeeDetail = () => {
                           <TableCell colSpan={7} className="text-center py-6 text-gray-500">
                             <div className="flex flex-col items-center gap-2">
                               <Calendar className="w-6 h-6 text-gray-300" />
-                              <span className="text-sm">{t('leave.noHistory', 'ไม่มีประวัติการลา')}</span>
+                              <span className="text-sm">{t('leave.noHistory')}</span>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -1101,7 +1131,7 @@ const EmployeeDetail = () => {
             {leaveTotalPages > 1 && leaveHistory.length > 0 && (
                 <div className="flex justify-center items-center mt-4 gap-2 p-3 bg-gray-50 rounded-lg">
                   <span className="text-sm text-gray-600 mr-2">
-                    {t('common.page', 'หน้า')} {leavePage} {t('common.of', 'จาก')} {leaveTotalPages}
+                    {t('common.page')} {leavePage} {t('common.of')} {leaveTotalPages}
                   </span>
                   <div className="flex gap-1">
                 {Array.from({ length: leaveTotalPages }, (_, i) => (
