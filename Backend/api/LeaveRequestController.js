@@ -2365,8 +2365,8 @@
 
         // Handle attachments
         if (req.files && req.files.length > 0) {
-          const attachmentPaths = req.files.map(file => file.path);
-          leaveRequest.attachments = JSON.stringify(attachmentPaths);
+          const attachmentFilenames = req.files.map(file => file.filename);
+          leaveRequest.attachments = JSON.stringify(attachmentFilenames);
         }
 
         const savedLeaveRequest = await leaveRepo.save(leaveRequest);
