@@ -413,8 +413,11 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
       if (durationType === 'hour' && leaveDate instanceof Date && !isNaN(leaveDate.getTime())) {
         formData.append("leaveDate", formatDateLocal(leaveDate));
       }
-      if (startTime) formData.append("startTime", startTime);
-      if (endTime) formData.append("endTime", endTime);
+      // Only send time fields for hourly leave
+      if (durationType === 'hour') {
+        if (startTime) formData.append("startTime", startTime);
+        if (endTime) formData.append("endTime", endTime);
+      }
       formData.append("reason", reason);
       formData.append("contact", contact);
       // แนบไฟล์ทุกประเภทใน attachments array

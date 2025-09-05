@@ -349,7 +349,7 @@
         }
         const {
           /* employeeType, */ leaveType, personalLeaveType, startDate, endDate,
-          startTime, endTime, reason, supervisor, contact
+          startTime, endTime, reason, supervisor, contact, durationType
         } = req.body;
 
         // --- Validation: quota ---
@@ -582,8 +582,8 @@
           leaveType,
           startDate,
           endDate,
-          startTime,
-          endTime,
+          startTime: durationType === 'hour' ? (startTime || null) : null,
+          endTime: durationType === 'hour' ? (endTime || null) : null,
           reason,
           supervisor,
           contact,
@@ -2380,8 +2380,8 @@
           leaveType: leaveTypeEntity.id,
           startDate: startDate,
           endDate: durationType === 'hour' ? startDate : endDate,
-          startTime: startTime || null,
-          endTime: endTime || null,
+          startTime: durationType === 'hour' ? (startTime || null) : null,
+          endTime: durationType === 'hour' ? (endTime || null) : null,
           reason: reason,
           contact: contact,
           status: approvalStatus,

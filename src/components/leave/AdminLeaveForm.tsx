@@ -339,16 +339,17 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
       if (durationType === 'day') {
         if (startDate) formData.append("startDate", startDate);
         if (endDate) formData.append("endDate", endDate);
+        // For full day leave, don't send time fields
       } else if (durationType === 'hour') {
         // For hourly leave, use leaveDate as startDate and endDate
         if (leaveDate) {
           formData.append("startDate", leaveDate);
           formData.append("endDate", leaveDate);
         }
+        // Only send time fields for hourly leave
+        if (startTime) formData.append("startTime", startTime);
+        if (endTime) formData.append("endTime", endTime);
       }
-      
-      if (startTime) formData.append("startTime", startTime);
-      if (endTime) formData.append("endTime", endTime);
       formData.append("reason", reason);
       formData.append("contact", contact);
       
