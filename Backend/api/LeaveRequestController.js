@@ -2029,24 +2029,46 @@
            console.error('Failed to decrement LeaveUsed on delete:', adjustErr);
          }
          
-         // Delete attachment files from file system
+         // HARD DELETE attachment files from file system
          if (leave.attachments) {
            try {
              const attachments = parseAttachments(leave.attachments);
              const leaveUploadsPath = config.getLeaveUploadsPath();
              
+             console.log(`🗑️  Hard deleting ${attachments.length} attachment files...`);
+             
              for (const attachment of attachments) {
                const filePath = path.join(leaveUploadsPath, attachment);
-               if (fs.existsSync(filePath)) {
-                 fs.unlinkSync(filePath);
-                 console.log(`Deleted attachment file: ${filePath}`);
-               } else {
-                 console.log(`Attachment file not found: ${filePath}`);
+               
+               try {
+                 if (fs.existsSync(filePath)) {
+                   // Force delete the file (hard delete)
+                   fs.unlinkSync(filePath);
+                   
+                   // Verify file is actually deleted
+                   if (!fs.existsSync(filePath)) {
+                     console.log(`✅ HARD DELETED: ${attachment}`);
+                   } else {
+                     console.error(`❌ FAILED to delete: ${attachment} - file still exists`);
+                   }
+                 } else {
+                   console.log(`⚠️  File not found (already deleted?): ${attachment}`);
+                 }
+               } catch (fileDeleteError) {
+                 console.error(`❌ Error deleting file ${attachment}:`, fileDeleteError.message);
+                 
+                 // Try alternative deletion method
+                 try {
+                   fs.rmSync(filePath, { force: true });
+                   console.log(`✅ Force deleted: ${attachment}`);
+                 } catch (forceDeleteError) {
+                   console.error(`❌ Force delete also failed for ${attachment}:`, forceDeleteError.message);
+                 }
                }
              }
            } catch (fileError) {
-             console.error('Error deleting attachment files:', fileError);
-             // Continue with deletion even if file deletion fails
+             console.error('❌ Error in attachment file deletion process:', fileError);
+             // Continue with database deletion even if file deletion fails
            }
          }
          

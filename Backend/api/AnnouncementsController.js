@@ -388,11 +388,42 @@ module.exports = (AppDataSource) => {
       }
       
       if (req.file) {
-        // Delete old image if exists
+        // HARD DELETE old image if exists
         if (announcement.Image) {
-          const oldImagePath = path.join(uploadsDir, announcement.Image);
-          if (fs.existsSync(oldImagePath)) {
-            fs.unlinkSync(oldImagePath);
+          const oldImagePath = path.join(uploadsDir, 'announcements', announcement.Image);
+          
+          try {
+            if (fs.existsSync(oldImagePath)) {
+              // Force delete the old announcement image file (hard delete)
+              fs.unlinkSync(oldImagePath);
+              
+              // Verify file is actually deleted
+              if (!fs.existsSync(oldImagePath)) {
+                console.log(`✅ HARD DELETED old announcement image: ${announcement.Image}`);
+              } else {
+                console.error(`❌ FAILED to delete old announcement image: ${announcement.Image} - file still exists`);
+                
+                // Try alternative deletion method
+                try {
+                  fs.rmSync(oldImagePath, { force: true });
+                  console.log(`✅ Force deleted old announcement image: ${announcement.Image}`);
+                } catch (forceDeleteError) {
+                  console.error(`❌ Force delete also failed for old announcement image: ${announcement.Image}:`, forceDeleteError.message);
+                }
+              }
+            } else {
+              console.log(`⚠️  Old announcement image file not found (already deleted?): ${announcement.Image}`);
+            }
+          } catch (fileDeleteError) {
+            console.error(`❌ Error deleting old announcement image file ${announcement.Image}:`, fileDeleteError.message);
+            
+            // Try alternative deletion method
+            try {
+              fs.rmSync(oldImagePath, { force: true });
+              console.log(`✅ Force deleted old announcement image: ${announcement.Image}`);
+            } catch (forceDeleteError) {
+              console.error(`❌ Force delete also failed for old announcement image: ${announcement.Image}:`, forceDeleteError.message);
+            }
           }
         }
         announcement.Image = req.file.filename;
@@ -472,11 +503,42 @@ module.exports = (AppDataSource) => {
         return res.status(404).json({ status: 'error', data: null, message: 'Announcement not found' });
       }
       
-      // Delete image file if exists
+      // HARD DELETE image file if exists
       if (announcement.Image) {
-        const imagePath = path.join(uploadsDir, announcement.Image);
-        if (fs.existsSync(imagePath)) {
-          fs.unlinkSync(imagePath);
+        const imagePath = path.join(uploadsDir, 'announcements', announcement.Image);
+        
+        try {
+          if (fs.existsSync(imagePath)) {
+            // Force delete the announcement image file (hard delete)
+            fs.unlinkSync(imagePath);
+            
+            // Verify file is actually deleted
+            if (!fs.existsSync(imagePath)) {
+              console.log(`✅ HARD DELETED announcement image: ${announcement.Image}`);
+            } else {
+              console.error(`❌ FAILED to delete announcement image: ${announcement.Image} - file still exists`);
+              
+              // Try alternative deletion method
+              try {
+                fs.rmSync(imagePath, { force: true });
+                console.log(`✅ Force deleted announcement image: ${announcement.Image}`);
+              } catch (forceDeleteError) {
+                console.error(`❌ Force delete also failed for announcement image: ${announcement.Image}:`, forceDeleteError.message);
+              }
+            }
+          } else {
+            console.log(`⚠️  Announcement image file not found (already deleted?): ${announcement.Image}`);
+          }
+        } catch (fileDeleteError) {
+          console.error(`❌ Error deleting announcement image file ${announcement.Image}:`, fileDeleteError.message);
+          
+          // Try alternative deletion method
+          try {
+            fs.rmSync(imagePath, { force: true });
+            console.log(`✅ Force deleted announcement image: ${announcement.Image}`);
+          } catch (forceDeleteError) {
+            console.error(`❌ Force delete also failed for announcement image: ${announcement.Image}:`, forceDeleteError.message);
+          }
         }
       }
       
