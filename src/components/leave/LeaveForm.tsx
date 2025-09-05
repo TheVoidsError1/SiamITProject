@@ -10,6 +10,7 @@ import { ArrowLeftCircle, CalendarDays, ClipboardList, Clock, FileText, Phone, S
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from 'react-router-dom';
+import { TIME_CONSTANTS } from '@/constants/business';
 import { DateRangePicker } from "./DateRangePicker";
 import { FileUpload } from "./FileUpload";
 
@@ -233,16 +234,16 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
     if (!/^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(time)) return false;
     const [h, m] = time.split(":").map(Number);
     const minutes = h * 60 + m;
-    const min = 9 * 60; // 09:00
-    const max = 18 * 60; // 18:00
+    const min = TIME_CONSTANTS.WORKING_START_HOUR * 60; // 09:00
+    const max = TIME_CONSTANTS.WORKING_END_HOUR * 60; // 18:00
     return minutes >= min && minutes <= max;
   };
 
   // ฟังก์ชันสำหรับจำกัดเวลาใน input field
   const getTimeConstraints = () => {
     return {
-      min: "09:00",
-      max: "18:00"
+      min: TIME_CONSTANTS.WORKING_START_TIME,
+      max: TIME_CONSTANTS.WORKING_END_TIME
     };
   };
 
@@ -548,8 +549,8 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
     // เมื่อเลือกรายชั่วโมง ไม่บังคับเป็นวันปัจจุบัน ให้ผู้ใช้เลือกเอง
     if (value === "hour") {
       // เติมเวลาอัตโนมัติ: เริ่มต้น 09:00 และสิ้นสุด 18:00
-      setStartTime("09:00");
-      setEndTime("18:00");
+      setStartTime(TIME_CONSTANTS.WORKING_START_TIME);
+      setEndTime(TIME_CONSTANTS.WORKING_END_TIME);
       // เคลียร์ start/end date จนกว่าจะเลือกวันที่ลา เพื่อป้องกันใช้วันที่ปัจจุบันโดยไม่ตั้งใจ
       setStartDate(undefined);
       setEndDate(undefined);

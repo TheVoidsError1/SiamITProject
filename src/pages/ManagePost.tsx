@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../lib/api';
 import { apiEndpoints } from '@/constants/api';
+import { hasAdminRole } from '../lib/authUtils';
 import { showToastMessage } from '../lib/toast';
 import { formatDate, getImageUrl, handleFileSelect, handleImageError } from '../lib/utils';
 
@@ -43,7 +44,7 @@ export default function ManagePost() {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const isAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  const isAdmin = hasAdminRole(user);
   const [newsList, setNewsList] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');

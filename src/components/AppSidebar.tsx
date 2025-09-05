@@ -172,12 +172,12 @@ export function AppSidebar() {
         <div className="flex items-center gap-3">
           <img
             src="/lovable-uploads/IMG_4486-removebg-preview.png"
-            alt="Siam IT Logo"
+            alt={t('company.logoAlt')}
             className="w-12 h-12 object-contain drop-shadow-lg"
           />
           <div className="flex-1">
             <h2 className="text-lg font-bold text-sidebar-foreground">
-              Siam IT
+              {t('company.name')}
             </h2>
             <p className="text-sm text-sidebar-foreground/70">
               {t('system.onlineLeaveSystem')}

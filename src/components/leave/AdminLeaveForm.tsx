@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { apiEndpoints } from '@/constants/api';
+import { TIME_CONSTANTS } from '@/constants/business';
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { apiService } from '@/lib/api';
@@ -63,8 +64,8 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
   const [leaveDate, setLeaveDate] = useState<string>("");
   const [leaveType, setLeaveType] = useState("");
   const [durationType, setDurationType] = useState("");
-  const [startTime, setStartTime] = useState("09:00"); // Default business start time
-  const [endTime, setEndTime] = useState("18:00"); // Default business end time
+  const [startTime, setStartTime] = useState<string>(TIME_CONSTANTS.WORKING_START_TIME); // Default business start time
+  const [endTime, setEndTime] = useState<string>(TIME_CONSTANTS.WORKING_END_TIME); // Default business end time
   const [reason, setReason] = useState("");
   const [employeeType, setEmployeeType] = useState("");
   const [attachments, setAttachments] = useState<File[]>([]);
@@ -318,8 +319,8 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
       const startTimeMinutes = startHour * 60 + startMinute;
       const endTimeMinutes = endHour * 60 + endMinute;
       
-      const businessStartMinutes = 9 * 60; // Business start time (9:00)
-      const businessEndMinutes = 18 * 60; // Business end time (18:00)
+      const businessStartMinutes = TIME_CONSTANTS.WORKING_START_HOUR * 60; // Business start time
+      const businessEndMinutes = TIME_CONSTANTS.WORKING_END_HOUR * 60; // Business end time
       
       if (startTimeMinutes < businessStartMinutes || endTimeMinutes > businessEndMinutes) {
         setTimeError(t('leave.businessHoursError'));
@@ -418,8 +419,8 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
   const handleDurationTypeChange = (value: string) => {
     setDurationType(value);
     if (value === 'hour') {
-      setStartTime("09:00"); // Reset to business start time
-      setEndTime("18:00"); // Reset to business end time
+      setStartTime(TIME_CONSTANTS.WORKING_START_TIME); // Reset to business start time
+      setEndTime(TIME_CONSTANTS.WORKING_END_TIME); // Reset to business end time
     }
     setTimeError(""); // Clear any previous time errors
   };
@@ -727,7 +728,7 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
                     </label>
                     <Input
                       type="time"
-                      placeholder="09:00"
+                      placeholder={TIME_CONSTANTS.WORKING_START_TIME}
                       value={startTime}
                       onChange={(e) => setStartTime(e.target.value)}
                       className={`h-12 ${errors.startTime ? 'border-red-500 ring-red-200' : 'border-gray-200 hover:border-blue-300'}`}

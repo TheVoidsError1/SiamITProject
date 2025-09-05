@@ -603,7 +603,7 @@ const LeaveHistory = () => {
 
   // กำหนดหน่วยชั่วโมงตามภาษา
 
-  const hourUnit = i18n.language === 'th' ? 'ชม' : 'Hours';
+  const hourUnit = i18n.language === 'th' ? t('common.hoursShort') : t('common.hoursShort');
 
 
 
@@ -2626,7 +2626,7 @@ const LeaveHistory = () => {
           onClose={() => setPreviewImage(null)}
           imageUrl={previewImage.url}
           imageName={previewImage.name}
-          title={t('leave.attachmentPreview', 'ตัวอย่างไฟล์แนบ')}
+          title={t('leave.attachmentPreview')}
         />
       )}
 

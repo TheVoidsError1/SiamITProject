@@ -596,7 +596,7 @@ const AdminDashboard = () => {
       // This is likely a UUID of an inactive/deleted leave type
       // The backend should have provided leaveTypeName_th and leaveTypeName_en
       // For now, return a fallback message
-      return i18n.language.startsWith('th') ? 'ประเภทการลาที่ถูกลบ' : 'Deleted Leave Type';
+      return i18n.language.startsWith('th') ? t('leaveTypes.deletedLeaveType') : t('leaveTypes.deletedLeaveType');
     }
     
     // Fallback to translation or original value

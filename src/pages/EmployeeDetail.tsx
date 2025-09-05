@@ -928,7 +928,7 @@ const EmployeeDetail = () => {
                       onClick={() => {
                         // ตรวจสอบว่าถ้าเลือกเดือนแต่ไม่เลือกปี
                         if (pendingFilterMonth !== "all" && pendingFilterYear === "all") {
-                          setFilterWarning("กรุณาเลือกปีเมื่อเลือกเดือน");
+                          setFilterWarning(t('validation.selectYearWhenSelectMonth'));
                           return;
                         }
                         
