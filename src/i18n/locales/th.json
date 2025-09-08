@@ -587,7 +587,8 @@
     "cannotDeleteNearDate": "ไม่สามารถลบคำขอที่อยู่ภายใน 1 วันของวันลา",
     "allStatuses": "ทุกสถานะ",
     "month": "เดือน",
-    "year": "ปี"
+    "year": "ปี",
+    "days": "วัน"
   },
   "admin": {
     "pendingRequests": "คำขอรออนุมัติ",

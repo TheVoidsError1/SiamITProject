@@ -587,7 +587,8 @@
     "cannotDeleteNearDate": "Cannot delete requests within 1 day of leave date",
     "allStatuses": "All Statuses",
     "month": "Month",
-    "year": "Year"
+    "year": "Year",
+    "days": "Days"
   },
   "admin": {
     "pendingRequests": "Pending Requests",

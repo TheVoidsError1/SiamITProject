@@ -493,17 +493,27 @@ const LeaveHistory = () => {
 
     const tMaternity = t('leaveTypes.Maternity');
 
+    const tVacationTh = t('leaveTypes.ลาพักร้อน');
+
+    const tSickTh = t('leaveTypes.ลาป่วย');
+
+    const tPersonalTh = t('leaveTypes.ลากิจ');
+
+    const tEmergencyTh = t('leaveTypes.ลาฉุกเฉิน');
+
+    const tMaternityTh = t('leaveTypes.ลาคลอด');
+
     
 
-    if (type === tVacation || typeLower === 'vacation' || type === '') return "text-blue-600";
+    if (type === tVacation || type === tVacationTh || typeLower === 'vacation' || type === 'ลาพักร้อน') return "text-blue-600";
 
-    if (type === tSick || typeLower === 'sick' || type === '') return "text-red-600";
+    if (type === tSick || type === tSickTh || typeLower === 'sick' || type === 'ลาป่วย') return "text-red-600";
 
-    if (type === tPersonal || typeLower === 'personal' || type === '') return "text-green-600";
+    if (type === tPersonal || type === tPersonalTh || typeLower === 'personal' || type === 'ลากิจ') return "text-green-600";
 
-    if (type === tEmergency || typeLower === 'emergency' || type === '') return "text-orange-500";
+    if (type === tEmergency || type === tEmergencyTh || typeLower === 'emergency' || type === 'ลาฉุกเฉิน') return "text-orange-500";
 
-    if (type === tMaternity || typeLower === 'maternity' || type === '') return "text-purple-600";
+    if (type === tMaternity || type === tMaternityTh || typeLower === 'maternity' || type === 'ลาคลอด') return "text-purple-600";
 
     
 
@@ -549,15 +559,19 @@ const LeaveHistory = () => {
 
       'maternity': 'leaveTypes.Maternity',
 
-      'ลาพักร้อน': 'leaveTypes.Vacation',
+      'ลาพักร้อน': 'leaveTypes.ลาพักร้อน',
 
-      'ลาป่วย': 'leaveTypes.Sick',
+      'ลาป่วย': 'leaveTypes.ลาป่วย',
 
-      'ลากิจ': 'leaveTypes.Personal',
+      'ลากิจ': 'leaveTypes.ลากิจ',
 
-      'ลาฉุกเฉิน': 'leaveTypes.Emergency',
+      'ลาฉุกเฉิน': 'leaveTypes.ลาฉุกเฉิน',
 
-      'ลาคลอด': 'leaveTypes.Maternity',
+      'ลาคลอด': 'leaveTypes.ลาคลอด',
+
+      'ลาพักผ่อน': 'leaveTypes.ลาพักผ่อน',
+
+      'ลาอื่นๆ': 'leaveTypes.ลาอื่นๆ',
 
     };
 
@@ -1575,7 +1589,7 @@ const LeaveHistory = () => {
 
                       <div className={`text-xl font-bold ${getTypeColor(leave.leaveTypeName_th || leave.leaveTypeName_en || leave.type)}`}>
 
-                        {leave.leaveTypeName_th || leave.leaveTypeName_en || getLeaveTypeLabel(leave.type) || translateLeaveType(leave.type)}
+                        {getLeaveTypeLabel(leave.type) || translateLeaveType(leave.type)}
 
                       </div>
 
@@ -2202,7 +2216,7 @@ const LeaveHistory = () => {
 
                       <div className={`text-3xl font-bold ${getTypeColor(selectedLeave.leaveTypeName_th || selectedLeave.leaveTypeName_en || selectedLeave.type)}`}>
 
-                        {selectedLeave.leaveTypeName_th || selectedLeave.leaveTypeName_en || getLeaveTypeLabel(selectedLeave.type) || translateLeaveType(selectedLeave.type)}
+                        {getLeaveTypeLabel(selectedLeave.type) || translateLeaveType(selectedLeave.type)}
 
                       </div>
 
