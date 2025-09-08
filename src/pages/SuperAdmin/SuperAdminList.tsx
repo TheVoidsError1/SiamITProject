@@ -40,7 +40,7 @@ const SuperAdminList: React.FC = () => {
   const [genders, setGenders] = useState<any[]>([]);
   const [error, setError] = useState<{ email?: string; full_name?: string; general?: string }>({});
   const [passwordStrength, setPasswordStrength] = useState<PasswordStrength>('weak');
-  const [selectedPositionRequestQuota, setSelectedPositionRequestQuota] = useState<boolean>(false);
+  const [selectedPositionRequireEnddate, setSelectedPositionRequireEnddate] = useState<boolean>(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
 
   const lang = i18n.language.startsWith('th') ? 'th' : 'en';
@@ -72,7 +72,7 @@ const SuperAdminList: React.FC = () => {
             id: p.id, 
             position_name_th: p.position_name_th, 
             position_name_en: p.position_name_en,
-            request_quota: !!p.request_quota
+            require_enddate: !!p.require_enddate
           }));
           const noPositionItem = pos.find(p => p.position_name_en === NO_POSITION);
           const otherPos = pos.filter(p => p.position_name_en !== NO_POSITION);
@@ -128,7 +128,7 @@ const SuperAdminList: React.FC = () => {
   const handlePositionChange = (positionId: string) => {
     setForm(f => ({ ...f, position: positionId }));
     const selectedPos = positions.find(p => p.id === positionId);
-    setSelectedPositionRequestQuota(selectedPos ? !!selectedPos.request_quota : false);
+    setSelectedPositionRequireEnddate(selectedPos ? !!selectedPos.require_enddate : false);
   };
 
   const getPasswordStrengthColor = () => {
@@ -194,8 +194,8 @@ const SuperAdminList: React.FC = () => {
       return;
     }
     
-    // Check if end_work is required based on position's request_quota
-    if (selectedPositionRequestQuota && !form.end_work) {
+    // Check if end_work is required based on position's require_enddate
+    if (selectedPositionRequireEnddate && !form.end_work) {
       showToastMessage.validation.requiredField('endWork', t);
       return;
     }
@@ -219,7 +219,7 @@ const SuperAdminList: React.FC = () => {
         gender_name_th: form.gender,
         date_of_birth: form.date_of_birth,
         start_work: form.start_work,
-        end_work: selectedPositionRequestQuota ? form.end_work : null,
+        end_work: selectedPositionRequireEnddate ? form.end_work : null,
         phone_number: form.phone_number,
       };
       
@@ -241,7 +241,7 @@ const SuperAdminList: React.FC = () => {
           phone_number: '',
         });
         setPasswordStrength('weak');
-        setSelectedPositionRequestQuota(false);
+        setSelectedPositionRequireEnddate(false);
       } else {
         showToastMessage.crud.createError('user', data?.message, t);
       }
@@ -553,7 +553,7 @@ const SuperAdminList: React.FC = () => {
                 />
               </div>
               {/* End Work (conditionally rendered) */}
-              {selectedPositionRequestQuota && (
+              {selectedPositionRequireEnddate && (
                 <div className="space-y-3 animate-fade-in-up-delay-7">
                   <Label htmlFor="end_work" className={`mb-3 block ${currentConfig.textColor} font-bold text-lg transition-all duration-300 hover:text-opacity-80 flex items-center gap-2`}>
                     <Calendar className="w-5 h-5" />

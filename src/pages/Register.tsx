@@ -181,7 +181,7 @@ const Register = () => {
         return;
       }
       if (formData.start_work > formData.end_work) {
-        toast({ title: t('common.error'), description: t('auth.dateRangeInvalid', 'ช่วงวันที่ไม่ถูกต้อง'), variant: 'destructive' });
+        toast({ title: t('common.error'), description: t('auth.dateRangeInvalid'), variant: 'destructive' });
         return;
       }
     }
