@@ -584,7 +584,11 @@
     "pageInfo": "Page {{page}} of {{totalPages}}",
     "leaveTime": "Leave Time",
     "cannotDeleteNonPending": "Only pending requests can be deleted",
-    "cannotDeleteNearDate": "Cannot delete requests within 1 day of leave date"
+    "cannotDeleteNearDate": "Cannot delete requests within 1 day of leave date",
+    "allStatuses": "All Statuses",
+    "month": "Month",
+    "year": "Year",
+    "days": "Days"
   },
   "admin": {
     "pendingRequests": "Pending Requests",
