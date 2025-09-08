@@ -19,6 +19,8 @@ import { apiEndpoints } from '@/constants/api';
 import { formatDateLocalized } from '../lib/utils';
 import { apiService, createAuthenticatedFileUrl } from '../lib/api';
 import LeaveDetailDialog from '@/components/dialogs/LeaveDetailDialog';
+import { isRetroactiveLeave, calcHours, getTypeColor, getLeaveTypeLabel, translateLeaveType } from '../lib/leaveUtils';
+import { getStatusBadge, getRetroactiveBadge } from '../components/leave/LeaveBadges';
 
 const LeaveHistory = () => {
 
@@ -340,259 +342,23 @@ const LeaveHistory = () => {
 
 
 
-  // ฟังก์ชันตรวจสอบว่าการลาเป็นย้อนหลังหรือไม่ (ใช้ข้อมูลจาก backend)
+  // Note: isRetroactiveLeave, getStatusBadge, getRetroactiveBadge functions moved to src/lib/leaveUtils.ts
 
-  const isRetroactiveLeave = (leave: any) => {
 
-    // ใช้ข้อมูล backdated จาก backend
 
-    return leave.backdated === true;
 
-  };
 
 
 
-  const getStatusBadge = (status: string) => {
+  // Note: getTypeColor function moved to src/lib/leaveUtils.ts
 
-    switch (status) {
 
-      case "approved":
 
-        return (
+  // Note: translateLeaveType function moved to src/lib/leaveUtils.ts
 
-          <Badge className="bg-green-100 text-green-800 border-green-200">
 
-            <CheckCircle className="w-3 h-3 mr-1" />
 
-            {t('leave.approved')}
-
-          </Badge>
-
-        );
-
-      case "pending":
-
-        return (
-
-          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
-
-            <AlertCircle className="w-3 h-3 mr-1" />
-
-            {t('history.pendingApproval')}
-
-          </Badge>
-
-        );
-
-      case "rejected":
-
-        return (
-
-          <Badge className="bg-red-100 text-red-800 border-red-200">
-
-            <XCircle className="w-3 h-3 mr-1" />
-
-            {t('leave.rejected')}
-
-          </Badge>
-
-        );
-
-      default:
-
-        return null;
-
-    }
-
-  };
-
-
-
-  // ฟังก์ชันสร้าง badge สำหรับการลาย้อนหลัง
-
-  const getRetroactiveBadge = (leave: any) => {
-
-    if (isRetroactiveLeave(leave)) {
-
-      return (
-
-        <Badge className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 border-purple-200 shadow-sm hover:shadow-md transition-all duration-200">
-
-          <History className="w-3 h-3 mr-1" />
-
-          {t('history.retroactiveLeave')}
-
-        </Badge>
-
-      );
-
-    }
-
-    return null;
-
-  };
-
-
-
-
-
-
-
-  const getTypeColor = (type: string) => {
-
-    if (!type) return "text-gray-600";
-
-    
-
-    const typeLower = type.toLowerCase();
-
-    
-
-    // ตรวจสอบจาก backend data ก่อน
-
-    const found = leaveTypes.find(lt => lt.id === type || lt.leave_type === type);
-
-    if (found) {
-
-      const typeKey = found.leave_type?.toLowerCase() || found.id?.toLowerCase();
-
-      if (typeKey === 'vacation' || typeKey === '') return "text-blue-600";
-
-      if (typeKey === 'sick' || typeKey === '') return "text-red-600";
-
-      if (typeKey === 'personal' || typeKey === '') return "text-green-600";
-
-      if (typeKey === 'emergency' || typeKey === '') return "text-orange-500";
-
-      if (typeKey === 'maternity' || typeKey === '') return "text-purple-600";
-
-    }
-
-    
-
-    // fallback: ตรวจสอบจาก i18n translation
-
-    const tVacation = t('leaveTypes.Vacation');
-
-    const tSick = t('leaveTypes.Sick');
-
-    const tPersonal = t('leaveTypes.Personal');
-
-    const tEmergency = t('leaveTypes.Emergency');
-
-    const tMaternity = t('leaveTypes.Maternity');
-
-    
-
-    if (type === tVacation || typeLower === 'vacation' || type === '') return "text-blue-600";
-
-    if (type === tSick || typeLower === 'sick' || type === '') return "text-red-600";
-
-    if (type === tPersonal || typeLower === 'personal' || type === '') return "text-green-600";
-
-    if (type === tEmergency || typeLower === 'emergency' || type === '') return "text-orange-500";
-
-    if (type === tMaternity || typeLower === 'maternity' || type === '') return "text-purple-600";
-
-    
-
-    return "text-gray-600";
-
-  };
-
-
-
-  // ฟังก์ชันแปลประเภทการลาให้ตรงกับภาษาที่เลือก
-
-  const translateLeaveType = (type: string) => {
-
-    if (!type) return '';
-
-    
-
-    // ตรวจสอบว่ามีข้อมูลจาก backend หรือไม่
-
-    const found = leaveTypes.find(lt => lt.id === type || lt.leave_type === type);
-
-    if (found) {
-
-      return i18n.language.startsWith('th') ? found.leave_type_th : found.leave_type_en;
-
-    }
-
-    
-
-    // fallback: ใช้ i18n translation
-
-    const typeLower = type.toLowerCase();
-
-    const typeMap: Record<string, string> = {
-
-      'vacation': 'leaveTypes.Vacation',
-
-      'sick': 'leaveTypes.Sick',
-
-      'personal': 'leaveTypes.Personal',
-
-      'emergency': 'leaveTypes.Emergency',
-
-      'maternity': 'leaveTypes.Maternity',
-
-      'ลาพักร้อน': 'leaveTypes.Vacation',
-
-      'ลาป่วย': 'leaveTypes.Sick',
-
-      'ลากิจ': 'leaveTypes.Personal',
-
-      'ลาฉุกเฉิน': 'leaveTypes.Emergency',
-
-      'ลาคลอด': 'leaveTypes.Maternity',
-
-    };
-
-    
-
-    const i18nKey = typeMap[typeLower] || typeMap[type];
-
-    if (i18nKey) return t(i18nKey);
-
-    
-
-    // fallback: try direct translation หรือ return type เดิม
-
-    return t(`leaveTypes.${type}`, type);
-
-  };
-
-
-
-  // ฟังก์ชันคำนวณชั่วโมงจากเวลาเริ่มและเวลาสิ้นสุด (string HH:mm)
-
-  const calcHours = (start: string, end: string) => {
-
-    if (!start || !end) return null;
-
-    const [sh, sm] = start.split(":").map(Number);
-
-    const [eh, em] = end.split(":").map(Number);
-
-    const startMins = sh * 60 + sm;
-
-    const endMins = eh * 60 + em;
-
-    let diff = endMins - startMins;
-
-    if (diff < 0) diff += 24 * 60; // ข้ามวัน
-
-    const hours = Math.floor(diff / 60);
-
-    const mins = diff % 60;
-
-    // แสดงเป็น ชั่วโมง.นาที (1.20)
-
-    return `${hours}.${mins.toString().padStart(2, '0')}`;
-
-  };
+  // Note: calcHours function moved to src/lib/leaveUtils.ts
 
   // กำหนดหน่วยชั่วโมงตามภาษา
 
@@ -610,31 +376,7 @@ const LeaveHistory = () => {
 
 
 
-  // ฟังก์ชันสำหรับแสดงชื่อประเภทการลาจาก backend หรือ i18n
-
-  const getLeaveTypeLabel = (typeId: string) => {
-
-    if (!typeId) return '';
-
-    
-
-    // ตรวจสอบว่ามีข้อมูลจาก backend หรือไม่
-
-    const found = leaveTypes.find(lt => lt.id === typeId || lt.leave_type === typeId);
-
-    if (found) {
-
-      return i18n.language.startsWith('th') ? found.leave_type_th : found.leave_type_en;
-
-    }
-
-    
-
-    // fallback: ใช้ translateLeaveType function
-
-    return translateLeaveType(typeId);
-
-  };
+  // Note: getLeaveTypeLabel function moved to src/lib/leaveUtils.ts
 
 
 
@@ -1564,16 +1306,16 @@ const LeaveHistory = () => {
 
                         {leave.leaveTypeName_th && leave.leaveTypeName_en 
                           ? (i18n.language.startsWith('th') ? leave.leaveTypeName_th : leave.leaveTypeName_en)
-                          : (getLeaveTypeLabel(leave.type) || translateLeaveType(leave.type))
+                          : (getLeaveTypeLabel(leave.type, leaveTypes, i18n, t) || translateLeaveType(leave.type, leaveTypes, i18n, t))
                         }
 
                       </div>
 
                       <div className="flex flex-wrap gap-2">
 
-                        {getStatusBadge(leave.status)}
+                        {getStatusBadge(leave.status, t)}
 
-                        {getRetroactiveBadge(leave)}
+                        {getRetroactiveBadge(leave, t)}
 
                       </div>
 

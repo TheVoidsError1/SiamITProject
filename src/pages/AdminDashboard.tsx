@@ -22,6 +22,8 @@ import { formatDateLocalized, formatDateOnly } from '../lib/utils';
 import ImagePreviewDialog from '@/components/dialogs/ImagePreviewDialog';
 import { apiService, createAuthenticatedFileUrl } from '../lib/api';
 import LeaveDetailDialog from '@/components/dialogs/LeaveDetailDialog';
+import { isRetroactiveLeave, calcHours, getTypeColor, getLeaveTypeDisplay } from '../lib/leaveUtils';
+import { getStatusBadge, getRetroactiveBadge } from '../components/leave/LeaveBadges';
 
 type LeaveRequest = {
   id: number;
@@ -189,19 +191,7 @@ const AdminDashboard = () => {
 
 
 
-  // --- เพิ่มฟังก์ชันคำนวณชั่วโมง ---
-  const calcHours = (start: string, end: string) => {
-    if (!start || !end) return null;
-    const [sh, sm] = start.split(":").map(Number);
-    const [eh, em] = end.split(":").map(Number);
-    const startMins = sh * 60 + sm;
-    const endMins = eh * 60 + em;
-    let diff = endMins - startMins;
-    if (diff < 0) diff += 24 * 60; // ข้ามวัน
-    const hours = Math.floor(diff / 60);
-    const mins = diff % 60;
-    return `${hours}.${mins.toString().padStart(2, '0')}`;
-  };
+  // Note: calcHours function moved to src/lib/leaveUtils.ts
   const hourUnit = i18n.language === 'th' ? '' : 'Hours';
 
   const handleApprove = (id: string, employeeName: string) => {
@@ -580,8 +570,9 @@ const AdminDashboard = () => {
     setFilterYear(currentYear);
   };
 
-  // --- ฟังก์ชันกลางสำหรับแสดงชื่อประเภทการลา ---
-  function getLeaveTypeDisplay(typeIdOrName: string) {
+  // Note: getLeaveTypeDisplay function moved to src/lib/leaveUtils.ts
+  // Helper function for AdminDashboard specific leave type display
+  const getAdminLeaveTypeDisplay = (typeIdOrName: string) => {
     if (!typeIdOrName) return '';
     
     // First, try to find in pendingLeaveTypes (active leave types)
@@ -595,14 +586,12 @@ const AdminDashboard = () => {
     // If not found in active types, check if it's a UUID (inactive/deleted leave type)
     if (typeIdOrName.length > 20) {
       // This is likely a UUID of an inactive/deleted leave type
-      // The backend should have provided leaveTypeName_th and leaveTypeName_en
-      // For now, return a fallback message
       return i18n.language.startsWith('th') ? t('leaveTypes.deletedLeaveType') : t('leaveTypes.deletedLeaveType');
     }
     
     // Fallback to translation or original value
     return String(t('leaveTypes.' + typeIdOrName, typeIdOrName));
-  }
+  };
 
   // Add a function to fetch leave request details by ID for recent history
   const handleViewDetailsWithFetch = async (request: any) => {
@@ -1165,7 +1154,7 @@ const AdminDashboard = () => {
                             <span className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold mb-1 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                               {request.leaveTypeName_th && request.leaveTypeName_en 
                                 ? (i18n.language.startsWith('th') ? request.leaveTypeName_th : request.leaveTypeName_en)
-                                : getLeaveTypeDisplay(request.leaveType || request.leaveTypeName)
+                                : getAdminLeaveTypeDisplay(request.leaveType || request.leaveTypeName)
                               }
                             </span>
                             {(request.backdated === 1 || request.backdated === "1" || request.backdated === true) && (
@@ -1477,7 +1466,7 @@ const AdminDashboard = () => {
                                                           <span className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold mb-1 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                               {request.leaveTypeName_th && request.leaveTypeName_en 
                                 ? (i18n.language.startsWith('th') ? request.leaveTypeName_th : request.leaveTypeName_en)
-                                : getLeaveTypeDisplay(request.leaveType || request.leaveTypeName)
+                                : getAdminLeaveTypeDisplay(request.leaveType || request.leaveTypeName)
                               }
                             </span>
                               {(request.backdated === 1 || request.backdated === "1" || request.backdated === true) && (

@@ -2,21 +2,12 @@ const express = require('express');
 const authMiddleware = require('../middleware/authMiddleware');
 const { Between } = require('typeorm');
 const config = require('../config');
-const { calculateDaysBetween, getLeaveUsageSummary } = require('../utils');
+const { calculateDaysBetween, getLeaveUsageSummary, parseAttachments } = require('../utils');
 
 module.exports = (AppDataSource) => {
   const router = express.Router();
 
-  // ใช้ฟังก์ชัน parseAttachments ปลอดภัย (same as LeaveRequestController)
-  function parseAttachments(val) {
-    if (!val) return [];
-    try {
-      return JSON.parse(val);
-    } catch (e) {
-      console.error('Invalid attachments JSON:', val, e);
-      return [];
-    }
-  }
+  // parseAttachments function is now imported from ../utils
 
   // GET /api/leave-history (ต้องแนบ JWT)
   router.get('/', authMiddleware, async (req, res) => {

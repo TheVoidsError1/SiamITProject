@@ -13,21 +13,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from 'react-router-dom';
 import { FileUpload } from "./FileUpload";
-
-// ฟังก์ชัน validate เวลา HH:mm (24 ชั่วโมง)
-function isValidTimeFormat(timeStr: string): boolean {
-  return /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(timeStr);
-}
-
-// ฟังก์ชันเติม : อัตโนมัติเมื่อป้อนเวลา เช่น 900 -> 09:00, 1730 -> 17:30
-function autoFormatTimeInput(value: string) {
-  let digits = value.replace(/[^0-9]/g, "");
-  if (digits.length > 4) digits = digits.slice(0, 4);
-  if (digits.length >= 3) {
-    return digits.slice(0, digits.length - 2) + ":" + digits.slice(-2);
-  }
-  return digits;
-}
+import { isValidTimeFormat, autoFormatTimeInput, getLeaveNotice } from '../../lib/leaveUtils';
 
 // ฟังก์ชันแปลงวันที่เป็น yyyy-mm-dd ตาม local time (ไม่ใช่ UTC)
 function formatDateLocal(date: Date) {
@@ -426,36 +412,7 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
     setTimeError(""); // Clear any previous time errors
   };
 
-  // Function to check if leave is backdated, advance, or current
-  const getLeaveNotice = (startDate: string | undefined, endDate: string | undefined) => {
-    if (!startDate) return null;
-    
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const startDateOnly = new Date(startDate);
-    startDateOnly.setHours(0, 0, 0, 0);
-    
-    // ถ้าวันที่เริ่มลาน้อยกว่าวันนี้ (ไม่รวมวันนี้) = ลาย้อนหลัง
-    if (startDateOnly < today) {
-      return {
-        type: 'backdated',
-        message: t('leave.backdatedNotice'),
-        className: 'bg-yellow-50 border-yellow-200 text-yellow-800'
-      };
-    }
-    
-    // ถ้าวันที่เริ่มลามากกว่าวันนี้ = ลาล่วงหน้า
-    if (startDateOnly > today) {
-      return {
-        type: 'advance',
-        message: t('leave.advanceNotice'),
-        className: 'bg-blue-50 border-blue-200 text-blue-800'
-      };
-    }
-    
-    // ถ้าเป็นวันนี้ = ไม่แสดงแจ้งเตือน
-    return null;
-  };
+  // Note: getLeaveNotice function moved to src/lib/leaveUtils.ts
 
   return (
     <div className="bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/30 rounded-2xl p-8 shadow-xl border border-blue-100/50">
@@ -681,7 +638,7 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
 
                 {/* แจ้งเตือนเมื่อมีการลาย้อนหลังหรือลาล่วงหน้า */}
                 {(() => {
-                  const notice = getLeaveNotice(startDate, endDate);
+                  const notice = getLeaveNotice(startDate, endDate, t);
                   if (!notice) return null;
                   
                   const iconColor = notice.type === 'backdated' ? 'text-yellow-600' : 'text-blue-600';
@@ -768,7 +725,7 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
 
                 {/* แจ้งเตือนเมื่อมีการลาย้อนหลังหรือลาล่วงหน้า */}
                 {(() => {
-                  const notice = getLeaveNotice(leaveDate, leaveDate);
+                  const notice = getLeaveNotice(leaveDate, leaveDate, t);
                   if (!notice) return null;
                   
                   const iconColor = notice.type === 'backdated' ? 'text-yellow-600' : 'text-blue-600';

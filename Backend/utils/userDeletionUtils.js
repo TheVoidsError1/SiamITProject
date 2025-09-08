@@ -6,21 +6,7 @@
 const fs = require('fs');
 const path = require('path');
 const config = require('../config');
-
-/**
- * Parse attachments JSON string safely (same as LeaveRequestController)
- * @param {string} val - JSON string of attachments
- * @returns {Array} Array of attachment filenames
- */
-function parseAttachments(val) {
-  if (!val) return [];
-  try {
-    return JSON.parse(val);
-  } catch (e) {
-    console.error('Invalid attachments JSON:', val, e);
-    return [];
-  }
-}
+const { parseAttachments } = require('./leaveUtils');
 
 /**
  * Delete all files and data related to a user
@@ -177,6 +163,5 @@ async function deleteUserComprehensive(AppDataSource, userId, userRole, userRepo
 
 module.exports = {
   deleteUserData,
-  deleteUserComprehensive,
-  parseAttachments
+  deleteUserComprehensive
 };

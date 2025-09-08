@@ -6,32 +6,23 @@
    const config = require('../config');
    const LineController = require('./LineController');
    const { leaveAttachmentsUpload, handleUploadError } = require('../middleware/fileUploadMiddleware');
-   const { 
-     verifyToken, 
-     sendSuccess, 
-     sendError, 
-     sendUnauthorized,
-     convertToMinutes,
-     calculateDaysBetween,
-     convertTimeRangeToDecimal,
-     isWithinWorkingHours,
-     sendValidationError,
-     sendNotFound,
-     sendConflict
-   } = require('../utils');
+  const { 
+    verifyToken, 
+    sendSuccess, 
+    sendError, 
+    sendUnauthorized,
+    convertToMinutes,
+    calculateDaysBetween,
+    convertTimeRangeToDecimal,
+    isWithinWorkingHours,
+    sendValidationError,
+    sendNotFound,
+    sendConflict,
+    parseAttachments
+  } = require('../utils');
 
-   // File upload middleware is now imported from fileUploadMiddleware.js
-
-   // ใช้ฟังก์ชัน parseAttachments ปลอดภัย
-   function parseAttachments(val) {
-     if (!val) return [];
-     try {
-       return JSON.parse(val);
-     } catch (e) {
-       console.error('Invalid attachments JSON:', val, e);
-       return [];
-     }
-   }
+  // File upload middleware is now imported from fileUploadMiddleware.js
+  // parseAttachments function is now imported from ../utils
 
    // Helper function to update LeaveUsed table (only for approved requests)
    async function updateLeaveUsed(leave) {
