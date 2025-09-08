@@ -330,6 +330,7 @@
     "startEndTimeSameDesc": "Please select different times",
     "notice": "Notice",
     "contactMethod": "Contact Method",
+    "days": "days",
     "backdatedFilter": "Retroactive/Non-Retroactive",
     "notBackdated": "Non-Retroactive",
     "backdatedLabel": "Retroactive",

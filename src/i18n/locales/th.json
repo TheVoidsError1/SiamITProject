@@ -258,6 +258,7 @@
     "employeeType": "ประเภทพนักงาน",
     "hourLeave": "ลาเป็นชั่วโมง",
     "dayLeave": "ลาเป็นวัน",
+    "days": "วัน",
     "hours": "ชั่วโมง",
     "selectDate": "เลือกวันที่",
     "selectSupervisor": "เลือกผู้บังคับบัญชา",
