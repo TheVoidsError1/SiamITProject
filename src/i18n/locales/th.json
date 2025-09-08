@@ -584,7 +584,10 @@
     "pageInfo": "หน้า {{page}} จาก {{totalPages}}",
     "leaveTime": "เวลาการลา",
     "cannotDeleteNonPending": "สามารถลบได้เฉพาะคำขอที่รอการอนุมัติเท่านั้น",
-    "cannotDeleteNearDate": "ไม่สามารถลบคำขอที่อยู่ภายใน 1 วันของวันลา"
+    "cannotDeleteNearDate": "ไม่สามารถลบคำขอที่อยู่ภายใน 1 วันของวันลา",
+    "allStatuses": "ทุกสถานะ",
+    "month": "เดือน",
+    "year": "ปี"
   },
   "admin": {
     "pendingRequests": "คำขอรออนุมัติ",

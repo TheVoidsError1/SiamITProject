@@ -1,3 +1,4 @@
+import ImagePreviewDialog from '@/components/dialogs/ImagePreviewDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -5,21 +6,21 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import ImagePreviewDialog from '@/components/dialogs/ImagePreviewDialog';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { apiEndpoints } from '@/constants/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { format } from "date-fns";
+import { enUS, th } from "date-fns/locale";
 import { AlertCircle, Calendar, CheckCircle, ChevronLeft, ChevronRight, Clock, Eye, FileText, Filter, History, Trash2, User, X, XCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from 'react-router-dom';
 import { monthNames } from '../constants/common';
-import { apiEndpoints } from '@/constants/api';
-import { formatDateLocalized } from '../lib/utils';
 import { apiService, createAuthenticatedFileUrl } from '../lib/api';
+import { formatDateLocalized } from '../lib/utils';
 
 const LeaveHistory = () => {
 
@@ -28,6 +29,9 @@ const LeaveHistory = () => {
   const { toast } = useToast();
 
   const navigate = useNavigate();
+
+  // กำหนด locale สำหรับปฏิทินตามภาษาที่เลือก
+  const calendarLocale = i18n.language.startsWith('th') ? th : enUS;
 
 
 
@@ -1043,7 +1047,7 @@ const LeaveHistory = () => {
 
                           <Calendar className="mr-2 h-4 w-4 text-blue-600" />
 
-                          {singleDate ? format(singleDate, "dd/MM/yyyy") : t('history.selectSingleDate')}
+                          {singleDate ? format(singleDate, "dd/MM/yyyy", { locale: calendarLocale }) : t('history.selectSingleDate')}
 
                         </Button>
 
@@ -1060,6 +1064,8 @@ const LeaveHistory = () => {
                           onSelect={date => setSingleDate(date)}
 
                           className="rounded-xl"
+
+                          locale={calendarLocale}
 
                         />
 
@@ -1225,7 +1231,7 @@ const LeaveHistory = () => {
 
                       <SelectTrigger className="bg-white/80 backdrop-blur border-purple-200 hover:bg-purple-50 hover:border-purple-300 transition-all duration-200 rounded-lg h-11 text-sm">
 
-                        <SelectValue placeholder={t('history.allTypes')} />
+                        <SelectValue placeholder={t('leave.allTypes')} />
 
                       </SelectTrigger>
 
@@ -1237,7 +1243,7 @@ const LeaveHistory = () => {
 
                             <div className="w-3 h-3 rounded-full bg-gray-400"></div>
 
-                            {t('history.allTypes')}
+                            {t('leave.allTypes')}
 
                           </div>
 
@@ -2245,7 +2251,7 @@ const LeaveHistory = () => {
 
                       <Calendar className="w-5 h-5 text-blue-600" />
 
-                      <h3 className="text-lg font-semibold">{t('history.dateInformation')}</h3>
+                      <h3 className="text-lg font-semibold">{t('leave.dateInformation')}</h3>
 
                     </div>
 
@@ -2396,7 +2402,7 @@ const LeaveHistory = () => {
 
                       <CheckCircle className="w-5 h-5 text-green-600" />
 
-                      <h3 className="text-lg font-semibold">{t('history.statusAndApproval')}</h3>
+                      <h3 className="text-lg font-semibold">{t('leave.statusAndApproval')}</h3>
 
                     </div>
 
@@ -2525,7 +2531,7 @@ const LeaveHistory = () => {
 
                       <User className="w-5 h-5 text-teal-600" />
 
-                      <h3 className="text-lg font-semibold">{t('history.contactInformation')}</h3>
+                      <h3 className="text-lg font-semibold">{t('leave.contactInformation')}</h3>
 
                     </div>
 
