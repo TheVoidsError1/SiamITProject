@@ -104,7 +104,7 @@ const Index = () => {
 
   // Helper for month options
   const monthOptions = [
-    { value: 0, label: t('months.all') },
+    { value: 0, label: t('common.allMonths') },
     { value: 1, label: t('months.1') },
     { value: 2, label: t('months.2') },
     { value: 3, label: t('months.3') },

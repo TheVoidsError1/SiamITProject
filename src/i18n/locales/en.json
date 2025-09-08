@@ -156,7 +156,8 @@
     "clearFiltered": "Clear",
     "showing": "Showing",
     "selected": "Selected",
-    "noResults": "No results"
+    "noResults": "No results",
+    "all": "All"
   },
   "line": {
     "linkAccount": "Link LINE Account",

@@ -1,3 +1,4 @@
+import ImagePreviewDialog from '@/components/dialogs/ImagePreviewDialog';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -8,19 +9,19 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { apiEndpoints } from '@/constants/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSocket } from '@/contexts/SocketContext';
 import { useToast } from "@/hooks/use-toast";
 import { differenceInCalendarDays, format } from "date-fns";
+import { enUS, th } from "date-fns/locale";
 import { AlertCircle, Calendar, CalendarIcon, CheckCircle, ChevronLeft, ChevronRight, Clock, Eye, FileText, History, User, Users, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { monthNames } from '../constants/common';
-import { apiEndpoints } from '@/constants/api';
+import { apiService, createAuthenticatedFileUrl } from '../lib/api';
 import { showToastMessage } from '../lib/toast';
 import { formatDateLocalized, formatDateOnly } from '../lib/utils';
-import ImagePreviewDialog from '@/components/dialogs/ImagePreviewDialog';
-import { apiService, createAuthenticatedFileUrl } from '../lib/api';
 
 type LeaveRequest = {
   id: number;
@@ -95,6 +96,9 @@ const AdminDashboard = () => {
   const [historyStatusFilter, setHistoryStatusFilter] = useState('all'); // default เป็น all (All status)
   // รายชื่อเดือนรองรับ i18n
   const currentMonthNames = monthNames[i18n.language === 'th' ? 'th' : 'en'];
+  
+  // กำหนด locale สำหรับปฏิทินตามภาษาที่เลือก
+  const calendarLocale = i18n.language.startsWith('th') ? th : enUS;
 
   // --- เพิ่ม state สำหรับ show more/less ของแต่ละ request ---
   const [expandedRejection, setExpandedRejection] = useState<{ [id: string]: boolean }>({});
@@ -1056,6 +1060,7 @@ const AdminDashboard = () => {
                         onSelect={(date) => handleDateChange(date)}
                         initialFocus
                         className="rounded-md border"
+                        locale={calendarLocale}
                         modifiers={{
                           today: new Date()
                         }}
@@ -1079,7 +1084,7 @@ const AdminDashboard = () => {
                     onChange={e => handleMonthChange(e.target.value ? Number(e.target.value) : '')}
                     disabled={!!pendingPendingSingleDate}
                   >
-                    <option value="">{t('months.all', 'All Months')}</option>
+                    <option value="">{t('common.allMonths')}</option>
                     {currentMonthNames.map((name, idx) => (
                       <option key={idx + 1} value={idx + 1}>{name}</option>
                     ))}
@@ -1357,7 +1362,7 @@ const AdminDashboard = () => {
                     value={pendingFilterMonth}
                     onChange={e => setPendingFilterMonth(e.target.value ? Number(e.target.value) : '')}
                   >
-                    <option value="">{t('months.all', 'All Months')}</option>
+                    <option value="">{t('common.allMonths')}</option>
                     {currentMonthNames.map((name, idx) => (
                       <option key={idx + 1} value={idx + 1}>{name}</option>
                     ))}
