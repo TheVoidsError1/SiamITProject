@@ -364,11 +364,8 @@
     "dateManagement": "จัดการวันที่",
     "approvalControl": "การอนุมัติ",
     "businessHoursError": "เวลาลาต้องอยู่ในช่วงเวลาทำงาน (09:00 น. - 18:00 น.)",
-    "endTimeMustBeAfterStartTime": "เวลาสิ้นสุดต้องมากกว่าเวลาเริ่มต้น",
-    "day": "วัน",
-    "days": "วัน",
-    "hour": "ชั่วโมง",
-    "hours": "ชั่วโมง"
+    "endTimeMustBeAfterStartTime": "เวลาสิ้นสุดต้องมากกว่าเวลาเริ่มต้น"
+
   },
   "leaveTypes": {
     "all": "ทั้งหมด",
@@ -527,7 +524,6 @@
     "contactAdmin": "กรุณาติดต่อผู้ดูแลระบบเพื่อตั้งค่าโควต้าการลาสำหรับตำแหน่งของคุณ"
   },
   "history": {
-    "days": "วัน",
     "leaveHistoryTitle": "ดูประวัติการลาของคุณ",
     "totalLeaveDays": "จำนวนวันลาทั้งหมด",
     "totalLeaveHours": "จำนวนชั่วโมงลาทั้งหมด",
@@ -655,7 +651,6 @@
     "enterEndWork": "วว/ดด/ปป",
     "confirm": "ยืนยัน",
     "cancel": "ยกเลิก",
-    "results": "ผลลัพธ์",
     "passwordStrength": {
       "weak": "รหัสผ่านอ่อนแอ",
       "medium": "รหัสผ่านปานกลาง",
@@ -768,9 +763,6 @@
     "saveSuccess": "บันทึกสำเร็จ!",
     "updateSuccess": "อัปเดตข้อมูลพนักงานสำเร็จ",
     "saveError": "บันทึกข้อมูลพนักงานไม่สำเร็จ",
-    "avatarUpdateSuccess": "อัปเดตรูปโปรไฟล์สำเร็จ",
-    "avatarUpdateSuccessDesc": "อัปเดตรูปโปรไฟล์เรียบร้อยแล้ว",
-    "avatarUpdateError": "ไม่สามารถอัปเดตรูปโปรไฟล์ได้",
     "noProcessCheckId": "ไม่พบ process check ID",
     "newPassword": "รหัสผ่านใหม่",
     "noPassword": "ยังไม่ได้ตั้งรหัสผ่าน",
