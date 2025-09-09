@@ -4,7 +4,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -20,6 +19,9 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from 'react-router-dom';
 import { monthNames } from '../constants/common';
 import { apiService, createAuthenticatedFileUrl } from '../lib/api';
+import LeaveDetailDialog from '@/components/dialogs/LeaveDetailDialog';
+import { isRetroactiveLeave, calcHours, getTypeColor, getLeaveTypeLabel, translateLeaveType } from '../lib/leaveUtils';
+import { getStatusBadge, getRetroactiveBadge } from '../components/leave/LeaveBadges';
 import { formatDateLocalized } from '../lib/utils';
 
 const LeaveHistory = () => {
@@ -64,13 +66,6 @@ const LeaveHistory = () => {
   const [selectedLeave, setSelectedLeave] = useState<any | null>(null);
 
   const [showDetailDialog, setShowDetailDialog] = useState(false);
-
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
-
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-
-  const [showImagePreview, setShowImagePreview] = useState(false);
-  const [previewImage, setPreviewImage] = useState<{ url: string; name: string } | null>(null);
 
   // --- เพิ่ม state สำหรับ items per page ---
 
@@ -232,6 +227,7 @@ const LeaveHistory = () => {
 
     }
 
+    // If not found in current data, fetch from API
     setSelectedLeave(null);
 
     setShowDetailDialog(true);
@@ -351,273 +347,23 @@ const LeaveHistory = () => {
 
 
 
-  // ฟังก์ชันตรวจสอบว่าการลาเป็นย้อนหลังหรือไม่ (ใช้ข้อมูลจาก backend)
+  // Note: isRetroactiveLeave, getStatusBadge, getRetroactiveBadge functions moved to src/lib/leaveUtils.ts
 
-  const isRetroactiveLeave = (leave: any) => {
 
-    // ใช้ข้อมูล backdated จาก backend
 
-    return leave.backdated === true;
 
-  };
 
 
 
-  const getStatusBadge = (status: string) => {
+  // Note: getTypeColor function moved to src/lib/leaveUtils.ts
 
-    switch (status) {
 
-      case "approved":
 
-        return (
+  // Note: translateLeaveType function moved to src/lib/leaveUtils.ts
 
-          <Badge className="bg-green-100 text-green-800 border-green-200">
 
-            <CheckCircle className="w-3 h-3 mr-1" />
 
-            {t('leave.approved')}
-
-          </Badge>
-
-        );
-
-      case "pending":
-
-        return (
-
-          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">
-
-            <AlertCircle className="w-3 h-3 mr-1" />
-
-            {t('history.pendingApproval')}
-
-          </Badge>
-
-        );
-
-      case "rejected":
-
-        return (
-
-          <Badge className="bg-red-100 text-red-800 border-red-200">
-
-            <XCircle className="w-3 h-3 mr-1" />
-
-            {t('leave.rejected')}
-
-          </Badge>
-
-        );
-
-      default:
-
-        return null;
-
-    }
-
-  };
-
-
-
-  // ฟังก์ชันสร้าง badge สำหรับการลาย้อนหลัง
-
-  const getRetroactiveBadge = (leave: any) => {
-
-    if (isRetroactiveLeave(leave)) {
-
-      return (
-
-        <Badge className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 border-purple-200 shadow-sm hover:shadow-md transition-all duration-200">
-
-          <History className="w-3 h-3 mr-1" />
-
-          {t('history.retroactiveLeave')}
-
-        </Badge>
-
-      );
-
-    }
-
-    return null;
-
-  };
-
-
-
-
-
-
-
-  const getTypeColor = (type: string) => {
-
-    if (!type) return "text-gray-600";
-
-    
-
-    const typeLower = type.toLowerCase();
-
-    
-
-    // ตรวจสอบจาก backend data ก่อน
-
-    const found = leaveTypes.find(lt => lt.id === type || lt.leave_type === type);
-
-    if (found) {
-
-      const typeKey = found.leave_type?.toLowerCase() || found.id?.toLowerCase();
-
-      if (typeKey === 'vacation' || typeKey === '') return "text-blue-600";
-
-      if (typeKey === 'sick' || typeKey === '') return "text-red-600";
-
-      if (typeKey === 'personal' || typeKey === '') return "text-green-600";
-
-      if (typeKey === 'emergency' || typeKey === '') return "text-orange-500";
-
-      if (typeKey === 'maternity' || typeKey === '') return "text-purple-600";
-
-    }
-
-    
-
-    // fallback: ตรวจสอบจาก i18n translation
-
-    const tVacation = t('leaveTypes.Vacation');
-
-    const tSick = t('leaveTypes.Sick');
-
-    const tPersonal = t('leaveTypes.Personal');
-
-    const tEmergency = t('leaveTypes.Emergency');
-
-    const tMaternity = t('leaveTypes.Maternity');
-
-    const tVacationTh = t('leaveTypes.ลาพักร้อน');
-
-    const tSickTh = t('leaveTypes.ลาป่วย');
-
-    const tPersonalTh = t('leaveTypes.ลากิจ');
-
-    const tEmergencyTh = t('leaveTypes.ลาฉุกเฉิน');
-
-    const tMaternityTh = t('leaveTypes.ลาคลอด');
-
-    
-
-    if (type === tVacation || type === tVacationTh || typeLower === 'vacation' || type === 'ลาพักร้อน') return "text-blue-600";
-
-    if (type === tSick || type === tSickTh || typeLower === 'sick' || type === 'ลาป่วย') return "text-red-600";
-
-    if (type === tPersonal || type === tPersonalTh || typeLower === 'personal' || type === 'ลากิจ') return "text-green-600";
-
-    if (type === tEmergency || type === tEmergencyTh || typeLower === 'emergency' || type === 'ลาฉุกเฉิน') return "text-orange-500";
-
-    if (type === tMaternity || type === tMaternityTh || typeLower === 'maternity' || type === 'ลาคลอด') return "text-purple-600";
-
-    
-
-    return "text-gray-600";
-
-  };
-
-
-
-  // ฟังก์ชันแปลประเภทการลาให้ตรงกับภาษาที่เลือก
-
-  const translateLeaveType = (type: string) => {
-
-    if (!type) return '';
-
-    
-
-    // ตรวจสอบว่ามีข้อมูลจาก backend หรือไม่
-
-    const found = leaveTypes.find(lt => lt.id === type || lt.leave_type === type);
-
-    if (found) {
-
-      return i18n.language.startsWith('th') ? found.leave_type_th : found.leave_type_en;
-
-    }
-
-    
-
-    // fallback: ใช้ i18n translation
-
-    const typeLower = type.toLowerCase();
-
-    const typeMap: Record<string, string> = {
-
-      'vacation': 'leaveTypes.Vacation',
-
-      'sick': 'leaveTypes.Sick',
-
-      'personal': 'leaveTypes.Personal',
-
-      'emergency': 'leaveTypes.Emergency',
-
-      'maternity': 'leaveTypes.Maternity',
-
-      'ลาพักร้อน': 'leaveTypes.ลาพักร้อน',
-
-      'ลาป่วย': 'leaveTypes.ลาป่วย',
-
-      'ลากิจ': 'leaveTypes.ลากิจ',
-
-      'ลาฉุกเฉิน': 'leaveTypes.ลาฉุกเฉิน',
-
-      'ลาคลอด': 'leaveTypes.ลาคลอด',
-
-      'ลาพักผ่อน': 'leaveTypes.ลาพักผ่อน',
-
-      'ลาอื่นๆ': 'leaveTypes.ลาอื่นๆ',
-
-    };
-
-    
-
-    const i18nKey = typeMap[typeLower] || typeMap[type];
-
-    if (i18nKey) return t(i18nKey);
-
-    
-
-    // fallback: try direct translation หรือ return type เดิม
-
-    return t(`leaveTypes.${type}`, type);
-
-  };
-
-
-
-  // ฟังก์ชันคำนวณชั่วโมงจากเวลาเริ่มและเวลาสิ้นสุด (string HH:mm)
-
-  const calcHours = (start: string, end: string) => {
-
-    if (!start || !end) return null;
-
-    const [sh, sm] = start.split(":").map(Number);
-
-    const [eh, em] = end.split(":").map(Number);
-
-    const startMins = sh * 60 + sm;
-
-    const endMins = eh * 60 + em;
-
-    let diff = endMins - startMins;
-
-    if (diff < 0) diff += 24 * 60; // ข้ามวัน
-
-    const hours = Math.floor(diff / 60);
-
-    const mins = diff % 60;
-
-    // แสดงเป็น ชั่วโมง.นาที (1.20)
-
-    return `${hours}.${mins.toString().padStart(2, '0')}`;
-
-  };
+  // Note: calcHours function moved to src/lib/leaveUtils.ts
 
   // กำหนดหน่วยชั่วโมงตามภาษา
 
@@ -635,31 +381,7 @@ const LeaveHistory = () => {
 
 
 
-  // ฟังก์ชันสำหรับแสดงชื่อประเภทการลาจาก backend หรือ i18n
-
-  const getLeaveTypeLabel = (typeId: string) => {
-
-    if (!typeId) return '';
-
-    
-
-    // ตรวจสอบว่ามีข้อมูลจาก backend หรือไม่
-
-    const found = leaveTypes.find(lt => lt.id === typeId || lt.leave_type === typeId);
-
-    if (found) {
-
-      return i18n.language.startsWith('th') ? found.leave_type_th : found.leave_type_en;
-
-    }
-
-    
-
-    // fallback: ใช้ translateLeaveType function
-
-    return translateLeaveType(typeId);
-
-  };
+  // Note: getLeaveTypeLabel function moved to src/lib/leaveUtils.ts
 
 
 
@@ -1550,15 +1272,18 @@ const LeaveHistory = () => {
 
                       <div className={`text-xl font-bold ${getTypeColor(leave.leaveTypeName_th || leave.leaveTypeName_en || leave.type)}`}>
 
-                        {getLeaveTypeLabel(leave.type) || translateLeaveType(leave.type)}
+                        {leave.leaveTypeName_th && leave.leaveTypeName_en 
+                          ? (i18n.language.startsWith('th') ? leave.leaveTypeName_th : leave.leaveTypeName_en)
+                          : (getLeaveTypeLabel(leave.type, leaveTypes, i18n, t) || translateLeaveType(leave.type, leaveTypes, i18n, t))
+                        }
 
                       </div>
 
                       <div className="flex flex-wrap gap-2">
 
-                        {getStatusBadge(leave.status)}
+                        {getStatusBadge(leave.status, t)}
 
-                        {getRetroactiveBadge(leave)}
+                        {getRetroactiveBadge(leave, t)}
 
                       </div>
 
@@ -2137,501 +1862,12 @@ const LeaveHistory = () => {
 
       </div>
 
-      {/* Detail Dialog */}
-
-      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
-
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto animate-scale-in">
-
-          <DialogHeader>
-
-            <DialogTitle>
-
-              {t('common.viewDetails')}
-
-            </DialogTitle>
-
-            <DialogDescription>
-
-              {t('leave.detailDescription')}
-
-            </DialogDescription>
-
-          </DialogHeader>
-
-          
-
-          {selectedLeave && (
-
-            <div className="space-y-6">
-
-              {/* Header Section */}
-
-              <Card className="glass shadow-2xl border-0">
-
-                <CardContent className="p-6">
-
-                  <div className="flex items-center justify-between">
-
-                    <div className="flex items-center gap-4">
-
-                      <div className={`text-3xl font-bold ${getTypeColor(selectedLeave.leaveTypeName_th || selectedLeave.leaveTypeName_en || selectedLeave.type)}`}>
-
-                        {getLeaveTypeLabel(selectedLeave.type) || translateLeaveType(selectedLeave.type)}
-
-                      </div>
-
-                    </div>
-
-                    <div className="text-right">
-
-                      <div className="text-sm text-gray-500">{t('history.submittedOn')}</div>
-
-                      <div className="text-lg font-semibold text-blue-600">
-
-                        {formatDateLocalized(selectedLeave.submittedDate || selectedLeave.createdAt, i18n.language)}
-
-                      </div>
-
-                    </div>
-
-                  </div>
-
-                  {/* Status badges moved here */}
-
-                  <div className="flex flex-wrap gap-2 mt-4">
-
-                    {getStatusBadge(selectedLeave.status)}
-
-                    {getRetroactiveBadge(selectedLeave)}
-
-                  </div>
-
-                </CardContent>
-
-              </Card>
-
-
-
-              {/* Main Information Grid */}
-
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-                {/* Left Column - Basic Info */}
-                <Card className="glass shadow-2xl border-0">
-
-                  <CardHeader className="pb-3">
-
-                    <div className="flex items-center gap-2">
-
-                      <Calendar className="w-5 h-5 text-blue-600" />
-
-                      <h3 className="text-lg font-semibold">{t('leave.dateInformation')}</h3>
-
-                    </div>
-
-                  </CardHeader>
-
-                  <CardContent className="space-y-4">
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
-                      <div className="space-y-2">
-
-                        <Label className="text-sm font-medium text-gray-600">{t('leave.startDate')}</Label>
-
-                        <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
-
-                          <Calendar className="w-4 h-4 text-blue-500" />
-
-                          <span className="font-medium text-blue-900">
-
-                            {formatDateLocalized(selectedLeave.startDate, i18n.language)}
-
-                          </span>
-
-                        </div>
-
-                      </div>
-
-                      <div className="space-y-2">
-
-                        <Label className="text-sm font-medium text-gray-600">{t('leave.endDate')}</Label>
-
-                        <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
-
-                          <Calendar className="w-4 h-4 text-blue-500" />
-
-                          <span className="font-medium text-blue-900">
-
-                            {formatDateLocalized(selectedLeave.endDate, i18n.language)}
-
-                          </span>
-
-                        </div>
-
-                      </div>
-
-                    </div>
-
-                    {/* แสดงระยะเวลาตามประเภทการลา */}
-
-                    {selectedLeave.startTime && selectedLeave.endTime ? (
-
-                      // ถ้ามีเวลาเริ่มและสิ้นสุด แสดงเป็นชั่วโมง
-
-                      <div className="space-y-4">
-
-                        <div className="space-y-2">
-
-                          <Label className="text-sm font-medium text-gray-600">{t('leave.duration')}</Label>
-
-                          <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
-
-                            <Clock className="w-4 h-4 text-blue-500" />
-
-                            <span className="font-medium text-blue-900">
-
-                              {calcHours(selectedLeave.startTime, selectedLeave.endTime)} {hourUnit}
-
-                            </span>
-
-                          </div>
-
-                        </div>
-
-                        <div className="space-y-2">
-
-                          <Label className="text-sm font-medium text-gray-600">{t('history.leaveTime')}</Label>
-
-                          <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
-
-                            <Clock className="w-4 h-4 text-blue-500" />
-
-                            <span className="font-medium text-blue-900">
-
-                              {selectedLeave.startTime} - {selectedLeave.endTime}
-
-                            </span>
-
-                          </div>
-
-                        </div>
-
-                      </div>
-
-                    ) : (
-
-                      // ถ้าไม่มีเวลา แสดงเป็นวัน
-
-                      <div className="space-y-2">
-
-                        <Label className="text-sm font-medium text-gray-600">{t('leave.duration')}</Label>
-
-                        <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
-
-                          <Clock className="w-4 h-4 text-green-500" />
-
-                          <span className="font-medium text-green-900">
-
-                            {selectedLeave.days || 1} {t('history.days')}
-
-                          </span>
-
-                        </div>
-
-                      </div>
-
-                    )}
-
-                    {isRetroactiveLeave(selectedLeave) && (
-
-                      <div className="space-y-2">
-
-                        <Label className="text-sm font-medium text-purple-600">{t('history.retroactiveLeave')}</Label>
-
-                        <div className="flex items-center gap-2 p-3 bg-purple-50 rounded-lg">
-
-                          <History className="w-4 h-4 text-purple-500" />
-
-                          <span className="text-purple-700">{t('history.retroactiveLeave')}</span>
-
-                        </div>
-
-                      </div>
-
-                    )}
-
-                  </CardContent>
-
-                </Card>
-
-
-
-                {/* Right Column - Status & Approval */}
-                <Card className="glass shadow-2xl border-0">
-
-                  <CardHeader className="pb-3">
-
-                    <div className="flex items-center gap-2">
-
-                      <CheckCircle className="w-5 h-5 text-green-600" />
-
-                      <h3 className="text-lg font-semibold">{t('leave.statusAndApproval')}</h3>
-
-                    </div>
-
-                  </CardHeader>
-
-                  <CardContent className="space-y-4">
-
-                    <div className="space-y-2">
-
-                      <Label className="text-sm font-medium text-gray-600">{t('leave.status')}</Label>
-
-                      <div className="flex items-center gap-2">
-
-                        {getStatusBadge(selectedLeave.status)}
-
-                      </div>
-
-                    </div>
-
-                    
-
-                    {selectedLeave.status === "approved" && selectedLeave.approvedBy && (
-
-                      <div className="space-y-2">
-
-                        <Label className="text-sm font-medium text-gray-600">{t('leave.approvedBy')}</Label>
-
-                        <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
-
-                          <CheckCircle className="w-4 h-4 text-green-500" />
-                          <span className="font-medium text-green-900 break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">{selectedLeave.approvedBy}</span>
-                        </div>
-
-                      </div>
-
-                    )}
-
-                    
-
-                    {selectedLeave.status === "rejected" && (
-
-                      <div className="space-y-4">
-
-                        <div className="space-y-2">
-
-                          <Label className="text-sm font-medium text-gray-600">{t('leave.rejectedBy')}</Label>
-
-                          <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
-
-                            <XCircle className="w-4 h-4 text-red-500" />
-                            <span className="font-medium text-red-900 break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">{selectedLeave.rejectedBy || '-'}</span>
-                          </div>
-
-                        </div>
-
-                        {selectedLeave.rejectionReason && (
-
-                          <div className="space-y-2">
-
-                            <Label className="text-sm font-medium text-gray-600">{t('leave.rejectionReason')}</Label>
-
-                            <div className="flex items-start gap-2 p-3 bg-red-50 rounded-lg">
-
-                              <FileText className="w-4 h-4 text-red-500 mt-0.5" />
-                              <div className="flex-1 min-w-0">
-                                <span className="text-red-900 leading-relaxed break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">{selectedLeave.rejectionReason}</span>
-                              </div>
-                            </div>
-
-                          </div>
-
-                        )}
-
-                      </div>
-
-                    )}
-
-                  </CardContent>
-
-                </Card>
-
-              </div>
-
-
-
-              {/* Reason Section */}
-              <Card className="glass shadow-2xl border-0">
-
-                <CardHeader className="pb-3">
-
-                  <div className="flex items-center gap-2">
-
-                    <FileText className="w-5 h-5 text-orange-600" />
-
-                    <h3 className="text-lg font-semibold">{t('leave.reason')}</h3>
-
-                  </div>
-
-                </CardHeader>
-
-                <CardContent>
-
-                  <div className="p-4 bg-orange-50 rounded-lg">
-                    <p className="text-orange-900 leading-relaxed break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">
-                      {selectedLeave.reason || t('history.noReasonProvided')}
-
-                    </p>
-
-                  </div>
-
-                </CardContent>
-
-              </Card>
-
-
-
-              {/* Contact Information */}
-
-              {selectedLeave.contact && (
-
-                <Card className="border-0 shadow-md">
-
-                  <CardHeader className="pb-3">
-
-                    <div className="flex items-center gap-2">
-
-                      <User className="w-5 h-5 text-teal-600" />
-
-                      <h3 className="text-lg font-semibold">{t('leave.contactInformation')}</h3>
-
-                    </div>
-
-                  </CardHeader>
-
-                  <CardContent>
-                                      <div className="p-4 bg-teal-50 rounded-lg">
-                    <p className="text-teal-900 font-medium break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">{selectedLeave.contact}</p>
-                  </div>
-                  </CardContent>
-
-                </Card>
-
-              )}
-
-
-
-              {/* Attachments Section */}
-              {(() => {
-                const files =
-                  (Array.isArray(selectedLeave.attachments) && selectedLeave.attachments.length > 0)
-                    ? selectedLeave.attachments
-                    : (typeof selectedLeave.attachments === 'string' && selectedLeave.attachments)
-                      ? [selectedLeave.attachments]
-                      : (Array.isArray(selectedLeave.attachment) && selectedLeave.attachment.length > 0)
-                        ? selectedLeave.attachment
-                        : (typeof selectedLeave.attachment === 'string' && selectedLeave.attachment)
-                          ? [selectedLeave.attachment]
-                          : (Array.isArray(selectedLeave.file) && selectedLeave.file.length > 0)
-                            ? selectedLeave.file
-                            : (typeof selectedLeave.file === 'string' && selectedLeave.file)
-                              ? [selectedLeave.file]
-                              : [];
-                if (files.length > 0) {
-                  return (
-                    <Card className="glass shadow-2xl border-0">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-5 h-5 text-indigo-600" />
-                          <h3 className="text-lg font-semibold">{t('leave.attachments')}</h3>
-                          <Badge variant="secondary" className="ml-2">
-                            {files.length} {t('leave.files')}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {files.map((file: string, idx: number) => {
-                            const fileName = file.split('/').pop() || file;
-                            const ext = fileName.split('.').pop()?.toLowerCase();
-                            const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext || '');
-                            // Construct the correct file path - always prepend /leave-uploads/ if not already present
-                            const fileUrl = file.startsWith('/leave-uploads/') ? file : `/leave-uploads/${file}`;
-                            const authenticatedFileUrl = createAuthenticatedFileUrl(fileUrl);
-                            return (
-                              <div key={file} className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
-                                {isImage ? (
-                                  <div className="space-y-3">
-                                    <img
-                                      src={authenticatedFileUrl}
-                                      alt={fileName}
-                                      className="w-full h-32 object-cover rounded-lg border"
-                                      onError={(e) => {
-                                        const target = e.target as HTMLImageElement;
-                                        target.style.display = 'none';
-                                      }}
-                                    />
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-sm text-gray-600 truncate">{fileName}</span>
-                                      <Button size="sm" variant="outline" onClick={() => setPreviewImage({ url: authenticatedFileUrl, name: fileName })}>{t('common.view')}</Button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="space-y-3">
-                                    <div className="w-full h-32 bg-gray-200 rounded-lg flex items-center justify-center">
-                                      <FileText className="w-8 h-8 text-gray-400" />
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-sm text-gray-600 truncate">{fileName}</span>
-                                      <Button size="sm" variant="outline" onClick={() => window.open(authenticatedFileUrl, '_blank')}>{t('common.view')}</Button>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                }
-                return null;
-              })()}
-
-      {previewImage && (
-        <ImagePreviewDialog
-          isOpen={!!previewImage}
-          onClose={() => setPreviewImage(null)}
-          imageUrl={previewImage.url}
-          imageName={previewImage.name}
-          title={t('leave.attachmentPreview')}
-        />
-      )}
-
-
-
-            </div>
-
-          )}
-
-          
-
-          <DialogFooter className="pt-6 border-t">
-
-            <Button variant="outline" onClick={() => setShowDetailDialog(false)} className="btn-press hover-glow">
-
-              {t('common.close')}
-
-            </Button>
-
-          </DialogFooter>
-
-        </DialogContent>
-
-      </Dialog>
+      {/* Leave Detail Dialog */}
+      <LeaveDetailDialog
+        open={showDetailDialog}
+        onOpenChange={setShowDetailDialog}
+        leaveRequest={selectedLeave}
+      />
 
 
 

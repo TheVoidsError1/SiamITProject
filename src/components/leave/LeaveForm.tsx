@@ -13,21 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import { TIME_CONSTANTS } from '@/constants/business';
 import { DateRangePicker } from "./DateRangePicker";
 import { FileUpload } from "./FileUpload";
-
-// ฟังก์ชัน validate เวลา HH:mm (24 ชั่วโมง)
-function isValidTimeFormat(timeStr: string): boolean {
-  return /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(timeStr);
-}
-
-// ฟังก์ชันเติม : อัตโนมัติเมื่อป้อนเวลา เช่น 900 -> 09:00, 1730 -> 17:30
-function autoFormatTimeInput(value: string) {
-  let digits = value.replace(/[^0-9]/g, "");
-  if (digits.length > 4) digits = digits.slice(0, 4);
-  if (digits.length >= 3) {
-    return digits.slice(0, digits.length - 2) + ":" + digits.slice(-2);
-  }
-  return digits;
-}
+import { isValidTimeFormat, autoFormatTimeInput, getLeaveNotice } from '../../lib/leaveUtils';
 
 // ฟังก์ชันแปลงวันที่เป็น yyyy-mm-dd ตาม local time (ไม่ใช่ UTC)
 function formatDateLocal(date: Date) {
@@ -104,28 +90,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
   // Helper: isHourlyLeave
   const isHourlyLeave = durationType === "hour";
 
-  // Helper function สำหรับตรวจสอบการลา
-  const getLeaveNotice = (startDate: Date | undefined) => {
-    if (!startDate) return null;
-    
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const startDateOnly = new Date(startDate);
-    startDateOnly.setHours(0, 0, 0, 0);
-    
-    // ถ้าวันที่เริ่มลาน้อยกว่าวันนี้ (ไม่รวมวันนี้) = ลาย้อนหลัง
-    if (startDateOnly < today) {
-      return {
-        type: 'backdated',
-        message: t('leave.backdatedNotice'),
-        className: 'bg-yellow-50 border-yellow-200 text-yellow-800'
-      };
-    }
-    
-    // ไม่แสดงแจ้งเตือนสำหรับการลาล่วงหน้า
-    // ถ้าเป็นวันนี้หรืออนาคต = ไม่แสดงแจ้งเตือน
-    return null;
-  };
+  // Note: getLeaveNotice function moved to src/lib/leaveUtils.ts
 
 
 
@@ -413,8 +378,11 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
       if (durationType === 'hour' && leaveDate instanceof Date && !isNaN(leaveDate.getTime())) {
         formData.append("leaveDate", formatDateLocal(leaveDate));
       }
-      if (startTime) formData.append("startTime", startTime);
-      if (endTime) formData.append("endTime", endTime);
+      // Only send time fields for hourly leave
+      if (durationType === 'hour') {
+        if (startTime) formData.append("startTime", startTime);
+        if (endTime) formData.append("endTime", endTime);
+      }
       formData.append("reason", reason);
       formData.append("contact", contact);
       // แนบไฟล์ทุกประเภทใน attachments array
@@ -654,7 +622,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
                       />
                       {/* แจ้งเตือนเมื่อมีการลาย้อนหลังหรือลาล่วงหน้า */}
                       {(() => {
-                        const notice = getLeaveNotice(startDate);
+                        const notice = getLeaveNotice(startDate, undefined, t);
                         if (!notice) return null;
                         
                         const iconColor = notice.type === 'backdated' ? 'text-yellow-600' : 'text-blue-600';

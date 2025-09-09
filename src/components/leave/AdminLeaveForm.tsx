@@ -13,21 +13,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from 'react-router-dom';
 import { FileUpload } from "./FileUpload";
-
-// ฟังก์ชัน validate เวลา HH:mm (24 ชั่วโมง)
-function isValidTimeFormat(timeStr: string): boolean {
-  return /^([01][0-9]|2[0-3]):[0-5][0-9]$/.test(timeStr);
-}
-
-// ฟังก์ชันเติม : อัตโนมัติเมื่อป้อนเวลา เช่น 900 -> 09:00, 1730 -> 17:30
-function autoFormatTimeInput(value: string) {
-  let digits = value.replace(/[^0-9]/g, "");
-  if (digits.length > 4) digits = digits.slice(0, 4);
-  if (digits.length >= 3) {
-    return digits.slice(0, digits.length - 2) + ":" + digits.slice(-2);
-  }
-  return digits;
-}
+import { isValidTimeFormat, autoFormatTimeInput, getLeaveNotice } from '../../lib/leaveUtils';
 
 // ฟังก์ชันแปลงวันที่เป็น yyyy-mm-dd ตาม local time (ไม่ใช่ UTC)
 function formatDateLocal(date: Date) {
@@ -251,15 +237,14 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
       newErrors.durationType = t('leave.selectDurationTypeRequired');
     }
 
-    if (!startDate) {
-      newErrors.startDate = t('leave.selectStartDateRequired');
-    }
-
-    if (durationType === 'day' && !endDate) {
-      newErrors.endDate = t('leave.selectEndDateRequired');
-    }
-
-    if (durationType === 'hour') {
+    if (durationType === 'day') {
+      if (!startDate) {
+        newErrors.startDate = t('leave.selectStartDateRequired');
+      }
+      if (endDate) {
+        newErrors.endDate = t('leave.selectEndDateRequired');
+      }
+    } else if (durationType === 'hour') {
       if (!leaveDate) {
         newErrors.leaveDate = t('leave.selectLeaveDateRequired');
       }
@@ -339,16 +324,17 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
       if (durationType === 'day') {
         if (startDate) formData.append("startDate", startDate);
         if (endDate) formData.append("endDate", endDate);
+        // For full day leave, don't send time fields
       } else if (durationType === 'hour') {
         // For hourly leave, use leaveDate as startDate and endDate
         if (leaveDate) {
           formData.append("startDate", leaveDate);
           formData.append("endDate", leaveDate);
         }
+        // Only send time fields for hourly leave
+        if (startTime) formData.append("startTime", startTime);
+        if (endTime) formData.append("endTime", endTime);
       }
-      
-      if (startTime) formData.append("startTime", startTime);
-      if (endTime) formData.append("endTime", endTime);
       formData.append("reason", reason);
       formData.append("contact", contact);
       
@@ -425,36 +411,7 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
     setTimeError(""); // Clear any previous time errors
   };
 
-  // Function to check if leave is backdated, advance, or current
-  const getLeaveNotice = (startDate: string | undefined, endDate: string | undefined) => {
-    if (!startDate) return null;
-    
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const startDateOnly = new Date(startDate);
-    startDateOnly.setHours(0, 0, 0, 0);
-    
-    // ถ้าวันที่เริ่มลาน้อยกว่าวันนี้ (ไม่รวมวันนี้) = ลาย้อนหลัง
-    if (startDateOnly < today) {
-      return {
-        type: 'backdated',
-        message: t('leave.backdatedNotice'),
-        className: 'bg-yellow-50 border-yellow-200 text-yellow-800'
-      };
-    }
-    
-    // ถ้าวันที่เริ่มลามากกว่าวันนี้ = ลาล่วงหน้า
-    if (startDateOnly > today) {
-      return {
-        type: 'advance',
-        message: t('leave.advanceNotice'),
-        className: 'bg-blue-50 border-blue-200 text-blue-800'
-      };
-    }
-    
-    // ถ้าเป็นวันนี้ = ไม่แสดงแจ้งเตือน
-    return null;
-  };
+  // Note: getLeaveNotice function moved to src/lib/leaveUtils.ts
 
   return (
     <div className="bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/30 rounded-2xl p-8 shadow-xl border border-blue-100/50">
@@ -680,14 +637,12 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
 
                 {/* แจ้งเตือนเมื่อมีการลาย้อนหลังหรือลาล่วงหน้า */}
                 {(() => {
-                  const notice = getLeaveNotice(startDate, endDate);
+                  const notice = getLeaveNotice(startDate, endDate, t);
                   if (!notice) return null;
-                  
                   const iconColor = notice.type === 'backdated' ? 'text-yellow-600' : 'text-blue-600';
-                  const iconPath = notice.type === 'backdated' 
+                  const iconPath = notice.type === 'backdated'
                     ? "M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
                     : "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z";
-                  
                   return (
                     <div className={`p-3 border rounded-lg ${notice.className}`}>
                       <div className="flex items-center gap-2">
@@ -714,6 +669,8 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
                     onDateChange={setLeaveDate}
                     placeholder={t('leave.selectLeaveDate')}
                     className={errors.leaveDate ? 'border-red-500' : ''}
+                    // จำกัดให้เลือกได้แค่วันเดียว (ไม่ต้องเลือกช่วง)
+                    //range={false}
                   />
                   {errors.leaveDate && (
                     <p className="text-sm text-red-500">{errors.leaveDate}</p>
@@ -767,14 +724,12 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
 
                 {/* แจ้งเตือนเมื่อมีการลาย้อนหลังหรือลาล่วงหน้า */}
                 {(() => {
-                  const notice = getLeaveNotice(leaveDate, leaveDate);
+                  const notice = getLeaveNotice(leaveDate, leaveDate, t);
                   if (!notice) return null;
-                  
                   const iconColor = notice.type === 'backdated' ? 'text-yellow-600' : 'text-blue-600';
-                  const iconPath = notice.type === 'backdated' 
+                  const iconPath = notice.type === 'backdated'
                     ? "M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
                     : "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z";
-                  
                   return (
                     <div className={`p-3 border rounded-lg ${notice.className}`}>
                       <div className="flex items-center gap-2">
@@ -1007,7 +962,10 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
         )}
 
         {/* Submit Button - Show when all required fields are filled */}
-        {selectedUserId && leaveType && durationType && approvalStatus && reason && contact && (
+        {selectedUserId && leaveType && durationType &&
+          ((durationType === 'day' && startDate && endDate) ||
+           (durationType === 'hour' && leaveDate && startTime && endTime)) &&
+          approvalStatus && reason && contact && (
           <div className="flex justify-end space-x-4 pt-6">
             <Button
               type="button"

@@ -6,32 +6,23 @@
    const config = require('../config');
    const LineController = require('./LineController');
    const { leaveAttachmentsUpload, handleUploadError } = require('../middleware/fileUploadMiddleware');
-   const { 
-     verifyToken, 
-     sendSuccess, 
-     sendError, 
-     sendUnauthorized,
-     convertToMinutes,
-     calculateDaysBetween,
-     convertTimeRangeToDecimal,
-     isWithinWorkingHours,
-     sendValidationError,
-     sendNotFound,
-     sendConflict
-   } = require('../utils');
+  const { 
+    verifyToken, 
+    sendSuccess, 
+    sendError, 
+    sendUnauthorized,
+    convertToMinutes,
+    calculateDaysBetween,
+    convertTimeRangeToDecimal,
+    isWithinWorkingHours,
+    sendValidationError,
+    sendNotFound,
+    sendConflict,
+    parseAttachments
+  } = require('../utils');
 
-   // File upload middleware is now imported from fileUploadMiddleware.js
-
-   // ใช้ฟังก์ชัน parseAttachments ปลอดภัย
-   function parseAttachments(val) {
-     if (!val) return [];
-     try {
-       return JSON.parse(val);
-     } catch (e) {
-       console.error('Invalid attachments JSON:', val, e);
-       return [];
-     }
-   }
+  // File upload middleware is now imported from fileUploadMiddleware.js
+  // parseAttachments function is now imported from ../utils
 
    // Helper function to update LeaveUsed table (only for approved requests)
    async function updateLeaveUsed(leave) {
@@ -349,7 +340,7 @@
         }
         const {
           /* employeeType, */ leaveType, personalLeaveType, startDate, endDate,
-          startTime, endTime, reason, supervisor, contact
+          startTime, endTime, reason, supervisor, contact, durationType
         } = req.body;
 
         // --- Validation: quota ---
@@ -582,8 +573,8 @@
           leaveType,
           startDate,
           endDate,
-          startTime,
-          endTime,
+          startTime: durationType === 'hour' ? (startTime || null) : null,
+          endTime: durationType === 'hour' ? (endTime || null) : null,
           reason,
           supervisor,
           contact,
@@ -2367,14 +2358,21 @@
           return sendNotFound(res, 'Leave type not found');
         }
 
+        // ดึง employeeType จาก target user
+        let employeeType = null;
+        if (targetUser.position) {
+          employeeType = targetUser.position;
+        }
+
         // สร้าง leave request
         const leaveRequest = leaveRepo.create({
           Repid: repid,
+          employeeType: employeeType,
           leaveType: leaveTypeEntity.id,
           startDate: startDate,
           endDate: durationType === 'hour' ? startDate : endDate,
-          startTime: startTime || null,
-          endTime: endTime || null,
+          startTime: durationType === 'hour' ? (startTime || null) : null,
+          endTime: durationType === 'hour' ? (endTime || null) : null,
           reason: reason,
           contact: contact,
           status: approvalStatus,

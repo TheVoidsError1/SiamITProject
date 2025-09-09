@@ -22,6 +22,11 @@ import { monthNames } from '../constants/common';
 import { apiService, createAuthenticatedFileUrl } from '../lib/api';
 import { showToastMessage } from '../lib/toast';
 import { formatDateLocalized, formatDateOnly } from '../lib/utils';
+import ImagePreviewDialog from '@/components/dialogs/ImagePreviewDialog';
+import { apiService, createAuthenticatedFileUrl } from '../lib/api';
+import LeaveDetailDialog from '@/components/dialogs/LeaveDetailDialog';
+import { isRetroactiveLeave, calcHours, getTypeColor, getLeaveTypeDisplay } from '../lib/leaveUtils';
+import { getStatusBadge, getRetroactiveBadge } from '../components/leave/LeaveBadges';
 
 type LeaveRequest = {
   id: number;
@@ -192,19 +197,7 @@ const AdminDashboard = () => {
 
 
 
-  // --- เพิ่มฟังก์ชันคำนวณชั่วโมง ---
-  const calcHours = (start: string, end: string) => {
-    if (!start || !end) return null;
-    const [sh, sm] = start.split(":").map(Number);
-    const [eh, em] = end.split(":").map(Number);
-    const startMins = sh * 60 + sm;
-    const endMins = eh * 60 + em;
-    let diff = endMins - startMins;
-    if (diff < 0) diff += 24 * 60; // ข้ามวัน
-    const hours = Math.floor(diff / 60);
-    const mins = diff % 60;
-    return `${hours}.${mins.toString().padStart(2, '0')}`;
-  };
+  // Note: calcHours function moved to src/lib/leaveUtils.ts
   const hourUnit = i18n.language === 'th' ? '' : 'Hours';
 
   const handleApprove = (id: string, employeeName: string) => {
@@ -583,8 +576,9 @@ const AdminDashboard = () => {
     setFilterYear(currentYear);
   };
 
-  // --- ฟังก์ชันกลางสำหรับแสดงชื่อประเภทการลา ---
-  function getLeaveTypeDisplay(typeIdOrName: string) {
+  // Note: getLeaveTypeDisplay function moved to src/lib/leaveUtils.ts
+  // Helper function for AdminDashboard specific leave type display
+  const getAdminLeaveTypeDisplay = (typeIdOrName: string) => {
     if (!typeIdOrName) return '';
     
     // First, try to find in pendingLeaveTypes (active leave types)
@@ -598,33 +592,27 @@ const AdminDashboard = () => {
     // If not found in active types, check if it's a UUID (inactive/deleted leave type)
     if (typeIdOrName.length > 20) {
       // This is likely a UUID of an inactive/deleted leave type
-      // The backend should have provided leaveTypeName_th and leaveTypeName_en
-      // For now, return a fallback message
       return i18n.language.startsWith('th') ? t('leaveTypes.deletedLeaveType') : t('leaveTypes.deletedLeaveType');
     }
     
     // Fallback to translation or original value
     return String(t('leaveTypes.' + typeIdOrName, typeIdOrName));
-  }
+  };
 
   // Add a function to fetch leave request details by ID for recent history
   const handleViewDetailsWithFetch = async (request: any) => {
+    setSelectedRequest(request); // Set the request data immediately
     setShowDetailDialog(true);
-    setSelectedRequest(null); // Show loading state if needed
+    
+    // Optionally fetch additional details from API
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        showSessionExpiredDialog();
-        return;
-      }
       const data = await apiService.get(apiEndpoints.leave.detail(request.id), undefined, showSessionExpiredDialog);
       if (data.success) {
         setSelectedRequest({ ...data.data, ...request });
-      } else {
-        setSelectedRequest(request); // fallback
       }
     } catch {
-      setSelectedRequest(request); // fallback
+      // Keep the original request data if API call fails
+      console.error('Error fetching leave detail:', request.id);
     }
   };
 
@@ -1173,7 +1161,7 @@ const AdminDashboard = () => {
                             <span className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold mb-1 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                               {request.leaveTypeName_th && request.leaveTypeName_en 
                                 ? (i18n.language.startsWith('th') ? request.leaveTypeName_th : request.leaveTypeName_en)
-                                : getLeaveTypeDisplay(request.leaveType || request.leaveTypeName)
+                                : getAdminLeaveTypeDisplay(request.leaveType || request.leaveTypeName)
                               }
                             </span>
                             {(request.backdated === 1 || request.backdated === "1" || request.backdated === true) && (
@@ -1485,7 +1473,7 @@ const AdminDashboard = () => {
                                                           <span className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold mb-1 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                               {request.leaveTypeName_th && request.leaveTypeName_en 
                                 ? (i18n.language.startsWith('th') ? request.leaveTypeName_th : request.leaveTypeName_en)
-                                : getLeaveTypeDisplay(request.leaveType || request.leaveTypeName)
+                                : getAdminLeaveTypeDisplay(request.leaveType || request.leaveTypeName)
                               }
                             </span>
                               {(request.backdated === 1 || request.backdated === "1" || request.backdated === true) && (
@@ -1648,299 +1636,12 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto animate-scale-in">
-          <DialogHeader>
-            <DialogTitle>
-              {t('common.viewDetails')}
-            </DialogTitle>
-            <DialogDescription>
-              {t('leave.detailDescription', 'Detailed information about this leave request.')}
-            </DialogDescription>
-          </DialogHeader>
-          
-          {selectedRequest && (
-            <div className="space-y-6">
-              {/* Header Section */}
-              <Card className="border-0 shadow-lg bg-gradient-to-r from-blue-50 to-indigo-50">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className={`text-3xl font-bold text-blue-900`}>
-                                                    {selectedRequest.leaveTypeName_th && selectedRequest.leaveTypeName_en 
-                              ? (i18n.language.startsWith('th') ? selectedRequest.leaveTypeName_th : selectedRequest.leaveTypeName_en)
-                              : getLeaveTypeDisplay(selectedRequest.leaveType || selectedRequest.leaveTypeName)
-                            }
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm text-gray-500">{t('history.submittedOn')}</div>
-                      <div className="text-lg font-semibold text-blue-600">
-                        {selectedRequest.createdAt ? selectedRequest.createdAt.split('T')[0] : "-"}
-                      </div>
-                    </div>
-                  </div>
-                  {/* Status badges moved here */}
-                  <div className="flex flex-wrap gap-2 mt-4">
-                    {/* Badge สถานะ */}
-                    {selectedRequest.status === 'approved' && (
-                      <Badge className="bg-green-100 text-green-800 border-green-200"><CheckCircle className="w-3 h-3 mr-1" />{t('leave.approved')}</Badge>
-                    )}
-                    {selectedRequest.status === 'pending' && (
-                      <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200"><AlertCircle className="w-3 h-3 mr-1" />{t('history.pendingApproval')}</Badge>
-                    )}
-                    {selectedRequest.status === 'rejected' && (
-                      <Badge className="bg-red-100 text-red-800 border-red-200"><XCircle className="w-3 h-3 mr-1" />{t('leave.rejected')}</Badge>
-                    )}
-                    {/* Badge ลาย้อนหลัง */}
-                    {(selectedRequest.backdated === 1 || selectedRequest.backdated === "1" || selectedRequest.backdated === true) && (
-                      <Badge className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 border-purple-200 shadow-sm hover:shadow-md transition-all duration-200"><History className="w-3 h-3 mr-1" />{t('history.retroactiveLeave')}</Badge>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-              {/* Main Information Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Left Column - Basic Info */}
-                <Card className="border-0 shadow-md">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-5 h-5 text-blue-600" />
-                      <h3 className="text-lg font-semibold">{t('leave.dateInformation')}</h3>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-600">{t('leave.startDate')}</Label>
-                        <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
-                          <Calendar className="w-4 h-4 text-blue-500" />
-                          <span className="font-medium text-blue-900">
-                            {formatDateOnly(selectedRequest.startDate, i18n.language)}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-600">{t('leave.endDate')}</Label>
-                        <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
-                          <Calendar className="w-4 h-4 text-blue-500" />
-                          <span className="font-medium text-blue-900">
-                            {formatDateOnly(selectedRequest.endDate, i18n.language)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-600">{t('leave.duration')}</Label>
-                      <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
-                        <Clock className="w-4 h-4 text-green-500" />
-                        <span className="font-medium text-green-900">
-                          {selectedRequest.startDate && selectedRequest.endDate 
-                            ? differenceInCalendarDays(new Date(selectedRequest.endDate), new Date(selectedRequest.startDate)) + 1 
-                            : 1} {t('leave.days')}
-                        </span>
-                      </div>
-                    </div>
-                    {(selectedRequest.backdated === 1 || selectedRequest.backdated === "1" || selectedRequest.backdated === true) && (
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-purple-600">{t('history.retroactiveLeave')}</Label>
-                        <div className="flex items-center gap-2 p-3 bg-purple-50 rounded-lg">
-                          <History className="w-4 h-4 text-purple-500" />
-                          <span className="text-purple-700">{t('history.retroactiveLeaveDesc')}</span>
-                        </div>
-                      </div>
-                    )}
-                    {/* ลาเป็น ชม. */}
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-600">{t('leave.leaveTime')}</Label>
-                      <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
-                        <Clock className="w-4 h-4 text-blue-500" />
-                        <span className="font-medium text-blue-900">
-                          {selectedRequest.startTime && selectedRequest.endTime
-                            ? `${selectedRequest.startTime} - ${selectedRequest.endTime} (${calcHours(selectedRequest.startTime, selectedRequest.endTime)} ${hourUnit})`
-                            : t('leave.noHourlyLeave')}
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                {/* Right Column - Status & Approval */}
-                <Card className="border-0 shadow-md">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-green-600" />
-                      <h3 className="text-lg font-semibold">{t('leave.statusAndApproval')}</h3>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-600">{t('leave.status')}</Label>
-                      <div className="flex items-center gap-2">
-                        {selectedRequest.status === 'approved' && (
-                          <Badge className="bg-green-100 text-green-800 border-green-200"><CheckCircle className="w-3 h-3 mr-1" />{t('leave.approved')}</Badge>
-                        )}
-                        {selectedRequest.status === 'pending' && (
-                          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200"><AlertCircle className="w-3 h-3 mr-1" />{t('history.pendingApproval')}</Badge>
-                        )}
-                        {selectedRequest.status === 'rejected' && (
-                          <Badge className="bg-red-100 text-red-800 border-red-200"><XCircle className="w-3 h-3 mr-1" />{t('leave.rejected')}</Badge>
-                        )}
-                      </div>
-                    </div>
-                    {selectedRequest.status === "approved" && selectedRequest.approvedBy && (
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-600">{t('leave.approvedBy')}</Label>
-                        <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
-                          <CheckCircle className="w-4 h-4 text-green-500" />
-                          <span className="font-medium text-green-900">{selectedRequest.approvedBy}</span>
-                        </div>
-                      </div>
-                    )}
-                    {selectedRequest.status === "rejected" && (
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium text-gray-600">{t('leave.rejectedBy')}</Label>
-                          <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
-                            <XCircle className="w-4 h-4 text-red-500" />
-                            <span className="font-medium text-red-900">{selectedRequest.rejectedBy || '-'}</span>
-                          </div>
-                        </div>
-                        {selectedRequest.rejectionReason && (
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-600">{t('leave.rejectionReason')}</Label>
-                            <div className="flex items-start gap-2 p-3 bg-red-50 rounded-lg">
-                              <FileText className="w-4 h-4 text-red-500 mt-0.5" />
-                              <div className="flex-1 min-w-0">
-                                <span className="text-red-900 leading-relaxed break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">{selectedRequest.rejectionReason}</span>
-                              </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Reason Section */}
-              <Card className="border-0 shadow-md">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-orange-600" />
-                    <h3 className="text-lg font-semibold">{t('leave.reason')}</h3>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="p-4 bg-orange-50 rounded-lg">
-                    <p className="text-orange-900 leading-relaxed break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">
-                      {selectedRequest.reason || t('leave.noReasonProvided')}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Contact Information */}
-              {(selectedRequest.contact || selectedRequest.contactInfo || selectedRequest.user?.contact) && (
-                <Card className="border-0 shadow-md">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center gap-2">
-                      <User className="w-5 h-5 text-teal-600" />
-                      <h3 className="text-lg font-semibold">{t('leave.contactInformation')}</h3>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="p-4 bg-teal-50 rounded-lg">
-                      <p className="text-teal-900 font-medium break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">{selectedRequest.contact || selectedRequest.contactInfo || selectedRequest.user?.contact}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Attachments Section */}
-              {(() => {
-                const files =
-                  (Array.isArray(selectedRequest.attachments) && selectedRequest.attachments.length > 0)
-                    ? selectedRequest.attachments
-                    : (typeof selectedRequest.attachments === 'string' && selectedRequest.attachments)
-                      ? [selectedRequest.attachments]
-                      : (Array.isArray(selectedRequest.attachment) && selectedRequest.attachment.length > 0)
-                        ? selectedRequest.attachment
-                        : (typeof selectedRequest.attachment === 'string' && selectedRequest.attachment)
-                          ? [selectedRequest.attachment]
-                          : (Array.isArray(selectedRequest.file) && selectedRequest.file.length > 0)
-                            ? selectedRequest.file
-                            : (typeof selectedRequest.file === 'string' && selectedRequest.file)
-                              ? [selectedRequest.file]
-                              : [];
-                if (files.length > 0) {
-                  return (
-                    <Card className="border-0 shadow-md">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-5 h-5 text-indigo-600" />
-                          <h3 className="text-lg font-semibold">{t('leave.attachments')}</h3>
-                          <Badge variant="secondary" className="ml-2">
-                            {files.length} {t('leave.files')}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {files.map((file: string, idx: number) => {
-                            const fileName = file.split('/').pop() || file;
-                            const ext = fileName.split('.').pop()?.toLowerCase();
-                            const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext || '');
-                            // Construct the correct file path - always prepend /leave-uploads/ if not already present
-                            const fileUrl = file.startsWith('/leave-uploads/') ? file : `/leave-uploads/${file}`;
-                            const authenticatedFileUrl = createAuthenticatedFileUrl(fileUrl);
-                            return (
-                              <div key={file} className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
-                                {isImage ? (
-                                  <div className="space-y-3">
-                                    <img
-                                      src={authenticatedFileUrl}
-                                      alt={fileName}
-                                      className="w-full h-32 object-cover rounded-lg border"
-                                      onError={(e) => {
-                                        const target = e.target as HTMLImageElement;
-                                        target.style.display = 'none';
-                                      }}
-                                    />
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-sm text-gray-600 truncate">{fileName}</span>
-                                      <Button size="sm" variant="outline" onClick={() => setPreviewImage({ url: authenticatedFileUrl, name: fileName })}>{t('common.view')}</Button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="space-y-3">
-                                    <div className="w-full h-32 bg-gray-200 rounded-lg flex items-center justify-center">
-                                      <FileText className="w-8 h-8 text-gray-400" />
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-sm text-gray-600 truncate">{fileName}</span>
-                                      <Button size="sm" variant="outline" onClick={() => window.open(authenticatedFileUrl, '_blank')}>{t('common.view')}</Button>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                }
-                return null;
-              })()}
-            </div>
-          )}
-          <DialogFooter className="pt-6 border-t">
-            <Button variant="outline" onClick={() => setShowDetailDialog(false)} className="btn-press hover-glow">
-              {t('common.close')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Leave Detail Dialog */}
+      <LeaveDetailDialog
+        open={showDetailDialog}
+        onOpenChange={setShowDetailDialog}
+        leaveRequest={selectedRequest}
+      />
 
       {previewImage && (
         <ImagePreviewDialog
