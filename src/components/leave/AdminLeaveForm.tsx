@@ -241,7 +241,7 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
       if (!startDate) {
         newErrors.startDate = t('leave.selectStartDateRequired');
       }
-      if (endDate) {
+      if (!endDate) {
         newErrors.endDate = t('leave.selectEndDateRequired');
       }
     } else if (durationType === 'hour') {
