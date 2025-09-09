@@ -22,6 +22,7 @@ import { apiService, createAuthenticatedFileUrl } from '../lib/api';
 import LeaveDetailDialog from '@/components/dialogs/LeaveDetailDialog';
 import { isRetroactiveLeave, calcHours, getTypeColor, getLeaveTypeLabel, translateLeaveType } from '../lib/leaveUtils';
 import { getStatusBadge, getRetroactiveBadge } from '../components/leave/LeaveBadges';
+import { formatDateLocalized } from '../lib/utils';
 
 const LeaveHistory = () => {
 
