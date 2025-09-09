@@ -57,7 +57,7 @@ const AnnouncementsFeedPage = () => {
         
         // Show toast notification
         toast({
-          title: t('notifications.newAnnouncement'),
+          title: t('notification.newAnnouncement'),
           description: data.subject,
           variant: 'default'
         });

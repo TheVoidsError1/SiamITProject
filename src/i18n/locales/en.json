@@ -157,7 +157,8 @@
     "clearFiltered": "Clear",
     "showing": "Showing",
     "selected": "Selected",
-    "noResults": "No results"
+    "noResults": "No results",
+    "all": "All"
   },
   "line": {
     "linkAccount": "Link LINE Account",
@@ -364,6 +365,10 @@
     "approvalNote": "Approval Note",
     "approvalNotePlaceholder": "Additional notes for approval",
     "rejectionNotePlaceholder": "Reason for rejection",
+    "pending": "Pending",
+    "approved": "Approved",
+    "rejected": "Rejected",
+    "rejectionNote": "Rejection Note",
     "additionalInfo": "Additional Information",
     "employeeSelection": "Employee Selection",
     "dateManagement": "Date Management",

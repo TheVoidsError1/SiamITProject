@@ -1,7 +1,6 @@
 // Centralized API Service
 // This file provides a centralized way to handle all API calls with proper authentication
 
-import { apiEndpoints } from '@/constants/api';
 
 export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
@@ -168,4 +167,4 @@ export const apiService = {
 // export const apiEndpoints = { ... }
 
 // Export the fetchWithAuth function for backward compatibility
-export { fetchWithAuth }; 
+export { fetchWithAuth };

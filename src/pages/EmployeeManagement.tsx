@@ -2,14 +2,14 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { SidebarTrigger } from "@/components/ui/sidebar";
+import { apiEndpoints } from '@/constants/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, User, Users, ChevronUp, ChevronDown } from "lucide-react";
+import { ChevronDown, ChevronUp, Eye, User, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
 import { apiService } from '../lib/api';
-import { apiEndpoints } from '@/constants/api';
 import { getImageUrl } from '../lib/utils';
 
 // เพิ่ม type สำหรับข้อมูลพนักงาน
@@ -253,34 +253,27 @@ const EmployeeManagement = () => {
   const totalPages = Math.ceil(sortedEmployees.length / itemsPerPage);
   const paginatedEmployees = sortedEmployees.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const REGULAR_EMPLOYEE_POSITION_ID = '354653a2-123a-48f4-86fd-22412c25c50e';
   const stats = [
     {
-      title: t('system.totalEmployees'),
-      value: employees.length.toString(),
-      icon: Users,
+      title: t('auth.roles.superadmin'),
+      value: employees.filter(emp => emp.role === 'superadmin').length.toString(),
+      icon: User,
+      color: "text-purple-600",
+      bgColor: "bg-purple-50",
+    },
+    {
+      title: t('auth.roles.admin'),
+      value: employees.filter(emp => emp.role === 'admin').length.toString(),
+      icon: User,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
     },
     {
-      title: t('system.regularEmployees'),
-      value: employees.filter(emp => {
-        const positionName = getDisplayPositionName(emp);
-        return positionName === t('auth.employee') || positionName === 'Employee' || positionName === 'พนักงาน';
-      }).length.toString(),
-      icon: User,
+      title: t('auth.roles.employee'),
+      value: employees.filter(emp => emp.role === 'user').length.toString(),
+      icon: Users,
       color: "text-green-600",
       bgColor: "bg-green-50",
-    },
-    {
-      title: t('system.interns'),
-      value: employees.filter(emp => {
-        const positionName = getDisplayPositionName(emp);
-        return positionName === t('auth.intern') || positionName === 'Intern' || positionName === 'นักศึกษาฝึกงาน';
-      }).length.toString(),
-      icon: User,
-      color: "text-orange-600",
-      bgColor: "bg-orange-50",
     },
   ];
 
