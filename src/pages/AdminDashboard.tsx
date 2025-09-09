@@ -1,10 +1,10 @@
 import ImagePreviewDialog from '@/components/dialogs/ImagePreviewDialog';
+import LeaveDetailDialog from '@/components/dialogs/LeaveDetailDialog';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SidebarTrigger } from "@/components/ui/sidebar";
@@ -15,37 +15,18 @@ import { useSocket } from '@/contexts/SocketContext';
 import { useToast } from "@/hooks/use-toast";
 import { differenceInCalendarDays, format } from "date-fns";
 import { enUS, th } from "date-fns/locale";
-import { AlertCircle, Calendar, CalendarIcon, CheckCircle, ChevronLeft, ChevronRight, Clock, Eye, FileText, History, User, Users, XCircle } from "lucide-react";
+import { AlertCircle, CalendarIcon, CheckCircle, ChevronLeft, ChevronRight, Clock, Eye, Users, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { monthNames } from '../constants/common';
-import { apiService, createAuthenticatedFileUrl } from '../lib/api';
+import { apiService } from '../lib/api';
 import { showToastMessage } from '../lib/toast';
-import { formatDateLocalized, formatDateOnly } from '../lib/utils';
-import ImagePreviewDialog from '@/components/dialogs/ImagePreviewDialog';
-import { apiService, createAuthenticatedFileUrl } from '../lib/api';
-import LeaveDetailDialog from '@/components/dialogs/LeaveDetailDialog';
-import { isRetroactiveLeave, calcHours, getTypeColor, getLeaveTypeDisplay } from '../lib/leaveUtils';
-import { getStatusBadge, getRetroactiveBadge } from '../components/leave/LeaveBadges';
+import { formatDateLocalized } from '../lib/utils';
 
-type LeaveRequest = {
-  id: number;
-  Repid: string; // หรือ user_id
-  leaveType: string;
-  startDate: string;
-  endDate: string;
-  reason: string;
-  status: string;
-  createdAt?: string;
-  // เพิ่ม field อื่นๆ ตามที่ backend ส่งมา
-};
-
-// --- เพิ่ม helper สำหรับ clamp ข้อความ ---
-const clampLines = 3;
+// Note: Local inline types and helpers removed if unused
 
 const AdminDashboard = () => {
   const { t, i18n } = useTranslation();
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
   const { toast } = useToast();
   const { user, showSessionExpiredDialog } = useAuth();
   const { socket, isConnected } = useSocket();
@@ -172,33 +153,11 @@ const AdminDashboard = () => {
     },
   ];
 
-  // ปรับการคำนวณสถิติให้ใช้ข้อมูลจาก leave request ที่ดึงมา
-  const pendingCount = pendingRequests.length;
-  const approvedThisMonth = recentRequests.filter(r => {
-    const now = new Date();
-    const approvedDate = r.approvedTime ? new Date(r.approvedTime) : null;
-    return approvedDate && approvedDate.getMonth() === now.getMonth() && approvedDate.getFullYear() === now.getFullYear();
-  }).length;
-  // สมมุติว่าพนักงานทั้งหมดคือ user ที่มีใน leave request
-  const userCount = Array.from(new Set([...pendingRequests, ...recentRequests].map(r => r.user?.id))).length;
-  // วันลาเฉลี่ย (ถ้ามีข้อมูล)
-  const averageDayOff = recentRequests.length > 0 ?
-    (
-      recentRequests.reduce((sum, r) => {
-        const start = r.startDate ? new Date(r.startDate) : null;
-        const end = r.endDate ? new Date(r.endDate) : null;
-        if (start && end && !isNaN(start.getTime()) && !isNaN(end.getTime())) {
-          return sum + ((end.getTime() - start.getTime()) / (1000*60*60*24) + 1);
-        }
-        return sum;
-      }, 0) / recentRequests.length
-    ).toFixed(1)
-    : 0;
+  // Derived statistics previously calculated inline were removed as unused
 
 
 
-  // Note: calcHours function moved to src/lib/leaveUtils.ts
-  const hourUnit = i18n.language === 'th' ? '' : 'Hours';
+  // Note: calcHours removed as unused in this component
 
   const handleApprove = (id: string, employeeName: string) => {
     setApprovingRequest({ id, employeeName });
