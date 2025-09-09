@@ -789,9 +789,6 @@ const LeaveHistory = () => {
           <div className="flex items-center gap-4">
           <SidebarTrigger className="bg-white/90 hover:bg-white text-blue-700 border border-blue-200 hover:border-blue-300 shadow-lg backdrop-blur-sm" />
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
-                <History className="w-5 h-5 text-white" />
-        </div>
               <div>
                 <h1 className="text-xl font-bold text-gray-900">{t('leave.leaveHistory')}</h1>
                 <p className="text-sm text-gray-600">{t('history.leaveHistoryTitle')}</p>
@@ -1244,55 +1241,19 @@ const LeaveHistory = () => {
                     <Select value={filterRetroactive || "all"} onValueChange={v => setFilterRetroactive(v === "all" ? "" : v)}>
 
                       <SelectTrigger className="bg-white/80 backdrop-blur border-purple-200 hover:bg-purple-50 hover:border-purple-300 transition-all duration-200 rounded-lg h-11 text-sm">
-
                         <SelectValue placeholder={t('leave.allTypes')} />
-
                       </SelectTrigger>
-
                       <SelectContent className="border-0 shadow-xl rounded-xl">
-
                         <SelectItem value="all" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">
-
-                          <div className="flex items-center gap-2">
-
-                            <div className="w-3 h-3 rounded-full bg-gray-400"></div>
-
-                            {t('leave.allTypes')}
-
-                          </div>
-
+                          {t('leave.allTypes')}
                         </SelectItem>
-
                         <SelectItem value="normal" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">
-
-                          <div className="flex items-center gap-2">
-
-                            <div className="w-3 h-3 rounded-full bg-green-500"></div>
-
-                            <CheckCircle className="w-4 h-4 text-green-600" />
-
-                            {t('history.normalLeave')}
-
-                          </div>
-
+                          {t('history.normalLeave')}
                         </SelectItem>
-
                         <SelectItem value="retroactive" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">
-
-                          <div className="flex items-center gap-2">
-
-                            <div className="w-3 h-3 rounded-full bg-purple-500 animate-pulse"></div>
-
-                            <History className="w-4 h-4 text-purple-600" />
-
-                            {t('history.retroactiveLeave')}
-
-                          </div>
-
+                          {t('history.retroactiveLeave')}
                         </SelectItem>
-
                       </SelectContent>
-
                     </Select>
 
                   </div>

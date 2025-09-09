@@ -376,6 +376,7 @@
     "pending": "Pending",
     "approved": "Approved",
     "rejected": "Rejected",
+    "rejectionNote": "Rejection Note",
     "additionalInfo": "Additional Information",
     "employeeSelection": "Employee Selection",
     "dateManagement": "Date Management",

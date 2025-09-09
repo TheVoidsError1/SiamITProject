@@ -369,6 +369,7 @@
     "pending": "รอดำเนินการ",
     "approved": "อนุมัติแล้ว",
     "rejected": "ไม่อนุมัติ",
+    "rejectionNote": "หมายเหตุการไม่อนุมัติ",
     "additionalInfo": "ข้อมูลเพิ่มเติม",
     "employeeSelection": "เลือกพนักงาน",
     "dateManagement": "จัดการวันที่",
