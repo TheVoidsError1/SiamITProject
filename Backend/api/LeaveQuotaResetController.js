@@ -53,7 +53,7 @@ module.exports = (AppDataSource) => {
       const now = new Date();
       const isJanFirst = now.getMonth() === 0 && now.getDate() === 1; // 0=Jan
       if (!force && !isJanFirst) {
-        return sendValidationError(res, 'อนุญาตให้รีเซ็ตเฉพาะวันที่ 1 มกราคมเท่านั้น (หรือส่ง force=true)');
+        return sendValidationError(res, 'Reset is only allowed on January 1st (or send force=true)');
       }
 
       const positionRepo = queryRunner.manager.getRepository('Position');
@@ -68,7 +68,7 @@ module.exports = (AppDataSource) => {
         const pos = await positionRepo.findOne({ where: { id: positionId } });
         if (!pos) {
           await queryRunner.rollbackTransaction();
-          return sendNotFound(res, 'ไม่พบตำแหน่งที่ระบุ');
+          return sendNotFound(res, 'Position not found');
         }
         targetPositions = [pos];
       } else {
@@ -79,7 +79,7 @@ module.exports = (AppDataSource) => {
       const positionIds = targetPositions.map(p => p.id);
       if (positionIds.length === 0) {
         await queryRunner.commitTransaction();
-        return sendSuccess(res, { positions: 0, users: 0, affected: 0 }, 'ไม่มีตำแหน่งที่ต้องรีเซ็ต');
+        return sendSuccess(res, { positions: 0, users: 0, affected: 0 }, 'No positions to reset');
       }
 
       // ค้นหาผู้ใช้ในตำแหน่งเป้าหมาย (user/admin/superadmin)
@@ -97,7 +97,7 @@ module.exports = (AppDataSource) => {
 
       if (userIds.length === 0) {
         await queryRunner.commitTransaction();
-        return sendSuccess(res, { positions: positionIds.length, users: 0, affected: 0 }, 'ไม่มีผู้ใช้ในตำแหน่งที่เลือก');
+        return sendSuccess(res, { positions: positionIds.length, users: 0, affected: 0 }, 'No users in selected positions');
       }
 
       let affected = 0;
@@ -120,7 +120,7 @@ module.exports = (AppDataSource) => {
         users: userIds.length,
         affected,
         strategy
-      }, 'รีเซ็ตการใช้สิทธิ์ลาสำเร็จ');
+      }, 'Leave quota reset successfully');
     } catch (err) {
       await queryRunner.rollbackTransaction();
       return sendError(res, err.message, 500);
@@ -181,7 +181,7 @@ module.exports = (AppDataSource) => {
         affected = result.affected || 0;
       }
       await queryRunner.commitTransaction();
-      return sendSuccess(res, { users: userIds.length, affected, strategy }, 'รีเซ็ตการใช้สิทธิ์ลาสำเร็จ');
+      return sendSuccess(res, { users: userIds.length, affected, strategy }, 'Leave quota reset successfully');
     } catch (err) {
       await queryRunner.rollbackTransaction();
       return sendError(res, err.message, 500);

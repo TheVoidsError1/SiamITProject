@@ -286,7 +286,7 @@ module.exports = (AppDataSource) => {
       }
 
       await queryRunner.commitTransaction();
-      return sendSuccess(res, { users: userIds.length, affected, strategy }, 'รีเซ็ตการใช้สิทธิ์ลาสำเร็จ');
+      return sendSuccess(res, { users: userIds.length, affected, strategy }, 'Leave quota reset successfully');
     } catch (err) {
       await queryRunner.rollbackTransaction();
       return sendError(res, err.message, 500);

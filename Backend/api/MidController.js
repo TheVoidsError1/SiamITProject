@@ -48,7 +48,7 @@ module.exports = (AppDataSource) => {
   router.get('/users', async (req, res) => {
     try {
       const users = await userController.findAll(AppDataSource);
-      sendSuccess(res, users, 'ดึงข้อมูล user สำเร็จ');
+      sendSuccess(res, users, 'Fetch users success');
     } catch (err) {
       sendError(res, err.message, 500);
     }
@@ -101,7 +101,7 @@ module.exports = (AppDataSource) => {
     try {
       const { User_name, department, position } = req.body;
       const user = await userController.create(AppDataSource, { User_name, department, position });
-      sendSuccess(res, user, 'สร้าง user สำเร็จ', 201);
+      sendSuccess(res, user, 'Create user success', 201);
     } catch (err) {
       sendError(res, err.message, 500);
     }
@@ -206,7 +206,7 @@ module.exports = (AppDataSource) => {
   router.get('/admins', async (req, res) => {
     try {
       const admins = await adminController.findAll(AppDataSource);
-      sendSuccess(res, admins, 'ดึงข้อมูล admin สำเร็จ');
+      sendSuccess(res, admins, 'Fetch admins success');
     } catch (err) {
       sendError(res, err.message, 500);
     }
@@ -264,7 +264,7 @@ module.exports = (AppDataSource) => {
       // ตรวจสอบ email ซ้ำ
       const exist = await processRepo.findOneBy({ Email: email });
       if (exist) {
-        return sendValidationError(res, 'Email นี้ถูกใช้ไปแล้ว');
+        return sendValidationError(res, 'Email already exists');
       }
 
       // hash password
@@ -298,7 +298,7 @@ module.exports = (AppDataSource) => {
       });
       await processRepo.save(processCheck);
 
-      sendSuccess(res, { ...admin, token, repid: admin.id }, 'สร้างแอดมินสำเร็จ', 201);
+      sendSuccess(res, { ...admin, token, repid: admin.id }, 'Create admin success', 201);
     } catch (err) {
       sendError(res, err.message, 500);
     }
