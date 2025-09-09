@@ -317,13 +317,38 @@ const Profile = () => {
         const timestamp = Date.now();
         const random = Math.random();
         const newUrl = `${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}?v=${timestamp}&t=${random}&reload=true`;
-        setAvatarUrl(newUrl);
+        
+        // Clear current avatar first to force reload
+        setAvatarUrl(null);
         setAvatarKey(prev => prev + 1);
-        setForceRefresh(prev => prev + 1);
-        updateUser({ avatar_url: res.avatar_url });
+        
+        // Set new avatar after a brief delay
+        setTimeout(() => {
+          setAvatarUrl(newUrl);
+          setAvatarKey(prev => prev + 1);
+          setForceRefresh(prev => prev + 1);
+          updateUser({ avatar_url: res.avatar_url });
+        }, 50);
       }
     } catch (err) {
       console.error('Failed to reload avatar:', err);
+    }
+  };
+
+  // Force complete avatar refresh - clears cache and reloads
+  const forceCompleteAvatarRefresh = async () => {
+    try {
+      // Clear current avatar
+      setAvatarUrl(null);
+      setAvatarKey(prev => prev + 1);
+      setForceRefresh(prev => prev + 1);
+      
+      // Wait a moment then fetch fresh avatar
+      setTimeout(async () => {
+        await forceReloadAvatar();
+      }, 100);
+    } catch (err) {
+      console.error('Failed to force complete avatar refresh:', err);
     }
   };
 
@@ -415,29 +440,19 @@ const Profile = () => {
     try {
       const res = await apiService.post(apiEndpoints.auth.avatar, formData);
       if (res?.success) {
-        // Force immediate update with aggressive cache busting
-        const timestamp = Date.now();
-        const random = Math.random();
-        const finalUrl = `${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}?v=${timestamp}&t=${random}&refresh=true`;
+        // Update user context immediately
+        updateUser({ avatar_url: res.avatar_url });
         
-        // Clear the avatar first, then set the new one
-        setAvatarUrl(null);
-        setAvatarKey(prev => prev + 1);
-        
-        // Small delay to ensure the clear takes effect
+        // Show success message
+        toast({ 
+          title: t('profile.uploadSuccess') || 'Avatar Updated',
+          description: t('profile.uploadSuccessDesc') || 'Profile picture updated successfully'
+        });
+
+        // Force complete avatar refresh to ensure the new image is displayed
         setTimeout(() => {
-          setAvatarUrl(finalUrl);
-          setAvatarKey(prev => prev + 1);
-          setForceRefresh(prev => prev + 1);
-          updateUser({ avatar_url: res.avatar_url });
-        }, 100);
-        
-        // Force reload after a longer delay to ensure the server has processed the upload
-        setTimeout(() => {
-          forceReloadAvatar();
-        }, 500);
-        
-        toast({ title: t('profile.uploadSuccess') });
+          forceCompleteAvatarRefresh();
+        }, 200);
 
         // Broadcast via socket and localStorage to update other tabs/clients
         if (socket && isConnected && user?.id) {
@@ -695,34 +710,37 @@ const Profile = () => {
 
             <Avatar key={`${avatarUrl}-${avatarKey}-${forceRefresh}`} className="h-28 w-28 shadow-lg border-4 border-white bg-white/80 backdrop-blur rounded-full">
               <AvatarImage 
-                src={avatarUrl ? `${avatarUrl}&force=${forceRefresh}` : undefined} 
+                src={avatarUrl ? `${avatarUrl}&force=${forceRefresh}&t=${Date.now()}` : undefined} 
                 onError={() => {
                   // If image fails to load, force a refresh
+                  console.log('Avatar image failed to load, forcing refresh');
                   setForceRefresh(prev => prev + 1);
                 }}
+                onLoad={() => {
+                  console.log('Avatar image loaded successfully');
+                }}
+                alt="Profile picture"
+                className="object-cover"
               />
               <AvatarFallback className="text-2xl font-bold bg-blue-200 text-blue-900">
                 {user?.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
               </AvatarFallback>
             </Avatar>
-            {/* ปุ่มเปลี่ยนรูป avatar: แสดงเฉพาะตอน isEditing */}
-            {isEditing && (
-              <button
-                type="button"
-                className="absolute bottom-2 right-2 p-2 bg-blue-500 text-white rounded-full shadow-md border-2 border-white hover:bg-blue-600 transition-colors"
-                onClick={handleCameraClick}
-                aria-label="Change avatar"
-              >
-                <Camera className="h-5 w-5" />
-              </button>
-            )}
+            {/* ปุ่มเปลี่ยนรูป avatar: Always available */}
+            <button
+              type="button"
+              className="absolute bottom-2 right-2 p-2 bg-blue-500 text-white rounded-full shadow-md border-2 border-white hover:bg-blue-600 transition-colors"
+              onClick={handleCameraClick}
+              aria-label="Change avatar"
+            >
+              <Camera className="h-5 w-5" />
+            </button>
             <input
               type="file"
               accept="image/*"
               ref={fileInputRef}
               style={{ display: 'none' }}
               onChange={handleFileChange}
-              disabled={!isEditing}
             />
           </div>
           <AvatarCropDialog

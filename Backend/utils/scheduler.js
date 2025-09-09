@@ -1,6 +1,7 @@
 const axios = require('axios');
 const cron = require('node-cron');
 const LeaveTypeCleanupService = require('./leaveTypeCleanupService');
+const LeaveQuotaCleanupService = require('./leaveQuotaCleanupService');
 
 /**
  * Register all scheduled jobs for the backend application.
@@ -39,11 +40,13 @@ function registerScheduledJobs(config) {
 /**
  * Schedule leave type cleanup job
  * Runs daily at 2 AM to clean up orphaned soft-deleted leave types
+ * and automatically cleans up orphaned leave quota records afterward
  * @param {Object} AppDataSource - Database connection
  */
 function scheduleLeaveTypeCleanup(AppDataSource) {
   try {
     const isCleanupEnabled = (process.env.ENABLE_LEAVE_TYPE_CLEANUP_CRON || 'true').toLowerCase() !== 'false';
+    const isQuotaCleanupEnabled = (process.env.ENABLE_LEAVE_QUOTA_CLEANUP_CRON || 'true').toLowerCase() !== 'false';
     const cronTimezone = process.env.CRON_TZ || 'Asia/Bangkok';
     
     if (!isCleanupEnabled) {
@@ -56,24 +59,62 @@ function scheduleLeaveTypeCleanup(AppDataSource) {
       try {
         console.log('🔄 Starting scheduled leave type cleanup...');
         
-        const cleanupService = new LeaveTypeCleanupService(AppDataSource);
-        const results = await cleanupService.autoCleanupOrphanedLeaveTypes();
+        // Step 1: Clean up orphaned leave types
+        const leaveTypeCleanupService = new LeaveTypeCleanupService(AppDataSource);
+        const leaveTypeResults = await leaveTypeCleanupService.autoCleanupOrphanedLeaveTypes();
         
-        console.log('✅ Scheduled cleanup completed:', {
-          totalChecked: results.totalChecked,
-          deleted: results.deleted.length,
-          cannotDelete: results.cannotDelete.length,
-          errors: results.errors.length
+        console.log('✅ Leave type cleanup completed:', {
+          totalChecked: leaveTypeResults.totalChecked,
+          deleted: leaveTypeResults.deleted.length,
+          cannotDelete: leaveTypeResults.cannotDelete.length,
+          errors: leaveTypeResults.errors.length
         });
 
         // Log details for monitoring
-        if (results.deleted.length > 0) {
-          console.log('🗑️ Deleted leave types:', results.deleted);
+        if (leaveTypeResults.deleted.length > 0) {
+          console.log('🗑️ Deleted leave types:', leaveTypeResults.deleted);
         }
         
-        if (results.cannotDelete.length > 0) {
-          console.log('⚠️ Cannot delete leave types:', results.cannotDelete);
+        if (leaveTypeResults.cannotDelete.length > 0) {
+          console.log('⚠️ Cannot delete leave types:', leaveTypeResults.cannotDelete);
         }
+
+        // Step 2: Clean up orphaned leave quota records (if enabled)
+        if (isQuotaCleanupEnabled) {
+          console.log('🔄 Starting scheduled leave quota cleanup...');
+          
+          const leaveQuotaCleanupService = new LeaveQuotaCleanupService(AppDataSource);
+          const leaveQuotaResults = await leaveQuotaCleanupService.autoCleanupOrphanedLeaveQuotas();
+          
+          console.log('✅ Leave quota cleanup completed:', {
+            totalChecked: leaveQuotaResults.totalChecked,
+            deleted: leaveQuotaResults.deleted.length,
+            failed: leaveQuotaResults.failed.length,
+            totalQuotaRemoved: leaveQuotaResults.totalQuotaRemoved
+          });
+
+          // Log details for monitoring
+          if (leaveQuotaResults.deleted.length > 0) {
+            console.log('🗑️ Deleted leave quota records:', leaveQuotaResults.deleted.map(d => ({
+              id: d.id,
+              leaveType: d.leaveTypeName,
+              quota: d.quota,
+              status: d.status
+            })));
+          }
+          
+          if (leaveQuotaResults.failed.length > 0) {
+            console.log('❌ Failed leave quota deletions:', leaveQuotaResults.failed.map(f => ({
+              id: f.id,
+              leaveType: f.leaveTypeName,
+              error: f.error
+            })));
+          }
+        } else {
+          console.log('[CRON] Leave quota cleanup is disabled via ENABLE_LEAVE_QUOTA_CLEANUP_CRON=false');
+        }
+
+        console.log('✅ Scheduled cleanup process completed successfully!');
 
       } catch (error) {
         console.error('❌ Scheduled cleanup failed:', error);
@@ -83,7 +124,10 @@ function scheduleLeaveTypeCleanup(AppDataSource) {
       timezone: cronTimezone
     });
 
-    console.log(`[CRON] Leave type cleanup job scheduled at 02:00 daily (${cronTimezone}). Set ENABLE_LEAVE_TYPE_CLEANUP_CRON=false to disable.`);
+    const quotaStatus = isQuotaCleanupEnabled ? 'enabled' : 'disabled';
+    console.log(`[CRON] Leave type cleanup job scheduled at 02:00 daily (${cronTimezone}). Leave quota cleanup: ${quotaStatus}.`);
+    console.log(`[CRON] Set ENABLE_LEAVE_TYPE_CLEANUP_CRON=false to disable leave type cleanup.`);
+    console.log(`[CRON] Set ENABLE_LEAVE_QUOTA_CLEANUP_CRON=false to disable leave quota cleanup.`);
   } catch (err) {
     console.error('[CRON] Failed to schedule leave type cleanup job:', err?.message || err);
   }

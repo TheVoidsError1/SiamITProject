@@ -6,6 +6,21 @@
 const config = require('../config');
 const { Between } = require('typeorm');
 
+/**
+ * Safely parse attachments JSON string
+ * @param {string} val - JSON string containing attachments array
+ * @returns {Array} Array of attachment filenames
+ */
+const parseAttachments = (val) => {
+  if (!val) return [];
+  try {
+    return JSON.parse(val);
+  } catch (e) {
+    console.error('Invalid attachments JSON:', val, e);
+    return [];
+  }
+};
+
 
 
 /**
@@ -263,6 +278,7 @@ const getLeaveUsageSummary = async (userId, year = null, AppDataSource) => {
 
 
 module.exports = {
+  parseAttachments,
   isWithinWorkingHours,
   normalizeLeaveType,
   getLeaveUsageFromTable,

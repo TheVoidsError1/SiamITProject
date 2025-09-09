@@ -235,10 +235,10 @@ module.exports = (AppDataSource) => {
       let totalLeaveDays = 0;
       try {
         const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
-        const posEntity = await AppDataSource.getRepository('Position').findOne({ where: { position_name_th: position } });
+        // Use position_id instead of position name for the query
         let quota = null;
-        if (posEntity) {
-          quota = await leaveQuotaRepo.findOneBy({ positionId: posEntity.id });
+        if (position_id) {
+          quota = await leaveQuotaRepo.findOneBy({ positionId: position_id });
         }
         if (quota) {
           totalLeaveDays = (quota.sick || 0) + (quota.vacation || 0) + (quota.personal || 0);
@@ -301,8 +301,13 @@ module.exports = (AppDataSource) => {
       const email = req.body.email;
       const password = req.body.password;
       // Prefer position_id/department_id if present, else fallback to position/department
-      const position = req.body.position_id !== undefined ? req.body.position_id : req.body.position;
-      const department = req.body.department_id !== undefined ? req.body.department_id : req.body.department;
+      // Handle empty strings and null values properly
+      const position = req.body.position_id !== undefined ? 
+        (req.body.position_id && req.body.position_id.trim() !== '' ? req.body.position_id : null) : 
+        (req.body.position && req.body.position.trim() !== '' ? req.body.position : null);
+      const department = req.body.department_id !== undefined ? 
+        (req.body.department_id && req.body.department_id.trim() !== '' ? req.body.department_id : null) : 
+        (req.body.department && req.body.department.trim() !== '' ? req.body.department : null);
       const processRepo = AppDataSource.getRepository('ProcessCheck');
       const adminRepo = AppDataSource.getRepository('Admin');
       const userRepo = AppDataSource.getRepository('User');

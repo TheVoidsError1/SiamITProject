@@ -12,6 +12,8 @@ import { formatDateLocalized } from '../../lib/utils';
 import { createAuthenticatedFileUrl, apiService } from '../../lib/api';
 import { apiEndpoints } from '@/constants/api';
 import ImagePreviewDialog from '@/components/dialogs/ImagePreviewDialog';
+import { isRetroactiveLeave, calcHours, getTypeColor, getLeaveTypeLabel, getLeaveTypeDisplay } from '../../lib/leaveUtils';
+import { getStatusBadge, getRetroactiveBadge } from '../leave/LeaveBadges';
 
 interface LeaveRequest {
   id: string;
@@ -116,84 +118,11 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
     fetchLeaveTypes();
   }, []);
 
-  const getStatusBadge = (status: string) => {
-    if (status === 'approved') return <Badge className="bg-green-100 text-green-800 border-green-200">{t('leave.approved')}</Badge>;
-    if (status === 'rejected') return <Badge className="bg-red-100 text-red-800 border-red-200">{t('leave.rejected')}</Badge>;
-    return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">{t('leave.pending')}</Badge>;
-  };
+  // Note: getStatusBadge, getRetroactiveBadge, getTypeColor, calcHours functions moved to src/lib/leaveUtils.ts
 
-  const getRetroactiveBadge = (leave: LeaveRequest) => {
-    if (Number(leave.backdated) === 1) {
-      return <Badge className="bg-red-100 text-red-700 border-red-200 text-xs px-1.5 py-0.5">
-        {t('leave.backdated')}
-      </Badge>;
-    }
-    return null;
-  };
+  // Note: getLeaveTypeLabel and getLeaveTypeDisplay functions moved to src/lib/leaveUtils.ts
 
-  const getTypeColor = (type: string) => {
-    const typeColors: { [key: string]: string } = {
-      'vacation': 'text-blue-600',
-      'sick': 'text-red-600',
-      'personal': 'text-purple-600',
-      'maternity': 'text-pink-600',
-      'paternity': 'text-indigo-600',
-      'bereavement': 'text-gray-600',
-      'other': 'text-orange-600'
-    };
-    return typeColors[type?.toLowerCase()] || 'text-blue-600';
-  };
-
-  const calcHours = (start: string, end: string) => {
-    if (!start || !end) return 0;
-    try {
-      const startTime = new Date(`2000-01-01T${start}`);
-      const endTime = new Date(`2000-01-01T${end}`);
-      const diffMs = endTime.getTime() - startTime.getTime();
-      const diffHours = diffMs / (1000 * 60 * 60);
-      return Math.round(diffHours * 100) / 100;
-    } catch {
-      return 0;
-    }
-  };
-
-  const getLeaveTypeLabel = (typeId: string) => {
-    if (!typeId) return '';
-    
-    // First try to find in leaveTypes array
-    const found = leaveTypes.find(lt => lt.id === typeId || lt.leave_type === typeId);
-    if (found) {
-      return i18n.language.startsWith('th') ? found.leave_type_th : found.leave_type_en;
-    }
-    
-    // Fallback: try i18n translation
-    if (t(`leaveTypes.${typeId}`) !== `leaveTypes.${typeId}`) {
-      return t(`leaveTypes.${typeId}`);
-    }
-    
-    // Final fallback: return the typeId as is
-    return typeId;
-  };
-
-  // Helper function to get the correct leave type display
-  const getLeaveTypeDisplay = (leaveDetail: LeaveRequest) => {
-    // If we have direct Thai/English names, use them based on language
-    if (leaveDetail.leaveTypeName && leaveDetail.leaveTypeEn) {
-      return i18n.language.startsWith('th') ? leaveDetail.leaveTypeName : leaveDetail.leaveTypeEn;
-    }
-    
-    // If we have leaveTypeName (single field), use it
-    if (leaveDetail.leaveTypeName) {
-      return leaveDetail.leaveTypeName;
-    }
-    
-    // Fallback to getLeaveTypeLabel function
-    return getLeaveTypeLabel(leaveDetail.leaveType || leaveDetail.type || '');
-  };
-
-  const isRetroactiveLeave = (leave: LeaveRequest) => {
-    return Number(leave.backdated) === 1;
-  };
+  // Note: isRetroactiveLeave function moved to src/lib/leaveUtils.ts
 
   // ฟังก์ชันคำนวณจำนวนวันที่ถูกต้อง
   const calculateDays = (startDate: string, endDate: string) => {
@@ -275,7 +204,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className={`text-3xl font-bold ${getTypeColor(leaveDetail.leaveTypeName || leaveDetail.leaveType || leaveDetail.type)}`}>
-                      {getLeaveTypeDisplay(leaveDetail)}
+                      {getLeaveTypeDisplay(leaveDetail, leaveTypes, i18n, t)}
                     </div>
                   </div>
                   <div className="text-right">
@@ -287,8 +216,8 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                 </div>
                 {/* Status badges moved here */}
                 <div className="flex flex-wrap gap-2 mt-4">
-                  {getStatusBadge(leaveDetail.status)}
-                  {getRetroactiveBadge(leaveDetail)}
+                  {getStatusBadge(leaveDetail.status, t)}
+                  {getRetroactiveBadge(leaveDetail, t)}
                 </div>
               </CardContent>
             </Card>
@@ -420,7 +349,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-gray-600">{t('leave.status')}</Label>
                     <div className="flex items-center gap-2">
-                      {getStatusBadge(leaveDetail.status)}
+                      {getStatusBadge(leaveDetail.status, t)}
                     </div>
                   </div>
                   
