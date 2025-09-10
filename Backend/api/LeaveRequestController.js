@@ -2292,7 +2292,8 @@
           approvalNote,
           allowBackdated,
           backdated: backdatedFromBody,
-          approvedTime
+          approvedTime,
+          rejectedTime
         } = req.body;
 
         // Validation
@@ -2425,6 +2426,7 @@
           approvalNote: approvalNote || null,
           backdated: isBackdated,
           approvedTime: approvedTime || null,
+          rejectedTime: rejectedTime || null,
           createdAt: new Date(),
           updatedAt: new Date()
         });

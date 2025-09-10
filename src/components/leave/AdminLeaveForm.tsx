@@ -361,7 +361,13 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
         formData.append('approverName', selectedApprover?.name || '');
         formData.append('statusBy', selectedApprover?.name || ''); // ส่งชื่อผู้อนุมัติไปใน statusBy
         if (approvalNote) formData.append("approvalNote", approvalNote);
-        if (approvedTime) formData.append("approvedTime", approvedTime);
+        
+        // ส่งวันที่ตามสถานะการอนุมัติ
+        if (approvalStatus === 'approved' && approvedTime) {
+          formData.append("approvedTime", approvedTime);
+        } else if (approvalStatus === 'rejected' && approvedTime) {
+          formData.append("rejectedTime", approvedTime);
+        }
       }
       
       // Add selected user ID instead of current user

@@ -269,6 +269,8 @@
     "details": "รายละเอียดใบลา",
     "detailDescription": "ข้อมูลรายละเอียดเกี่ยวกับคำขอลานี้",
     "approvedTime": "เวลาที่อนุมัติ",
+    "rejectedTime": "เวลาที่ไม่อนุมัติ",
+    "selectRejectedTime": "เลือกเวลาที่ไม่อนุมัติ",
     "viewAttachment": "ดูไฟล์แนบ",
     "detailTitle": "รายละเอียดการลา",
     "employeeName": "ชื่อพนักงาน",
