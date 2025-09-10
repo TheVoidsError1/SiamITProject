@@ -177,6 +177,7 @@
   "markAllAsRead": "Mark All as Read",
   "leave": {
     "all": "All",
+    "currentNotice": "Today",
     "statusAll": "All Statuses",
     "leaveRequest": "Leave Request",
     "leaveHistory": "Leave History",
@@ -267,6 +268,8 @@
     "details": "Leave Details",
     "detailDescription": "Detailed information about this leave request.",
     "approvedTime": "Approval Time",
+    "rejectedTime": "Rejection Time",
+    "selectRejectedTime": "Select Rejection Time",
     "viewAttachment": "View Attachment",
     "status": "Status",
     "type": "Leave Type",
