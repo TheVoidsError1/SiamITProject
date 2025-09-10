@@ -157,8 +157,7 @@
     "clearFiltered": "Clear",
     "showing": "Showing",
     "selected": "Selected",
-    "noResults": "No results",
-    "all": "All"
+    "noResults": "No results"
   },
   "line": {
     "linkAccount": "Link LINE Account",
@@ -224,9 +223,6 @@
     "enterReason": "Enter reason for leave",
     "uploadDocuments": "Upload documents (if any)",
     "dragAndDrop": "Drag files here or click to select files",
-    "pending": "Pending",
-    "approved": "Approved",
-    "rejected": "Rejected",
     "noHistory": "No leave history",
     "submittedDate": "Submitted Date",
     "viewDetails": "See Details",
@@ -302,6 +298,12 @@
     "fullDay": "Full Day",
     "hourly": "Hourly",
     "backdated": "Backdated",
+    "backdatedControl": "Backdated Control",
+    "disallowBackdated": "No Backdated",
+    "disallowBackdatedDesc": "Do not allow backdated leave requests",
+    "allowBackdated": "Allow Backdated",
+    "allowBackdatedDesc": "Allow backdated leave requests",
+    "backdatedNotAllowed": "Backdated leave is not allowed. Please change settings or select a new date",
     "backdatedNotice": "This leave request is backdated.",
     "noDetailFound": "No data found for this leave request.",
     "noReasonProvided": "No reason provided",

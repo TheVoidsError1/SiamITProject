@@ -340,7 +340,7 @@
         }
         const {
           /* employeeType, */ leaveType, personalLeaveType, startDate, endDate,
-          startTime, endTime, reason, supervisor, contact, durationType
+          startTime, endTime, reason, supervisor, contact, durationType, allowBackdated
         } = req.body;
 
         // --- Validation: quota ---
@@ -566,6 +566,17 @@
             backdated = 1;
           }
           // ถ้าวันลาเป็นวันปัจจุบันหรืออนาคต ให้ backdated = 0 (ไม่นับเป็นย้อนหลัง)
+        }
+
+        // ตรวจสอบการย้อนหลังเมื่อไม่อนุญาต - รองรับทั้งตัวเลขและสตริงเพื่อความเข้ากันได้
+        const allowBackdatedValue = allowBackdated === '0' || allowBackdated === 0 || allowBackdated === 'disallow';
+        if (allowBackdatedValue && backdated === 1) {
+          return res.status(400).json({
+            status: 'error',
+            message: lang === 'th' 
+              ? 'ไม่อนุญาตให้ส่งคำขอลาย้อนหลัง กรุณาเปลี่ยนการตั้งค่าหรือเลือกวันที่ใหม่' 
+              : 'Backdated leave is not allowed. Please change settings or select a new date'
+          });
         }
         const leaveData = {
           Repid: userId, // ใส่ user_id จาก JWT
@@ -2277,7 +2288,11 @@
           approvalStatus,
           approverId,
           approverName,
-          approvalNote
+          statusBy,
+          approvalNote,
+          allowBackdated,
+          backdated: backdatedFromBody,
+          approvedTime
         } = req.body;
 
         // Validation
@@ -2307,6 +2322,32 @@
         }
         if (!approvalStatus) {
           return sendValidationError(res, 'Approval status is required');
+        }
+
+        // ตรวจสอบการย้อนหลัง - รองรับทั้งตัวเลขและสตริงเพื่อความเข้ากันได้
+        const allowBackdatedValue = allowBackdated === '0' || allowBackdated === 0 || allowBackdated === 'disallow';
+        if (allowBackdatedValue) {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          
+          let isBackdated = false;
+          if (durationType === 'day') {
+            const startDateObj = new Date(startDate);
+            if (startDateObj < today) {
+              isBackdated = true;
+            }
+          } else if (durationType === 'hour') {
+            const leaveDateObj = new Date(startDate);
+            if (leaveDateObj < today) {
+              isBackdated = true;
+            }
+          }
+          
+          if (isBackdated) {
+            return sendValidationError(res, lang === 'th' 
+              ? 'ไม่อนุญาตให้ส่งคำขอลาย้อนหลัง กรุณาเปลี่ยนการตั้งค่าหรือเลือกวันที่ใหม่' 
+              : 'Backdated leave is not allowed. Please change settings or select a new date');
+          }
         }
 
         // ตรวจสอบว่า user ที่จะสร้าง leave request ให้มีอยู่จริง
@@ -2364,6 +2405,25 @@
           employeeType = targetUser.position;
         }
 
+        // ใช้ค่า backdated จาก body ถ้ามี (เฉพาะหน้า AdminLeaveForm)
+        let isBackdated = typeof backdatedFromBody !== 'undefined' ? Number(backdatedFromBody) : 0;
+        if (typeof backdatedFromBody === 'undefined') {
+          // Logic เดิม
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+          if (durationType === 'day') {
+            const startDateObj = new Date(startDate);
+            if (startDateObj < today) {
+              isBackdated = 1;
+            }
+          } else if (durationType === 'hour') {
+            const leaveDateObj = new Date(startDate);
+            if (leaveDateObj < today) {
+              isBackdated = 1;
+            }
+          }
+        }
+
         // สร้าง leave request
         const leaveRequest = leaveRepo.create({
           Repid: repid,
@@ -2378,7 +2438,10 @@
           status: approvalStatus,
           approverId: approverId || null,
           approverName: approverName || null,
+          statusBy: statusBy || null,
           approvalNote: approvalNote || null,
+          backdated: isBackdated,
+          approvedTime: approvedTime || null,
           createdAt: new Date(),
           updatedAt: new Date()
         });
@@ -2417,6 +2480,8 @@
             approverId: savedLeaveRequest.approverId,
             approverName: savedLeaveRequest.approverName,
             approvalNote: savedLeaveRequest.approvalNote,
+            backdated: savedLeaveRequest.backdated,
+            allowBackdated: allowBackdated,
             createdAt: savedLeaveRequest.createdAt
           }
         });
