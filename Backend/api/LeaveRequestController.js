@@ -2324,31 +2324,8 @@
           return sendValidationError(res, 'Approval status is required');
         }
 
-        // ตรวจสอบการย้อนหลัง - รองรับทั้งตัวเลขและสตริงเพื่อความเข้ากันได้
-        const allowBackdatedValue = allowBackdated === '0' || allowBackdated === 0 || allowBackdated === 'disallow';
-        if (allowBackdatedValue) {
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          
-          let isBackdated = false;
-          if (durationType === 'day') {
-            const startDateObj = new Date(startDate);
-            if (startDateObj < today) {
-              isBackdated = true;
-            }
-          } else if (durationType === 'hour') {
-            const leaveDateObj = new Date(startDate);
-            if (leaveDateObj < today) {
-              isBackdated = true;
-            }
-          }
-          
-          if (isBackdated) {
-            return sendValidationError(res, lang === 'th' 
-              ? 'ไม่อนุญาตให้ส่งคำขอลาย้อนหลัง กรุณาเปลี่ยนการตั้งค่าหรือเลือกวันที่ใหม่' 
-              : 'Backdated leave is not allowed. Please change settings or select a new date');
-          }
-        }
+        // Backdated control is now handled by frontend UI
+        // No need to validate backdated dates here since user can choose to allow or disallow
 
         // ตรวจสอบว่า user ที่จะสร้าง leave request ให้มีอยู่จริง
         const userRepo = AppDataSource.getRepository('User');
@@ -2405,10 +2382,16 @@
           employeeType = targetUser.position;
         }
 
-        // ใช้ค่า backdated จาก body ถ้ามี (เฉพาะหน้า AdminLeaveForm)
-        let isBackdated = typeof backdatedFromBody !== 'undefined' ? Number(backdatedFromBody) : 0;
-        if (typeof backdatedFromBody === 'undefined') {
-          // Logic เดิม
+        // ใช้ค่า backdated จาก allowBackdated (หน้า AdminLeaveForm)
+        let isBackdated = 0;
+        if (allowBackdated !== undefined) {
+          // ใช้ค่าจาก allowBackdated (0 = ไม่ย้อนหลัง, 1 = ย้อนหลัง)
+          isBackdated = Number(allowBackdated);
+        } else if (backdatedFromBody !== undefined) {
+          // fallback สำหรับ API เก่า
+          isBackdated = Number(backdatedFromBody);
+        } else {
+          // Logic เดิมสำหรับ API อื่นๆ
           const today = new Date();
           today.setHours(0, 0, 0, 0);
           if (durationType === 'day') {

@@ -180,6 +180,7 @@
     "leaveHistory": "ประวัติการลา",
     "leaveType": "ประเภทการลา",
     "quota": "โควตา",
+    "currentNotice": "ปัจจุบัน",
     "resetByPosition": "รีเซ็ตการใช้สิทธิ์ลา ตามตำแหน่ง",
     "strategy": "กลยุทธ์",
     "strategyZero": "ตั้งค่าเป็นศูนย์",

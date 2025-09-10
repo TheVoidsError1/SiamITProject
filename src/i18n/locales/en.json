@@ -177,6 +177,7 @@
   "markAllAsRead": "Mark All as Read",
   "leave": {
     "all": "All",
+    "currentNotice": "Today",
     "statusAll": "All Statuses",
     "leaveRequest": "Leave Request",
     "leaveHistory": "Leave History",

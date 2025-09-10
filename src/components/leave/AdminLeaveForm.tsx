@@ -289,35 +289,8 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
       return;
     }
 
-    // Check for backdated leave when not allowed
-    if (allowBackdated === 0) {
-      let isBackdated = false;
-      
-      if (durationType === 'day' && startDate) {
-        const startDateObj = new Date(startDate);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (startDateObj < today) {
-          isBackdated = true;
-        }
-      } else if (durationType === 'hour' && leaveDate) {
-        const leaveDateObj = new Date(leaveDate);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        if (leaveDateObj < today) {
-          isBackdated = true;
-        }
-      }
-      
-      if (isBackdated) {
-        toast({
-          title: t('leave.submitError'),
-          description: t('leave.backdatedNotAllowed'),
-          variant: "destructive",
-        });
-        return;
-      }
-    }
+    // Backdated control is now handled by allowBackdated UI control
+    // No need to check for backdated dates here since user can choose to allow or disallow
 
     // Time validation for hourly leave
     if (durationType === 'hour' && startTime && endTime) {
