@@ -8,12 +8,13 @@ import { TIME_CONSTANTS } from '@/constants/business';
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { apiService } from '@/lib/api';
-import { ArrowLeftCircle, CalendarDays, CheckCircle, ClipboardList, Clock, FileText, Phone, Send, Shield, User, UserCheck, XCircle } from "lucide-react";
+import { ArrowLeftCircle, CalendarDays, CheckCircle, ClipboardList, Clock, FileText, Phone, Send, Shield, User, UserCheck, XCircle, Ban, CheckCircle2 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from 'react-router-dom';
 import { FileUpload } from "./FileUpload";
-import { isValidTimeFormat, autoFormatTimeInput, getLeaveNotice } from '../../lib/leaveUtils';
+import { isValidTimeFormat, autoFormatTimeInput } from '../../lib/leaveUtils';
+import { format } from "date-fns";
 
 // ฟังก์ชันแปลงวันที่เป็น yyyy-mm-dd ตาม local time (ไม่ใช่ UTC)
 function formatDateLocal(date: Date) {
@@ -60,6 +61,7 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
   const [approvalStatus, setApprovalStatus] = useState<"pending" | "approved" | "rejected">("pending");
   const [approverId, setApproverId] = useState("");
   const [approvalNote, setApprovalNote] = useState("");
+  const [allowBackdated, setAllowBackdated] = useState<0 | 1>(0);
   const { toast } = useToast();
   const navigate = useNavigate();
   const formRef = useRef<HTMLFormElement>(null);
@@ -88,6 +90,12 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
   });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [approvedTime, setApprovedTime] = useState<string>(() => {
+    if (mode === 'edit' && initialData?.approvedTime) {
+      return format(new Date(initialData.approvedTime), 'yyyy-MM-dd');
+    }
+    return format(new Date(), 'yyyy-MM-dd');
+  });
 
   // Dynamic attachment requirement based on selected leave type
   const selectedLeaveType = leaveTypes.find(type => type.id === leaveType);
@@ -281,6 +289,36 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
       return;
     }
 
+    // Check for backdated leave when not allowed
+    if (allowBackdated === 0) {
+      let isBackdated = false;
+      
+      if (durationType === 'day' && startDate) {
+        const startDateObj = new Date(startDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (startDateObj < today) {
+          isBackdated = true;
+        }
+      } else if (durationType === 'hour' && leaveDate) {
+        const leaveDateObj = new Date(leaveDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (leaveDateObj < today) {
+          isBackdated = true;
+        }
+      }
+      
+      if (isBackdated) {
+        toast({
+          title: t('leave.submitError'),
+          description: t('leave.backdatedNotAllowed'),
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
     // Time validation for hourly leave
     if (durationType === 'hour' && startTime && endTime) {
       if (!isValidTimeFormat(startTime) || !isValidTimeFormat(endTime)) {
@@ -337,6 +375,8 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
       }
       formData.append("reason", reason);
       formData.append("contact", contact);
+      formData.append("allowBackdated", allowBackdated.toString());
+      formData.append("backdated", allowBackdated.toString());
       
       // Handle approval fields
       formData.append("approvalStatus", approvalStatus);
@@ -346,7 +386,9 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
         const selectedApprover = approverList.find(a => a.id === approverId);
         formData.append('approverId', approverId);
         formData.append('approverName', selectedApprover?.name || '');
+        formData.append('statusBy', selectedApprover?.name || ''); // ส่งชื่อผู้อนุมัติไปใน statusBy
         if (approvalNote) formData.append("approvalNote", approvalNote);
+        if (approvedTime) formData.append("approvedTime", approvedTime);
       }
       
       // Add selected user ID instead of current user
@@ -599,6 +641,97 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
               <h3 className="text-lg font-semibold text-gray-800">{t('leave.dateTimeSelection')}</h3>
             </div>
 
+            {/* Backdated Control - ตัวเลือกการควบคุมการย้อนหลัง */}
+            <div className="mb-6 p-5 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Clock className="w-5 h-5 text-blue-600" />
+                  </div>
+                  <h4 className="text-base font-semibold text-gray-800">{t('leave.backdatedControl')}</h4>
+                </div>
+                <div className={`px-3 py-1 rounded-full text-xs font-medium ${
+                  allowBackdated === 0 
+                    ? 'bg-red-100 text-red-700 border border-red-200' 
+                    : 'bg-green-100 text-green-700 border border-green-200'
+                }`}>
+                  {allowBackdated === 0 ? t('leave.disallowBackdated') : t('leave.allowBackdated')}
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* ไม่อนุญาตการย้อนหลัง */}
+                <div 
+                  className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                    allowBackdated === 0 
+                      ? 'border-red-400 bg-red-50 shadow-md' 
+                      : 'border-gray-200 bg-white hover:border-red-300 hover:bg-red-25'
+                  }`}
+                  onClick={() => setAllowBackdated(0)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`p-1 rounded-full ${
+                      allowBackdated === 0 ? 'bg-red-100' : 'bg-gray-100'
+                    }`}>
+                      <Ban className={`w-4 h-4 ${
+                        allowBackdated === 0 ? 'text-red-600' : 'text-gray-500'
+                      }`} />
+                    </div>
+                    <div className="flex-1">
+                      <span className={`text-sm font-semibold ${
+                        allowBackdated === 0 ? 'text-red-700' : 'text-gray-700'
+                      }`}>
+                        {t('leave.disallowBackdated')}
+                      </span>
+                      <p className={`text-xs mt-1 ${
+                        allowBackdated === 0 ? 'text-red-600' : 'text-gray-500'
+                      }`}>
+                        {t('leave.disallowBackdatedDesc')}
+                      </p>
+                    </div>
+                    {allowBackdated === 0 && (
+                      <CheckCircle2 className="w-5 h-5 text-red-600" />
+                    )}
+                  </div>
+                </div>
+
+                {/* อนุญาตการย้อนหลัง */}
+                <div 
+                  className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
+                    allowBackdated === 1 
+                      ? 'border-green-400 bg-green-50 shadow-md' 
+                      : 'border-gray-200 bg-white hover:border-green-300 hover:bg-green-25'
+                  }`}
+                  onClick={() => setAllowBackdated(1)}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`p-1 rounded-full ${
+                      allowBackdated === 1 ? 'bg-green-100' : 'bg-gray-100'
+                    }`}>
+                      <Clock className={`w-4 h-4 ${
+                        allowBackdated === 1 ? 'text-green-600' : 'text-gray-500'
+                      }`} />
+                    </div>
+                    <div className="flex-1">
+                      <span className={`text-sm font-semibold ${
+                        allowBackdated === 1 ? 'text-green-700' : 'text-gray-700'
+                      }`}>
+                        {t('leave.allowBackdated')}
+                      </span>
+                      <p className={`text-xs mt-1 ${
+                        allowBackdated === 1 ? 'text-green-600' : 'text-gray-500'
+                      }`}>
+                        {t('leave.allowBackdatedDesc')}
+                      </p>
+                    </div>
+                    {allowBackdated === 1 && (
+                      <CheckCircle2 className="w-5 h-5 text-green-600" />
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {durationType === 'day' ? (
               <div className="space-y-6">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -635,27 +768,6 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
                   </div>
                 </div>
 
-                {/* แจ้งเตือนเมื่อมีการลาย้อนหลังหรือลาล่วงหน้า */}
-                {(() => {
-                  const notice = getLeaveNotice(startDate, endDate, t);
-                  if (!notice) return null;
-                  const iconColor = notice.type === 'backdated' ? 'text-yellow-600' : 'text-blue-600';
-                  const iconPath = notice.type === 'backdated'
-                    ? "M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                    : "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z";
-                  return (
-                    <div className={`p-3 border rounded-lg ${notice.className}`}>
-                      <div className="flex items-center gap-2">
-                        <svg className={`w-4 h-4 ${iconColor}`} fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d={iconPath} clipRule="evenodd" />
-                        </svg>
-                        <span className="text-sm font-medium">
-                          {notice.message}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })()}
               </div>
             ) : durationType === 'hour' ? (
               <div className="space-y-6">
@@ -713,36 +825,6 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
                   </div>
                 </div>
 
-                {/* Business hours notice */}
-                <div className="text-sm text-blue-600 bg-blue-50 p-3 rounded-lg border border-blue-200">
-                  <div className="flex items-center gap-2 mb-1">
-                    <Clock className="w-4 h-4" />
-                    <span className="font-medium">{t('leave.businessHours')}</span>
-                  </div>
-                  <p>{t('leave.businessHoursDescription')}</p>
-                </div>
-
-                {/* แจ้งเตือนเมื่อมีการลาย้อนหลังหรือลาล่วงหน้า */}
-                {(() => {
-                  const notice = getLeaveNotice(leaveDate, leaveDate, t);
-                  if (!notice) return null;
-                  const iconColor = notice.type === 'backdated' ? 'text-yellow-600' : 'text-blue-600';
-                  const iconPath = notice.type === 'backdated'
-                    ? "M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                    : "M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z";
-                  return (
-                    <div className={`p-3 border rounded-lg ${notice.className}`}>
-                      <div className="flex items-center gap-2">
-                        <svg className={`w-4 h-4 ${iconColor}`} fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d={iconPath} clipRule="evenodd" />
-                        </svg>
-                        <span className="text-sm font-medium">
-                          {notice.message}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })()}
 
                 {timeError && (
                   <p className="text-sm text-red-500 flex items-center gap-1">
@@ -877,6 +959,22 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
                 </div>
               )}
             </div>
+
+            {/* Approval Date - Show when approver is selected */}
+            {approverId && (approvalStatus === 'approved' || approvalStatus === 'rejected') && (
+              <div className="mt-6 space-y-2">
+                <label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+                  <CalendarDays className="w-4 h-4" />
+                  {approvalStatus === 'approved' ? t('leave.approvedTime') : t('leave.rejectedTime')}
+                </label>
+                <DatePicker
+                  date={approvedTime}
+                  onDateChange={setApprovedTime}
+                  placeholder={approvalStatus === 'approved' ? t('leave.selectApprovedTime') : t('leave.selectRejectedTime')}
+                  className="h-12"
+                />
+              </div>
+            )}
 
             {/* Approval Note - Only show when rejected */}
             {approvalStatus === 'rejected' && (
