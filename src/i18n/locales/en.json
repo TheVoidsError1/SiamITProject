@@ -72,7 +72,6 @@
   },
   "common": {
     "logo": "Logo",
-    "all": "All",
     "submit": "Submit",
     "cancel": "Cancel",
     "save": "Save",
@@ -365,9 +364,6 @@
     "approvalNote": "Approval Note",
     "approvalNotePlaceholder": "Additional notes for approval",
     "rejectionNotePlaceholder": "Reason for rejection",
-    "pending": "Pending",
-    "approved": "Approved",
-    "rejected": "Rejected",
     "rejectionNote": "Rejection Note",
     "additionalInfo": "Additional Information",
     "employeeSelection": "Employee Selection",
