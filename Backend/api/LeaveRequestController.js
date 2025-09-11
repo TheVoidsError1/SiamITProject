@@ -510,15 +510,6 @@
           }
           // 5. quota (ชั่วโมง)
           const totalQuotaHours = quota * config.business.workingHoursPerDay;
-<<<<<<< HEAD
-          // 6. อนุญาตให้ลาได้แม้ว่าโควต้าจะเต็ม (comment การ reject)
-          // if (usedHours + requestHours > totalQuotaHours) {
-          //   return res.status(400).json({
-          //     status: 'error',
-          //     message: lang === 'en' ? 'You have exceeded your leave quota for this type.' : 'คุณใช้วันลาประเภทนี้ครบโควต้าแล้ว ไม่สามารถขอใบลาเพิ่มได้'
-          //   });
-          // }
-=======
           // 6. ถ้า used + request > quota => reject
           if (usedHours + requestHours > totalQuotaHours) {
             return res.status(400).json({
@@ -527,7 +518,6 @@
               code: 'QUOTA_EXCEEDED'
             });
           }
->>>>>>> 0297cd2f030b9a1d52c819ba5bbd75efcea39ad0
         }
 
         // ตรวจสอบภาษา
