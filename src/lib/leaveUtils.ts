@@ -100,18 +100,31 @@ export const getLeaveTypeDisplay = (
   i18n: { language: string },
   t: (key: string) => string
 ): string => {
-  // If we have direct Thai/English names, use them based on language
+  // First try to get from leaveTypes array (preferred method)
+  const leaveTypeId = leaveDetail.leaveType || leaveDetail.type || '';
+  if (leaveTypeId) {
+    const found = leaveTypes.find(lt => lt.id === leaveTypeId || lt.leave_type === leaveTypeId);
+    if (found) {
+      return i18n.language.startsWith('th') ? found.leave_type_th : found.leave_type_en;
+    }
+  }
+  
+  // Fallback: try i18n translation
+  if (leaveTypeId) {
+    const i18nKey = `leaveTypes.${leaveTypeId}`;
+    const translated = t(i18nKey);
+    if (translated !== i18nKey) {
+      return translated;
+    }
+  }
+  
+  // Final fallback: use API fields if available
   if (leaveDetail.leaveTypeName_th && leaveDetail.leaveTypeName_en) {
     return i18n.language.startsWith('th') ? leaveDetail.leaveTypeName_th : leaveDetail.leaveTypeName_en;
   }
   
-  // If we have leaveTypeName (single field), use it
-  if (leaveDetail.leaveTypeName) {
-    return leaveDetail.leaveTypeName;
-  }
-  
-  // Fallback to getLeaveTypeLabel function
-  return getLeaveTypeLabel(leaveDetail.leaveType || leaveDetail.type || '', leaveTypes, i18n, t);
+  // Last resort: single field or type
+  return leaveDetail.leaveTypeName || leaveTypeId || 'Unknown';
 };
 
 /**

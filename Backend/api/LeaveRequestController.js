@@ -200,7 +200,7 @@
          }
        }
        
-       const leaveTypeNameTh = leaveTypeData ? leaveTypeData.leave_type_th : 'ไม่ระบุประเภท';
+       const leaveTypeNameTh = leaveTypeData ? leaveTypeData.leave_type_th : 'Unknown Type';
        const leaveTypeNameEn = leaveTypeData ? leaveTypeData.leave_type_en : 'Unknown Type';
       const leaveTypeNameBilingual = leaveTypeNameEn && leaveTypeNameEn !== leaveTypeNameTh 
         ? `${leaveTypeNameTh} (${leaveTypeNameEn})` 
@@ -274,7 +274,7 @@
        if (!leaveTypeObj) {
          // If no leave type object found, return a more descriptive fallback
          return {
-           leaveTypeName_th: `ประเภทการลาที่ถูกลบ (${fallbackValue})`,
+           leaveTypeName_th: `Deleted Leave Type (${fallbackValue})`,
            leaveTypeName_en: `Deleted Leave Type (${fallbackValue})`
          };
        }
@@ -319,8 +319,7 @@
             return sendUnauthorized(res, 'Invalid or expired token');
           }
         }
-        // กำหนดภาษา (ต้องมาก่อน validation quota)
-        const lang = (req.headers['accept-language'] || '').toLowerCase().startsWith('en') ? 'en' : 'th';
+        // Language detection removed - frontend will handle i18n
         // ดึงตำแหน่งจาก user หรือ admin
         let employeeType = null;
         if (userId) {
@@ -515,7 +514,8 @@
           if (usedHours + requestHours > totalQuotaHours) {
             return res.status(400).json({
               status: 'error',
-              message: lang === 'en' ? 'You have exceeded your leave quota for this type.' : 'คุณใช้วันลาประเภทนี้ครบโควต้าแล้ว ไม่สามารถขอใบลาเพิ่มได้'
+              message: 'You have exceeded your leave quota for this type.',
+              code: 'QUOTA_EXCEEDED'
             });
           }
         }
@@ -653,9 +653,7 @@
     // GET /api/leave-request/pending
     router.get('/pending', async (req, res) => {
       try {
-        // --- i18n: ตรวจจับภาษา ---
-        let lang = req.headers['accept-language'] || req.query.lang || 'th';
-        lang = lang.split(',')[0].toLowerCase().startsWith('en') ? 'en' : 'th';
+        // Language detection removed - frontend will handle i18n
         const leaveRepo = AppDataSource.getRepository('LeaveRequest');
         const userRepo = AppDataSource.getRepository('User');
         const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
@@ -783,7 +781,7 @@
                }
              }
              
-             const names = getLeaveTypeNames(leaveTypeObj, leave.leaveType, lang);
+             const names = getLeaveTypeNames(leaveTypeObj, leave.leaveType, 'en');
              leaveTypeName_th = names.leaveTypeName_th;
              leaveTypeName_en = names.leaveTypeName_en;
            }
@@ -807,9 +805,7 @@
     // GET /api/leave-request/history
     router.get('/history', async (req, res) => {
       try {
-        // --- i18n: ตรวจจับภาษา ---
-        let lang = req.headers['accept-language'] || req.query.lang || 'th';
-        lang = lang.split(',')[0].toLowerCase().startsWith('en') ? 'en' : 'th';
+        // Language detection removed - frontend will handle i18n
         const leaveRepo = AppDataSource.getRepository('LeaveRequest');
         const userRepo = AppDataSource.getRepository('User');
         const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
@@ -1091,7 +1087,7 @@
           let leaveTypeName_th = null;
           let leaveTypeName_en = null;
           if (leave.leaveType) {
-            const names = getLeaveTypeNames(leaveTypeObj, leave.leaveType, lang);
+            const names = getLeaveTypeNames(leaveTypeObj, leave.leaveType, 'en');
             leaveTypeName_th = names.leaveTypeName_th;
             leaveTypeName_en = names.leaveTypeName_en;
           }
@@ -1248,7 +1244,7 @@
              
              if (leaveTypeObj) {
                // Use the helper function to get proper names
-               const names = getLeaveTypeNames(leaveTypeObj, l.leaveType, lang);
+               const names = getLeaveTypeNames(leaveTypeObj, l.leaveType, 'en');
                leaveTypeName = names.leaveTypeName_th;
              }
            }
@@ -1368,7 +1364,7 @@
                // No leave type found, will use fallback
              }
              
-             const names = getLeaveTypeNames(leaveTypeObj, leave.leaveType, lang);
+             const names = getLeaveTypeNames(leaveTypeObj, leave.leaveType, 'en');
              leaveTypeName_th = names.leaveTypeName_th;
              leaveTypeName_en = names.leaveTypeName_en;
            }
@@ -1539,7 +1535,7 @@
          let leaveTypeName_th = null;
          let leaveTypeName_en = null;
          if (leave.leaveType) {
-           const names = getLeaveTypeNames(leaveTypeObj, leave.leaveType, lang);
+           const names = getLeaveTypeNames(leaveTypeObj, leave.leaveType, 'en');
            leaveTypeName_th = names.leaveTypeName_th;
            leaveTypeName_en = names.leaveTypeName_en;
          }
@@ -1699,7 +1695,7 @@
             
             if (leaveTypeObj) {
               // Use the helper function to get proper names
-              const names = getLeaveTypeNames(leaveTypeObj, leave.leaveType, lang);
+              const names = getLeaveTypeNames(leaveTypeObj, leave.leaveType, 'en');
               leaveTypeName = names.leaveTypeName_th;
               leaveTypeEn = names.leaveTypeName_en;
             }
@@ -2445,11 +2441,11 @@
         }
 
         // Get leave type names for response
-        const leaveTypeNames = getLeaveTypeNames(leaveTypeEntity, lang);
+        const leaveTypeNames = getLeaveTypeNames(leaveTypeEntity, 'en');
 
         res.json({
           success: true,
-          message: lang === 'en' ? 'Leave request created successfully' : 'สร้างคำขอลาสำเร็จ',
+          message: 'Leave request created successfully',
           data: {
             id: savedLeaveRequest.id,
             userId: savedLeaveRequest.Repid,

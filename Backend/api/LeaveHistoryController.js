@@ -12,14 +12,12 @@ module.exports = (AppDataSource) => {
   // GET /api/leave-history (ต้องแนบ JWT)
   router.get('/', authMiddleware, async (req, res) => {
     try {
-      // --- i18n: ตรวจจับภาษา ---
-      let lang = req.headers['accept-language'] || req.query.lang || 'th';
-      lang = lang.split(',')[0].toLowerCase().startsWith('en') ? 'en' : 'th';
-      const userId = req.user && req.user.userId; // ดึง userId จาก JWT
+      const userId = req.user && req.user.userId; // Get userId from JWT
       if (!userId) {
         return res.status(401).json({
           status: 'error',
-          message: lang === 'th' ? 'ไม่ได้รับอนุญาต' : 'Unauthorized'
+          message: 'Unauthorized',
+          code: 'UNAUTHORIZED'
         });
       }
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
@@ -284,7 +282,7 @@ module.exports = (AppDataSource) => {
             }
           } else {
             // Fallback if leave type not found
-            leaveTypeName_th = `ประเภทการลาที่ถูกลบ (${leave.leaveType})`;
+            leaveTypeName_th = `Deleted Leave Type (${leave.leaveType})`;
             leaveTypeName_en = `Deleted Leave Type (${leave.leaveType})`;
           }
         }
@@ -416,15 +414,13 @@ module.exports = (AppDataSource) => {
           rejectedCount,
           retroactiveCount
         },
-        message: lang === 'th' ? 'ดึงข้อมูลสำเร็จ' : 'Fetch success'
+        message: 'Fetch success'
       });
     } catch (err) {
-      // Determine language safely within catch scope
-      let _lang = (req.headers['accept-language'] || req.query.lang || 'th');
-      _lang = _lang.split(',')[0].toLowerCase().startsWith('en') ? 'en' : 'th';
       res.status(500).json({
         status: 'error',
-        message: _lang === 'th' ? 'เกิดข้อผิดพลาด: ' + err.message : 'Error: ' + err.message
+        message: 'Error: ' + err.message,
+        code: 'INTERNAL_ERROR'
       });
     }
   });

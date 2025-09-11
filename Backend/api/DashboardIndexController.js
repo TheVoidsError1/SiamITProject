@@ -129,7 +129,7 @@ module.exports = (AppDataSource) => {
           if (leaveType) {
                       if (leaveType.is_active === false) {
             // Add [DELETED] prefix for inactive/deleted leave types
-            leaveTypeName = '[ลบ] ' + (leaveType.leave_type_th || leaveTypeName);
+            leaveTypeName = '[DELETED] ' + (leaveType.leave_type_th || leaveTypeName);
           } else {
             leaveTypeName = leaveType.leave_type_th || leaveTypeName;
           }
@@ -336,7 +336,7 @@ module.exports = (AppDataSource) => {
           }
         } else {
           // If no leaveType, set default values
-          leaveTypeNameTh = 'ไม่ระบุประเภท';
+          leaveTypeNameTh = 'Unknown Type';
           leaveTypeNameEn = 'Unknown Type';
         }
         
