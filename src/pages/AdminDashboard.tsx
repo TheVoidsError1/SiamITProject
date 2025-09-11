@@ -1123,14 +1123,16 @@ const AdminDashboard = () => {
                                 : getAdminLeaveTypeDisplay(request.leaveType || request.leaveTypeName)
                               }
                             </span>
+                            <Badge className="ml-2 bg-yellow-100 text-yellow-700 border-yellow-200 rounded-full px-3 py-1 text-xs font-bold shadow animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+                              {t('admin.pending')}
+                            </Badge>
                             {(request.backdated === 1 || request.backdated === "1" || request.backdated === true) && (
-                              <Badge className="ml-2 bg-purple-100 text-purple-800 border-purple-200 rounded-full px-3 py-1 text-xs font-bold shadow animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+                              <Badge className="ml-2 bg-purple-100 text-purple-800 border-purple-200 rounded-full px-3 py-1 text-xs font-bold shadow animate-fade-in-up" style={{ animationDelay: '0.35s' }}>
                                 {t('leave.backdated')}
                               </Badge>
                             )}
                             <div className="text-sm text-gray-700 mb-1 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>{t('leave.date')}: {request.startDate} - {request.endDate}</div>
                           </div>
-                          <Badge variant="outline" className="text-xs font-bold rounded-full px-4 py-1 bg-yellow-100 text-yellow-700 border-yellow-200 shadow animate-fade-in-up" style={{ animationDelay: '0.3s' }}>{t('admin.pending')}</Badge>
                           <div className="flex gap-2 flex-shrink-0">
                             <Button 
                               size="sm" 
