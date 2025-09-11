@@ -55,8 +55,8 @@ export function DatePicker({
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
           {date ? (
-                        i18n.language === 'th' 
-              ? format(selectedDate!, "dd/MM/yy", { locale: currentLocale })
+            i18n.language === 'th' 
+              ? format(selectedDate!, "dd/MM/yyyy", { locale: currentLocale }).replace(/\/(\d{4})$/, (_, y) => `/${String(Number(y) + 543)}`)
               : format(selectedDate!, "dd/MM/yyyy", { locale: currentLocale })
           ) : (
             <span>{placeholder}</span>
@@ -70,6 +70,9 @@ export function DatePicker({
           onSelect={disabled ? undefined : handleDateSelect}
           initialFocus
           locale={currentLocale}
+          captionLayout="dropdown"
+          fromYear={new Date().getFullYear() - 100}
+          toYear={new Date().getFullYear()}
         />
       </PopoverContent>
     </Popover>
