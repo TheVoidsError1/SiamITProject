@@ -47,7 +47,7 @@ module.exports = (AppDataSource) => {
       const processRepo = AppDataSource.getRepository('ProcessCheck');
       const adminRepo = AppDataSource.getRepository('Admin');
       const userRepo = AppDataSource.getRepository('User');
-      const lang = (req.headers['accept-language'] || 'en').toLowerCase().startsWith('th') ? 'th' : 'en';
+      // Language detection removed - frontend will handle i18n
 
       // ดึง process_check ทั้งหมด
       const allProcess = await processRepo.find();
@@ -171,7 +171,7 @@ module.exports = (AppDataSource) => {
           avatar: proc.avatar_url || null
         });
       }
-      sendSuccess(res, results, 'ดึงข้อมูลผู้ใช้ทั้งหมดสำเร็จ');
+      sendSuccess(res, results, 'Fetch all users success');
     } catch (err) {
       sendError(res, err.message, 500);
     }
@@ -189,7 +189,7 @@ module.exports = (AppDataSource) => {
       const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
       const leaveRequestRepo = AppDataSource.getRepository('LeaveRequest');
-      const lang = (req.headers['accept-language'] || 'en').toLowerCase().startsWith('th') ? 'th' : 'en';
+      // Language detection removed - frontend will handle i18n
 
       // Try to find in admin first
       let profile = await adminRepo.findOne({ where: { id } });
@@ -217,14 +217,23 @@ module.exports = (AppDataSource) => {
       let department_id = '';
       let position = '';
       let position_id = '';
+      let department_th = '';
+      let department_en = '';
+      let position_th = '';
+      let position_en = '';
+      
       if (profile.department) {
         const deptEntity = await departmentRepo.findOne({ where: { id: profile.department } });
-        department = deptEntity ? (lang === 'th' ? deptEntity.department_name_th : deptEntity.department_name_en) : '';
+        department = deptEntity ? deptEntity.department_name_en : '';
+        department_th = deptEntity ? deptEntity.department_name_th : '';
+        department_en = deptEntity ? deptEntity.department_name_en : '';
         department_id = profile.department;
       }
       if (profile.position) {
         const posEntity = await positionRepo.findOne({ where: { id: profile.position } });
-        position = posEntity ? (lang === 'th' ? posEntity.position_name_th : posEntity.position_name_en) : '';
+        position = posEntity ? posEntity.position_name_en : '';
+        position_th = posEntity ? posEntity.position_name_th : '';
+        position_en = posEntity ? posEntity.position_name_en : '';
         position_id = profile.position;
       }
 
@@ -271,8 +280,12 @@ module.exports = (AppDataSource) => {
           password,
           position: position,
           position_id: position_id,
+          position_th: position_th,
+          position_en: position_en,
           department: department,
           department_id: department_id,
+          department_th: department_th,
+          department_en: department_en,
           role,
           gender: profile.gender || null,
           dob: profile.dob || null,
