@@ -313,6 +313,7 @@
     "multipleDays": "Multiple days",
     "submitted": "Submitted",
     "approvedStatus": "Approved",
+    "approved": "Approved",
     "pendingStatus": "Pending approval",
     "rejectedStatus": "Rejected",
     "advanceNotice": "This leave request is in advance.",
