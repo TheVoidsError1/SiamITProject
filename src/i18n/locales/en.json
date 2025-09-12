@@ -52,7 +52,7 @@
     }
   },
   "navigation": {
-    "home": "Home",
+    "home": "Dashboard",
     "leaveRequest": "Leave Request",
     "leaveHistory": "Leave History",
     "profile": "Profile",

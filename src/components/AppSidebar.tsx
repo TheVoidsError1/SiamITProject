@@ -22,21 +22,7 @@ import { Link, useLocation } from "react-router-dom";
 import NotificationBell from "./NotificationBell";
 
 const items = [
-  {
-    title: "navigation.home",
-    url: "/",
-    icon: Home,
-  },
-  {
-    title: "navigation.announcementsFeed",
-    url: "/announcements",
-    icon: Rss,
-  },
-  {
-    title: "navigation.calendar",
-    url: "/calendar",
-    icon: Calendar,
-  },
+  // Prioritize leave actions at the top of the main menu
   {
     title: "navigation.leaveRequest",
     url: "/leave-request",
@@ -48,6 +34,21 @@ const items = [
     icon: Clock,
   },
   {
+    title: "navigation.calendar",
+    url: "/calendar",
+    icon: Calendar,
+  },
+  {
+    title: "navigation.announcementsFeed",
+    url: "/announcements",
+    icon: Rss,
+  },
+  {
+    title: "navigation.home",
+    url: "/",
+    icon: Home,
+  },
+  {
     title: "navigation.profile",
     url: "/profile",
     icon: User,
@@ -55,6 +56,12 @@ const items = [
 ];
 
 const adminItems = [
+  // Prioritize admin leave management first
+  {
+    title: "navigation.adminLeaveRequest",
+    url: "/admin/leave-request",
+    icon: Calendar,
+  },
   {
     title: "navigation.adminDashboard",
     url: "/admin",
@@ -64,11 +71,6 @@ const adminItems = [
     title: "navigation.allEmployees",
     url: "/admin/employees",
     icon: Users,
-  },
-  {
-    title: "navigation.adminLeaveRequest",
-    url: "/admin/leave-request",
-    icon: Calendar,
   },
 ];
 
