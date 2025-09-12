@@ -16,7 +16,7 @@ const { parseAttachments } = require('./leaveUtils');
  * @returns {Promise<Object>} Deletion summary
  */
 async function deleteUserData(AppDataSource, userId, userRole) {
-  const processRepo = AppDataSource.getRepository('ProcessCheck');
+  const processRepo = AppDataSource.getRepository('User');
   const leaveRequestRepo = AppDataSource.getRepository('LeaveRequest');
   const leaveUsedRepo = AppDataSource.getRepository('LeaveUsed');
   

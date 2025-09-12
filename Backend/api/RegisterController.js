@@ -13,14 +13,14 @@ module.exports = (AppDataSource) => {
 
   router.post('/register', async (req, res) => {
     try {
-      const { User_name, department, position, email, password, gender, dob, phone_number, start_work, end_work } = req.body;
+      const { name, department, position, email, password, gender, dob, phone_number, start_work, end_work } = req.body;
       const userRepo = AppDataSource.getRepository('User');
-      const processRepo = AppDataSource.getRepository('ProcessCheck');
+      const processRepo = AppDataSource.getRepository('User');
       const departmentRepo = AppDataSource.getRepository('Department');
       const positionRepo = AppDataSource.getRepository('Position');
 
       // ตรวจสอบชื่อซ้ำ
-      const nameExist = await userRepo.findOneBy({ User_name });
+      const nameExist = await userRepo.findOneBy({ name });
       if (nameExist) {
         return sendValidationError(res, 'ชื่อผู้ใช้นี้ถูกใช้ไปแล้ว');
       }
@@ -54,37 +54,32 @@ module.exports = (AppDataSource) => {
       // hash password
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      // สร้าง user ก่อน เพื่อให้ได้ user.id
-      const user = await userController.create(AppDataSource, {
-        id: uuidv4(),
-        User_name,
+      // สร้าง JWT Token
+      const userId = uuidv4();
+      const token = jwt.sign(
+        { userId: userId, email: email },
+        config.server.jwtSecret,
+        { expiresIn: config.server.jwtExpiresIn }
+      );
+
+      // สร้าง user ใน unified users table (single row with all data)
+      const user = processRepo.create({
+        id: userId,
+        name,
+        Email: email,
+        Password: hashedPassword,
+        Token: token,
+        Role: 'user',
         department: departmentId,
         position: positionId,
         gender: gender || null,
         dob: dob || null,
         phone_number: phone_number || null,
         start_work: start_work || null,
-        end_work: end_work || null
-      });
-
-      // สร้าง JWT Token
-      const token = jwt.sign(
-        { userId: user.id, email: email },
-        config.server.jwtSecret,
-        { expiresIn: config.server.jwtExpiresIn }
-      );
-
-      // สร้าง process_check พร้อม Token และ Repid
-      const processCheck = processRepo.create({
-        id: uuidv4(),
-        Email: email,
-        Password: hashedPassword,
-        Token: token,
-        Repid: user.id,
-        Role: 'user',
+        end_work: end_work || null,
         avatar_url: null
       });
-      await processRepo.save(processCheck);
+      await processRepo.save(user);
 
       sendSuccess(res, { ...user, token, repid: user.id }, 'Register successful', 201);
     } catch (err) {
@@ -92,7 +87,7 @@ module.exports = (AppDataSource) => {
       if (err.code === 'ER_DUP_ENTRY' && err.message.includes('Email')) {
         return sendValidationError(res, 'Email นี้ถูกใช้ไปแล้ว');
       }
-      if (err.code === 'ER_DUP_ENTRY' && err.message.includes('User_name')) {
+      if (err.code === 'ER_DUP_ENTRY' && err.message.includes('name')) {
         return sendValidationError(res, 'ชื่อผู้ใช้นี้ถูกใช้ไปแล้ว');
       }
       sendError(res, err.message, 500);

@@ -58,8 +58,6 @@ module.exports = (AppDataSource) => {
 
       const positionRepo = queryRunner.manager.getRepository('Position');
       const userRepo = queryRunner.manager.getRepository('User');
-      const adminRepo = queryRunner.manager.getRepository('Admin');
-      const superAdminRepo = queryRunner.manager.getRepository('SuperAdmin');
       const leaveUsedRepo = queryRunner.manager.getRepository('LeaveUsed');
 
       // คัดเลือกตำแหน่งเป้าหมาย

@@ -99,7 +99,7 @@ module.exports = (AppDataSource) => {
   router.get('/announcements/feed', async (req, res) => {
     try {
       const announcementRepo = AppDataSource.getRepository('Announcements');
-      const processCheckRepo = AppDataSource.getRepository('ProcessCheck');
+      const processCheckRepo = AppDataSource.getRepository('User');
       
       // Get all announcements
       const announcements = await announcementRepo.find({
@@ -117,8 +117,6 @@ module.exports = (AppDataSource) => {
           if (announcement.createdBy) {
             // First, find the user by ID in User, Admin, and SuperAdmin tables
             const userRepo = AppDataSource.getRepository('User');
-            const adminRepo = AppDataSource.getRepository('Admin');
-            const superadminRepo = AppDataSource.getRepository('SuperAdmin');
             
             // Try to find user in User table
             let user = await userRepo.findOne({
@@ -142,12 +140,8 @@ module.exports = (AppDataSource) => {
             // If user found, get their name and avatar
             if (user) {
               // Get user name based on which table they were found in
-              if (user.User_name) {
-                userName = user.User_name;
-              } else if (user.admin_name) {
-                userName = user.admin_name;
-              } else if (user.superadmin_name) {
-                userName = user.superadmin_name;
+              if (user.name) {
+                userName = user.name;
               }
               
               // Get avatar from ProcessCheck table

@@ -1,6 +1,7 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const fs = require('fs');
+const path = require('path');
 const bcrypt = require('bcryptjs');
 const config = require('../config');
 const { avatarUpload, handleUploadError } = require('../middleware/fileUploadMiddleware');
@@ -131,39 +132,22 @@ module.exports = (AppDataSource) => {
         return res.status(403).json({ success: false, message: 'Invalid token' });
       }
 
-      // 3. Find user in ProcessCheck table by token
-      const processRepo = AppDataSource.getRepository('ProcessCheck');
-      const processCheck = await processRepo.findOne({ where: { Token: token } });
-      if (!processCheck) {
-        return res.status(404).json({ success: false, message: 'User not found in ProcessCheck' });
+      // 3. Find user in unified users table by token
+      const userRepo = AppDataSource.getRepository('User');
+      const user = await userRepo.findOne({ where: { Token: token } });
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
       }
 
-      const { Role: role, Repid: repid, Email: email } = processCheck;
-      let profile = { email };
+      const { Role: role, Email: email, name } = user;
+      let profile = { email, name };
 
       const departmentRepo = AppDataSource.getRepository('Department');
       const positionRepo = AppDataSource.getRepository('Position');
-      let userEntity = null;
-      if (role === 'admin') {
-        const adminRepo = AppDataSource.getRepository('Admin');
-        userEntity = await adminRepo.findOne({ where: { id: repid } });
-        if (!userEntity) return res.status(404).json({ success: false, message: 'Admin not found' });
-        profile.name = userEntity.admin_name;
-      } else if (role === 'superadmin') {
-        const superadminRepo = AppDataSource.getRepository('SuperAdmin');
-        userEntity = await superadminRepo.findOne({ where: { id: repid } });
-        if (!userEntity) return res.status(404).json({ success: false, message: 'SuperAdmin not found' });
-        profile.name = userEntity.superadmin_name;
-      } else {
-        const userRepo = AppDataSource.getRepository('User');
-        userEntity = await userRepo.findOne({ where: { id: repid } });
-        if (!userEntity) return res.status(404).json({ success: false, message: 'User not found' });
-        profile.name = userEntity.User_name;
-      }
       // Department
       let department = null;
-      if (userEntity.department) {
-        department = await departmentRepo.findOne({ where: { id: userEntity.department } });
+      if (user.department) {
+        department = await departmentRepo.findOne({ where: { id: user.department } });
       }
       // Language detection removed - frontend will handle i18n
       profile.department_id = department ? department.id : '';
@@ -172,8 +156,8 @@ module.exports = (AppDataSource) => {
       profile.department_name_en = department ? department.department_name_en : '';
       // Position
       let position = null;
-      if (userEntity.position) {
-        position = await positionRepo.findOne({ where: { id: userEntity.position } });
+      if (user.position) {
+        position = await positionRepo.findOne({ where: { id: user.position } });
       }
       profile.position_id = position ? position.id : '';
       profile.position_name = position ? position.position_name_en : '';
@@ -193,17 +177,15 @@ module.exports = (AppDataSource) => {
         name_en: department.department_name_en
       } : null;
       
-      // Add avatar_url from ProcessCheck
-      profile.avatar_url = processCheck.avatar_url || null;
+      // Add avatar_url from unified user
+      profile.avatar_url = user.avatar_url || null;
       
       // Add additional user fields
-      if (userEntity) {
-        profile.gender = userEntity.gender || null;
-        profile.dob = userEntity.dob || null;
-        profile.phone_number = userEntity.phone_number || null;
-        profile.start_work = userEntity.start_work || null;
-        profile.end_work = userEntity.end_work || null;
-      }
+      profile.gender = user.gender || null;
+      profile.dob = user.dob || null;
+      profile.phone_number = user.phone_number || null;
+      profile.start_work = user.start_work || null;
+      profile.end_work = user.end_work || null;
       
       return res.json({ success: true, data: profile });
     } catch (err) {
@@ -273,74 +255,35 @@ module.exports = (AppDataSource) => {
       } catch (err) {
         return res.status(403).json({ success: false, message: 'Invalid token' });
       }
-      const processRepo = AppDataSource.getRepository('ProcessCheck');
-      const processCheck = await processRepo.findOne({ where: { Token: token } });
-      if (!processCheck) {
-        return res.status(404).json({ success: false, message: 'User not found in ProcessCheck' });
+      const userRepo = AppDataSource.getRepository('User');
+      const user = await userRepo.findOne({ where: { Token: token } });
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
       }
-      const { Role: role, Repid: repid, Email: email } = processCheck;
+      const { Role: role, Email: email } = user;
       const { name, email: newEmail, position_id, department_id, password, gender, dob, phone_number, start_work, end_work } = req.body;
       const departmentRepo = AppDataSource.getRepository('Department');
       const positionRepo = AppDataSource.getRepository('Position');
-      let updated;
       let hashedPassword = null;
       if (password) {
         hashedPassword = await hashPassword(password);
       }
-      let userEntity = null;
-      if (role === 'admin') {
-        const adminRepo = AppDataSource.getRepository('Admin');
-        userEntity = await adminRepo.findOne({ where: { id: repid } });
-        if (!userEntity) return res.status(404).json({ success: false, message: 'Admin not found' });
-        userEntity.admin_name = name || userEntity.admin_name;
-        userEntity.email = newEmail || userEntity.email;
-        userEntity.department = department_id || userEntity.department;
-        userEntity.position = position_id || userEntity.position;
-        userEntity.gender = gender !== undefined ? gender : userEntity.gender;
-        userEntity.dob = dob !== undefined ? dob : userEntity.dob;
-        userEntity.phone_number = phone_number !== undefined ? phone_number : userEntity.phone_number;
-        userEntity.start_work = start_work !== undefined ? start_work : userEntity.start_work;
-        userEntity.end_work = end_work !== undefined ? end_work : userEntity.end_work;
-        if (hashedPassword) userEntity.password = hashedPassword;
-        updated = await adminRepo.save(userEntity);
-      } else if (role === 'superadmin') {
-        const superadminRepo = AppDataSource.getRepository('SuperAdmin');
-        userEntity = await superadminRepo.findOne({ where: { id: repid } });
-        if (!userEntity) return res.status(404).json({ success: false, message: 'SuperAdmin not found' });
-        userEntity.superadmin_name = name || userEntity.superadmin_name;
-        userEntity.email = newEmail || userEntity.email;
-        userEntity.department = department_id || userEntity.department;
-        userEntity.position = position_id || userEntity.position;
-        userEntity.gender = gender !== undefined ? gender : userEntity.gender;
-        userEntity.dob = dob !== undefined ? dob : userEntity.dob;
-        userEntity.phone_number = phone_number !== undefined ? phone_number : userEntity.phone_number;
-        userEntity.start_work = start_work !== undefined ? start_work : userEntity.start_work;
-        userEntity.end_work = end_work !== undefined ? end_work : userEntity.end_work;
-        if (hashedPassword) userEntity.password = hashedPassword;
-        updated = await superadminRepo.save(userEntity);
-      } else {
-        const userRepo = AppDataSource.getRepository('User');
-        userEntity = await userRepo.findOne({ where: { id: repid } });
-        if (!userEntity) return res.status(404).json({ success: false, message: 'User not found' });
-        userEntity.User_name = name || userEntity.User_name;
-        userEntity.email = newEmail || userEntity.email;
-        userEntity.department = department_id || userEntity.department;
-        userEntity.position = position_id || userEntity.position;
-        userEntity.gender = gender !== undefined ? gender : userEntity.gender;
-        userEntity.dob = dob !== undefined ? dob : userEntity.dob;
-        userEntity.phone_number = phone_number !== undefined ? phone_number : userEntity.phone_number;
-        userEntity.start_work = start_work !== undefined ? start_work : userEntity.start_work;
-        userEntity.end_work = end_work !== undefined ? end_work : userEntity.end_work;
-        if (hashedPassword) userEntity.password = hashedPassword;
-        updated = await userRepo.save(userEntity);
-      }
-      // Update password in ProcessCheck if changed
-      if (hashedPassword) {
-        processCheck.Password = hashedPassword;
-        await processRepo.save(processCheck);
-      }
+      
+      // Update user in unified users table
+      user.name = name || user.name;
+      user.Email = newEmail || user.Email;
+      user.department = department_id || user.department;
+      user.position = position_id || user.position;
+      user.gender = gender !== undefined ? gender : user.gender;
+      user.dob = dob !== undefined ? dob : user.dob;
+      user.phone_number = phone_number !== undefined ? phone_number : user.phone_number;
+      user.start_work = start_work !== undefined ? start_work : user.start_work;
+      user.end_work = end_work !== undefined ? end_work : user.end_work;
+      if (hashedPassword) user.Password = hashedPassword;
+      
+      const updated = await userRepo.save(user);
       // Return updated profile in the same format as GET
-      let profile = { email: updated.email || email };
+      let profile = { email: updated.Email || email, name: updated.name };
       // Department
       let department = null;
       if (updated.department) {
@@ -359,19 +302,29 @@ module.exports = (AppDataSource) => {
       profile.position_name = position ? position.position_name_en : '';
       profile.position_name_th = position ? position.position_name_th : '';
       profile.position_name_en = position ? position.position_name_en : '';
-      // Name
-      if (role === 'admin') profile.name = updated.admin_name;
-      else if (role === 'superadmin') profile.name = updated.superadmin_name;
-      else profile.name = updated.User_name;
+      
+      // Add nested objects for frontend compatibility
+      profile.position = position ? {
+        id: position.id,
+        name_th: position.position_name_th,
+        name_en: position.position_name_en
+      } : null;
+      
+      profile.department = department ? {
+        id: department.id,
+        name_th: department.department_name_th,
+        name_en: department.department_name_en
+      } : null;
+      
+      // Add avatar_url from unified user
+      profile.avatar_url = updated.avatar_url || null;
       
       // Add additional user fields to response
-      if (updated) {
-        profile.gender = updated.gender || null;
-        profile.dob = updated.dob || null;
-        profile.phone_number = updated.phone_number || null;
-        profile.start_work = updated.start_work || null;
-        profile.end_work = updated.end_work || null;
-      }
+      profile.gender = updated.gender || null;
+      profile.dob = updated.dob || null;
+      profile.phone_number = updated.phone_number || null;
+      profile.start_work = updated.start_work || null;
+      profile.end_work = updated.end_work || null;
       
       // Add debug logging
       console.log('Profile update request body:', req.body);
@@ -452,11 +405,11 @@ module.exports = (AppDataSource) => {
         return res.status(403).json({ success: false, message: 'Invalid token' });
       }
 
-      // 3. Find user in ProcessCheck table by token
-      const processRepo = AppDataSource.getRepository('ProcessCheck');
-      const processCheck = await processRepo.findOne({ where: { Token: token } });
-      if (!processCheck) {
-        return res.status(404).json({ success: false, message: 'User not found in ProcessCheck' });
+      // 3. Find user in unified users table by token
+      const userRepo = AppDataSource.getRepository('User');
+      const user = await userRepo.findOne({ where: { Token: token } });
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
       }
 
       // 4. Handle file upload using new middleware
@@ -473,9 +426,9 @@ module.exports = (AppDataSource) => {
           // 5. Generate relative URL for the uploaded file
           const avatarUrl = `/uploads/avatars/${req.file.filename}`;
 
-          // 6. Update ProcessCheck table with new avatar URL
-          processCheck.avatar_url = avatarUrl;
-          await processRepo.save(processCheck);
+          // 6. Update unified users table with new avatar URL
+          user.avatar_url = avatarUrl;
+          await userRepo.save(user);
 
           return sendSuccess(res, { avatar_url: avatarUrl }, 'Avatar uploaded successfully');
         } catch (updateErr) {
@@ -543,16 +496,16 @@ module.exports = (AppDataSource) => {
         return res.status(403).json({ success: false, message: 'Invalid token' });
       }
 
-      // 3. Find user in ProcessCheck table by token
-      const processRepo = AppDataSource.getRepository('ProcessCheck');
-      const processCheck = await processRepo.findOne({ where: { Token: token } });
-      if (!processCheck) {
-        return res.status(404).json({ success: false, message: 'User not found in ProcessCheck' });
+      // 3. Find user in unified users table by token
+      const userRepo = AppDataSource.getRepository('User');
+      const user = await userRepo.findOne({ where: { Token: token } });
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
       }
 
       return res.json({
         success: true,
-        avatar_url: processCheck.avatar_url || null
+        avatar_url: user.avatar_url || null
       });
     } catch (err) {
       console.error('Avatar get error:', err);
@@ -610,16 +563,16 @@ module.exports = (AppDataSource) => {
         return res.status(403).json({ success: false, message: 'Invalid token' });
       }
 
-      // 3. Find user in ProcessCheck table by token
-      const processRepo = AppDataSource.getRepository('ProcessCheck');
-      const processCheck = await processRepo.findOne({ where: { Token: token } });
-      if (!processCheck) {
-        return res.status(404).json({ success: false, message: 'User not found in ProcessCheck' });
+      // 3. Find user in unified users table by token
+      const userRepo = AppDataSource.getRepository('User');
+      const user = await userRepo.findOne({ where: { Token: token } });
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
       }
 
       // 4. HARD DELETE the avatar file if it exists
-      if (processCheck.avatar_url) {
-        const filePath = path.join(config.getAvatarsUploadPath(), path.basename(processCheck.avatar_url));
+      if (user.avatar_url) {
+        const filePath = path.join(config.getAvatarsUploadPath(), path.basename(user.avatar_url));
         
         try {
           if (fs.existsSync(filePath)) {
@@ -628,37 +581,37 @@ module.exports = (AppDataSource) => {
             
             // Verify file is actually deleted
             if (!fs.existsSync(filePath)) {
-              console.log(`✅ HARD DELETED avatar: ${path.basename(processCheck.avatar_url)}`);
+              console.log(`✅ HARD DELETED avatar: ${path.basename(user.avatar_url)}`);
             } else {
-              console.error(`❌ FAILED to delete avatar: ${path.basename(processCheck.avatar_url)} - file still exists`);
+              console.error(`❌ FAILED to delete avatar: ${path.basename(user.avatar_url)} - file still exists`);
               
               // Try alternative deletion method
               try {
                 fs.rmSync(filePath, { force: true });
-                console.log(`✅ Force deleted avatar: ${path.basename(processCheck.avatar_url)}`);
+                console.log(`✅ Force deleted avatar: ${path.basename(user.avatar_url)}`);
               } catch (forceDeleteError) {
-                console.error(`❌ Force delete also failed for avatar: ${path.basename(processCheck.avatar_url)}:`, forceDeleteError.message);
+                console.error(`❌ Force delete also failed for avatar: ${path.basename(user.avatar_url)}:`, forceDeleteError.message);
               }
             }
           } else {
-            console.log(`⚠️  Avatar file not found (already deleted?): ${path.basename(processCheck.avatar_url)}`);
+            console.log(`⚠️  Avatar file not found (already deleted?): ${path.basename(user.avatar_url)}`);
           }
         } catch (fileDeleteError) {
-          console.error(`❌ Error deleting avatar file ${path.basename(processCheck.avatar_url)}:`, fileDeleteError.message);
+          console.error(`❌ Error deleting avatar file ${path.basename(user.avatar_url)}:`, fileDeleteError.message);
           
           // Try alternative deletion method
           try {
             fs.rmSync(filePath, { force: true });
-            console.log(`✅ Force deleted avatar: ${path.basename(processCheck.avatar_url)}`);
+            console.log(`✅ Force deleted avatar: ${path.basename(user.avatar_url)}`);
           } catch (forceDeleteError) {
-            console.error(`❌ Force delete also failed for avatar: ${path.basename(processCheck.avatar_url)}:`, forceDeleteError.message);
+            console.error(`❌ Force delete also failed for avatar: ${path.basename(user.avatar_url)}:`, forceDeleteError.message);
           }
         }
       }
 
-      // 5. Update ProcessCheck table to remove avatar URL
-      processCheck.avatar_url = null;
-      await processRepo.save(processCheck);
+      // 5. Update unified users table to remove avatar URL
+      user.avatar_url = null;
+      await userRepo.save(user);
 
       return res.json({
         success: true,
@@ -726,39 +679,21 @@ module.exports = (AppDataSource) => {
         return res.status(403).json({ success: false, message: 'Invalid token' });
       }
 
-      // 3. Find user in ProcessCheck table by token
-      const processRepo = AppDataSource.getRepository('ProcessCheck');
-      const processCheck = await processRepo.findOne({ where: { Token: token } });
-      if (!processCheck) {
-        return res.status(404).json({ success: false, message: 'User not found in ProcessCheck' });
+      // 3. Find user in unified users table by token
+      const userRepo = AppDataSource.getRepository('User');
+      const user = await userRepo.findOne({ where: { Token: token } });
+      if (!user) {
+        return res.status(404).json({ success: false, message: 'User not found' });
       }
 
-      const { Repid: repid } = processCheck;
+      const { id: userId } = user;
 
       // เพิ่มเติม: ดึง leave_used ของ user มาด้วย
       const leaveUsedRepo = AppDataSource.getRepository('LeaveUsed');
-      const leaveUsedRecords = await leaveUsedRepo.find({ where: { user_id: repid } });
+      const leaveUsedRecords = await leaveUsedRepo.find({ where: { user_id: userId } });
 
       // Get user's position to determine leave quotas
-      const userRepo = AppDataSource.getRepository('User');
-      const adminRepo = AppDataSource.getRepository('Admin');
-      const superadminRepo = AppDataSource.getRepository('SuperAdmin');
-      
-      let userPosition = null;
-      let userEntity = await userRepo.findOne({ where: { id: repid } });
-      if (userEntity) {
-        userPosition = userEntity.position;
-      } else {
-        userEntity = await adminRepo.findOne({ where: { id: repid } });
-        if (userEntity) {
-          userPosition = userEntity.position;
-        } else {
-          userEntity = await superadminRepo.findOne({ where: { id: repid } });
-          if (userEntity) {
-            userPosition = userEntity.position;
-          }
-        }
-      }
+      let userPosition = user.position;
 
       if (!userPosition) {
         return res.status(404).json({ success: false, message: 'User position not found' });
@@ -774,7 +709,7 @@ module.exports = (AppDataSource) => {
       
       // Get all approved leave requests for this user
       const approvedLeaves = await leaveRequestRepo.find({ 
-        where: { Repid: repid, status: 'approved' },
+        where: { Repid: userId, status: 'approved' },
         order: { createdAt: 'DESC' }
       });
 

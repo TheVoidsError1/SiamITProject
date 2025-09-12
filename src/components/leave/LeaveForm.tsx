@@ -66,7 +66,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
   // Update leaveTypes state type to include require_attachment
   const [leaveTypes, setLeaveTypes] = useState<{ id: string; leave_type_th: string; leave_type_en: string; require_attachment?: boolean }[]>([]);
   const [positions, setPositions] = useState<{ id: string; position_name_th: string; position_name_en: string }[]>([]);
-  const [admins, setAdmins] = useState<{ id: string; admin_name: string }[]>([]);
+  const [admins, setAdmins] = useState<{ id: string; name: string }[]>([]);
   const { user } = useAuth();
   const [timeError, setTimeError] = useState("");
   // เพิ่ม state สำหรับ error ของแต่ละฟิลด์

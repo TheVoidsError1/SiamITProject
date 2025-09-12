@@ -189,7 +189,7 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
         if (adminRes.success && Array.isArray(adminRes.data)) {
           adminList = adminRes.data.map((a: any) => ({
             id: a.id,
-            name: a.admin_name || a.name || a.email || 'Admin',
+            name: a.name || a.email || 'Admin',
             role: 'admin',
           }));
         }
@@ -200,7 +200,7 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
         if (superRes.success && Array.isArray(superRes.data)) {
           superList = superRes.data.map((s: any) => ({
             id: s.id,
-            name: s.superadmin_name || s.name || s.email || 'Superadmin',
+            name: s.name || s.email || 'Superadmin',
             role: 'superadmin',
           }));
         }

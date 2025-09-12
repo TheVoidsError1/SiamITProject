@@ -117,8 +117,8 @@ To link your account for full access, please visit the web application and use L
     let user = null;
     if (!publicCommands.includes(command)) {
       // Check if user is linked
-      const processRepo = global.AppDataSource.getRepository('ProcessCheck');
-      user = await processRepo.findOneBy({ lineUserId: userId });
+      const userRepo = global.AppDataSource.getRepository('User');
+      user = await userRepo.findOneBy({ lineUserId: userId });
       
       if (!user) {
         return {
@@ -176,7 +176,7 @@ To link your account for full access, please visit the web application and use L
       
       // Find 3 most recent leave requests for the user
       const leaveRequests = await leaveRepo.find({ 
-        where: { Repid: user.Repid }, 
+        where: { Repid: user.id }, 
         order: { createdAt: 'DESC' }, 
         take: 3 
       });
@@ -289,7 +289,7 @@ To link your account for full access, please visit the web application and use L
     try {
       // ใช้ getLeaveUsageSummary แทนการคำนวณแบบ manual
       const currentYear = new Date().getFullYear();
-      const remainingLeaveData = await getLeaveUsageSummary(user.Repid, currentYear, global.AppDataSource);
+      const remainingLeaveData = await getLeaveUsageSummary(user.id, currentYear, global.AppDataSource);
 
       // Helper: Format duration display
       function formatDuration(day, hour) {
@@ -334,7 +334,7 @@ To link your account for full access, please visit the web application and use L
   // Get leave history from API and format for LINE
   static async getLeaveHistory(user) {
     try {
-      const response = await axios.get(`${getApiBaseUrl()}/api/leave-history/${user.Repid}`);
+      const response = await axios.get(`${getApiBaseUrl()}/api/leave-history/${user.id}`);
       
       if (response.data.success) {
         const leaves = response.data.data;
@@ -367,7 +367,7 @@ To link your account for full access, please visit the web application and use L
   // Get user profile from API and format for LINE
   static async getUserProfile(user) {
     try {
-      const response = await axios.get(`${getApiBaseUrl()}/api/profile/${user.Repid}`);
+      const response = await axios.get(`${getApiBaseUrl()}/api/profile/${user.id}`);
       
       if (response.data.success) {
         const profile = response.data.data;
@@ -523,8 +523,8 @@ You'll receive LINE notifications when your request is approved/rejected!`
   // Helper method to get user by LINE ID
   static async getUserByLineId(lineUserId) {
     try {
-      const processRepo = global.AppDataSource.getRepository('ProcessCheck');
-      return await processRepo.findOneBy({ lineUserId: lineUserId });
+      const userRepo = global.AppDataSource.getRepository('User');
+      return await userRepo.findOneBy({ lineUserId: lineUserId });
     } catch (error) {
       console.error('Error getting user by LINE ID:', error);
       return null;

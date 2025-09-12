@@ -18,11 +18,7 @@
  *           schema:
  *             type: object
  *             properties:
- *               superadmin_name:
- *                 type: string
- *               department:
- *                 type: string
- *               position:
+ *               name:
  *                 type: string
  *               email:
  *                 type: string
@@ -86,98 +82,62 @@ const authMiddleware = require('../middleware/authMiddleware');
 module.exports = (AppDataSource) => {
   const router = require('express').Router();
   // Create base controller instances
-  const superadminController = new BaseController('SuperAdmin');
+  const superadminController = new BaseController('User');
   const departmentController = new BaseController('Department');
   const positionController = new BaseController('Position');
 
   // Create superadmin
   router.post('/superadmin', async (req, res) => {
     try {
-      const { superadmin_name, department, position, email, password } = req.body;
-      const superadminRepo = AppDataSource.getRepository('SuperAdmin');
-      const processRepo = AppDataSource.getRepository('ProcessCheck');
-      const departmentRepo = AppDataSource.getRepository('Department');
-      const positionRepo = AppDataSource.getRepository('Position');
+      const { name, email, password } = req.body;
+      const userRepo = AppDataSource.getRepository('User');
 
       // Check for duplicate name
-      const nameExist = await superadminRepo.findOneBy({ superadmin_name });
+      const nameExist = await userRepo.findOneBy({ name });
       if (nameExist) {
         return sendValidationError(res, 'Superadmin name already exists');
       }
 
       // Check for duplicate email
-      const exist = await processRepo.findOneBy({ Email: email });
-      if (exist) {
+      const emailExist = await userRepo.findOneBy({ Email: email });
+      if (emailExist) {
         return sendValidationError(res, 'Email already exists');
-      }
-
-      // Accept department as name or ID
-      let departmentId = null;
-      if (department) {
-        // Check if department is a valid UUID (36 chars, dashes)
-        const uuidRegex = /^[0-9a-fA-F-]{36}$/;
-        if (uuidRegex.test(department)) {
-          departmentId = department;
-        } else {
-          const deptEntity = await departmentRepo.findOne({ where: { department_name_th: department } });
-          if (!deptEntity) {
-            return sendValidationError(res, 'Department not found');
-          }
-          departmentId = deptEntity.id;
-        }
-      }
-
-      // Accept position as name or ID
-      let positionId = null;
-      if (position) {
-        const uuidRegex = /^[0-9a-fA-F-]{36}$/;
-        if (uuidRegex.test(position)) {
-          positionId = position;
-        } else {
-          const posEntity = await positionRepo.findOne({ where: { position_name_th: position } });
-          if (!posEntity) {
-            return sendValidationError(res, 'Position not found');
-          }
-          positionId = posEntity.id;
-        }
       }
 
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      // Create superadmin
-      const superadmin = await superadminController.create(AppDataSource, {
-        id: uuidv4(),
-        superadmin_name,
-        department: departmentId,
-        position: positionId
-      });
-
       // Create JWT Token
+      const superadminId = uuidv4();
       const token = jwt.sign(
-        { userId: superadmin.id, email: email },
+        { userId: superadminId, email: email },
         config.server.jwtSecret,
         { expiresIn: config.server.jwtExpiresIn }
       );
 
-      // Create process_check with Token and Repid
-      const processCheck = processRepo.create({
-        id: uuidv4(),
+      // Create superadmin in unified users table (only essential fields)
+      const superadmin = userRepo.create({
+        id: superadminId,
+        name: name,
         Email: email,
         Password: hashedPassword,
         Token: token,
-        Repid: superadmin.id,
-        Role: 'superadmin',
-        avatar_url: null
+        Role: 'superadmin'
       });
-      await processRepo.save(processCheck);
+      await userRepo.save(superadmin);
 
-      sendSuccess(res, { ...superadmin, token, repid: superadmin.id }, 'Superadmin created successfully', 201);
+      sendSuccess(res, { 
+        id: superadmin.id,
+        name: superadmin.name,
+        email: superadmin.Email,
+        role: superadmin.Role,
+        token: token
+      }, 'Superadmin created successfully', 201);
     } catch (err) {
       if (err.code === 'ER_DUP_ENTRY' && err.message.includes('Email')) {
         return sendValidationError(res, 'Email already exists');
       }
-      if (err.code === 'ER_DUP_ENTRY' && err.message.includes('superadmin_name')) {
+      if (err.code === 'ER_DUP_ENTRY' && err.message.includes('name')) {
         return sendValidationError(res, 'Superadmin name already exists');
       }
       sendError(res, err.message, 500);
@@ -240,7 +200,7 @@ module.exports = (AppDataSource) => {
         return res.status(400).json({ success: false, message: 'Invalid or missing role' });
       }
       
-      const processRepo = queryRunner.manager.getRepository('ProcessCheck');
+      const processRepo = queryRunner.manager.getRepository('User');
       const departmentRepo = queryRunner.manager.getRepository('Department');
       const positionRepo = queryRunner.manager.getRepository('Position');
       // Gender is stored as a simple varchar in entities; no separate Gender table
@@ -287,29 +247,29 @@ module.exports = (AppDataSource) => {
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
       
-      let user, userRepo, nameField;
-      if (role === 'superadmin') {
-        userRepo = queryRunner.manager.getRepository('SuperAdmin');
-        nameField = 'superadmin_name';
-      } else if (role === 'admin') {
-        userRepo = queryRunner.manager.getRepository('Admin');
-        nameField = 'admin_name';
-      } else {
-        userRepo = queryRunner.manager.getRepository('User');
-        nameField = 'User_name';
-      }
-      
       // Check for duplicate name
-      const nameExist = await userRepo.findOneBy({ [nameField]: name });
+      const nameExist = await processRepo.findOneBy({ name: name });
       if (nameExist) {
         await queryRunner.rollbackTransaction();
         return sendValidationError(res, 'Name already exists');
       }
       
-      // Create user
-      user = userRepo.create({
-        id: uuidv4(),
-        [nameField]: name,
+      // Create JWT Token
+      const userId = uuidv4();
+      const token = jwt.sign(
+        { userId: userId, email: email },
+        config.server.jwtSecret,
+        { expiresIn: config.server.jwtExpiresIn }
+      );
+      
+      // Create user in unified users table (single row with all data)
+      const user = processRepo.create({
+        id: userId,
+        name: name,
+        Email: email,
+        Password: hashedPassword,
+        Token: token,
+        Role: role,
         department: departmentId,
         position: positionId,
         gender: genderValue,
@@ -317,27 +277,9 @@ module.exports = (AppDataSource) => {
         start_work: start_work || null,
         end_work: end_work || null,
         phone_number: phone_number || null,
-      });
-      await userRepo.save(user);
-      
-      // Create JWT Token
-      const token = jwt.sign(
-        { userId: user.id, email: email },
-        config.server.jwtSecret,
-        { expiresIn: config.server.jwtExpiresIn }
-      );
-      
-      // Create process_check with Token and Repid
-      const processCheck = processRepo.create({
-        id: uuidv4(),
-        Email: email,
-        Password: hashedPassword,
-        Token: token,
-        Repid: user.id,
-        Role: role,
         avatar_url: null
       });
-      await processRepo.save(processCheck);
+      await processRepo.save(user);
       
       await queryRunner.commitTransaction();
       
@@ -668,13 +610,13 @@ module.exports = (AppDataSource) => {
   // Add GET /api/superadmin to fetch all superadmins
   router.get('/superadmin', authMiddleware, async (req, res) => {
     try {
-      const superadminRepo = AppDataSource.getRepository('SuperAdmin');
-      const superadmins = await superadminRepo.find();
-      // Return only id and superadmin_name for dropdown
+      const userRepo = AppDataSource.getRepository('User');
+      const superadmins = await userRepo.find({ where: { Role: 'superadmin' } });
+      // Return only id and name for dropdown
       const result = superadmins.map(sa => ({
         id: sa.id,
-        superadmin_name: sa.superadmin_name,
-        email: sa.email || '',
+        name: sa.name,
+        email: sa.Email || '',
       }));
       sendSuccess(res, result, 'Fetched all superadmins');
     } catch (err) {
@@ -686,10 +628,10 @@ module.exports = (AppDataSource) => {
   router.delete('/superadmin/:id', authMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
-      const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+      const userRepo = AppDataSource.getRepository('User');
       const { deleteUserComprehensive } = require('../utils/userDeletionUtils');
 
-      const result = await deleteUserComprehensive(AppDataSource, id, 'superadmin', superadminRepo);
+      const result = await deleteUserComprehensive(AppDataSource, id, 'superadmin', userRepo);
       
       sendSuccess(res, result.deletionSummary, result.message);
     } catch (err) {

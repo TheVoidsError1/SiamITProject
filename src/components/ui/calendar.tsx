@@ -1,9 +1,10 @@
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import * as React from "react";
-import { DayPicker } from "react-day-picker";
+import { DayPicker, CaptionProps, useDayPicker, useNavigation } from "react-day-picker";
 import { useTranslation } from "react-i18next";
 
 import { buttonVariants } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
 export type CalendarProps = React.ComponentProps<typeof DayPicker>;
@@ -16,6 +17,62 @@ function Calendar({
 }: CalendarProps) {
   const { t, i18n } = useTranslation();
   
+  function DropdownCaption({ displayMonth }: CaptionProps) {
+    const dayPicker = useDayPicker();
+    const { goToMonth } = useNavigation();
+    const currentYear = displayMonth.getFullYear();
+    const currentMonth = displayMonth.getMonth();
+    const fromYear = dayPicker.fromYear ?? currentYear - 100;
+    const toYear = dayPicker.toYear ?? currentYear;
+    const years: number[] = [];
+    for (let y = toYear; y >= fromYear; y--) years.push(y);
+    const months = Array.from({ length: 12 }, (_, m) => {
+      const d = new Date(2020, m, 1);
+      return d.toLocaleString(dayPicker.locale?.code ?? undefined, { month: "long" });
+    });
+
+    const handleYearChange = (value: string) => {
+      const newDate = new Date(Number(value), currentMonth, 1);
+      goToMonth(newDate);
+    };
+    const handleMonthChange = (value: string) => {
+      const newDate = new Date(currentYear, Number(value), 1);
+      goToMonth(newDate);
+    };
+
+    return (
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <Select onValueChange={handleMonthChange} value={String(currentMonth)}>
+            <SelectTrigger className="h-8 w-[140px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="max-h-44 overflow-auto">
+              {months.map((label, idx) => (
+                <SelectItem key={idx} value={String(idx)}>
+                  {label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select onValueChange={handleYearChange} value={String(currentYear)}>
+            <SelectTrigger className="h-8 w-[110px]">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="max-h-44 overflow-auto">
+              {years.map((y) => (
+                <SelectItem key={y} value={String(y)}>
+                  {i18n.language.startsWith('th') ? y + 543 : y}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+    )
+  }
+  
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
@@ -23,8 +80,8 @@ function Calendar({
       classNames={{
         months: "flex flex-col sm:flex-row space-y-4 sm:space-x-4 sm:space-y-0",
         month: "space-y-4",
-        caption: "flex justify-center pt-1 relative items-center",
-        caption_label: "text-sm font-medium",
+        caption: "flex items-center justify-between pt-1",
+        caption_label: "sr-only",
         nav: "space-x-1 flex items-center",
         nav_button: cn(
           buttonVariants({ variant: "outline" }),
@@ -67,6 +124,7 @@ function Calendar({
             aria-label={t('calendar.nextMonth')}
           />
         ),
+        Caption: DropdownCaption,
       }}
       {...props}
     />
