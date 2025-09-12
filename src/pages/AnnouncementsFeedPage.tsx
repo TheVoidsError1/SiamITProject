@@ -1,29 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Textarea } from '@/components/ui/textarea';
-import { format } from 'date-fns';
-import { th, enUS } from 'date-fns/locale';
-import axios from 'axios';
-import { Newspaper, User, Calendar, Image as ImageIcon, Settings, Plus, Upload, Image, X } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSocket } from '@/contexts/SocketContext';
 import { useToast } from '@/hooks/use-toast';
-import { handleFileSelect, getImageUrl, handleImageError, formatDate } from '../lib/utils';
-import { apiService, apiEndpoints } from '../lib/api';
+import { Calendar, Image, Newspaper, Plus, Settings, X } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
+import { apiService } from '../lib/api';
+import { apiEndpoints } from '@/constants/api';
+import { formatDate, getImageUrl, handleFileSelect, handleImageError } from '../lib/utils';
 
 interface Announcement {
   id: string;
   subject: string;
   detail: string;
   createdAt: string;
-  createdBy: string;
+  createdBy: string; // This is now the user ID
+  createdByName: string; // This is the display name
   Image?: string;
   avatar?: string;
 }
@@ -58,13 +57,18 @@ const AnnouncementsFeedPage = () => {
         
         // Show toast notification
         toast({
-          title: t('notifications.newAnnouncement'),
+          title: t('notification.newAnnouncement'),
           description: data.subject,
           variant: 'default'
         });
         
-        // Add new announcement to the list
-        setAnnouncements(prev => [data, ...prev]);
+        // Add new announcement to the list with createdByName
+        const newAnnouncement = {
+          ...data,
+          id: data.id || `temp-${Date.now()}`, // Ensure ID exists
+          createdByName: user?.full_name || 'Unknown User' // Use current user's name for new announcements
+        };
+        setAnnouncements(prev => [newAnnouncement, ...prev]);
       });
 
       // Listen for announcement updates
@@ -81,7 +85,7 @@ const AnnouncementsFeedPage = () => {
         // Update announcement in the list
         setAnnouncements(prev => 
           prev.map(announcement => 
-            announcement.id === data.id ? data : announcement
+            announcement.id === data.id ? { ...data, createdByName: announcement.createdByName } : announcement
           )
         );
       });
@@ -109,7 +113,7 @@ const AnnouncementsFeedPage = () => {
         socket.off('announcementDeleted');
       };
     }
-  }, [socket, isConnected, toast, t]);
+  }, [socket, isConnected, toast, t, user]);
 
   useEffect(() => {
     const fetchAnnouncements = async () => {
@@ -146,7 +150,7 @@ const AnnouncementsFeedPage = () => {
       const formData = new FormData();
       formData.append('subject', createForm.subject);
       formData.append('detail', createForm.detail);
-      formData.append('createdBy', user?.full_name || '');
+      formData.append('createdBy', user?.id || '');
       formData.append('createdAt', new Date().toISOString());
       if (selectedFile) {
         formData.append('Image', selectedFile);
@@ -206,6 +210,12 @@ const AnnouncementsFeedPage = () => {
             </defs>
           </svg>
         </div>
+        
+        {/* Sidebar Trigger */}
+        <div className="absolute top-4 left-4 z-20">
+          <SidebarTrigger className="bg-white/90 hover:bg-white text-blue-700 border border-blue-200 hover:border-blue-300 shadow-lg backdrop-blur-sm" />
+        </div>
+        
         <div className="relative z-10 flex flex-col items-center justify-center py-10 md:py-16">
           <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-24 h-24 rounded-full bg-white/80 shadow-2xl border-4 border-white mb-4" />
           <h1 className="text-4xl md:text-5xl font-extrabold text-indigo-900 drop-shadow mb-2 flex items-center gap-3">
@@ -269,7 +279,7 @@ const AnnouncementsFeedPage = () => {
                         placeholder={t('companyNews.detail')}
                         required
                         rows={6}
-                        className="w-full resize-none"
+                        className="w-full resize-none break-all overflow-wrap-anywhere whitespace-pre-wrap"
                       />
                     </div>
                     <div>
@@ -372,7 +382,7 @@ const AnnouncementsFeedPage = () => {
                       <Avatar className="h-16 w-16 border-3 border-blue-200 shadow-lg">
                         <AvatarImage 
                                                      src={announcement.avatar ? getImageUrl(announcement.avatar, import.meta.env.VITE_API_BASE_URL) : '/placeholder-avatar.png'} 
-                          alt={announcement.createdBy}
+                          alt={announcement.createdByName}
                           className="object-cover"
                           onError={(e) => {
                             console.log('Avatar failed to load:', announcement.avatar);
@@ -383,12 +393,12 @@ const AnnouncementsFeedPage = () => {
                           }}
                         />
                         <AvatarFallback className="bg-blue-100 text-blue-600 font-bold text-lg">
-                          {announcement.createdBy ? announcement.createdBy.charAt(0).toUpperCase() : '?'}
+                          {announcement.createdByName ? announcement.createdByName.charAt(0).toUpperCase() : '?'}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <CardTitle className="text-xl font-bold text-gray-800 mb-2 truncate">
-                          {announcement.createdBy}
+                          {announcement.createdByName}
                         </CardTitle>
                         <div className="flex items-center gap-1 text-sm text-gray-500">
                           <Calendar className="w-4 h-4" />
@@ -403,7 +413,7 @@ const AnnouncementsFeedPage = () => {
                         {announcement.subject}
                       </h3>
                       <div className="max-h-32 overflow-y-auto">
-                        <p className="text-gray-700 leading-relaxed whitespace-pre-wrap break-words">
+                        <p className="text-gray-700 leading-relaxed whitespace-pre-wrap break-all overflow-wrap-anywhere max-w-full">
                           {announcement.detail}
                         </p>
                       </div>

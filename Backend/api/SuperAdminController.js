@@ -80,6 +80,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const config = require('../config');
 const { BaseController, sendSuccess, sendError, sendNotFound, sendValidationError } = require('../utils');
+const { manualCleanup } = require('../utils/cleanupOldLeaveRequests');
+const authMiddleware = require('../middleware/authMiddleware');
 
 module.exports = (AppDataSource) => {
   const router = require('express').Router();
@@ -233,7 +235,7 @@ module.exports = (AppDataSource) => {
     await queryRunner.startTransaction();
     
     try {
-      const { role, name, department, position, email, password } = req.body;
+      const { role, name, department, position, email, password, gender_name_th, date_of_birth, start_work, end_work, phone_number } = req.body;
       if (!role || !['superadmin', 'admin', 'user'].includes(role)) {
         return res.status(400).json({ success: false, message: 'Invalid or missing role' });
       }
@@ -241,7 +243,8 @@ module.exports = (AppDataSource) => {
       const processRepo = queryRunner.manager.getRepository('ProcessCheck');
       const departmentRepo = queryRunner.manager.getRepository('Department');
       const positionRepo = queryRunner.manager.getRepository('Position');
-      
+      // Gender is stored as a simple varchar in entities; no separate Gender table
+      const genderValue = gender_name_th || null;
       // Check for duplicate email
       const exist = await processRepo.findOneBy({ Email: email });
       if (exist) {
@@ -289,7 +292,7 @@ module.exports = (AppDataSource) => {
         userRepo = queryRunner.manager.getRepository('SuperAdmin');
         nameField = 'superadmin_name';
       } else if (role === 'admin') {
-        userRepo = queryRunner.manager.getRepository('admin');
+        userRepo = queryRunner.manager.getRepository('Admin');
         nameField = 'admin_name';
       } else {
         userRepo = queryRunner.manager.getRepository('User');
@@ -308,7 +311,12 @@ module.exports = (AppDataSource) => {
         id: uuidv4(),
         [nameField]: name,
         department: departmentId,
-        position: positionId
+        position: positionId,
+        gender: genderValue,
+        dob: date_of_birth || null,
+        start_work: start_work || null,
+        end_work: end_work || null,
+        phone_number: phone_number || null,
       });
       await userRepo.save(user);
       
@@ -383,7 +391,7 @@ module.exports = (AppDataSource) => {
    *         description: Internal server error
    */
   router.post('/positions-with-quotas', async (req, res) => {
-    const { position_name_en, position_name_th, quotas } = req.body;
+            const { position_name_en, position_name_th, quotas, require_enddate = false } = req.body;
     console.log('Received quotas:', quotas);
     if (!position_name_en || !position_name_th || typeof quotas !== 'object') {
       return sendValidationError(res, 'position_name_en, position_name_th, and quotas are required');
@@ -396,7 +404,7 @@ module.exports = (AppDataSource) => {
       const leaveTypeRepo = queryRunner.manager.getRepository('LeaveType');
       const leaveQuotaRepo = queryRunner.manager.getRepository('LeaveQuota');
       // 1. Create position with both languages
-      const position = positionRepo.create({ position_name_en, position_name_th });
+              const position = positionRepo.create({ position_name_en, position_name_th, require_enddate: !!require_enddate });
       await positionRepo.save(position);
       // 2. Get all leave types except 'emergency'
       const leaveTypes = await leaveTypeRepo.find();
@@ -472,6 +480,8 @@ module.exports = (AppDataSource) => {
           id: pos.id,
           position_name_en: pos.position_name_en,
           position_name_th: pos.position_name_th,
+                      require_enddate: !!pos.require_enddate,
+          new_year_quota: typeof pos.new_year_quota === 'number' ? pos.new_year_quota : (pos.new_year_quota ? 1 : 0),
           quotas: posQuotas
         };
       });
@@ -531,7 +541,7 @@ module.exports = (AppDataSource) => {
    */
   router.put('/positions-with-quotas/:id', async (req, res) => {
     const { id } = req.params;
-    const { position_name_en, position_name_th, quotas } = req.body;
+            const { position_name_en, position_name_th, quotas, require_enddate, new_year_quota } = req.body;
     if (!position_name_en || !position_name_th || typeof quotas !== 'object') {
       return res.status(400).json({ success: false, message: 'position_name_en, position_name_th, and quotas are required' });
     }
@@ -549,6 +559,11 @@ module.exports = (AppDataSource) => {
       }
       position.position_name_en = position_name_en;
       position.position_name_th = position_name_th;
+              position.require_enddate = typeof require_enddate === 'boolean' ? require_enddate : !!position.require_enddate;
+      if (new_year_quota !== undefined && new_year_quota !== null) {
+        // Expect 0 = reset, 1 = not reset
+        position.new_year_quota = Number(new_year_quota) === 1 ? 1 : 0;
+      }
       await positionRepo.save(position);
       const leaveTypes = await leaveTypeRepo.find();
       const filteredLeaveTypes = leaveTypes.filter(
@@ -632,22 +647,55 @@ module.exports = (AppDataSource) => {
     }
   });
 
+  // POST /api/superadmin/cleanup-old-leave-requests
+  router.post('/superadmin/cleanup-old-leave-requests', authMiddleware, async (req, res) => {
+    try {
+      const result = await manualCleanup(AppDataSource);
+      
+      if (result.success) {
+        sendSuccess(res, {
+          deletedCount: result.deletedCount,
+          message: result.message
+        }, 'Cleanup completed successfully');
+      } else {
+        sendError(res, result.message, 500);
+      }
+    } catch (err) {
+      sendError(res, err.message, 500);
+    }
+  });
+
+  // Add GET /api/superadmin to fetch all superadmins
+  router.get('/superadmin', authMiddleware, async (req, res) => {
+    try {
+      const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+      const superadmins = await superadminRepo.find();
+      // Return only id and superadmin_name for dropdown
+      const result = superadmins.map(sa => ({
+        id: sa.id,
+        superadmin_name: sa.superadmin_name,
+        email: sa.email || '',
+      }));
+      sendSuccess(res, result, 'Fetched all superadmins');
+    } catch (err) {
+      sendError(res, err.message, 500);
+    }
+  });
+
   // Delete superadmin
-  router.delete('/superadmin/:id', async (req, res) => {
+  router.delete('/superadmin/:id', authMiddleware, async (req, res) => {
     try {
       const { id } = req.params;
       const superadminRepo = AppDataSource.getRepository('SuperAdmin');
-      const processRepo = AppDataSource.getRepository('ProcessCheck');
+      const { deleteUserComprehensive } = require('../utils/userDeletionUtils');
 
-      // Delete from process_check
-      await processRepo.delete({ Repid: id, Role: 'superadmin' });
-      // Delete from superadmin table
-      const result = await superadminRepo.delete({ id });
-      if (result.affected === 0) {
+      const result = await deleteUserComprehensive(AppDataSource, id, 'superadmin', superadminRepo);
+      
+      sendSuccess(res, result.deletionSummary, result.message);
+    } catch (err) {
+      if (err.message === 'superadmin not found') {
         return sendNotFound(res, 'Superadmin not found');
       }
-      sendSuccess(res, null, 'Superadmin deleted successfully');
-    } catch (err) {
       sendError(res, err.message, 500);
     }
   });

@@ -5,13 +5,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { DatePicker } from '@/components/ui/date-picker';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { apiService, apiEndpoints } from '@/lib/api';
+import { apiService } from '@/lib/api';
+import { apiEndpoints } from '@/constants/api';
 import { showToastMessage } from '@/lib/toast';
 import { Eye, EyeOff, Mail, Lock, User, Building } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { RegisterConfirmDialog } from '@/components/dialogs/RegisterConfirmDialog';
 
 const Register = () => {
   const { t, i18n } = useTranslation();
@@ -23,17 +26,26 @@ const Register = () => {
     full_name: '',
     department: '',
     position: '',
-    role: 'employee' as 'employee' | 'admin' | 'intern'
+    role: 'employee' as 'employee' | 'admin' | 'intern',
+    gender: '' as '' | 'male' | 'female' | 'other',
+    dob: '',
+    phone_number: '',
+    start_work: '',
+    end_work: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [departments, setDepartments] = useState<{ id: string; department_name_en: string; department_name_th: string }[]>([]);
-  const [positions, setPositions] = useState<{ id: string; position_name_en: string; position_name_th: string }[]>([]);
+      const [positions, setPositions] = useState<{ id: string; position_name_en: string; position_name_th: string; require_enddate?: boolean }[]>([]);
   const [newDepartment, setNewDepartment] = useState('');
   const [newPosition, setNewPosition] = useState('');
   const [error, setError] = useState<{ email?: string; full_name?: string; general?: string }>({});
+<<<<<<< HEAD
   const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong'>('weak');
+=======
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+>>>>>>> 0795594fdc88dd54d5eee95988ff2250c7f2ffac
   
   const { signup } = useAuth();
   const { toast } = useToast();
@@ -66,7 +78,7 @@ const Register = () => {
         // Fetch positions
         const posData = await apiService.get(apiEndpoints.positions);
         if (posData && posData.data && Array.isArray(posData.data)) {
-          const pos = posData.data.map((p: any) => ({ id: p.id, position_name_th: p.position_name_th, position_name_en: p.position_name_en }));
+          const pos = posData.data.map((p: any) => ({ id: p.id, position_name_th: p.position_name_th, position_name_en: p.position_name_en, require_enddate: !!p.require_enddate }));
           const noPositionItem = pos.find(p => p.position_name_en === 'No Position');
           const otherPos = pos.filter(p => p.position_name_en !== 'No Position');
           otherPos.sort((a, b) => {
@@ -97,9 +109,9 @@ const Register = () => {
       await apiService.post(apiEndpoints.departments, { department_name: newDepartment });
       setDepartments(prev => [...prev, { id: 'new', department_name_en: newDepartment, department_name_th: newDepartment }]);
       setNewDepartment('');
-      showToastMessage.crud.createSuccess('แผนก');
+      showToastMessage.crud.createSuccess('');
     } catch (error) {
-      showToastMessage.crud.createError('แผนก');
+      showToastMessage.crud.createError('');
     }
   };
 
@@ -110,15 +122,50 @@ const Register = () => {
       await apiService.post(apiEndpoints.positions, { position_name: newPosition });
       setPositions(prev => [...prev, { id: 'new', position_name_en: newPosition, position_name_th: newPosition }]);
       setNewPosition('');
-      showToastMessage.crud.createSuccess('ตำแหน่ง');
+      showToastMessage.crud.createSuccess('');
     } catch (error) {
-      showToastMessage.crud.createError('ตำแหน่ง');
+      showToastMessage.crud.createError('');
     }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError({});
+    
+    // ตรวจสอบรูปแบบอีเมล
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      toast({
+        title: t('common.error'),
+        description: t('auth.invalidEmailFormat'),
+        variant: "destructive",
+      });
+      setError({ email: t('auth.invalidEmailFormat') });
+      return;
+    }
+    
+    // ตรวจสอบเพิ่มเติมว่าอีเมลไม่ใช่รูปแบบที่ไม่สมบูรณ์ เช่น @g, @gmail
+    if (formData.email.includes('@') && !formData.email.includes('.')) {
+      toast({
+        title: t('common.error'),
+        description: t('auth.invalidEmailFormat'),
+        variant: "destructive",
+      });
+      setError({ email: t('auth.invalidEmailFormat') });
+      return;
+    }
+    
+    // ตรวจสอบว่าโดเมนต้องมีอย่างน้อย 2 ตัวอักษรหลังจุด (เช่น .com, .co.th)
+    const domainMatch = formData.email.match(/@[^@]+\.([^.]+)$/);
+    if (domainMatch && domainMatch[1].length < 2) {
+      toast({
+        title: t('common.error'),
+        description: t('auth.invalidEmailFormat'),
+        variant: "destructive",
+      });
+      setError({ email: t('auth.invalidEmailFormat') });
+      return;
+    }
     
     if (formData.password !== formData.confirmPassword) {
       toast({
@@ -129,6 +176,26 @@ const Register = () => {
       return;
     }
 
+    // ตรวจว่าตำแหน่งต้องการ End Work Date หรือไม่
+    const selectedPos = positions.find(p => p.id === formData.position);
+            const requiresEndWorkDate = selectedPos ? !!selectedPos.require_enddate : false;
+
+    if (requiresEndWorkDate) {
+      if (!formData.start_work || !formData.end_work) {
+        toast({ title: t('common.error'), description: t('auth.pleaseFillEndWorkDate'), variant: 'destructive' });
+        return;
+      }
+      if (formData.start_work > formData.end_work) {
+        toast({ title: t('common.error'), description: t('auth.dateRangeInvalid'), variant: 'destructive' });
+        return;
+      }
+    }
+
+    // แสดง dialog ยืนยันการสมัครสมาชิก
+    setShowConfirmDialog(true);
+  };
+
+  const handleConfirmRegistration = async () => {
     setLoading(true);
 
     try {
@@ -139,7 +206,12 @@ const Register = () => {
         full_name: formData.full_name,
         department: formData.department,
         position: formData.position,
-        role: signupRole
+        role: signupRole,
+        gender: formData.gender || undefined,
+        dob: formData.dob,
+        phone_number: formData.phone_number,
+        start_work: formData.start_work || undefined,
+        end_work: formData.end_work || undefined,
       });
       
       toast({
@@ -148,10 +220,10 @@ const Register = () => {
       });
       navigate('/login');
     } catch (error: any) {
-      let errMsg = error.message || t('common.error');
+      const errMsg = error.message || t('common.error');
       console.log('Registration error object:', error);
       console.log('Registration error message:', errMsg);
-      let newError: { email?: string; full_name?: string; general?: string } = {};
+      const newError: { email?: string; full_name?: string; general?: string } = {};
       const lowerMsg = errMsg.toLowerCase();
       if (lowerMsg.includes('user') || lowerMsg.includes('ชื่อผู้ใช')) {
         newError.full_name = errMsg;
@@ -234,20 +306,47 @@ const Register = () => {
                 )}
               </div>
 
+<<<<<<< HEAD
               {/* Position Field */}
               <div className="space-y-2">
                 <Label htmlFor="position" className="text-sm font-medium text-gray-700 flex items-center gap-2">
                   <Building className="h-4 w-4" />
                   {t('auth.position')}
                 </Label>
+=======
+              {/* Gender */}
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="gender" className="mb-2 block">{t('employee.gender')}</Label>
+                <Select value={formData.gender} onValueChange={(value) => setFormData(prev => ({ ...prev, gender: value as any }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder={t('employee.selectGender')} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="male">{t('employee.male')}</SelectItem>
+                    <SelectItem value="female">{t('employee.female')}</SelectItem>
+                    <SelectItem value="other">{t('employee.other')}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Date of Birth */}
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="dob" className="mb-2 block">{t('employee.birthdate')}</Label>
+                <DatePicker 
+                  date={formData.dob} 
+                  onDateChange={(date) => setFormData(prev => ({ ...prev, dob: date }))}
+                  placeholder={t('employee.selectDate')}
+                />
+              </div>
+
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="position" className="mb-2 block">{t('auth.position')}</Label>
+>>>>>>> 0795594fdc88dd54d5eee95988ff2250c7f2ffac
                 <Select onValueChange={(value) => setFormData(prev => ({ ...prev, position: value }))}>
                   <SelectTrigger className="border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 rounded-xl py-3">
                     <SelectValue placeholder={t('positions.selectPosition')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="not_specified">
-                      {t('positions.notSpecified')}
-                    </SelectItem>
                     {positions
                       .filter(pos => (pos.position_name_th || pos.position_name_en) && (pos.position_name_th?.trim() !== '' || pos.position_name_en?.trim() !== ''))
                       .map((pos) => (
@@ -270,9 +369,6 @@ const Register = () => {
                     <SelectValue placeholder={t('departments.selectDepartment')} />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="not_specified">
-                      {t('departments.notSpecified')}
-                    </SelectItem>
                     {departments
                       .filter(dept => (dept.department_name_th || dept.department_name_en) && (dept.department_name_th?.trim() !== '' || dept.department_name_en?.trim() !== ''))
                       .map((dept) => (
@@ -284,6 +380,7 @@ const Register = () => {
                 </Select>
               </div>
 
+<<<<<<< HEAD
               {/* Email Field */}
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-medium text-gray-700 flex items-center gap-2">
@@ -291,13 +388,79 @@ const Register = () => {
                   {t('auth.email')}
                 </Label>
                 <div className="relative group">
+=======
+              {/* Phone number */}
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="phone" className="mb-2 block">{t('employee.phoneNumber')}</Label>
+                <Input id="phone" type="tel" placeholder={t('employee.enterPhoneNumber')} value={formData.phone_number} onChange={(e) => setFormData(prev => ({ ...prev, phone_number: e.target.value }))} />
+              </div>
+
+              {/* Start/End work dates: Start Work Date always shows; End Work Date shows only when position has Request Quote enabled */}
+              {(() => {
+                const selectedPos = positions.find(p => p.id === formData.position);
+                const showEndWorkDate = selectedPos ? !!selectedPos.require_enddate : false;
+                return (
+                  <div className={`grid grid-cols-1 ${showEndWorkDate ? 'md:grid-cols-2' : ''} gap-4`}>
+                    <div className="space-y-2">
+                      <Label htmlFor="start_work" className="mb-2 block">{t('employee.startWorkDate')}</Label>
+                      <DatePicker 
+                        date={formData.start_work} 
+                        onDateChange={(date) => setFormData(prev => ({ ...prev, start_work: date }))}
+                        placeholder={t('employee.selectDate')}
+                      />
+                    </div>
+                    {showEndWorkDate && (
+                      <div className="space-y-2">
+                        <Label htmlFor="end_work" className="mb-2 block">{t('employee.endWorkDate')}</Label>
+                        <DatePicker 
+                          date={formData.end_work} 
+                          onDateChange={(date) => setFormData(prev => ({ ...prev, end_work: date }))}
+                          placeholder={t('employee.selectDate')}
+                        />
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              <div className="space-y-2 mb-4">
+                <Label htmlFor="email" className="mb-2 block">{t('auth.email')}</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+>>>>>>> 0795594fdc88dd54d5eee95988ff2250c7f2ffac
                   <Input
                     id="email"
                     type="email"
                     placeholder={t('auth.email')}
                     value={formData.email}
+<<<<<<< HEAD
                     onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                     className="pl-12 pr-4 py-3 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 rounded-xl"
+=======
+                    onChange={(e) => {
+                      const email = e.target.value;
+                      setFormData(prev => ({ ...prev, email }));
+                      
+                      // ตรวจสอบรูปแบบอีเมลแบบ real-time
+                      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                        setError(prev => ({ ...prev, email: t('auth.invalidEmailFormat') }));
+                      } else if (email && email.includes('@') && !email.includes('.')) {
+                        // ตรวจสอบกรณีพิเศษ เช่น @g, @gmail
+                        setError(prev => ({ ...prev, email: t('auth.invalidEmailFormat') }));
+                      } else if (email && email.includes('@') && email.includes('.')) {
+                        // ตรวจสอบว่าโดเมนต้องมีอย่างน้อย 2 ตัวอักษรหลังจุด
+                        const domainMatch = email.match(/@[^@]+\.([^.]+)$/);
+                        if (domainMatch && domainMatch[1].length < 2) {
+                          setError(prev => ({ ...prev, email: t('auth.invalidEmailFormat') }));
+                        } else {
+                          setError(prev => ({ ...prev, email: undefined }));
+                        }
+                      } else {
+                        setError(prev => ({ ...prev, email: undefined }));
+                      }
+                    }}
+                    className="pl-10"
+>>>>>>> 0795594fdc88dd54d5eee95988ff2250c7f2ffac
                     required
                   />
                   <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
@@ -359,6 +522,7 @@ const Register = () => {
                     placeholder="••••••••"
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
+<<<<<<< HEAD
                     className="pl-12 pr-12 py-3 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 rounded-xl"
                     required
                   />
@@ -367,6 +531,15 @@ const Register = () => {
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors"
+=======
+                    className="pl-10 pr-10"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
+>>>>>>> 0795594fdc88dd54d5eee95988ff2250c7f2ffac
                   >
                     {showConfirmPassword ? <EyeOff /> : <Eye />}
                   </button>
@@ -393,8 +566,13 @@ const Register = () => {
               {/* Submit Button */}
               <Button 
                 type="submit" 
+<<<<<<< HEAD
                 className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 disabled:transform-none disabled:opacity-50" 
                 disabled={loading}
+=======
+                className="w-full" 
+                disabled={loading || !!error.email}
+>>>>>>> 0795594fdc88dd54d5eee95988ff2250c7f2ffac
               >
                 {loading ? (
                   <div className="flex items-center justify-center">
@@ -433,6 +611,7 @@ const Register = () => {
           </CardContent>
         </Card>
       </div>
+<<<<<<< HEAD
 
       {/* Add custom CSS for animations */}
       <style>{`
@@ -460,6 +639,15 @@ const Register = () => {
           animation-delay: 4s;
         }
       `}</style>
+=======
+      
+      {/* Dialog ยืนยันการสมัครสมาชิก */}
+      <RegisterConfirmDialog
+        open={showConfirmDialog}
+        onOpenChange={setShowConfirmDialog}
+        onConfirm={handleConfirmRegistration}
+      />
+>>>>>>> 0795594fdc88dd54d5eee95988ff2250c7f2ffac
     </div>
   );
 };

@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Calendar, Building2, Users, Filter, X } from 'lucide-react';
-import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Switch } from '@/components/ui/switch';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { getAllThaiHolidays } from '@/constants/getThaiHolidays';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSocket } from '@/contexts/SocketContext';
 import { useToast } from '@/hooks/use-toast';
-import { apiService, apiEndpoints } from '../lib/api';
+import { Calendar, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
+import { apiService } from '../lib/api';
+import { apiEndpoints } from '@/constants/api';
 
 const CalendarPage = () => {
   const { t, i18n } = useTranslation();
@@ -334,7 +334,7 @@ const CalendarPage = () => {
         (i18n.language.startsWith('th') ? `${duration} วัน` : `${duration} days`) :
         (i18n.language.startsWith('th') ? `${duration} ชั่วโมง` : `${duration} hours`);
       
-      return `${userName}\n${leaveType}\n${i18n.language.startsWith('th') ? 'ช่วงเวลา' : 'Period'}: ${start} - ${end}\n${i18n.language.startsWith('th') ? 'ระยะเวลา' : 'Duration'}: ${durationText}`;
+      return `${userName}\n${leaveType}\n${i18n.language.startsWith('th') ? '' : 'Period'}: ${start} - ${end}\n${i18n.language.startsWith('th') ? '' : 'Duration'}: ${durationText}`;
     }
     return event.title;
   };
@@ -354,6 +354,12 @@ const CalendarPage = () => {
             </defs>
           </svg>
         </div>
+        
+        {/* Sidebar Trigger */}
+        <div className="absolute top-4 left-4 z-20">
+          <SidebarTrigger className="bg-white/90 hover:bg-white text-blue-700 border border-blue-200 hover:border-blue-300 shadow-lg backdrop-blur-sm" />
+        </div>
+        
         <div className="relative z-10 flex flex-col items-center justify-center py-10 md:py-16">
           <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-24 h-24 rounded-full bg-white/80 shadow-2xl border-4 border-white mb-4" />
           <h1 className="text-4xl md:text-5xl font-extrabold text-indigo-900 drop-shadow mb-2 flex items-center gap-3">

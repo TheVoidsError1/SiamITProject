@@ -1,13 +1,15 @@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { apiEndpoints } from '@/constants/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, User, Users } from "lucide-react";
+import { ChevronDown, ChevronUp, Eye, User, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router-dom";
-import { apiService, apiEndpoints, API_BASE_URL } from '../lib/api';
+import { apiService } from '../lib/api';
 import { getImageUrl } from '../lib/utils';
 
 // เพิ่ม type สำหรับข้อมูลพนักงาน
@@ -56,6 +58,8 @@ const EmployeeManagement = () => {
   const [positionFilter, setPositionFilter] = useState<string>("");
   const [departmentFilter, setDepartmentFilter] = useState<string>("");
   const [roleFilter, setRoleFilter] = useState<string>("");
+  const [sortField, setSortField] = useState<string>("full_name");
+  const [sortDirection, setSortDirection] = useState<"asc" | "desc">("asc");
 
   useEffect(() => {
     const fetchEmployees = async () => {
@@ -132,19 +136,19 @@ const EmployeeManagement = () => {
   const getPositionName = (id: string) => {
     // ถ้า id เป็น null, undefined, หรือค่าว่าง ให้แสดงข้อความที่เหมาะสม
     if (!id || id === 'null' || id === 'undefined' || id === '') {
-      return t('system.notSpecified', 'ไม่ระบุ');
+      return t('system.notSpecified');
     }
     const found = positions.find((p) => p.id === id);
-    if (!found) return t('system.notSpecified', 'ไม่ระบุ');
+    if (!found) return t('system.notSpecified');
     return i18n.language === 'th' ? found.position_name_th : found.position_name_en;
   };
   const getDepartmentName = (id: string) => {
     // ถ้า id เป็น null, undefined, หรือค่าว่าง ให้แสดงข้อความที่เหมาะสม
     if (!id || id === 'null' || id === 'undefined' || id === '') {
-      return t('departments.noDepartment', 'ไม่มีแผนก');
+      return t('departments.noDepartment');
     }
     const found = departments.find((d) => d.id === id);
-    if (!found) return t('departments.noDepartment', 'ไม่มีแผนก');
+    if (!found) return t('departments.noDepartment');
     return i18n.language === 'th' ? found.department_name_th : found.department_name_en;
   };
 
@@ -192,47 +196,130 @@ const EmployeeManagement = () => {
     return positionMatch && departmentMatch && roleMatch;
   });
 
+  // ฟังก์ชันเรียงลำดับข้อมูล
+  const sortedEmployees = [...filteredEmployees].sort((a, b) => {
+    let aValue: string | number;
+    let bValue: string | number;
+
+    switch (sortField) {
+      case "full_name":
+        aValue = a.full_name.toLowerCase();
+        bValue = b.full_name.toLowerCase();
+        break;
+      case "email":
+        aValue = a.email.toLowerCase();
+        bValue = b.email.toLowerCase();
+        break;
+      case "position":
+        aValue = getDisplayPositionName(a).toLowerCase();
+        bValue = getDisplayPositionName(b).toLowerCase();
+        break;
+      case "department":
+        aValue = getDisplayDepartmentName(a).toLowerCase();
+        bValue = getDisplayDepartmentName(b).toLowerCase();
+        break;
+      case "role":
+        aValue = a.role.toLowerCase();
+        bValue = b.role.toLowerCase();
+        break;
+      default:
+        aValue = a.full_name.toLowerCase();
+        bValue = b.full_name.toLowerCase();
+    }
+
+    if (aValue < bValue) {
+      return sortDirection === "asc" ? -1 : 1;
+    }
+    if (aValue > bValue) {
+      return sortDirection === "asc" ? 1 : -1;
+    }
+    return 0;
+  });
+
+  // ฟังก์ชันเปลี่ยนการเรียงลำดับ
+  const handleSort = (field: string) => {
+    if (sortField === field) {
+      setSortDirection(sortDirection === "asc" ? "desc" : "asc");
+    } else {
+      setSortField(field);
+      setSortDirection("asc");
+    }
+  };
+
   // Reset to first page when filters change
   useEffect(() => {
     setCurrentPage(1);
   }, [positionFilter, departmentFilter, roleFilter]);
-  const totalPages = Math.ceil(filteredEmployees.length / itemsPerPage);
-  const paginatedEmployees = filteredEmployees.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const totalPages = Math.ceil(sortedEmployees.length / itemsPerPage);
+  const paginatedEmployees = sortedEmployees.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
-  const REGULAR_EMPLOYEE_POSITION_ID = '354653a2-123a-48f4-86fd-22412c25c50e';
   const stats = [
     {
-      title: t('system.totalEmployees'),
-      value: employees.length.toString(),
-      icon: Users,
+      title: t('auth.roles.superadmin'),
+      value: employees.filter(emp => emp.role === 'superadmin').length.toString(),
+      icon: User,
+      color: "text-purple-600",
+      bgColor: "bg-purple-50",
+    },
+    {
+      title: t('auth.roles.admin'),
+      value: employees.filter(emp => emp.role === 'admin').length.toString(),
+      icon: User,
       color: "text-blue-600",
       bgColor: "bg-blue-50",
     },
     {
-      title: t('system.regularEmployees'),
-      value: employees.filter(emp => {
-        const positionName = getDisplayPositionName(emp);
-        return positionName === t('auth.employee') || positionName === 'Employee' || positionName === 'พนักงาน';
-      }).length.toString(),
-      icon: User,
+      title: t('auth.roles.employee'),
+      value: employees.filter(emp => emp.role === 'user').length.toString(),
+      icon: Users,
       color: "text-green-600",
       bgColor: "bg-green-50",
     },
-    {
-      title: t('system.interns'),
-      value: employees.filter(emp => {
-        const positionName = getDisplayPositionName(emp);
-        return positionName === t('auth.intern') || positionName === 'Intern' || positionName === 'นักศึกษาฝึกงาน';
-      }).length.toString(),
-      icon: User,
-      color: "text-orange-600",
-      bgColor: "bg-orange-50",
-    },
   ];
+
+  // ฟังก์ชันตรวจสอบสิทธิ์ในการลบพนักงาน
+  const canDeleteEmployee = (targetEmployee: Employee): boolean => {
+    if (!user) return false;
+    
+    // Admin ไม่สามารถลบ Superadmin ได้
+    if (user.role === 'admin' && targetEmployee.role === 'superadmin') {
+      return false;
+    }
+    
+    // ไม่สามารถลบตัวเองได้
+    if (user.id === targetEmployee.id) {
+      return false;
+    }
+    
+    // Superadmin สามารถลบได้ทุกคน (ยกเว้นตัวเอง)
+    if (user.role === 'superadmin') {
+      return true;
+    }
+    
+    // Admin สามารถลบได้เฉพาะ user และ admin อื่นๆ (ยกเว้น superadmin และตัวเอง)
+    if (user.role === 'admin') {
+      return targetEmployee.role === 'user' || targetEmployee.role === 'admin';
+    }
+    
+    // User ไม่สามารถลบใครได้
+    return false;
+  };
 
   // ฟังก์ชันลบพนักงาน - จัดการการลบพนักงานตามบทบาท (superadmin, admin, user)
   const handleDelete = async () => {
     if (!deleteTarget || !user) return;
+    
+    // ตรวจสอบสิทธิ์ก่อนลบ
+    if (!canDeleteEmployee(deleteTarget)) {
+      toast({
+        title: t('system.deleteFailed'),
+        description: t('system.noPermissionToDelete'),
+        variant: "destructive",
+      });
+      setDeleteTarget(null);
+      return;
+    }
+    
     setDeleting(true);
     let url = '';
     if (deleteTarget.role === 'superadmin') {
@@ -247,22 +334,38 @@ const EmployeeManagement = () => {
       if (data.success) {
         setEmployees((prev) => prev.filter((e) => e.id !== deleteTarget.id));
         setDeleteTarget(null);
+        
+        // ตรวจสอบว่าหลังจากลบแล้ว pagination จะเป็น 0 หรือไม่
+        const remainingEmployees = employees.filter((e) => e.id !== deleteTarget.id);
+        const filteredRemaining = remainingEmployees.filter(emp => {
+          const positionMatch = positionFilter === "" || emp.position === positionFilter;
+          const departmentMatch = departmentFilter === "" || emp.department === departmentFilter;
+          const roleMatch = roleFilter === "" || emp.role === roleFilter;
+          return positionMatch && departmentMatch && roleMatch;
+        });
+        const newTotalPages = Math.ceil(filteredRemaining.length / itemsPerPage);
+        
+        // ถ้า pagination เป็น 0 หรือหน้าปัจจุบันไม่มีข้อมูล ให้รีเฟรชหน้า
+        if (newTotalPages === 0 || (currentPage > newTotalPages && newTotalPages > 0)) {
+          window.location.reload();
+        }
+        
         toast({
-          title: t('system.deleteSuccess', 'ลบสำเร็จ'),
-          description: t('system.deleteUserSuccessDesc', 'ลบผู้ใช้งานสำเร็จ'),
+                  title: t('system.deleteSuccess'),
+        description: t('system.deleteUserSuccessDesc'),
           className: 'border-green-500 bg-green-50 text-green-900'
         });
       } else {
         toast({
-          title: t('system.deleteFailed', 'ลบไม่สำเร็จ'),
-          description: data.message || t('system.deleteFailed', 'Delete failed'),
+                  title: t('system.deleteFailed'),
+        description: data.message || t('system.deleteFailed'),
           variant: "destructive",
         });
       }
     } catch (e) {
       toast({
-        title: t('system.deleteFailed', 'ลบไม่สำเร็จ'),
-        description: t('system.deleteFailed', 'Delete failed'),
+        title: t('system.deleteFailed'),
+        description: t('system.deleteFailed'),
         variant: "destructive",
       });
     } finally {
@@ -285,6 +388,12 @@ const EmployeeManagement = () => {
             </defs>
           </svg>
         </div>
+        
+        {/* Sidebar Trigger */}
+        <div className="absolute top-4 left-4 z-20">
+          <SidebarTrigger className="bg-white/90 hover:bg-white text-blue-700 border border-blue-200 hover:border-blue-300 shadow-lg backdrop-blur-sm" />
+        </div>
+        
         <div className="relative z-10 flex flex-col items-center justify-center py-10 md:py-16">
           <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-24 h-24 rounded-full bg-white/80 shadow-2xl border-4 border-white mb-4" />
           <h1 className="text-4xl md:text-5xl font-extrabold text-indigo-900 drop-shadow mb-2 flex items-center gap-3">
@@ -394,7 +503,7 @@ const EmployeeManagement = () => {
                       setRoleFilter(pendingRoleFilter);
                     }}
                   >
-                    {t('common.confirm', 'ยืนยัน')}
+                    {t('common.confirm')}
                   </button>
                   <button
                     className="min-h-[42px] min-w-[90px] px-4 py-2.5 rounded-lg font-bold border-2 border-blue-400 text-blue-600 bg-white hover:bg-blue-50 hover:border-blue-500 hover:shadow-md transition-all duration-200 transform hover:scale-105 text-sm"
@@ -407,7 +516,7 @@ const EmployeeManagement = () => {
                       setRoleFilter("");
                     }}
                   >
-                    {t('common.reset', 'รีเซ็ต')}
+                    {t('common.reset')}
                   </button>
                 </div>
               </div>
@@ -442,17 +551,67 @@ const EmployeeManagement = () => {
                         </button>
                       </div>
                     ) : (
-                      <table className="w-full">
-                        <thead className="sticky top-0 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 z-10">
-                          <tr className="text-sm">
-                            <th className="px-3 py-2 text-left font-bold text-blue-900">{t('auth.fullName')}</th>
-                            <th className="px-3 py-2 text-left font-bold text-blue-900">{t('auth.email')}</th>
-                            <th className="px-3 py-2 text-left font-bold text-blue-900">{t('auth.position')}</th>
-                            <th className="px-3 py-2 text-left font-bold text-blue-900">{t('auth.department')}</th>
-                            <th className="px-3 py-2 text-left font-bold text-blue-900">{t('common.status')}</th>
-                            <th className="px-3 py-2 text-center font-bold text-blue-900">{t('system.management')}</th>
-                          </tr>
-                        </thead>
+                                             <table className="w-full">
+                         <thead className="sticky top-0 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 z-10">
+                           <tr className="text-sm">
+                             <th 
+                               className="px-3 py-2 text-left font-bold text-blue-900 cursor-pointer hover:bg-blue-100 transition-colors select-none"
+                               onClick={() => handleSort("full_name")}
+                             >
+                               <div className="flex items-center gap-1">
+                                 {t('auth.fullName')}
+                                 {sortField === "full_name" && (
+                                   sortDirection === "asc" ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                                 )}
+                               </div>
+                             </th>
+                             <th 
+                               className="px-3 py-2 text-left font-bold text-blue-900 cursor-pointer hover:bg-blue-100 transition-colors select-none"
+                               onClick={() => handleSort("email")}
+                             >
+                               <div className="flex items-center gap-1">
+                                 {t('auth.email')}
+                                 {sortField === "email" && (
+                                   sortDirection === "asc" ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                                 )}
+                               </div>
+                             </th>
+                             <th 
+                               className="px-3 py-2 text-left font-bold text-blue-900 cursor-pointer hover:bg-blue-100 transition-colors select-none"
+                               onClick={() => handleSort("position")}
+                             >
+                               <div className="flex items-center gap-1">
+                                 {t('auth.position')}
+                                 {sortField === "position" && (
+                                   sortDirection === "asc" ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                                 )}
+                               </div>
+                             </th>
+                             <th 
+                               className="px-3 py-2 text-left font-bold text-blue-900 cursor-pointer hover:bg-blue-100 transition-colors select-none"
+                               onClick={() => handleSort("department")}
+                             >
+                               <div className="flex items-center gap-1">
+                                 {t('auth.department')}
+                                 {sortField === "department" && (
+                                   sortDirection === "asc" ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                                 )}
+                               </div>
+                             </th>
+                             <th 
+                               className="px-3 py-2 text-left font-bold text-blue-900 cursor-pointer hover:bg-blue-100 transition-colors select-none"
+                               onClick={() => handleSort("role")}
+                             >
+                               <div className="flex items-center gap-1">
+                                 {t('common.status')}
+                                 {sortField === "role" && (
+                                   sortDirection === "asc" ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />
+                                 )}
+                               </div>
+                             </th>
+                             <th className="px-3 py-2 text-center font-bold text-blue-900">{t('system.management')}</th>
+                           </tr>
+                         </thead>
                         <tbody>
                           {paginatedEmployees.map((employee, idx) => (
                             <tr
@@ -481,9 +640,9 @@ const EmployeeManagement = () => {
                                   <span className="font-semibold text-blue-900 text-sm">{employee.full_name}</span>
                                   {/* แสดง "Me" badge สำหรับผู้ใช้ปัจจุบัน */}
                                   {user && employee.id === user.id && (
-                                    <span className="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-green-500 to-emerald-400 text-white font-bold shadow-sm animate-pulse">
-                                      {t('common.me', 'Me')}
-                                    </span>
+                                                                      <span className="text-xs px-2 py-0.5 rounded-full bg-gradient-to-r from-green-500 to-emerald-400 text-white font-bold shadow-sm animate-pulse">
+                                    {t('common.me')}
+                                  </span>
                                   )}
                                 </div>
                               </td>
@@ -509,45 +668,47 @@ const EmployeeManagement = () => {
                                   </span>
                                 )}
                               </td>
-                              <td className="px-3 py-3 text-center flex gap-1.5 justify-center">
+                              <td className="px-3 py-3 text-center flex gap-1.5 justify-start">
                                 <Button 
                                   asChild 
                                   size="sm" 
                                   variant="secondary"
-                                  className="rounded-lg px-3 py-1.5 font-medium bg-gradient-to-r from-blue-500 to-indigo-400 text-white shadow hover:scale-105 transition text-xs"
+                                  className="min-w-[120px] rounded-lg px-3 py-1.5 font-medium bg-gradient-to-r from-blue-500 to-indigo-400 text-white shadow hover:scale-105 transition text-xs"
                                 >
                                   <Link to={`/admin/employees/${employee.id}?role=${employee.role}`}> 
                                     <Eye className="w-3.5 h-3.5 mr-1" />
                                     {t('common.viewDetails')}
                                   </Link>
                                 </Button>
-                                {/* ปุ่มลบพนักงาน - เปิด Dialog ยืนยันการลบ */}
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button
-                                      size="sm"
-                                      variant="destructive"
-                                      className="rounded-lg px-3 py-1.5 font-medium bg-gradient-to-r from-red-500 to-red-600 text-white shadow hover:scale-105 transition text-xs"
-                                      onClick={() => setDeleteTarget(employee)}
-                                    >
-                                      <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m5 0H6" /></svg>
-                                      {t('common.delete')}
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>{t('system.confirmDelete')}</AlertDialogTitle>
-                                      <AlertDialogDescription>{t('system.confirmDeleteDesc')}</AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-                                      {/* ปุ่มยืนยันการลบใน Dialog */}
-                                      <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-gradient-to-r from-red-500 to-pink-400 text-white">
-                                        {deleting ? t('common.loading') : t('common.delete')}
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
+                                {/* ปุ่มลบพนักงาน - แสดงเฉพาะเมื่อมีสิทธิ์ลบ */}
+                                {canDeleteEmployee(employee) && (
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button
+                                        size="sm"
+                                        variant="destructive"
+                                        className="rounded-lg px-3 py-1.5 font-medium bg-gradient-to-r from-red-500 to-red-600 text-white shadow hover:scale-105 transition text-xs"
+                                        onClick={() => setDeleteTarget(employee)}
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m5 0H6" /></svg>
+                                        {t('common.delete')}
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>{t('system.confirmDelete')}</AlertDialogTitle>
+                                        <AlertDialogDescription>{t('system.confirmDeleteDesc')}</AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
+                                        {/* ปุ่มยืนยันการลบใน Dialog */}
+                                        <AlertDialogAction onClick={handleDelete} disabled={deleting} className="bg-gradient-to-r from-red-500 to-pink-400 text-white">
+                                          {deleting ? t('common.loading') : t('common.delete')}
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                )}
                               </td>
                             </tr>
                           ))}

@@ -28,3 +28,6 @@ README.md
 .env
 public
 Backend/.env
+Backend/scripts/
+Backend/config.js
+Backend/uploads/

@@ -2,22 +2,22 @@ const express = require('express');
 const authMiddleware = require('../middleware/authMiddleware');
 const { Between } = require('typeorm');
 const config = require('../config');
-const { calculateDaysBetween } = require('../utils');
+const { calculateDaysBetween, getLeaveUsageSummary, parseAttachments } = require('../utils');
 
 module.exports = (AppDataSource) => {
   const router = express.Router();
 
+  // parseAttachments function is now imported from ../utils
+
   // GET /api/leave-history (ต้องแนบ JWT)
   router.get('/', authMiddleware, async (req, res) => {
     try {
-      // --- i18n: ตรวจจับภาษา ---
-      let lang = req.headers['accept-language'] || req.query.lang || 'th';
-      lang = lang.split(',')[0].toLowerCase().startsWith('en') ? 'en' : 'th';
-      const userId = req.user && req.user.userId; // ดึง userId จาก JWT
+      const userId = req.user && req.user.userId; // Get userId from JWT
       if (!userId) {
         return res.status(401).json({
           status: 'error',
-          message: lang === 'th' ? 'ไม่ได้รับอนุญาต' : 'Unauthorized'
+          message: 'Unauthorized',
+          code: 'UNAUTHORIZED'
         });
       }
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
@@ -39,6 +39,19 @@ module.exports = (AppDataSource) => {
       const endDate = req.query.endDate ? new Date(req.query.endDate) : null;
       const date = req.query.date ? new Date(req.query.date) : null;
       
+      // Debug log เพื่อตรวจสอบค่า filter ที่ได้รับ
+      console.log('Debug - Received filter values:', {
+        month,
+        year,
+        leaveType,
+        status,
+        retroactive,
+        startDate,
+        endDate,
+        date,
+        query: req.query
+      });
+      
       // ดึง leave request ของ user (paging) พร้อม filter เดือน/ปี (ใช้ createdAt)
       let where = { Repid: userId };
       
@@ -51,6 +64,12 @@ module.exports = (AppDataSource) => {
           ...where,
           createdAt: Between(startOfMonth, endOfMonth)
         };
+        console.log('Debug - Filtering by month and year:', {
+          month,
+          year,
+          startOfMonth: startOfMonth.toISOString(),
+          endOfMonth: endOfMonth.toISOString()
+        });
       } else if (year) {
         // ถ้าเลือกแค่ปี
         const startOfYear = new Date(year, 0, 1);
@@ -59,6 +78,26 @@ module.exports = (AppDataSource) => {
           ...where,
           createdAt: Between(startOfYear, endOfYear)
         };
+        console.log('Debug - Filtering by year only:', {
+          year,
+          startOfYear: startOfYear.toISOString(),
+          endOfYear: endOfYear.toISOString()
+        });
+      } else if (month) {
+        // ถ้าเลือกแค่เดือน (ใช้ปีปัจจุบัน)
+        const currentYear = new Date().getFullYear();
+        const startOfMonth = new Date(currentYear, month - 1, 1);
+        const endOfMonth = new Date(currentYear, month, 0, 23, 59, 59, 999);
+        where = {
+          ...where,
+          createdAt: Between(startOfMonth, endOfMonth)
+        };
+        console.log('Debug - Filtering by month only (current year):', {
+          month,
+          currentYear,
+          startOfMonth: startOfMonth.toISOString(),
+          endOfMonth: endOfMonth.toISOString()
+        });
       }
       
       // Filter ตามประเภทการลา
@@ -97,56 +136,81 @@ module.exports = (AppDataSource) => {
       }
 
       // Debug log สำหรับ where clause
-      console.log('Debug - Where clause:', JSON.stringify(where, null, 2));
+      console.log('Debug - Final where clause:', JSON.stringify(where, null, 2));
+      console.log('Debug - Where clause summary:', {
+        hasMonthFilter: !!month,
+        hasYearFilter: !!year,
+        hasLeaveTypeFilter: !!leaveType,
+        hasStatusFilter: !!status,
+        hasRetroactiveFilter: !!retroactive,
+        hasDateFilter: !!date,
+        totalFilters: Object.keys(where).length
+      });
 
       // ดึง leave request ของ user (paging)
       const [leaves, total] = await Promise.all([
         leaveRepo.find({ where, order: { createdAt: 'DESC' }, skip, take: limit }),
         leaveRepo.count({ where })
       ]);
-
-      // --- ดึง leave request ทั้งหมดของ user เพื่อคำนวณ summary (ไม่สนใจ filter) ---
-      const allLeavesForSummary = await leaveRepo.find({ where: { Repid: userId } });
       
-              // คำนวณ summary จากข้อมูลทั้งหมดของ user
-        let totalLeaveDays = 0;
-        let totalLeaveHours = 0;
-        let totalHoursFromHourlyLeaves = 0; // รวมชั่วโมงทั้งหมดจากการลาเป็นชั่วโมง
-        
-        allLeavesForSummary.forEach(leave => {
-          if (leave.startTime && leave.endTime) {
-            // ลาชั่วโมง
-            const [sh, sm] = leave.startTime.split(":").map(Number);
-            const [eh, em] = leave.endTime.split(":").map(Number);
-            let start = sh + (sm || 0) / 60;
-            let end = eh + (em || 0) / 60;
-            let diff = end - start;
-            if (diff < 0) diff += 24;
-            
-            const hours = Math.floor(diff);
-            totalHoursFromHourlyLeaves += hours; // รวมชั่วโมงทั้งหมด
-          } else if (leave.startDate && leave.endDate) {
-            // ลาวัน
-            const start = new Date(leave.startDate);
-            const end = new Date(leave.endDate);
-            const days = calculateDaysBetween(start, end);
-            if (days > 0 && !isNaN(days)) {
-              totalLeaveDays += days;
-            }
+      console.log('Debug - Database query results:', {
+        totalLeaves: total,
+        returnedLeaves: leaves.length,
+        page,
+        limit,
+        skip
+      });
+      
+      // Debug log สำหรับตรวจสอบข้อมูลที่ได้
+      if (leaves.length > 0) {
+        console.log('Debug - Sample leave data:', {
+          firstLeave: {
+            id: leaves[0].id,
+            createdAt: leaves[0].createdAt,
+            startDate: leaves[0].startDate,
+            status: leaves[0].status
+          },
+          lastLeave: {
+            id: leaves[leaves.length - 1].id,
+            createdAt: leaves[leaves.length - 1].createdAt,
+            startDate: leaves[leaves.length - 1].startDate,
+            status: leaves[leaves.length - 1].status
           }
         });
-        
-        // คำนวณวันจากชั่วโมงรวมทั้งหมด (configurable working hours per day)
-        const totalDaysFromHours = Math.floor(totalHoursFromHourlyLeaves / config.business.workingHoursPerDay);
-        const totalRemainingHours = totalHoursFromHourlyLeaves % config.business.workingHoursPerDay;
-        
-        totalLeaveDays += totalDaysFromHours;
-        totalLeaveHours = totalRemainingHours;
-        
-        // เพิ่มการคำนวณชั่วโมงรวมทั้งหมด (ไม่แปลงเป็นวัน)
-        const totalHoursUsed = totalHoursFromHourlyLeaves;
+      }
+
+      // --- ดึง leave request ทั้งหมดของ user เพื่อคำนวณ summary (ใช้ filter เดียวกับตาราง) ---
+      const allLeavesForSummary = await leaveRepo.find({ where });
       
-      const approvedCount = allLeavesForSummary.filter(l => l.status === 'approved').length;
+      // คำนวณ summary จากชุดข้อมูลที่ผ่านการกรองแล้ว (อิงจากใบลาจริง)
+      // นับเฉพาะใบลาที่ "อนุมัติแล้ว" เท่านั้น
+      let rawDays = 0;
+      let rawHours = 0;
+      const approvedLeavesForSummary = allLeavesForSummary.filter(l => l.status === 'approved');
+      for (const l of approvedLeavesForSummary) {
+        if (l.startTime && l.endTime) {
+          const [sh, sm] = l.startTime.split(":").map(Number);
+          const [eh, em] = l.endTime.split(":").map(Number);
+          const startMinutes = (sh || 0) * 60 + (sm || 0);
+          const endMinutes = (eh || 0) * 60 + (em || 0);
+          let diffHrs = (endMinutes - startMinutes) / 60;
+          if (diffHrs < 0 || isNaN(diffHrs)) diffHrs = 0;
+          rawHours += Math.floor(diffHrs);
+        } else if (l.startDate && l.endDate) {
+          const start = new Date(l.startDate);
+          const end = new Date(l.endDate);
+          let days = calculateDaysBetween(start, end);
+          if (days < 0 || isNaN(days)) days = 0;
+          rawDays += days;
+        }
+      }
+      // แปลงชั่วโมงเกินเป็นวันตาม config.business.workingHoursPerDay
+      const convertedDaysFromHours = Math.floor(rawHours / config.business.workingHoursPerDay);
+      const remainingHoursAfterConvert = rawHours % config.business.workingHoursPerDay;
+      const totalLeaveDays = rawDays + convertedDaysFromHours;
+      const totalLeaveHours = remainingHoursAfterConvert;
+      
+      const approvedCount = approvedLeavesForSummary.length;
       const pendingCount = allLeavesForSummary.filter(l => l.status === 'pending').length;
       const rejectedCount = allLeavesForSummary.filter(l => l.status === 'rejected').length;
       
@@ -156,39 +220,14 @@ module.exports = (AppDataSource) => {
       // Debug log เพื่อตรวจสอบ
       console.log('Debug - Total leaves for user:', allLeavesForSummary.length);
       console.log('Debug - Backdated leaves:', retroactiveCount);
-      console.log('Debug - Sample backdated values:', allLeavesForSummary.slice(0, 5).map(l => ({ id: l.id, backdated: l.backdated, type: typeof l.backdated })));
       console.log('Debug - Summary calculation:', {
-        totalHoursFromHourlyLeaves: `${totalHoursFromHourlyLeaves} hours (รวมชั่วโมงทั้งหมด)`,
-        totalDaysFromHours: `${totalDaysFromHours} days (แปลงจากชั่วโมงรวม)`,
-        totalRemainingHours: `${totalRemainingHours} hours (ชั่วโมงที่เหลือ)`,
-        totalLeaveDays: `${totalLeaveDays} days (รวมจากวันปกติ + วันจากชั่วโมงรวม)`,
-        totalLeaveHours: `${totalHoursUsed} hours (ชั่วโมงรวมทั้งหมดที่ส่งไป frontend)`,
+        totalLeaveDays: `${totalLeaveDays} days`,
+        totalLeaveHours: `${totalLeaveHours} hours`,
         approvedCount,
         pendingCount,
         rejectedCount,
         retroactiveCount
       });
-      
-      // Debug log สำหรับตรวจสอบการคำนวณชั่วโมง
-      console.log('Debug - Hour calculation examples:');
-      let totalHours = 0;
-      allLeavesForSummary.slice(0, 3).forEach(leave => {
-        if (leave.startTime && leave.endTime) {
-          const [sh, sm] = leave.startTime.split(":").map(Number);
-          const [eh, em] = leave.endTime.split(":").map(Number);
-          let start = sh + (sm || 0) / 60;
-          let end = eh + (em || 0) / 60;
-          let diff = end - start;
-          if (diff < 0) diff += 24;
-          const hours = Math.floor(diff);
-          totalHours += hours;
-          console.log(`  Leave ID ${leave.id}: ${hours} hours (รวม: ${totalHours} ชั่วโมง)`);
-        }
-      });
-      
-      console.log(`  รวมชั่วโมงทั้งหมด: ${totalHours} ชั่วโมง`);
-               console.log(`  แปลงเป็นวัน: ${Math.floor(totalHours / config.business.workingHoursPerDay)} วัน`);
-         console.log(`  ชั่วโมงที่เหลือ: ${totalHours % config.business.workingHoursPerDay} ชั่วโมง`);
 
       // join leaveType, admin (approver/rejector)
       const result = await Promise.all(leaves.map(async (leave) => {
@@ -198,18 +237,98 @@ module.exports = (AppDataSource) => {
         let approvedBy = null;
         let rejectedBy = null;
         if (leave.leaveType) {
-          const leaveType = await leaveTypeRepo.findOneBy({ id: leave.leaveType });
+          // Try multiple approaches to get the leave type (including soft-deleted records)
+          let leaveType = null;
+          
+          // Approach 1: Try using TypeORM withDeleted option
+          try {
+            const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+            leaveType = await leaveTypeRepo.findOne({
+              where: { id: leave.leaveType },
+              withDeleted: true
+            });
+          } catch (error) {
+            // TypeORM withDeleted failed, continue to raw query
+          }
+          
+          // Approach 2: If that fails, try raw query
+          if (!leaveType) {
+            try {
+              const leaveTypeQuery = `SELECT * FROM leave_type WHERE id = ?`;
+              const [leaveTypeResult] = await AppDataSource.query(leaveTypeQuery, [leave.leaveType]);
+              leaveType = leaveTypeResult ? leaveTypeResult[0] : null;
+            } catch (error) {
+              // Raw query failed, leaveType will remain null
+            }
+          }
+          
           leaveTypeId = leave.leaveType;
-          leaveTypeName_th = leaveType ? leaveType.leave_type_th : leave.leaveType;
-          leaveTypeName_en = leaveType ? leaveType.leave_type_en : leave.leaveType;
+          
+          // Use proper names even for soft-deleted types
+          if (leaveType) {
+            // Check if leave type is inactive or deleted
+            const isInactive = leaveType.is_active === false || leaveType.deleted_at;
+            
+            if (isInactive) {
+              // Add [DELETED] prefix for inactive/deleted leave types
+              const prefix_th = '[ลบ] ';
+              const prefix_en = '[DELETED] ';
+              
+              leaveTypeName_th = prefix_th + (leaveType.leave_type_th || leave.leaveType);
+              leaveTypeName_en = prefix_en + (leaveType.leave_type_en || leave.leaveType);
+            } else {
+              leaveTypeName_th = leaveType.leave_type_th || leave.leaveType;
+              leaveTypeName_en = leaveType.leave_type_en || leave.leaveType;
+            }
+          } else {
+            // Fallback if leave type not found
+            leaveTypeName_th = `Deleted Leave Type (${leave.leaveType})`;
+            leaveTypeName_en = `Deleted Leave Type (${leave.leaveType})`;
+          }
         }
         if (leave.statusBy && leave.status === 'approved') {
           const admin = await adminRepo.findOneBy({ id: leave.statusBy });
-          approvedBy = admin ? admin.admin_name + ' ผู้จัดการ' : leave.statusBy;
+          if (admin) {
+            approvedBy = admin.admin_name;
+          } else {
+            // ลองหาใน user table
+            const userRepo = AppDataSource.getRepository('User');
+            const user = await userRepo.findOneBy({ id: leave.statusBy });
+            if (user) {
+              approvedBy = user.User_name;
+            } else {
+              // ลองหาใน superadmin table
+              const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+              const superadmin = await superadminRepo.findOneBy({ id: leave.statusBy });
+              if (superadmin) {
+                approvedBy = superadmin.superadmin_name;
+              } else {
+                approvedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
+              }
+            }
+          }
         }
         if (leave.statusBy && leave.status === 'rejected') {
           const admin = await adminRepo.findOneBy({ id: leave.statusBy });
-          rejectedBy = admin ? admin.admin_name + ' ผู้จัดการ' : leave.statusBy;
+          if (admin) {
+            rejectedBy = admin.admin_name;
+          } else {
+            // ลองหาใน user table
+            const userRepo = AppDataSource.getRepository('User');
+            const user = await userRepo.findOneBy({ id: leave.statusBy });
+            if (user) {
+              rejectedBy = user.User_name;
+            } else {
+              // ลองหาใน superadmin table
+              const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+              const superadmin = await superadminRepo.findOneBy({ id: leave.statusBy });
+              if (superadmin) {
+                rejectedBy = superadmin.superadmin_name;
+              } else {
+                rejectedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
+              }
+            }
+          }
         }
         // คำนวณระยะเวลาการลา
         let days = 0;
@@ -268,14 +387,7 @@ module.exports = (AppDataSource) => {
           rejectionReason: leave.rejectedReason,
           submittedDate: leave.createdAt,
           backdated: Boolean(leave.backdated), // แปลงเป็น boolean เพื่อให้แน่ใจ
-          attachments: leave.attachments ? (() => {
-            try {
-              return JSON.parse(leave.attachments);
-            } catch (error) {
-              console.error('Error parsing attachments JSON:', error);
-              return [];
-            }
-          })() : [], // แปลง JSON string เป็น array พร้อม error handling
+          attachments: parseAttachments(leave.attachments), // แปลง JSON string เป็น array พร้อม error handling
           contact: leave.contact || null, // เพิ่มข้อมูลการติดต่อ
         };
       }));
@@ -296,18 +408,19 @@ module.exports = (AppDataSource) => {
         totalPages: Math.ceil(total / limit),
         summary: {
           totalLeaveDays,
-          totalLeaveHours: totalHoursUsed, // ส่งชั่วโมงรวมทั้งหมดแทนที่จะเป็นแค่ชั่วโมงที่เหลือ
+          totalLeaveHours, // ส่งชั่วโมงรวมทั้งหมดแทนที่จะเป็นแค่ชั่วโมงที่เหลือ
           approvedCount,
           pendingCount,
           rejectedCount,
           retroactiveCount
         },
-        message: lang === 'th' ? 'ดึงข้อมูลสำเร็จ' : 'Fetch success'
+        message: 'Fetch success'
       });
     } catch (err) {
       res.status(500).json({
         status: 'error',
-        message: lang === 'th' ? 'เกิดข้อผิดพลาด: ' + err.message : 'Error: ' + err.message
+        message: 'Error: ' + err.message,
+        code: 'INTERNAL_ERROR'
       });
     }
   });
@@ -330,20 +443,41 @@ module.exports = (AppDataSource) => {
       // Months (1-12)
       const months = Array.from(new Set(leaves.map(l => l.createdAt && (new Date(l.createdAt).getMonth() + 1)))).filter(Boolean).sort((a, b) => a - b);
 
-      // ดึง leave types ทั้งหมดจาก database
-      const allLeaveTypes = await leaveTypeRepo.find({ order: { leave_type_th: 'ASC' } });
+      // ดึง leave types ทั้งหมดจาก database (including inactive/deleted)
+      const allLeaveTypes = await leaveTypeRepo.find({ 
+        order: { leave_type_th: 'ASC' },
+        withDeleted: true 
+      });
 
       res.json({
         status: 'success',
         statuses,
         years,
         months,
-        leaveTypes: allLeaveTypes.map(lt => ({
-          id: lt.id,
-          leave_type: lt.leave_type,
-          leave_type_th: lt.leave_type_th,
-          leave_type_en: lt.leave_type_en
-        }))
+        leaveTypes: allLeaveTypes.map(lt => {
+          // Check if leave type is inactive or deleted
+          const isInactive = lt.is_active === false || lt.deleted_at;
+          
+          if (isInactive) {
+            // Add [DELETED] prefix for inactive/deleted leave types
+            const prefix_th = '[ลบ] ';
+            const prefix_en = '[DELETED] ';
+            
+            return {
+              id: lt.id,
+              leave_type: lt.leave_type,
+              leave_type_th: prefix_th + (lt.leave_type_th || lt.leave_type),
+              leave_type_en: prefix_en + (lt.leave_type_en || lt.leave_type)
+            };
+          } else {
+            return {
+              id: lt.id,
+              leave_type: lt.leave_type,
+              leave_type_th: lt.leave_type_th,
+              leave_type_en: lt.leave_type_en
+            };
+          }
+        })
       });
     } catch (err) {
       res.status(500).json({ status: 'error', message: err.message });

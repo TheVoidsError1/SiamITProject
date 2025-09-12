@@ -12,7 +12,9 @@ module.exports = new EntitySchema({
         },
         position_name_en: { type: 'varchar' },
         position_name_th: { type: 'varchar' },
-        new_year_quota: { type: 'boolean', default: false, nullable: false },
+        new_year_quota: { type: 'int', default: 0, nullable: false },
+        // สวิตช์กำหนดว่า "Require End Date" (ต้องการวันที่สิ้นสุด ตอนสมัครสมาชิก) หรือไม่
+        require_enddate: { type: 'boolean', default: false, nullable: false },
     },
     beforeInsert: (entity) => {
         if (!entity.id) {

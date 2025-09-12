@@ -1,25 +1,31 @@
 
+<<<<<<< HEAD
 import { Calendar, Home, Clock, Settings, User, LogOut, Users, Building, Newspaper, Rss, MessageSquare } from "lucide-react";
 import { Link, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
+=======
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
+>>>>>>> 0795594fdc88dd54d5eee95988ff2250c7f2ffac
 import {
   Sidebar,
   SidebarContent,
+  SidebarFooter,
   SidebarGroup,
   SidebarGroupContent,
   SidebarGroupLabel,
+  SidebarHeader,
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarHeader,
-  SidebarFooter,
 } from "@/components/ui/sidebar";
-import { Button } from "@/components/ui/button";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import NotificationBell from "./NotificationBell";
+import { Calendar, Clock, Home, LogOut, Rss, Settings, User, Users } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link, useLocation } from "react-router-dom";
+import NotificationBell from "./NotificationBell";
 
 const items = [
   {
@@ -66,9 +72,15 @@ const adminItems = [
     icon: Users,
   },
   {
+<<<<<<< HEAD
     title: "navigation.lineOASettings",
     url: "/admin/line-oa-settings",
     icon: MessageSquare,
+=======
+    title: "navigation.adminLeaveRequest",
+    url: "/admin/leave-request",
+    icon: Calendar,
+>>>>>>> 0795594fdc88dd54d5eee95988ff2250c7f2ffac
   },
 ];
 
@@ -172,12 +184,12 @@ export function AppSidebar() {
         <div className="flex items-center gap-3">
           <img
             src="/lovable-uploads/IMG_4486-removebg-preview.png"
-            alt="Siam IT Logo"
+            alt={t('company.logoAlt')}
             className="w-12 h-12 object-contain drop-shadow-lg"
           />
           <div className="flex-1">
             <h2 className="text-lg font-bold text-sidebar-foreground">
-              Siam IT
+              {t('company.name')}
             </h2>
             <p className="text-sm text-sidebar-foreground/70">
               {t('system.onlineLeaveSystem')}
@@ -187,7 +199,7 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       
-      <SidebarContent>
+      <SidebarContent className="overflow-hidden">
         <SidebarGroup>
           <SidebarGroupLabel className="text-sidebar-foreground/70 font-semibold tracking-wide uppercase mb-2">
             {t('navigation.mainMenu')}
@@ -228,7 +240,7 @@ export function AppSidebar() {
       <SidebarFooter className="p-6">
         <div className="space-y-4">
           <Link to="/profile" className="block">
-            <div className="flex items-center gap-3 p-4 rounded-2xl glass bg-white/60 dark:bg-gray-900/60 backdrop-blur-md shadow-lg hover:shadow-xl transition-all cursor-pointer border border-blue-100 dark:border-gray-800">
+            <div className="flex items-center gap-3 p-4 rounded-2xl bg-white/50 dark:bg-gray-900/50 backdrop-blur-md shadow-lg hover:shadow-xl transition-all cursor-pointer border border-white/2git0 dark:border-gray-700">
               <Avatar className="w-8 h-8">
                 <AvatarImage 
                   src={user?.avatar_url ? `${API_BASE_URL}${user.avatar_url}` : undefined} 

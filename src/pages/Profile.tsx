@@ -1,16 +1,20 @@
+import AvatarCropDialog from '@/components/dialogs/AvatarCropDialog';
 import ChangePasswordDialog from "@/components/dialogs/ChangePasswordDialog";
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePushNotification } from '@/contexts/PushNotificationContext';
+import { useSocket } from '@/contexts/SocketContext';
 import { useToast } from '@/hooks/use-toast';
-import { apiService, apiEndpoints } from '@/lib/api';
-import { showToastMessage } from '@/lib/toast';
+import { apiEndpoints } from '@/constants/api';
+import { apiService } from '@/lib/api';
 import { Bell, Building, Camera, Crown, Lock, Mail, Save, Shield } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -18,22 +22,32 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 
 const Profile = () => {
   const { t, i18n } = useTranslation();
-  const { user, updateUser, showSessionExpiredDialog } = useAuth();
+  const { user, updateUser, showSessionExpiredDialog, avatarPreviewUrl, setAvatarPreviewUrl } = useAuth();
   const { toast } = useToast();
   const { enabled: pushNotificationEnabled, setEnabled: setPushNotificationEnabled } = usePushNotification();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [cropDialogOpen, setCropDialogOpen] = useState(false);
+  const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null);
+  const { socket, isConnected } = useSocket();
+  const [avatarKey, setAvatarKey] = useState<number>(0);
+  const [forceRefresh, setForceRefresh] = useState<number>(0);
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
     department: '',
     position: '',
+    gender: '',
+    dob: '',
+    phone_number: '',
+    start_work: '',
+    end_work: '',
   });
   const [saving, setSaving] = useState(false);
   const [departments, setDepartments] = useState<any[]>([]);
-  const [positions, setPositions] = useState<any[]>([]);
+      const [positions, setPositions] = useState<{ id: string; position_name_en: string; position_name_th: string; require_enddate?: boolean }[]>([]);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [positionsLoaded, setPositionsLoaded] = useState(false);
   const [departmentsLoaded, setDepartmentsLoaded] = useState(false);
@@ -41,6 +55,11 @@ const Profile = () => {
   const [leaveQuota, setLeaveQuota] = useState<any[]>([]);
   const [leaveLoading, setLeaveLoading] = useState(false);
   const [allLeaveTypes, setAllLeaveTypes] = useState<any[]>([]);
+  const withCacheBust = (url: string) => `${url}${url.includes('?') ? '&' : '?'}v=${Date.now()}&t=${Math.random()}`;
+  const [isEditing, setIsEditing] = useState(false);
+  const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
+  const [pendingCroppedFile, setPendingCroppedFile] = useState<File | null>(null);
+  
 
   const getKeyByLabel = (label: string, options: string[], tPrefix: string) => {
     for (const key of options) {
@@ -102,6 +121,11 @@ const Profile = () => {
           email: data.email || '',
           department: data.department_id ? String(data.department_id) : '',
           position: data.position_id ? String(data.position_id) : '',
+          gender: data.gender || '',
+          dob: data.dob || '',
+          phone_number: data.phone_number || '',
+          start_work: data.start_work || '',
+          end_work: data.end_work || '',
         });
           setProfileLoaded(true);
         }
@@ -131,7 +155,7 @@ const Profile = () => {
       try {
         const res = await apiService.get(apiEndpoints.auth.avatar);
         if (res.success && res.avatar_url) {
-          setAvatarUrl(`${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}`);
+          setAvatarUrl(withCacheBust(`${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}`));
           if (!user?.avatar_url) {
             updateUser({ avatar_url: res.avatar_url });
           }
@@ -152,7 +176,8 @@ const Profile = () => {
         const pos = posData.data.map((p: any) => ({
           id: p.id,
           position_name_en: p.position_name_en,
-          position_name_th: p.position_name_th
+          position_name_th: p.position_name_th,
+                          require_enddate: !!p.require_enddate
         }));
         setPositions(pos);
         setPositionsLoaded(true);
@@ -230,6 +255,35 @@ const Profile = () => {
     };
   }, [setPushNotificationEnabled]);
 
+  // Simple random color system for leave types
+  const getLeaveTypeColor = (leaveTypeId: string) => {
+    const colorClasses = [
+      'bg-blue-500',
+      'bg-green-500', 
+      'bg-orange-500',
+      'bg-purple-500',
+      'bg-red-500',
+      'bg-pink-500',
+      'bg-indigo-500',
+      'bg-teal-500',
+      'bg-yellow-500',
+      'bg-cyan-500',
+      'bg-emerald-500',
+      'bg-rose-500',
+      'bg-violet-500',
+      'bg-sky-500',
+      'bg-lime-500',
+    ];
+    
+    // Use the leave type ID to generate a consistent random color
+    const hash = leaveTypeId.split('').reduce((a, b) => {
+      a = ((a << 5) - a) + b.charCodeAt(0);
+      return a & a;
+    }, 0);
+    
+    return colorClasses[Math.abs(hash) % colorClasses.length];
+  };
+
   // New leaveStats for new API response
   const leaveStats = leaveQuota
     .filter(item => {
@@ -243,17 +297,10 @@ const Profile = () => {
         label: i18n.language.startsWith('th') ? (item.leave_type_th || item.leave_type_en) : (item.leave_type_en || item.leave_type_th),
         used: { days: item.used_day ?? '-', hours: item.used_hour ?? '-' },
         quota: item.quota,
-        color:
-          item.leave_type_en?.toLowerCase() === 'personal' ? 'bg-orange-500' :
-          item.leave_type_en?.toLowerCase() === 'vacation' ? 'bg-blue-500' :
-          item.leave_type_en?.toLowerCase() === 'sick' ? 'bg-green-500' :
-          item.leave_type_en?.toLowerCase() === 'maternity' ? 'bg-purple-500' :
-          'bg-gray-400',
+        color: getLeaveTypeColor(item.id), // Use dynamic color based on leave type ID
         type: item.leave_type_en,
         remaining: { days: item.remaining_day ?? '-', hours: item.remaining_hour ?? '-' },
         quotaRaw: item.quota,
-        usedRaw: item.used_day + (item.used_hour / 9),
-        remainingRaw: item.remaining_day + (item.remaining_hour / 9),
         unit: 'day',
       };
     });
@@ -262,61 +309,332 @@ const Profile = () => {
     fileInputRef.current?.click();
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!e.target.files) return;
-    const file = e.target.files[0];
+  // Force reload avatar from server
+  const forceReloadAvatar = async () => {
+    try {
+      const res = await apiService.get(apiEndpoints.auth.avatar);
+      if (res.success && res.avatar_url) {
+        const timestamp = Date.now();
+        const random = Math.random();
+        const newUrl = `${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}?v=${timestamp}&t=${random}&reload=true`;
+        
+        // Clear current avatar first to force reload
+        setAvatarUrl(null);
+        setAvatarKey(prev => prev + 1);
+        
+        // Set new avatar after a brief delay
+        setTimeout(() => {
+          setAvatarUrl(newUrl);
+          setAvatarKey(prev => prev + 1);
+          setForceRefresh(prev => prev + 1);
+          updateUser({ avatar_url: res.avatar_url });
+        }, 50);
+      }
+    } catch (err) {
+      console.error('Failed to reload avatar:', err);
+    }
+  };
+
+  // Force complete avatar refresh - clears cache and reloads
+  const forceCompleteAvatarRefresh = async () => {
+    try {
+      // Clear current avatar
+      setAvatarUrl(null);
+      setAvatarKey(prev => prev + 1);
+      setForceRefresh(prev => prev + 1);
+      
+      // Wait a moment then fetch fresh avatar
+      setTimeout(async () => {
+        await forceReloadAvatar();
+      }, 100);
+    } catch (err) {
+      console.error('Failed to force complete avatar refresh:', err);
+    }
+  };
+
+  // Upload avatar utility with optional optimistic preview URL and realtime fan-out
+  const uploadAvatar = async (file: File, localUrl?: string) => {
+    const previousUrl = avatarUrl;
+    if (localUrl) setAvatarUrl(localUrl);
     const formData = new FormData();
     formData.append('avatar', file);
     try {
       const res = await apiService.post(apiEndpoints.auth.avatar, formData);
-      if (res.success) {
-        setAvatarUrl(`${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}`);
-        updateUser({ avatar_url: res.avatar_url });
+      if (res?.success) {
+        // Force immediate update with aggressive cache busting
+        const timestamp = Date.now();
+        const random = Math.random();
+        const finalUrl = `${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}?v=${timestamp}&t=${random}&refresh=true`;
+        
+        // Clear the avatar first, then set the new one
+        setAvatarUrl(null);
+        setAvatarKey(prev => prev + 1);
+        
+        // Small delay to ensure the clear takes effect
+        setTimeout(() => {
+          setAvatarUrl(finalUrl);
+          setAvatarKey(prev => prev + 1);
+          setForceRefresh(prev => prev + 1);
+          updateUser({ avatar_url: res.avatar_url });
+        }, 100);
+        
+        // Force reload after a longer delay to ensure the server has processed the upload
+        setTimeout(() => {
+          forceReloadAvatar();
+        }, 500);
+        
         toast({ title: t('profile.uploadSuccess') });
+
+        // Broadcast via socket and localStorage to update other tabs/clients
+        if (socket && isConnected && user?.id) {
+          socket.emit('avatarUpdated', { userId: user.id, avatar_url: res.avatar_url });
+        }
+        try {
+          if (user?.id) {
+            localStorage.setItem('avatarUpdated', JSON.stringify({ userId: user.id, avatar_url: res.avatar_url, ts: Date.now() }));
+          }
+        } catch {}
+
+        if (localUrl) URL.revokeObjectURL(localUrl);
       } else {
-        throw new Error(res.message || t('profile.uploadError'));
+        throw new Error(res?.message || t('profile.uploadError'));
       }
     } catch (err: any) {
+      if (previousUrl) setAvatarUrl(previousUrl);
+      toast({ title: t('profile.uploadError'), description: err?.message, variant: 'destructive' });
+      if (localUrl) URL.revokeObjectURL(localUrl);
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const file = e.target.files[0];
+    // แสดง preview ด้วย Data URL (base64) แทน Blob URL เพื่อไม่ให้หมดอายุ
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const dataUrl = e.target?.result as string;
+      console.log('Profile: File selected, dataUrl length:', dataUrl?.length);
+      setSelectedImageSrc(dataUrl);
+      if (setAvatarPreviewUrl) {
+        setAvatarPreviewUrl(dataUrl);
+        console.log('Profile: avatarPreviewUrl set to context, length:', dataUrl?.length);
+      } else {
+        console.log('Profile: setAvatarPreviewUrl is undefined!');
+      }
+    };
+    reader.readAsDataURL(file);
+    setCropDialogOpen(true);
+    setPendingAvatarFile(file); // เก็บไฟล์ไว้ก่อน
+    setPendingCroppedFile(null); // reset cropped file
+    if (file.type === 'image/gif') {
+      (window as any).__avatarOriginalGifFile = file;
+    } else {
+      (window as any).__avatarOriginalGifFile = null;
+    }
+  };
+
+    const handleCropped = async (file: File) => {
+    const previousUrl = avatarUrl;
+    const formData = new FormData();
+    formData.append('avatar', file);
+    try {
+      const res = await apiService.post(apiEndpoints.auth.avatar, formData);
+      if (res?.success) {
+        // Update user context immediately
+        updateUser({ avatar_url: res.avatar_url });
+        
+        // Show success message
+        toast({ 
+          title: t('profile.uploadSuccess') || 'Avatar Updated',
+          description: t('profile.uploadSuccessDesc') || 'Profile picture updated successfully'
+        });
+
+        // Force complete avatar refresh to ensure the new image is displayed
+        setTimeout(() => {
+          forceCompleteAvatarRefresh();
+        }, 200);
+
+        // Broadcast via socket and localStorage to update other tabs/clients
+        if (socket && isConnected && user?.id) {
+          socket.emit('avatarUpdated', { userId: user.id, avatar_url: res.avatar_url });
+        }
+        try {
+          if (user?.id) {
+            localStorage.setItem('avatarUpdated', JSON.stringify({ userId: user.id, avatar_url: res.avatar_url, ts: Date.now() }));
+          }
+        } catch {}
+      } else {
+        throw new Error(res?.message || t('profile.uploadError'));
+      }
+    } catch (err: any) {
+      if (previousUrl) setAvatarUrl(previousUrl);
       toast({ 
         title: t('profile.uploadError'), 
-        description: err?.message,
+        description: err?.message, 
         variant: 'destructive' 
       });
     }
   };
 
+  // Listen to avatar updates via socket and localStorage for realtime self/other-tab refresh
+  useEffect(() => {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL as string;
+    const onSocketUpdate = (data: { userId: string; avatar_url: string }) => {
+      if (!data) return;
+      if (user?.id && String(data.userId) === String(user.id)) {
+        setAvatarUrl(withCacheBust(`${baseUrl}${data.avatar_url}`));
+        setAvatarKey(prev => prev + 1);
+        setAvatarKey(prev => prev + 1);
+        updateUser({ avatar_url: data.avatar_url });
+      }
+    };
+    if (socket && isConnected) {
+      socket.on('avatarUpdated', onSocketUpdate);
+    }
+    const onStorage = (e: StorageEvent) => {
+      if (e.key !== 'avatarUpdated' || !e.newValue) return;
+      try {
+        const data = JSON.parse(e.newValue);
+        if (user?.id && String(data.userId) === String(user.id)) {
+          setAvatarUrl(withCacheBust(`${baseUrl}${data.avatar_url}`));
+          setAvatarKey(prev => prev + 1);
+          setAvatarKey(prev => prev + 1);
+          updateUser({ avatar_url: data.avatar_url });
+        }
+      } catch {}
+    };
+    window.addEventListener('storage', onStorage);
+    return () => {
+      if (socket) socket.off('avatarUpdated', onSocketUpdate);
+      window.removeEventListener('storage', onStorage);
+    };
+  }, [socket, isConnected, user, updateUser]);
+
   const handleSave = async () => {
     setSaving(true);
     try {
+      // ตรวจสอบรูปแบบอีเมล
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(formData.email)) {
+        toast({
+          title: t('common.error'),
+          description: t('auth.invalidEmailFormat'),
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
+      }
+      
+      // ตรวจสอบเพิ่มเติมว่าอีเมลไม่ใช่รูปแบบที่ไม่สมบูรณ์ เช่น @g, @gmail
+      if (formData.email.includes('@') && !formData.email.includes('.')) {
+        toast({
+          title: t('common.error'),
+          description: t('auth.invalidEmailFormat'),
+          variant: "destructive",
+        });
+        setSaving(false);
+        return;
+      }
+      
+      // ตรวจสอบว่าตำแหน่งต้องการ End Work Date หรือไม่
+      const selectedPos = positions.find(p => String(p.id) === formData.position);
+              const requiresEndWorkDate = selectedPos ? !!selectedPos.require_enddate : false;
+
+      // Validation สำหรับ End Work Date
+      if (requiresEndWorkDate && formData.start_work && formData.end_work) {
+        if (formData.start_work > formData.end_work) {
+          toast({ 
+            title: t('common.error'), 
+            description: t('auth.dateRangeInvalid'), 
+            variant: 'destructive' 
+          });
+          setSaving(false);
+          return;
+        }
+      }
+
+      // อัปโหลด avatar ถ้ามีไฟล์ใหม่
+      let avatarUploadedUrl = null;
+      if (pendingCroppedFile) {
+        const formData = new FormData();
+        formData.append('avatar', pendingCroppedFile);
+        const res = await apiService.post(apiEndpoints.auth.avatar, formData);
+        if (res?.success) {
+          avatarUploadedUrl = res.avatar_url;
+          // อัปเดต avatarUrl ใน Profile ด้วย URL ใหม่ (ไม่ใช้ withCacheBust)
+          const newAvatarUrl = `${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}`;
+          setAvatarUrl(newAvatarUrl);
+          // อัปเดต user context ด้วย avatar_url ใหม่
+          updateUser({ avatar_url: res.avatar_url });
+          toast({ title: t('profile.uploadSuccess') });
+          if (socket && isConnected && user?.id) {
+            socket.emit('avatarUpdated', { userId: user.id, avatar_url: res.avatar_url });
+          }
+          try {
+            if (user?.id) {
+              localStorage.setItem('avatarUpdated', JSON.stringify({ userId: user.id, avatar_url: res.avatar_url, ts: Date.now() }));
+            }
+          } catch {}
+          if (setAvatarPreviewUrl) setAvatarPreviewUrl(null); // clear preview หลังบันทึก
+        } else {
+          throw new Error(res?.message || t('profile.uploadError'));
+        }
+      }
+      
       const requestData = {
         name: formData.full_name,
         email: formData.email,
         position_id: formData.position || null,
         department_id: formData.department || null,
+        gender: formData.gender || null,
+        dob: formData.dob || null,
+        phone_number: formData.phone_number || null,
+        start_work: formData.start_work || null,
+                    end_work: (positions.find(p => String(p.id) === formData.position)?.require_enddate ? (formData.end_work || null) : null),
       };
+      
+      console.log('Sending profile update data:', requestData);
+      
       const res = await apiService.put(apiEndpoints.auth.profile, requestData);
       if (res.success) {
         toast({
           title: t('profile.saveSuccess'),
           description: t('profile.saveSuccessDesc'),
         });
+        
+        // อัปเดตข้อมูลในฟอร์มและ user context
         const updatedData = res.data;
         setFormData({
           full_name: updatedData.name || formData.full_name,
           email: updatedData.email || formData.email,
           department: updatedData.department_id ? String(updatedData.department_id) : '',
           position: updatedData.position_id ? String(updatedData.position_id) : '',
+          gender: updatedData.gender || formData.gender,
+          dob: updatedData.dob || formData.dob,
+          phone_number: updatedData.phone_number || formData.phone_number,
+          start_work: updatedData.start_work || formData.start_work,
+          end_work: updatedData.end_work || formData.end_work,
         });
+        
         updateUser({
           full_name: updatedData.name || formData.full_name,
           position: updatedData.position_name || '',
           department: updatedData.department_name || '',
           email: updatedData.email || formData.email,
+          ...(avatarUploadedUrl ? { avatar_url: avatarUploadedUrl } : {}),
         });
+        
+        console.log('Profile updated successfully:', updatedData);
+        setIsEditing(false);
+        setPendingAvatarFile(null);
+        setPendingCroppedFile(null);
+        if (setAvatarPreviewUrl) setAvatarPreviewUrl(null); // clear preview หลังบันทึก
+        // window.location.reload(); <-- ลบออก
       } else {
         throw new Error(res.message || t('profile.saveError'));
       }
     } catch (error: any) {
+      console.error('Profile update error:', error);
       toast({
         title: t('error.title'),
         description: error?.message || t('profile.saveError'),
@@ -369,6 +687,12 @@ const Profile = () => {
             </defs>
           </svg>
         </div>
+        
+        {/* Sidebar Trigger */}
+        <div className="absolute top-4 left-4 z-20">
+          <SidebarTrigger className="bg-white/90 hover:bg-white text-blue-700 border border-blue-200 hover:border-blue-300 shadow-lg backdrop-blur-sm" />
+        </div>
+        
         <div className="relative z-10 flex flex-col items-center justify-center py-10 md:py-16">
           <img src="/lovable-uploads/siamit.png" alt="Logo" className="w-24 h-24 rounded-full bg-white/80 shadow-2xl border-4 border-white mb-4" />
           <h1 className="text-4xl md:text-5xl font-extrabold text-indigo-900 drop-shadow mb-2 flex items-center gap-3">
@@ -383,12 +707,26 @@ const Profile = () => {
         {/* Profile Header */}
         <div className="flex flex-col items-center -mt-16">
           <div className="relative">
-            <Avatar className="h-28 w-28 shadow-lg border-4 border-white bg-white/80 backdrop-blur rounded-full">
-              <AvatarImage src={avatarUrl || undefined} />
+
+            <Avatar key={`${avatarUrl}-${avatarKey}-${forceRefresh}`} className="h-28 w-28 shadow-lg border-4 border-white bg-white/80 backdrop-blur rounded-full">
+              <AvatarImage 
+                src={avatarUrl ? `${avatarUrl}&force=${forceRefresh}&t=${Date.now()}` : undefined} 
+                onError={() => {
+                  // If image fails to load, force a refresh
+                  console.log('Avatar image failed to load, forcing refresh');
+                  setForceRefresh(prev => prev + 1);
+                }}
+                onLoad={() => {
+                  console.log('Avatar image loaded successfully');
+                }}
+                alt="Profile picture"
+                className="object-cover"
+              />
               <AvatarFallback className="text-2xl font-bold bg-blue-200 text-blue-900">
                 {user?.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
               </AvatarFallback>
             </Avatar>
+            {/* ปุ่มเปลี่ยนรูป avatar: Always available */}
             <button
               type="button"
               className="absolute bottom-2 right-2 p-2 bg-blue-500 text-white rounded-full shadow-md border-2 border-white hover:bg-blue-600 transition-colors"
@@ -405,6 +743,14 @@ const Profile = () => {
               onChange={handleFileChange}
             />
           </div>
+          <AvatarCropDialog
+            open={cropDialogOpen}
+            imageSrc={selectedImageSrc}
+            isGif={(window as any).__avatarOriginalGifFile ? true : false}
+            originalFile={(window as any).__avatarOriginalGifFile || null}
+            onOpenChange={setCropDialogOpen}
+            onCropped={handleCropped}
+          />
           <div className="mt-4 text-center">
             <h2 className="text-2xl font-bold text-blue-900 tracking-tight">{user?.full_name}</h2>
             <p className="text-gray-500 mb-2 text-base">
@@ -473,7 +819,7 @@ const Profile = () => {
 
             <TabsContent value="personal" className="p-8 bg-white/90 rounded-3xl">
               <form className="space-y-6" onSubmit={e => { e.preventDefault(); handleSave(); }}>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-3">
                     <Label htmlFor="full_name" className="text-base text-blue-900 font-medium">{t('auth.fullName')}</Label>
                     <Input
@@ -481,6 +827,7 @@ const Profile = () => {
                       value={formData.full_name}
                       onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
                       className="input-blue"
+                      disabled={!isEditing}
                     />
                   </div>
                   <div className="space-y-3">
@@ -489,8 +836,12 @@ const Profile = () => {
                       id="email"
                       type="email"
                       value={formData.email}
-                      onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                      onChange={(e) => {
+                        const email = e.target.value;
+                        setFormData(prev => ({ ...prev, email }));
+                      }}
                       className="input-blue"
+                      disabled={!isEditing}
                     />
                   </div>
                   <div className="space-y-3">
@@ -498,14 +849,12 @@ const Profile = () => {
                     <Select
                       value={formData.position || "not_specified"}
                       onValueChange={(value) => setFormData(prev => ({ ...prev, position: value === "not_specified" ? "" : value }))}
+                      disabled={!isEditing}
                     >
                       <SelectTrigger className="input-blue">
                         <SelectValue placeholder={t('positions.selectPosition')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="not_specified" className="text-blue-900">
-                          {t('positions.notSpecified')}
-                        </SelectItem>
                         {positions
                           .filter(pos => (pos.position_name_th || pos.position_name_en) && (pos.position_name_th?.trim() !== '' || pos.position_name_en?.trim() !== ''))
                           .map((pos) => (
@@ -521,14 +870,12 @@ const Profile = () => {
                     <Select
                       value={formData.department || "not_specified"}
                       onValueChange={(value) => setFormData(prev => ({ ...prev, department: value === "not_specified" ? "" : value }))}
+                      disabled={!isEditing}
                     >
                       <SelectTrigger className="input-blue">
                         <SelectValue placeholder={t('departments.selectDepartment')} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="not_specified" className="text-blue-900">
-                          {t('departments.notSpecified')}
-                        </SelectItem>
                         {departments
                           .filter(dept => (dept.department_name_th || dept.department_name_en) && (dept.department_name_th?.trim() !== '' || dept.department_name_en?.trim() !== ''))
                           .map((dept) => (
@@ -539,22 +886,111 @@ const Profile = () => {
                       </SelectContent>
                     </Select>
                   </div>
-                </div>
-                <div className="flex justify-end">
-                  <Button type="submit" disabled={saving || loading} className="btn-blue px-8 py-2 text-lg">
-                    {saving ? (
+                  <div className="space-y-3">
+                    <Label htmlFor="gender" className="text-base text-blue-900 font-medium">{t('employee.gender')}</Label>
+                    <Select
+                      value={formData.gender || "not_specified"}
+                      onValueChange={(value) => setFormData(prev => ({ ...prev, gender: value === "not_specified" ? "" : value }))}
+                      disabled={!isEditing}
+                    >
+                      <SelectTrigger className="input-blue">
+                        <SelectValue placeholder={t('employee.selectGender')} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="male" className="text-blue-900">
+                          {t('employee.male')}
+                        </SelectItem>
+                        <SelectItem value="female" className="text-blue-900">
+                          {t('employee.female')}
+                        </SelectItem>
+                        <SelectItem value="other" className="text-blue-900">
+                          {t('employee.other')}
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="dob" className="text-base text-blue-900 font-medium">{t('employee.birthday')}</Label>
+                    <DatePicker
+                      date={formData.dob}
+                      onDateChange={(date) => setFormData(prev => ({ ...prev, dob: date }))}
+                      placeholder={t('employee.selectBirthday')}
+                      className="input-blue"
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  <div className="space-y-3">
+                    <Label htmlFor="phone_number" className="text-base text-blue-900 font-medium">{t('employee.phoneNumber')}</Label>
+                    <Input
+                      id="phone_number"
+                      type="tel"
+                      value={formData.phone_number}
+                      onChange={(e) => setFormData(prev => ({ ...prev, phone_number: e.target.value }))}
+                      placeholder={t('employee.enterPhoneNumber')}
+                      className="input-blue"
+                      disabled={!isEditing}
+                    />
+                  </div>
+                  {/* Start/End work dates: Start Work Date always shows; End Work Date shows only when position has Request Quote enabled */}
+                  {(() => {
+                    const selectedPos = positions.find(p => String(p.id) === formData.position);
+                    const showEndWorkDate = selectedPos ? !!selectedPos.require_enddate : false;
+                    return (
                       <>
-                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                        {t('profile.saving')}
+                        <div className="space-y-3">
+                          <Label htmlFor="start_work" className="text-base text-blue-900 font-medium">{t('employee.startWorkDate')}</Label>
+                          <DatePicker
+                            date={formData.start_work}
+                            onDateChange={(date) => setFormData(prev => ({ ...prev, start_work: date }))}
+                            placeholder={t('employee.selectStartWorkDate')}
+                            className="input-blue"
+                            disabled={!isEditing}
+                          />
+                        </div>
+                        {showEndWorkDate && (
+                          <div className="space-y-3">
+                            <Label htmlFor="end_work" className="text-base text-blue-900 font-medium">{t('employee.endWorkDate')}</Label>
+                            <DatePicker
+                              date={formData.end_work}
+                              onDateChange={(date) => setFormData(prev => ({ ...prev, end_work: date }))}
+                              placeholder={t('employee.selectEndWorkDate')}
+                              className="input-blue"
+                              disabled={!isEditing}
+                            />
+                          </div>
+                        )}
                       </>
-                    ) : (
-                      <>
-                        <Save className="h-5 w-5 mr-2" />
-                        {t('profile.saveData')}
-                      </>
-                    )}
-                  </Button>
+                    );
+                  })()}
                 </div>
+                {/* ปุ่มแก้ไข/บันทึก/ยกเลิก (วางไว้ใต้ Avatar หรือในฟอร์ม) */}
+                                 <div className="flex gap-3 justify-center mt-4">
+                   {!isEditing && (
+                     <Button type="button" className="btn-blue px-6 py-2 text-lg" onClick={() => setIsEditing(true)}>
+                       <span>{t('profile.editProfile')}</span>
+                     </Button>
+                   )}
+                   {isEditing && (
+                     <>
+                       <Button type="button" className="btn-blue px-6 py-2 text-lg" onClick={handleSave} disabled={saving || loading}>
+                         {saving ? (
+                           <>
+                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                             {t('common.saving')}
+                           </>
+                         ) : (
+                           <>
+                             <Save className="h-5 w-5 mr-2" />
+                             {t('common.save')}
+                           </>
+                         )}
+                       </Button>
+                       <Button type="button" variant="outline" className="btn-blue-outline px-6 py-2 text-lg" onClick={() => { setIsEditing(false); }} disabled={saving || loading}>
+                         {t('common.cancel')}
+                       </Button>
+                     </>
+                   )}
+                 </div>
               </form>
             </TabsContent>
 
@@ -581,14 +1017,18 @@ const Profile = () => {
                     <div className="w-full bg-blue-100 rounded-full h-2">
                       <div
                         className={`${stat.color} h-2 rounded-full transition-all duration-500`}
-                        style={{ width: `${Math.min((Number(stat.used.days) / Number(stat.quota)) * 100, 100)}%` }}
+                        style={{ 
+                          width: `${Math.min(
+                            ((Number(stat.used.days) + (Number(stat.used.hours) / 9)) / Number(stat.quota)) * 100, 
+                            100
+                          )}%` 
+                        }}
                       ></div>
                     </div>
                     <div className="text-xs text-blue-500">
                       {(() => {
-                        const usedDays = Number(stat.used.days) || 0;
-                        const usedHours = Number(stat.used.hours) || 0;
-                        const remainingDays = Number(stat.quota) - usedDays;
+                        const remainingDays = Number(stat.remaining.days) || 0;
+
                         const remainingHours = Number(stat.remaining.hours) || 0;
                         
                         if (remainingHours > 0) {

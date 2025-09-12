@@ -27,7 +27,21 @@ const createStorage = (destination, filenamePrefix = '') => {
       // Generate unique filename with timestamp
       const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
       const prefix = filenamePrefix ? `${filenamePrefix}-` : '';
-      cb(null, prefix + uniqueSuffix + path.extname(file.originalname));
+      // Ensure file has an extension; derive from mimetype if missing
+      const mimeToExt = {
+        'image/jpeg': '.jpg',
+        'image/png': '.png',
+        'image/gif': '.gif',
+        'application/pdf': '.pdf',
+        'application/msword': '.doc',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document': '.docx'
+      };
+      let ext = path.extname(file.originalname || '');
+      if (!ext || ext === '.') {
+        ext = mimeToExt[file.mimetype] || '';
+      }
+      const safeExt = ext && ext.startsWith('.') ? ext : (ext ? `.${ext}` : '');
+      cb(null, prefix + uniqueSuffix + safeExt);
     }
   });
 };

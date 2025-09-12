@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { config } from "@/config";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
@@ -20,7 +21,7 @@ export function getImageUrl(imageName: string, apiBaseUrl: string): string {
   }
   
   // If imageName doesn't start with /, assume it's just a filename
-  return `${apiBaseUrl}/uploads/announcements/${imageName}`;
+  return `${apiBaseUrl}${config.upload.uploadPath}/announcements/${imageName}`;
 }
 
 /**
@@ -38,16 +39,16 @@ export function handleImageError(e: React.SyntheticEvent<HTMLImageElement, Event
   // Try alternative paths
   const possiblePaths = [
     // If imageName starts with /, use API_BASE_URL + imageName
-    imageName.startsWith('/') ? `${apiBaseUrl}${imageName}` : `${apiBaseUrl}/uploads/announcements/${imageName}`,
+    imageName.startsWith('/') ? `${apiBaseUrl}${imageName}` : `${apiBaseUrl}${config.upload.uploadPath}/announcements/${imageName}`,
     // Try other possible paths
-    `${apiBaseUrl}/uploads/${imageName}`,
-    `${apiBaseUrl}/public/uploads/announcements/${imageName}`,
-    `${apiBaseUrl}/public/uploads/${imageName}`,
+    `${apiBaseUrl}${config.upload.uploadPath}/${imageName}`,
+    `${apiBaseUrl}${config.upload.publicPath}/uploads/announcements/${imageName}`,
+    `${apiBaseUrl}${config.upload.publicPath}/uploads/${imageName}`,
     // Try relative paths
-    imageName.startsWith('/') ? imageName : `/uploads/announcements/${imageName}`,
-    `/uploads/${imageName}`,
-    `/public/uploads/announcements/${imageName}`,
-    `/public/uploads/${imageName}`
+    imageName.startsWith('/') ? imageName : `${config.upload.uploadPath}/announcements/${imageName}`,
+    `${config.upload.uploadPath}/${imageName}`,
+    `${config.upload.publicPath}/uploads/announcements/${imageName}`,
+    `${config.upload.publicPath}/uploads/${imageName}`
   ];
   
   const currentIndex = possiblePaths.findIndex(path => target.src.includes(path));
@@ -125,7 +126,15 @@ export function handleImageClick(
   setPreviewImage: (preview: { url: string; name: string } | null) => void,
   setImageDialogOpen: (open: boolean) => void
 ): void {
-  const url = URL.createObjectURL(file);
+  // ตรวจสอบว่ามี custom url property หรือไม่ (สำหรับโหมด view)
+  let url: string;
+  if ((file as any).url) {
+    url = (file as any).url;
+  } else {
+    // ถ้าเป็น File object ปกติ ใช้ URL.createObjectURL
+    url = URL.createObjectURL(file);
+  }
+  
   setPreviewImage({ url, name: file.name });
   setImageDialogOpen(true);
 }

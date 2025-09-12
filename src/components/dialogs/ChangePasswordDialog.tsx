@@ -7,6 +7,8 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useTranslation } from "react-i18next";
 import { Eye, EyeOff, Lock } from "lucide-react";
+import { config } from "@/config";
+import { apiEndpoints } from '@/constants/api';
 
 interface ChangePasswordDialogProps {
   open: boolean;
@@ -49,8 +51,8 @@ export default function ChangePasswordDialog({ open, onOpenChange }: ChangePassw
 
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch('/api/profile', {
+      const token = localStorage.getItem(config.auth.tokenKey);
+      const res = await fetch(`${config.api.baseUrl}${apiEndpoints.auth.profile}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

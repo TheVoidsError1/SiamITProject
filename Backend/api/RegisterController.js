@@ -13,7 +13,7 @@ module.exports = (AppDataSource) => {
 
   router.post('/register', async (req, res) => {
     try {
-      const { User_name, department, position, email, password } = req.body;
+      const { User_name, department, position, email, password, gender, dob, phone_number, start_work, end_work } = req.body;
       const userRepo = AppDataSource.getRepository('User');
       const processRepo = AppDataSource.getRepository('ProcessCheck');
       const departmentRepo = AppDataSource.getRepository('Department');
@@ -59,7 +59,12 @@ module.exports = (AppDataSource) => {
         id: uuidv4(),
         User_name,
         department: departmentId,
-        position: positionId
+        position: positionId,
+        gender: gender || null,
+        dob: dob || null,
+        phone_number: phone_number || null,
+        start_work: start_work || null,
+        end_work: end_work || null
       });
 
       // สร้าง JWT Token
@@ -94,47 +99,8 @@ module.exports = (AppDataSource) => {
     }
   });
 
-  // ดึงข้อมูล department ทั้งหมด
-  router.get('/departments', async (req, res) => {
-    try {
-      const departments = await departmentController.findAll(AppDataSource);
-      sendSuccess(res, departments, 'ดึงข้อมูล department สำเร็จ');
-    } catch (err) {
-      sendError(res, err.message, 500);
-    }
-  });
-
-  // ดึงข้อมูล position ทั้งหมด
-  router.get('/positions', async (req, res) => {
-    try {
-      const positions = await positionController.findAll(AppDataSource);
-      sendSuccess(res, positions, 'ดึงข้อมูล position สำเร็จ');
-    } catch (err) {
-      sendError(res, err.message, 500);
-    }
-  });
-
-  // เพิ่ม department
-  router.post('/departments', async (req, res) => {
-    try {
-      const { department } = req.body;
-      const newDept = await departmentController.create(AppDataSource, { department_name_th: department });
-      sendSuccess(res, newDept, 'เพิ่ม department สำเร็จ', 201);
-    } catch (err) {
-      sendError(res, err.message, 500);
-    }
-  });
-
-  // เพิ่ม position
-  router.post('/positions', async (req, res) => {
-    try {
-      const { position } = req.body;
-      const newPos = await positionController.create(AppDataSource, { position_name_th: position });
-      sendSuccess(res, newPos, 'เพิ่ม position สำเร็จ', 201);
-    } catch (err) {
-      sendError(res, err.message, 500);
-    }
-  });
+  // หมายเหตุ: เส้นทาง /departments และ /positions ถูกย้ายให้ใช้ที่ DepartmentController/PositionController เท่านั้น
+  // เพื่อลดความซ้ำซ้อนและให้โครงสร้างข้อมูลสอดคล้องกันทั้งระบบ
 
   return router;
 };

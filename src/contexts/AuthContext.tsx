@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
 import SessionExpiredDialog from '@/components/dialogs/SessionExpiredDialog';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface User {
   id: string;
@@ -14,6 +14,11 @@ interface User {
   position?: string;
   position_name_th?: string;
   position_name_en?: string;
+  gender?: 'male' | 'female' | 'other';
+  dob?: string;
+  phone_number?: string;
+  start_work?: string;
+  end_work?: string;
 }
 
 interface AuthContextType {
@@ -24,6 +29,8 @@ interface AuthContextType {
   updateUser: (userData: Partial<User>) => void;
   loading: boolean;
   showSessionExpiredDialog: () => void;
+  avatarPreviewUrl?: string | null;
+  setAvatarPreviewUrl?: (url: string | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -66,6 +73,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [showSessionExpiredDialog, setShowSessionExpiredDialog] = useState(false);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState<string | null>(null);
   const logoutTimer = useRef<NodeJS.Timeout | null>(null);
   const { t } = useTranslation();
 
@@ -190,6 +198,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: email,         // <-- แก้ตรงนี้
         password: password,   // <-- แก้ตรงนี้
         Role: userData.role || 'employee',
+        gender: userData.gender,
+        dob: userData.dob,
+        phone_number: userData.phone_number,
+        start_work: userData.start_work,
+        end_work: userData.end_work,
       }),
     });
     const data = await response.json();
@@ -226,6 +239,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     updateUser,
     loading,
     showSessionExpiredDialog: () => setShowSessionExpiredDialog(true),
+    avatarPreviewUrl,
+    setAvatarPreviewUrl,
   };
 
   return (

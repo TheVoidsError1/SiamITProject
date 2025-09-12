@@ -2,18 +2,19 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { config } from '@/config';
+import { apiEndpoints } from '@/constants/api';
 import { getThaiHolidaysByMonth, getUpcomingThaiHolidays } from "@/constants/getThaiHolidays";
 import { useAuth } from '@/contexts/AuthContext';
 import { useSocket } from '@/contexts/SocketContext';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { Bell, Calendar, Clock, TrendingUp, Users, MessageCircle, Smartphone } from 'lucide-react';
+import { Bell, Calendar, Clock, TrendingUp, Users } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useNavigate } from 'react-router-dom';
-import { apiService, apiEndpoints } from '../lib/api';
+import { apiService } from '../lib/api';
 import { showToastMessage } from '../lib/toast';
-import { getImageUrl } from '../lib/utils';
 
 
 const Index = () => {
@@ -103,7 +104,7 @@ const Index = () => {
 
   // Helper for month options
   const monthOptions = [
-    { value: 0, label: t('months.all') },
+    { value: 0, label: t('common.allMonths') },
     { value: 1, label: t('months.1') },
     { value: 2, label: t('months.2') },
     { value: 3, label: t('months.3') },
@@ -561,7 +562,7 @@ const Index = () => {
           </div>
           <div className="absolute top-0 right-0 w-40 h-40 rounded-full" style={{ background: 'linear-gradient(90deg, #fffbe6 0%, #ffe082 100%)', opacity: 0.18, transform: 'translateY(-50%) translateX(50%)' }}></div>
           <div className="flex-1 flex items-center justify-center animate-float">
-            <img src="/public/lovable-uploads/siamit.png" alt="Logo" className="w-28 h-28 object-contain drop-shadow-2xl animate-float" />
+            <img src={`${config.upload.publicPath}/lovable-uploads/siamit.png`} alt="Logo" className="w-28 h-28 object-contain drop-shadow-2xl animate-float" />
           </div>
         </div>
 
@@ -640,15 +641,15 @@ const Index = () => {
             <div className="text-sm text-blue-500">
               {loadingUserProfile ? t('common.loading') : (
                 i18n.language.startsWith('th') 
-                  ? userProfile?.position?.name_th || userProfile?.position?.name_en || t('main.noPosition')
-                  : userProfile?.position?.name_en || userProfile?.position?.name_th || t('main.noPosition')
+                  ? userProfile?.position?.name_th || userProfile?.position?.name_en || t('positions.noPosition')
+                  : userProfile?.position?.name_en || userProfile?.position?.name_th || t('positions.noPosition')
               )}
             </div>
             <div className="text-xs text-blue-400 mb-1">
               {loadingUserProfile ? t('common.loading') : (
                 i18n.language.startsWith('th') 
-                  ? userProfile?.department?.name_th || userProfile?.department?.name_en || t('main.noDepartment')
-                  : userProfile?.department?.name_en || userProfile?.department?.name_th || t('main.noDepartment')
+                  ? userProfile?.department?.name_th || userProfile?.department?.name_en || t('departments.noDepartment')
+                  : userProfile?.department?.name_en || userProfile?.department?.name_th || t('departments.noDepartment')
               )}
             </div>
             <div className="text-xs text-gray-500">
@@ -848,7 +849,7 @@ const Index = () => {
               ) : errorRecentLeaves ? (
                 <div className="text-center py-4 text-red-500 animate-shake text-sm">{errorRecentLeaves}</div>
               ) : recentLeaves.length === 0 ? (
-                <div className="text-center py-4 text-blue-400 text-sm">{t('main.noRecentLeaveRequests', 'ไม่มีคำขอลาล่าสุด')}</div>
+                <div className="text-center py-4 text-blue-400 text-sm">{t('main.noRecentLeaveRequests')}</div>
               ) : (
                 <div className="space-y-2">
                   {recentLeaves.map((l, idx) => (

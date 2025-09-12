@@ -48,7 +48,7 @@ module.exports = (AppDataSource) => {
   router.get('/users', async (req, res) => {
     try {
       const users = await userController.findAll(AppDataSource);
-      sendSuccess(res, users, 'ดึงข้อมูล user สำเร็จ');
+      sendSuccess(res, users, 'Fetch users success');
     } catch (err) {
       sendError(res, err.message, 500);
     }
@@ -101,7 +101,7 @@ module.exports = (AppDataSource) => {
     try {
       const { User_name, department, position } = req.body;
       const user = await userController.create(AppDataSource, { User_name, department, position });
-      sendSuccess(res, user, 'สร้าง user สำเร็จ', 201);
+      sendSuccess(res, user, 'Create user success', 201);
     } catch (err) {
       sendError(res, err.message, 500);
     }
@@ -150,10 +150,15 @@ module.exports = (AppDataSource) => {
    */
   router.delete('/users/:id', async (req, res) => {
     try {
-      await userController.delete(AppDataSource, req.params.id);
-      sendSuccess(res, {}, 'User deleted');
+      const { id } = req.params;
+      const userRepo = AppDataSource.getRepository('User');
+      const { deleteUserComprehensive } = require('../utils/userDeletionUtils');
+
+      const result = await deleteUserComprehensive(AppDataSource, id, 'user', userRepo);
+      
+      sendSuccess(res, result.deletionSummary, result.message);
     } catch (err) {
-      if (err.message === 'Record not found') {
+      if (err.message === 'user not found') {
         return sendNotFound(res, 'User not found');
       }
       sendError(res, err.message, 500);
@@ -201,7 +206,7 @@ module.exports = (AppDataSource) => {
   router.get('/admins', async (req, res) => {
     try {
       const admins = await adminController.findAll(AppDataSource);
-      sendSuccess(res, admins, 'ดึงข้อมูล admin สำเร็จ');
+      sendSuccess(res, admins, 'Fetch admins success');
     } catch (err) {
       sendError(res, err.message, 500);
     }
@@ -259,7 +264,7 @@ module.exports = (AppDataSource) => {
       // ตรวจสอบ email ซ้ำ
       const exist = await processRepo.findOneBy({ Email: email });
       if (exist) {
-        return sendValidationError(res, 'Email นี้ถูกใช้ไปแล้ว');
+        return sendValidationError(res, 'Email already exists');
       }
 
       // hash password
@@ -293,7 +298,7 @@ module.exports = (AppDataSource) => {
       });
       await processRepo.save(processCheck);
 
-      sendSuccess(res, { ...admin, token, repid: admin.id }, 'สร้างแอดมินสำเร็จ', 201);
+      sendSuccess(res, { ...admin, token, repid: admin.id }, 'Create admin success', 201);
     } catch (err) {
       sendError(res, err.message, 500);
     }
@@ -342,10 +347,15 @@ module.exports = (AppDataSource) => {
    */
   router.delete('/admins/:id', async (req, res) => {
     try {
-      await adminController.delete(AppDataSource, req.params.id);
-      sendSuccess(res, {}, 'Admin deleted');
+      const { id } = req.params;
+      const adminRepo = AppDataSource.getRepository('Admin');
+      const { deleteUserComprehensive } = require('../utils/userDeletionUtils');
+
+      const result = await deleteUserComprehensive(AppDataSource, id, 'admin', adminRepo);
+      
+      sendSuccess(res, result.deletionSummary, result.message);
     } catch (err) {
-      if (err.message === 'Record not found') {
+      if (err.message === 'admin not found') {
         return sendNotFound(res, 'Admin not found');
       }
       sendError(res, err.message, 500);

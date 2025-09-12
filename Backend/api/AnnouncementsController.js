@@ -1,10 +1,14 @@
 const express = require('express');
 const fs = require('fs');
+const path = require('path');
 const config = require('../config');
 const { announcementImageUpload, handleUploadError } = require('../middleware/fileUploadMiddleware');
 
 module.exports = (AppDataSource) => {
   const router = express.Router();
+  
+  // Define uploads directory
+  const uploadsDir = path.join(__dirname, '../uploads');
 
   // File upload middleware is now imported from fileUploadMiddleware.js
 
@@ -104,38 +108,49 @@ module.exports = (AppDataSource) => {
         }
       });
 
-      // Get avatar data for each announcement
+      // Get avatar data and user names for each announcement
       const announcementsWithAvatar = await Promise.all(
         announcements.map(async (announcement) => {
           let avatar = null;
+          let userName = 'Unknown User';
           
           if (announcement.createdBy) {
-            // First, find the user by name in User, Admin, and SuperAdmin tables
+            // First, find the user by ID in User, Admin, and SuperAdmin tables
             const userRepo = AppDataSource.getRepository('User');
             const adminRepo = AppDataSource.getRepository('Admin');
             const superadminRepo = AppDataSource.getRepository('SuperAdmin');
             
             // Try to find user in User table
             let user = await userRepo.findOne({
-              where: { User_name: announcement.createdBy }
+              where: { id: announcement.createdBy }
             });
             
             // If not found in User table, try Admin table
             if (!user) {
               user = await adminRepo.findOne({
-                where: { admin_name: announcement.createdBy }
+                where: { id: announcement.createdBy }
               });
             }
             
             // If not found in Admin table, try SuperAdmin table
             if (!user) {
               user = await superadminRepo.findOne({
-                where: { superadmin_name: announcement.createdBy }
+                where: { id: announcement.createdBy }
               });
             }
             
-            // If user found, get their avatar from ProcessCheck table
+            // If user found, get their name and avatar
             if (user) {
+              // Get user name based on which table they were found in
+              if (user.User_name) {
+                userName = user.User_name;
+              } else if (user.admin_name) {
+                userName = user.admin_name;
+              } else if (user.superadmin_name) {
+                userName = user.superadmin_name;
+              }
+              
+              // Get avatar from ProcessCheck table
               const processCheck = await processCheckRepo.findOne({
                 where: { Repid: user.id }
               });
@@ -147,10 +162,12 @@ module.exports = (AppDataSource) => {
           }
 
           return {
+            id: announcement.id,
             subject: announcement.subject,
             detail: announcement.detail,
             createdAt: announcement.createdAt,
-            createdBy: announcement.createdBy,
+            createdBy: announcement.createdBy, // This is now the user ID
+            createdByName: userName, // This is the display name
             Image: announcement.Image,
             avatar: avatar
           };
@@ -270,7 +287,7 @@ module.exports = (AppDataSource) => {
         subject,
         detail,
         Image: req.file ? req.file.filename : null,
-        createdBy: createdBy || 'system'
+        createdBy: createdBy || null // This should now be a user ID
       });
       
       const savedAnnouncement = await announcementRepo.save(newAnnouncement);
@@ -282,7 +299,7 @@ module.exports = (AppDataSource) => {
           subject: savedAnnouncement.subject,
           detail: savedAnnouncement.detail,
           createdAt: savedAnnouncement.createdAt,
-          createdBy: savedAnnouncement.createdBy,
+          createdBy: savedAnnouncement.createdBy, // User ID
           Image: savedAnnouncement.Image
         });
       }
@@ -371,11 +388,42 @@ module.exports = (AppDataSource) => {
       }
       
       if (req.file) {
-        // Delete old image if exists
+        // HARD DELETE old image if exists
         if (announcement.Image) {
-          const oldImagePath = path.join(uploadsDir, announcement.Image);
-          if (fs.existsSync(oldImagePath)) {
-            fs.unlinkSync(oldImagePath);
+          const oldImagePath = path.join(uploadsDir, 'announcements', announcement.Image);
+          
+          try {
+            if (fs.existsSync(oldImagePath)) {
+              // Force delete the old announcement image file (hard delete)
+              fs.unlinkSync(oldImagePath);
+              
+              // Verify file is actually deleted
+              if (!fs.existsSync(oldImagePath)) {
+                console.log(`✅ HARD DELETED old announcement image: ${announcement.Image}`);
+              } else {
+                console.error(`❌ FAILED to delete old announcement image: ${announcement.Image} - file still exists`);
+                
+                // Try alternative deletion method
+                try {
+                  fs.rmSync(oldImagePath, { force: true });
+                  console.log(`✅ Force deleted old announcement image: ${announcement.Image}`);
+                } catch (forceDeleteError) {
+                  console.error(`❌ Force delete also failed for old announcement image: ${announcement.Image}:`, forceDeleteError.message);
+                }
+              }
+            } else {
+              console.log(`⚠️  Old announcement image file not found (already deleted?): ${announcement.Image}`);
+            }
+          } catch (fileDeleteError) {
+            console.error(`❌ Error deleting old announcement image file ${announcement.Image}:`, fileDeleteError.message);
+            
+            // Try alternative deletion method
+            try {
+              fs.rmSync(oldImagePath, { force: true });
+              console.log(`✅ Force deleted old announcement image: ${announcement.Image}`);
+            } catch (forceDeleteError) {
+              console.error(`❌ Force delete also failed for old announcement image: ${announcement.Image}:`, forceDeleteError.message);
+            }
           }
         }
         announcement.Image = req.file.filename;
@@ -390,7 +438,7 @@ module.exports = (AppDataSource) => {
           subject: updatedAnnouncement.subject,
           detail: updatedAnnouncement.detail,
           createdAt: updatedAnnouncement.createdAt,
-          createdBy: updatedAnnouncement.createdBy,
+          createdBy: updatedAnnouncement.createdBy, // User ID
           Image: updatedAnnouncement.Image
         });
       }
@@ -455,11 +503,42 @@ module.exports = (AppDataSource) => {
         return res.status(404).json({ status: 'error', data: null, message: 'Announcement not found' });
       }
       
-      // Delete image file if exists
+      // HARD DELETE image file if exists
       if (announcement.Image) {
-        const imagePath = path.join(uploadsDir, announcement.Image);
-        if (fs.existsSync(imagePath)) {
-          fs.unlinkSync(imagePath);
+        const imagePath = path.join(uploadsDir, 'announcements', announcement.Image);
+        
+        try {
+          if (fs.existsSync(imagePath)) {
+            // Force delete the announcement image file (hard delete)
+            fs.unlinkSync(imagePath);
+            
+            // Verify file is actually deleted
+            if (!fs.existsSync(imagePath)) {
+              console.log(`✅ HARD DELETED announcement image: ${announcement.Image}`);
+            } else {
+              console.error(`❌ FAILED to delete announcement image: ${announcement.Image} - file still exists`);
+              
+              // Try alternative deletion method
+              try {
+                fs.rmSync(imagePath, { force: true });
+                console.log(`✅ Force deleted announcement image: ${announcement.Image}`);
+              } catch (forceDeleteError) {
+                console.error(`❌ Force delete also failed for announcement image: ${announcement.Image}:`, forceDeleteError.message);
+              }
+            }
+          } else {
+            console.log(`⚠️  Announcement image file not found (already deleted?): ${announcement.Image}`);
+          }
+        } catch (fileDeleteError) {
+          console.error(`❌ Error deleting announcement image file ${announcement.Image}:`, fileDeleteError.message);
+          
+          // Try alternative deletion method
+          try {
+            fs.rmSync(imagePath, { force: true });
+            console.log(`✅ Force deleted announcement image: ${announcement.Image}`);
+          } catch (forceDeleteError) {
+            console.error(`❌ Force delete also failed for announcement image: ${announcement.Image}:`, forceDeleteError.message);
+          }
         }
       }
       
@@ -470,9 +549,9 @@ module.exports = (AppDataSource) => {
         global.io.emit('announcementDeleted', {
           id: announcement.id,
           subject: announcement.subject,
-          detail: announcement.detail,
+          detail: announcement.subject,
           createdAt: announcement.createdAt,
-          createdBy: announcement.createdBy,
+          createdBy: announcement.createdBy, // User ID
           Image: announcement.Image
         });
       }

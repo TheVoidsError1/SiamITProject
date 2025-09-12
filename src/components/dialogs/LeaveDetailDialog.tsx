@@ -9,6 +9,11 @@ import { Calendar, CheckCircle, Clock, FileText, History, User, XCircle } from "
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { formatDateLocalized } from '../../lib/utils';
+import { createAuthenticatedFileUrl, apiService } from '../../lib/api';
+import { apiEndpoints } from '@/constants/api';
+import ImagePreviewDialog from '@/components/dialogs/ImagePreviewDialog';
+import { isRetroactiveLeave, calcHours, getTypeColor, getLeaveTypeLabel, getLeaveTypeDisplay } from '../../lib/leaveUtils';
+import { getStatusBadge, getRetroactiveBadge } from '../leave/LeaveBadges';
 
 interface LeaveRequest {
   id: string;
@@ -22,6 +27,8 @@ interface LeaveRequest {
   status: string;
   createdAt?: string;
   statusBy?: string;
+  approvedBy?: string;
+  rejectedBy?: string;
   approvedTime?: string;
   startTime?: string;
   endTime?: string;
@@ -39,7 +46,6 @@ interface LeaveRequest {
   backdated?: boolean;
   durationType?: string;
   durationHours?: number;
-  rejectedBy?: string;
   attachments?: string[];
 }
 
@@ -56,15 +62,15 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
   const [leaveTypes, setLeaveTypes] = useState<{ id: string; leave_type: string; leave_type_th: string; leave_type_en: string }[]>([]);
   const [leaveTypesLoading, setLeaveTypesLoading] = useState(false);
   const [leaveTypesError, setLeaveTypesError] = useState<string | null>(null);
+  const [preview, setPreview] = useState<{ url: string; name: string } | null>(null);
 
-  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
+  // Use centralized API service and endpoints (avoid hard-coded URLs)
 
   useEffect(() => {
     if (open && leaveRequest?.id) {
       setLoading(true);
-      fetch(`${API_BASE_URL}/api/leave-request/detail/${leaveRequest.id}`)
-        .then(res => res.json())
-        .then(data => {
+      apiService.get(apiEndpoints.leave.detail(leaveRequest.id))
+        .then((data: any) => {
           if (data.success) {
             console.log('Leave Detail Data:', data.data);
             console.log('Days from API:', data.data.days);
@@ -72,14 +78,19 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
             console.log('EndDate:', data.data.endDate);
             setLeaveDetail(data.data);
           } else {
-            setLeaveDetail(null); // do not fallback to leaveRequest
+            // Fallback to leaveRequest if API call fails
+            setLeaveDetail(leaveRequest);
           }
           setLoading(false);
         })
         .catch(() => {
-          setLeaveDetail(null);
+          // Fallback to leaveRequest if API call fails
+          setLeaveDetail(leaveRequest);
           setLoading(false);
         });
+    } else if (open && leaveRequest) {
+      // If no ID but we have leaveRequest data, use it directly
+      setLeaveDetail(leaveRequest);
     } else {
       setLeaveDetail(null);
     }
@@ -90,8 +101,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
       setLeaveTypesLoading(true);
       setLeaveTypesError(null);
       try {
-        const res = await fetch(`${API_BASE_URL}/api/leave-types`);
-        const data = await res.json();
+        const data = await apiService.get(apiEndpoints.leaveTypes);
         if (data.success) {
           setLeaveTypes(data.data);
         } else {
@@ -108,65 +118,11 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
     fetchLeaveTypes();
   }, []);
 
-  const getStatusBadge = (status: string) => {
-    if (status === 'approved') return <Badge className="bg-green-100 text-green-800 border-green-200">{t('leave.approved')}</Badge>;
-    if (status === 'rejected') return <Badge className="bg-red-100 text-red-800 border-red-200">{t('leave.rejected')}</Badge>;
-    return <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200">{t('leave.pending')}</Badge>;
-  };
+  // Note: getStatusBadge, getRetroactiveBadge, getTypeColor, calcHours functions moved to src/lib/leaveUtils.ts
 
-  const getRetroactiveBadge = (leave: LeaveRequest) => {
-    if (Number(leave.backdated) === 1) {
-      return <Badge className="bg-red-100 text-red-700 border-red-200 text-xs px-1.5 py-0.5">
-        {t('leave.backdated', 'ลาย้อนหลัง')}
-      </Badge>;
-    }
-    return null;
-  };
+  // Note: getLeaveTypeLabel and getLeaveTypeDisplay functions moved to src/lib/leaveUtils.ts
 
-  const getTypeColor = (type: string) => {
-    const typeColors: { [key: string]: string } = {
-      'vacation': 'text-blue-600',
-      'sick': 'text-red-600',
-      'personal': 'text-purple-600',
-      'maternity': 'text-pink-600',
-      'paternity': 'text-indigo-600',
-      'bereavement': 'text-gray-600',
-      'other': 'text-orange-600'
-    };
-    return typeColors[type?.toLowerCase()] || 'text-blue-600';
-  };
-
-  const calcHours = (start: string, end: string) => {
-    if (!start || !end) return 0;
-    try {
-      const startTime = new Date(`2000-01-01T${start}`);
-      const endTime = new Date(`2000-01-01T${end}`);
-      const diffMs = endTime.getTime() - startTime.getTime();
-      const diffHours = diffMs / (1000 * 60 * 60);
-      return Math.round(diffHours * 100) / 100;
-    } catch {
-      return 0;
-    }
-  };
-
-  const getLeaveTypeLabel = (typeId: string) => {
-    if (!typeId) return '';
-    const found = leaveTypes.find(lt => lt.id === typeId || lt.leave_type === typeId);
-    if (found) {
-      return i18n.language.startsWith('th') ? found.leave_type_th : found.leave_type_en;
-    }
-    // fallback: i18n string หรือ id
-    if (t(`leaveTypes.${typeId}`) !== `leaveTypes.${typeId}`) {
-      return t(`leaveTypes.${typeId}`);
-    }
-    
-    // ถ้าไม่มีใน i18n ให้ส่งคืนค่าเดิม
-    return typeId;
-  };
-
-  const isRetroactiveLeave = (leave: LeaveRequest) => {
-    return Number(leave.backdated) === 1;
-  };
+  // Note: isRetroactiveLeave function moved to src/lib/leaveUtils.ts
 
   // ฟังก์ชันคำนวณจำนวนวันที่ถูกต้อง
   const calculateDays = (startDate: string, endDate: string) => {
@@ -191,13 +147,33 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
     }
   };
 
+  const handleDownload = async (fileUrl: string, fileName: string) => {
+    try {
+      const response = await fetch(fileUrl, { credentials: 'omit' });
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = fileName || 'download';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+    } catch (e) {
+      const link = document.createElement('a');
+      link.href = fileUrl;
+      link.download = fileName;
+      link.click();
+    }
+  };
+
   if (loading) return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{t('leave.details')}</DialogTitle>
           <DialogDescription>
-            {t('leave.detailDescription', 'Detailed information about this leave request.')}
+            {t('leave.detailDescription')}
           </DialogDescription>
         </DialogHeader>
         <div className="flex items-center justify-center py-8">
@@ -208,22 +184,16 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
   );
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto animate-scale-in">
         <DialogHeader>
-          <DialogTitle className="flex items-center">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl font-bold text-blue-600">
-                {t('common.viewDetails')}
-              </span>
-              {leaveDetail && (
-                <div className="flex flex-wrap gap-2">
-                  {getStatusBadge(leaveDetail.status)}
-                  {getRetroactiveBadge(leaveDetail)}
-                </div>
-              )}
-            </div>
+          <DialogTitle>
+            {t('common.viewDetails')}
           </DialogTitle>
+          <DialogDescription>
+            {t('leave.detailDescription')}
+          </DialogDescription>
         </DialogHeader>
         
         {leaveDetail ? (
@@ -234,15 +204,20 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
                     <div className={`text-3xl font-bold ${getTypeColor(leaveDetail.leaveTypeName || leaveDetail.leaveType || leaveDetail.type)}`}>
-                      {getLeaveTypeLabel(leaveDetail.leaveType || leaveDetail.type || leaveDetail.leaveTypeName || '')}
+                      {getLeaveTypeDisplay(leaveDetail, leaveTypes, i18n, t)}
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-sm text-gray-500">{t('history.submittedOn', 'Submitted on')}</div>
+                    <div className="text-sm text-gray-500">{t('history.submittedOn')}</div>
                     <div className="text-lg font-semibold text-blue-600">
                       {formatDateLocalized(leaveDetail.submittedDate || leaveDetail.createdAt || '', i18n.language)}
                     </div>
                   </div>
+                </div>
+                {/* Status badges moved here */}
+                <div className="flex flex-wrap gap-2 mt-4">
+                  {getStatusBadge(leaveDetail.status, t)}
+                  {getRetroactiveBadge(leaveDetail, t)}
                 </div>
               </CardContent>
             </Card>
@@ -254,7 +229,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-2">
                     <Calendar className="w-5 h-5 text-blue-600" />
-                    <h3 className="text-lg font-semibold">{t('leave.dateInformation', 'Date Information')}</h3>
+                    <h3 className="text-lg font-semibold">{t('leave.dateInformation')}</h3>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
@@ -352,10 +327,10 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                   })()}
                   {isRetroactiveLeave(leaveDetail) && (
                     <div className="space-y-2">
-                      <Label className="text-sm font-medium text-purple-600">{t('history.retroactiveLeave', 'ลาย้อนหลัง')}</Label>
+                      <Label className="text-sm font-medium text-purple-600">{t('history.retroactiveLeave')}</Label>
                       <div className="flex items-center gap-2 p-3 bg-purple-50 rounded-lg">
                         <History className="w-4 h-4 text-purple-500" />
-                        <span className="text-purple-700">{t('history.retroactiveLeaveDesc', 'ใบลานี้เป็นลาย้อนหลัง')}</span>
+                        <span className="text-purple-700">{t('history.retroactiveLeaveDesc')}</span>
                       </div>
                     </div>
                   )}
@@ -367,23 +342,23 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-2">
                     <CheckCircle className="w-5 h-5 text-green-600" />
-                    <h3 className="text-lg font-semibold">{t('leave.statusAndApproval', 'Status & Approval')}</h3>
+                    <h3 className="text-lg font-semibold">{t('leave.statusAndApproval')}</h3>
                   </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
                   <div className="space-y-2">
                     <Label className="text-sm font-medium text-gray-600">{t('leave.status')}</Label>
                     <div className="flex items-center gap-2">
-                      {getStatusBadge(leaveDetail.status)}
+                      {getStatusBadge(leaveDetail.status, t)}
                     </div>
                   </div>
                   
-                  {leaveDetail.status === "approved" && (leaveDetail.name || leaveDetail.statusBy) && (
+                  {leaveDetail.status === "approved" && leaveDetail.approvedBy && (
                     <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-600">{t('leave.approvedBy', 'Approved by')}</Label>
+                      <Label className="text-sm font-medium text-gray-600">{t('leave.approvedBy')}</Label>
                       <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
                         <CheckCircle className="w-4 h-4 text-green-500" />
-                        <span className="font-medium text-green-900">{leaveDetail.name || leaveDetail.statusBy || '-'}</span>
+                        <span className="font-medium text-green-900">{leaveDetail.approvedBy}</span>
                       </div>
                     </div>
                   )}
@@ -391,18 +366,20 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                   {leaveDetail.status === "rejected" && (
                     <div className="space-y-4">
                       <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-600">{t('leave.rejectedBy', 'Rejected by')}</Label>
+                        <Label className="text-sm font-medium text-gray-600">{t('leave.rejectedBy')}</Label>
                         <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
                           <XCircle className="w-4 h-4 text-red-500" />
-                          <span className="font-medium text-red-900">{leaveDetail.rejectedBy || leaveDetail.statusBy || '-'}</span>
+                          <span className="font-medium text-red-900">{leaveDetail.rejectedBy || '-'}</span>
                         </div>
                       </div>
                       {leaveDetail.rejectedReason && (
                         <div className="space-y-2">
-                          <Label className="text-sm font-medium text-gray-600">{t('leave.rejectionReason', 'Rejection reason')}</Label>
+                          <Label className="text-sm font-medium text-gray-600">{t('leave.rejectionReason')}</Label>
                           <div className="flex items-start gap-2 p-3 bg-red-50 rounded-lg">
                             <FileText className="w-4 h-4 text-red-500 mt-0.5" />
-                            <span className="text-red-900 leading-relaxed">{leaveDetail.rejectedReason}</span>
+                            <div className="flex-1 min-w-0">
+                              <span className="text-red-900 leading-relaxed break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">{leaveDetail.rejectedReason}</span>
+                            </div>
                           </div>
                         </div>
                       )}
@@ -422,9 +399,9 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
               </CardHeader>
               <CardContent>
                 <div className="p-4 bg-orange-50 rounded-lg">
-                  <p className="text-orange-900 leading-relaxed">
-                    {leaveDetail.reason || t('leave.noReasonProvided', 'ไม่มีเหตุผล')}
-                  </p>
+                                      <p className="text-orange-900 leading-relaxed break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">
+                      {leaveDetail.reason || t('leave.noReasonProvided')}
+                    </p>
                 </div>
               </CardContent>
             </Card>
@@ -435,12 +412,12 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-2">
                     <User className="w-5 h-5 text-teal-600" />
-                    <h3 className="text-lg font-semibold">{t('leave.contactInformation', 'Contact Information')}</h3>
+                    <h3 className="text-lg font-semibold">{t('leave.contactInformation')}</h3>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <div className="p-4 bg-teal-50 rounded-lg">
-                    <p className="text-teal-900 font-medium">{leaveDetail.contact}</p>
+                    <p className="text-teal-900 font-medium break-all overflow-wrap-anywhere whitespace-pre-wrap max-w-full">{leaveDetail.contact}</p>
                   </div>
                 </CardContent>
               </Card>
@@ -452,27 +429,33 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                 <CardHeader className="pb-3">
                   <div className="flex items-center gap-2">
                     <FileText className="w-5 h-5 text-indigo-600" />
-                    <h3 className="text-lg font-semibold">{t('leave.attachments', 'Attachments')}</h3>
+                    <h3 className="text-lg font-semibold">{t('leave.attachments')}</h3>
                     <Badge variant="secondary" className="ml-2">
-                      {leaveDetail.attachments.length} {t('leave.files', 'files')}
+                                              {leaveDetail.attachments.length} {t('leave.files')}
                     </Badge>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {leaveDetail.attachments.map((attachment: string, index: number) => {
+                      // Handle both cases: just filename or full path
                       const fileName = attachment.split('/').pop() || attachment;
                       const fileExtension = fileName.split('.').pop()?.toLowerCase();
                       const isImage = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension || '');
+                      
+                      // Construct the correct file path - always prepend /leave-uploads/ if not already present
+                      const filePath = attachment.startsWith('/leave-uploads/') ? attachment : `/leave-uploads/${attachment}`;
+                      const authenticatedFilePath = createAuthenticatedFileUrl(filePath);
                       
                       return (
                         <div key={index} className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
                           {isImage ? (
                             <div className="space-y-3">
                               <img 
-                                src={`/leave-uploads/${attachment}`} 
+                                src={authenticatedFilePath} 
                                 alt={fileName}
-                                className="w-full h-32 object-cover rounded-lg border"
+                                className="w-full h-32 object-cover rounded-lg border cursor-zoom-in"
+                                onClick={() => setPreview({ url: authenticatedFilePath, name: fileName })}
                                 onError={(e) => {
                                   const target = e.target as HTMLImageElement;
                                   target.style.display = 'none';
@@ -484,21 +467,16 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                                   <Button 
                                     size="sm" 
                                     variant="outline"
-                                    onClick={() => window.open(`/leave-uploads/${attachment}`, '_blank')}
+                                    onClick={() => setPreview({ url: authenticatedFilePath, name: fileName })}
                                   >
-                                    {t('common.view', 'View')}
+                                    {t('common.view')}
                                   </Button>
                                   <Button 
                                     size="sm" 
                                     variant="outline"
-                                    onClick={() => {
-                                      const link = document.createElement('a');
-                                      link.href = `/leave-uploads/${attachment}`;
-                                      link.download = fileName;
-                                      link.click();
-                                    }}
+                                    onClick={() => handleDownload(authenticatedFilePath, fileName)}
                                   >
-                                    {t('common.download', 'Download')}
+                                    {t('common.download')}
                                   </Button>
                                 </div>
                               </div>
@@ -513,14 +491,9 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                                 <Button 
                                   size="sm" 
                                   variant="outline"
-                                  onClick={() => {
-                                    const link = document.createElement('a');
-                                    link.href = `/leave-uploads/${attachment}`;
-                                    link.download = fileName;
-                                    link.click();
-                                  }}
+                                  onClick={() => handleDownload(authenticatedFilePath, fileName)}
                                 >
-                                  {t('common.download', 'Download')}
+                                  {t('common.download')}
                                 </Button>
                               </div>
                             </div>
@@ -534,9 +507,21 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
             )}
           </div>
         ) : (
-          <div className="text-center text-gray-500 py-8">{t('leave.noDetailFound', 'No data found for this leave request.')}</div>
+          <div className="text-center text-gray-500 py-8">{t('leave.noDetailFound')}</div>
         )}
       </DialogContent>
     </Dialog>
+    {preview && (
+      <ImagePreviewDialog
+        isOpen={!!preview}
+        onClose={() => setPreview(null)}
+        imageUrl={preview.url}
+        imageName={preview.name}
+        title={t('leave.attachmentPreview')}
+      />
+    )}
+  </>
   );
 };
+
+export default LeaveDetailDialog;

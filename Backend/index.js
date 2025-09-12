@@ -14,6 +14,7 @@ const fs = require('fs');
 const { createServer } = require('http');
 const { Server } = require('socket.io');
 const config = require('./config');
+const scheduler = require('./utils/scheduler.js');
 
 
 const app = express();
@@ -64,7 +65,7 @@ const AppDataSource = new DataSource({
   password: config.database.password,
   database: config.database.database,
   synchronize: true, // dev only! จะสร้าง/อัปเดต table อัตโนมัติ
-  logging: false,
+  logging: false, //
   entities: [
     require('./EnityTable/user.js'),
     require('./EnityTable/ProcessCheck.entity.js'),
@@ -131,6 +132,7 @@ app.use(cors({
 // Ensure uploads directories exist
 const uploadsDir = config.getUploadsPath();
 const announcementsDir = config.getAnnouncementsUploadPath();
+const leaveUploadsDir = config.getLeaveUploadsPath();
 
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -138,9 +140,32 @@ if (!fs.existsSync(uploadsDir)) {
 if (!fs.existsSync(announcementsDir)) {
   fs.mkdirSync(announcementsDir, { recursive: true });
 }
+if (!fs.existsSync(leaveUploadsDir)) {
+  fs.mkdirSync(leaveUploadsDir, { recursive: true });
+}
 
 // Serve static files for uploaded images
 app.use('/uploads', express.static(uploadsDir));
+// Serve static files for leave request attachments stored under public/leave-uploads
+app.use('/leave-uploads', express.static(config.getLeaveUploadsPath()));
+
+// Serve leave uploads with authentication
+app.use('/leave-uploads', (req, res, next) => {
+  // Check if user is authenticated
+  const token = req.headers.authorization?.replace('Bearer ', '') || req.query.token;
+  
+  if (!token) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  
+  try {
+    const decoded = jwt.verify(token, config.server.jwtSecret);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+}, express.static(leaveUploadsDir));
 
 app.get('/', (req, res) => {
   res.send('Hello from Express + TypeORM!');
@@ -254,6 +279,7 @@ app.use('/api', routes);
 // Make AppDataSource globally available
 global.AppDataSource = AppDataSource;
 
+<<<<<<< HEAD
 const typeLeaveController = require('./api/TpyeLeaveController')(AppDataSource);
 app.use('/api', typeLeaveController);
 
@@ -448,4 +474,13 @@ app.delete('/api/line/rich-menu/:richMenuId', async (req, res) => {
 
 app.listen(port, '0.0.0.0', () => {
   console.log(`Server is running on http://localhost:${port}`);
+=======
+server.listen(port, '0.0.0.0', () => {
+  console.log(`Server is running on ${config.server.apiBaseUrl}`);
+  console.log('Socket.io server is ready');
+  // Register scheduled jobs (yearly quota reset)
+  scheduler.registerScheduledJobs(config);
+  // Schedule leave type cleanup
+  scheduler.scheduleLeaveTypeCleanup(AppDataSource);
+>>>>>>> 0795594fdc88dd54d5eee95988ff2250c7f2ffac
 }); 

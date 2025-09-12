@@ -1,3 +1,4 @@
+import AvatarCropDialog from '@/components/dialogs/AvatarCropDialog';
 import { LeaveDetailDialog } from "@/components/dialogs/LeaveDetailDialog";
 import {
   AlertDialog,
@@ -19,15 +20,18 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { format } from 'date-fns';
 import { th } from 'date-fns/locale';
-import { ArrowLeft, Calendar, Edit, Eye, Mail, Trash2, User } from "lucide-react";
+import { Calendar, Camera, ChevronLeft, Edit, Eye, Mail, Trash2, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link, useLocation, useParams } from 'react-router-dom';
-import { API_BASE_URL, apiEndpoints, apiService } from '../lib/api';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
+import { API_BASE_URL, apiService } from '../lib/api';
+import { apiEndpoints } from '@/constants/api';
+import { LeaveRequest } from '@/types';
 
 const EmployeeDetail = () => {
   const { id } = useParams();
   const location = useLocation();
+  const navigate = useNavigate();
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const { user, showSessionExpiredDialog } = useAuth();
@@ -53,7 +57,7 @@ const EmployeeDetail = () => {
   const [employee, setEmployee] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [leaveHistory, setLeaveHistory] = useState([]);
+  const [leaveHistory, setLeaveHistory] = useState<LeaveRequest[]>([]);
   const [leaveSummary, setLeaveSummary] = useState<{ days: number, hours: number, totalLeaveDays: number } | null>(null); // <--- เพิ่ม state
   // เพิ่ม state สำหรับ processCheckId
   const [processCheckId, setProcessCheckId] = useState(null);
@@ -86,6 +90,14 @@ const EmployeeDetail = () => {
   // state สำหรับข้อความแจ้งเตือน filter
   const [filterWarning, setFilterWarning] = useState("");
 
+  // Avatar edit states
+  const [avatarDialogOpen, setAvatarDialogOpen] = useState(false);
+  const [avatarPreviewSrc, setAvatarPreviewSrc] = useState<string | null>(null);
+  const [avatarLocalGif, setAvatarLocalGif] = useState<File | null>(null);
+  const [avatarKey, setAvatarKey] = useState(0); // Add key to force re-render
+  const [avatarTimestamp, setAvatarTimestamp] = useState(Date.now()); // Add timestamp for cache busting
+  const withCacheBust = (url: string) => `${url}${url.includes('?') ? '&' : '?'}v=${avatarTimestamp}&k=${avatarKey}&t=${Date.now()}`;
+
   // เพิ่ม state สำหรับ force render เมื่อเปลี่ยนภาษา
   const [langVersion, setLangVersion] = useState(0);
 
@@ -99,7 +111,7 @@ const EmployeeDetail = () => {
   // --- Move fetch leave history logic to a function ---
   const fetchLeaveHistory = async () => {
     if (!id) return;
-    let params = [];
+    const params = [];
     if (filterType && filterType !== "all") params.push(`leaveType=${encodeURIComponent(filterType)}`);
     if (filterMonth && filterMonth !== "all" && filterYear && filterYear !== "all") {
       params.push(`month=${filterMonth}`);
@@ -233,7 +245,7 @@ const EmployeeDetail = () => {
     if (user?.role === 'admin' && (employee?.role === 'superadmin' || role === 'superadmin')) {
       toast({
         title: t('error.title'),
-        description: t('employee.adminCannotEditSuperadmin', 'Admins cannot edit superadmin information.'),
+        description: t('employee.adminCannotEditSuperadmin'),
         variant: 'destructive',
       });
       return;
@@ -248,25 +260,27 @@ const EmployeeDetail = () => {
       gender: employee?.gender || '',
       birthdate: employee?.dob || '', // <-- เปลี่ยนจาก birthdate เป็น dob
       phone: employee?.phone_number || '', // <-- เปลี่ยนจาก phone เป็น phone_number
-      startWorkDate: employee?.start_work || '', // <-- เปลี่ยนจาก startWorkDate เป็น start_work
-      internStartDate: employee?.internStartDate || '',
-      internEndDate: employee?.internEndDate || ''
+		startWorkDate: employee?.start_work || '', // <-- ใช้คอลัมน์จริงจาก DB
+		internStartDate: employee?.start_work || '', // Intern ใช้ start_work เป็นวันเริ่มฝึกงาน
+		internEndDate: employee?.end_work || '' // Intern ใช้ end_work เป็นวันสิ้นสุดฝึกงาน
     });
     setIsEditing(true);
   };
 
-  const handleSave = async () => {
+	const handleSave = async () => {
     try {
-      const payload: any = {
-        name: editData.full_name,
-        position_id: editData.position, // id
-        department_id: editData.department, // id
-        email: editData.email,
-        gender: editData.gender,
-        birthdate: editData.birthdate,
-        phone: editData.phone,
-        startWorkDate: editData.startWorkDate,
-      };
+			const payload: any = {
+				name: editData.full_name,
+				position_id: editData.position, // id
+				department_id: editData.department, // id
+				email: editData.email,
+				gender: editData.gender,
+				birthdate: editData.birthdate,
+				phone: editData.phone,
+				// ถ้าเป็น Intern ให้ส่ง startWorkDate จาก internStartDate และแนบ endWorkDate ด้วย
+				startWorkDate: isInternPosition() ? editData.internStartDate : editData.startWorkDate,
+				...(isInternPosition() ? { endWorkDate: editData.internEndDate } : {}),
+			};
       if (editData.password && editData.password.trim() !== '') payload.password = editData.password;
       const data = await apiService.put(apiEndpoints.employees.detail(id), payload);
       if (data.success) {
@@ -304,10 +318,34 @@ const EmployeeDetail = () => {
     });
   };
 
-  const handleViewLeaveDetails = (leave) => {
+  const handleViewLeaveDetails = async (leave) => {
     console.log('View Details clicked. leave:', leave, 'leave.id:', leave.id);
-    setSelectedLeave(leave);
+    
+    // First try to use the existing leave data
+    const leaveData = leaveHistory.find(l => l.id === leave.id);
+    if (leaveData) {
+      setSelectedLeave(leaveData);
+      setLeaveDialogOpen(true);
+      return;
+    }
+
+    // If not found in existing data, try to fetch from API
+    setSelectedLeave(null);
     setLeaveDialogOpen(true);
+
+    try {
+      const data = await apiService.get(apiEndpoints.leave.detail(leave.id), undefined, showSessionExpiredDialog);
+      if (data && data.success) {
+        const leaveDetail = {
+          ...data.data,
+          startDate: data.data.startDate || data.data.leaveDate || '-',
+          submittedDate: data.data.createdAt || data.data.submittedDate || '-',
+        };
+        setSelectedLeave(leaveDetail);
+      }
+    } catch (e) {
+      console.error('Error fetching leave detail:', e);
+    }
   };
 
   // เพิ่มฟังก์ชันนี้ด้านบน component
@@ -335,22 +373,22 @@ const EmployeeDetail = () => {
       if (data && (data.success || data.status === 'success')) {
         setDeleteLeaveId(null);
         toast({
-          title: t('system.deleteSuccess', 'ลบสำเร็จ'),
-          description: t('system.deleteSuccessDesc', 'ลบใบลาสำเร็จ'),
+          title: t('system.deleteSuccess'),
+          description: t('system.deleteSuccessDesc'),
           className: 'border-green-500 bg-green-50 text-green-900',
         });
         fetchLeaveHistory(); // fetch leave history again
       } else {
         toast({
-          title: t('system.deleteFailed', 'ลบไม่สำเร็จ'),
-          description: data?.message || t('system.deleteFailedDesc', 'ไม่สามารถลบใบลาได้'),
+          title: t('system.deleteFailed'),
+          description: data?.message || t('system.deleteFailedDesc'),
           variant: 'destructive',
         });
       }
     } catch (e) {
       toast({
-        title: t('system.deleteFailed', 'ลบไม่สำเร็จ'),
-        description: t('system.deleteFailedDesc', 'ไม่สามารถลบใบลาได้'),
+        title: t('system.deleteFailed'),
+        description: t('system.deleteFailedDesc'),
         variant: 'destructive',
       });
     } finally {
@@ -408,8 +446,37 @@ const EmployeeDetail = () => {
       : found.department_name_en || found.department_name;
   };
 
+  // ตรวจสอบว่าเป็น Intern หรือไม่ โดยพิจารณาจาก role และชื่อ/ไอดีของตำแหน่ง (รองรับทั้ง TH/EN และตัวพิมพ์ใหญ่-เล็ก)
+  const isInternPosition = (): boolean => {
+    const roleLower = String(employee?.role || editData.role || '').toLowerCase();
+    if (roleLower === 'intern') return true;
+
+    const positionIdOrName = employee?.position_id || employee?.position || '';
+    if (!positionIdOrName) return false;
+
+    const found = positions.find(
+      (pos) => pos.id === positionIdOrName || pos.position_name === positionIdOrName
+    );
+
+    const namesToCheck = [
+      found?.position_name,
+      found?.position_name_en,
+      found?.position_name_th,
+      typeof positionIdOrName === 'string' ? positionIdOrName : ''
+    ]
+      .filter(Boolean)
+      .map((s) => String(s).toLowerCase());
+
+    const combined = namesToCheck.join(' ');
+    return (
+      combined.includes('intern') ||
+      combined.includes('ฝึกงาน') ||
+      combined.includes('นักศึกษาฝึกงาน')
+    );
+  };
+
   if (loading) return <div>{t('common.loading')}</div>;
-  if (error) return <div>{error}</div>;
+  if (error) return <div>{error}</div>; 
   if (!employee) return <div>{t('employee.notFound')}</div>;
 
   return (
@@ -424,12 +491,12 @@ const EmployeeDetail = () => {
       <div className="border-b bg-white/80 backdrop-blur-sm z-10 relative shadow-lg">
         <div className="flex h-16 items-center px-4 gap-4">
           <SidebarTrigger />
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/admin/employees">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              {t('common.back')}
-            </Link>
-          </Button>
+          <button
+            onClick={() => navigate(-1)}
+            className="bg-white/90 hover:bg-white text-blue-700 border border-blue-200 hover:border-blue-300 shadow-lg backdrop-blur-sm p-2 rounded-full transition-all duration-200"
+          >
+            <ChevronLeft className="w-6 h-6" />
+          </button>
           <div className="flex-1">
             <h1 className="text-3xl font-extrabold text-blue-900 tracking-tight drop-shadow-lg animate-slide-in-left">{t('employee.details')}</h1>
             <p className="text-sm text-blue-500 animate-slide-in-left delay-100">{employee.name}</p>
@@ -455,7 +522,8 @@ const EmployeeDetail = () => {
                 <div className="relative w-36 h-36 mb-10">
                   {employee.avatar ? (
                     <img
-                      src={`${API_BASE_URL}${employee.avatar}`}
+                      key={`avatar-${employee.id}-${avatarKey}`}
+                      src={withCacheBust(`${API_BASE_URL}${employee.avatar}`)}
                       alt={employee.name}
                       className="w-full h-full rounded-full object-cover shadow-2xl border-4 border-white"
                       onError={(e) => {
@@ -469,7 +537,68 @@ const EmployeeDetail = () => {
                   <div className={`w-full h-full rounded-full bg-gradient-to-br from-blue-200 via-indigo-200 to-purple-200 flex items-center justify-center text-blue-900 font-bold text-5xl shadow-2xl border-4 border-white ${employee.avatar ? 'hidden' : ''}`}>
                     {employee.name ? employee.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : '?'}
                   </div>
+                  {isEditing && (
+                    <button
+                      type="button"
+                      className="absolute -bottom-3 right-1 p-2 bg-blue-500 text-white rounded-full shadow-md border-2 border-white hover:bg-blue-600"
+                      onClick={() => {
+                        const input = document.createElement('input');
+                        input.type = 'file';
+                        input.accept = 'image/*';
+                        input.onchange = (e: any) => {
+                          const file: File = e.target.files?.[0];
+                          if (!file) return;
+                          const url = URL.createObjectURL(file);
+                          setAvatarPreviewSrc(url);
+                          if (file.type === 'image/gif') setAvatarLocalGif(file); else setAvatarLocalGif(null);
+                          setAvatarDialogOpen(true);
+                        };
+                        input.click();
+                      }}
+                    >
+                      <Camera className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
+                <AvatarCropDialog
+                  open={avatarDialogOpen}
+                  imageSrc={avatarPreviewSrc}
+                  isGif={!!avatarLocalGif}
+                  originalFile={avatarLocalGif}
+                  onOpenChange={setAvatarDialogOpen}
+                  onCropped={async (file) => {
+                    const form = new FormData();
+                    form.append('avatar', file);
+                    const res = await apiService.post(apiEndpoints.employees.avatar(String(id)), form);
+                    if (res?.success) {
+                      console.log('Avatar upload successful:', res.avatar_url);
+                      
+                      // Update employee data with new avatar URL immediately
+                      setEmployee((prev: any) => {
+                        if (!prev) return prev;
+                        return { ...prev, avatar: res.avatar_url };
+                      });
+                      
+                      // Force cache bust to ensure new image loads
+                      setAvatarKey(prev => prev + 1);
+                      setAvatarTimestamp(Date.now());
+                      
+                      // Show success message
+                      toast({
+                        title: t('employee.avatarUpdateSuccess') || 'Avatar Updated',
+                        description: t('employee.avatarUpdateSuccessDesc') || 'Profile picture updated successfully',
+                      });
+                    } else {
+                      toast({
+                        title: t('error.title') || 'Error',
+                        description: res?.message || t('employee.avatarUpdateError') || 'Failed to update avatar',
+                        variant: 'destructive'
+                      });
+                    }
+                    setAvatarPreviewSrc(null);
+                    setAvatarLocalGif(null);
+                  }}
+                />
                 
                 {/* Information Grid - Enhanced 2 columns for better usability */}
                 <div className="w-full grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl">
@@ -625,8 +754,8 @@ const EmployeeDetail = () => {
                         <p className="text-lg text-indigo-700">{employee.phone_number || '-'}</p>
                       )}
                     </div>
-                    {/* Start Work Date (เฉพาะ role ไม่ใช่ intern) */}
-                    {!(employee.role === 'intern' || editData.role === 'intern' || employee.position?.includes('intern') || employee.position?.includes('ฝึกงาน') || employee.position?.includes('นักศึกษาฝึกงาน')) && (
+                    {/* Start Work Date (แสดงเมื่อไม่ใช่ Intern) */}
+                    {!isInternPosition() && (
                       <div>
                         <Label className="text-sm font-semibold text-indigo-700 mb-2 block">{t('employee.startWorkDate')}</Label>
                         {isEditing ? (
@@ -641,8 +770,8 @@ const EmployeeDetail = () => {
                         )}
                       </div>
                     )}
-                    {/* Intern Dates (เฉพาะ role intern) */}
-                    {(employee.role === 'intern' || editData.role === 'intern' || employee.position?.includes('intern') || employee.position?.includes('ฝึกงาน') || employee.position?.includes('นักศึกษาฝึกงาน')) && (
+                    {/* Intern Dates (แสดงเมื่อเป็น Intern) */}
+                    {isInternPosition() && (
                       <div className="space-y-4">
                         <div>
                           <Label className="text-sm font-semibold text-indigo-700 mb-2 block">{t('employee.internStartDate')}</Label>
@@ -804,7 +933,7 @@ const EmployeeDetail = () => {
                   {/* Backdated Filter */}
                   <div>
                     <label className="block text-xs font-medium text-gray-700 mb-1">
-                      {t('leave.backdatedOnly', 'เฉพาะย้อนหลัง')}
+                      {t('leave.backdatedOnly')}
                     </label>
                     <select
                       className="w-full py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
@@ -812,8 +941,8 @@ const EmployeeDetail = () => {
                       onChange={(e) => setPendingFilterBackdated(e.target.value)}
                     >
                       <option value="all">{t('common.all')}</option>
-                      <option value="1">{t('leave.backdated', 'ลาย้อนหลัง')}</option>
-                      <option value="0">{t('leave.notBackdated', 'ไม่ใช่ลาย้อนหลัง')}</option>
+                      <option value="1">{t('leave.backdated')}</option>
+                      <option value="0">{t('leave.notBackdated')}</option>
                     </select>
                   </div>
 
@@ -824,7 +953,7 @@ const EmployeeDetail = () => {
                       onClick={() => {
                         // ตรวจสอบว่าถ้าเลือกเดือนแต่ไม่เลือกปี
                         if (pendingFilterMonth !== "all" && pendingFilterYear === "all") {
-                          setFilterWarning("กรุณาเลือกปีเมื่อเลือกเดือน");
+                          setFilterWarning(t('validation.selectYearWhenSelectMonth'));
                           return;
                         }
                         
@@ -846,14 +975,14 @@ const EmployeeDetail = () => {
                       }}
                       type="button"
                     >
-                      {t('common.confirm', 'ยืนยัน')}
+                      {t('common.confirm')}
                     </button>
                     <button
                       className="min-h-[42px] min-w-[100px] px-5 py-2.5 rounded-lg font-bold border border-blue-300 text-blue-700 bg-white hover:bg-blue-50 shadow transition-all duration-200 text-sm"
                       onClick={resetFilters}
                       type="button"
                     >
-                      {t('common.reset', 'รีเซ็ต')}
+                      {t('common.reset')}
                     </button>
                   </div>
                 </div>
@@ -885,17 +1014,21 @@ const EmployeeDetail = () => {
                   </TableHeader>
                   <TableBody>
                     {Array.isArray(leaveHistory) && leaveHistory.map((leave, idx) => {
-                      // เพิ่ม debug log
-                      console.log(`🎨 Rendering leave ${idx}:`, { id: leave.id, backdated: leave.backdated, leaveType: leave.leaveType });
+
                       
                       return (
                         <TableRow key={leave.id} className="hover:bg-blue-50/60 group animate-fade-in-up border-b border-gray-100" style={{ animationDelay: `${idx * 60}ms` }}>
                           <TableCell className="font-medium text-blue-900 px-4 py-3">
                             <div className="flex items-center gap-2">
-                              <span className="font-semibold text-sm whitespace-nowrap">{getLeaveTypeLabel(leave.leaveType)}</span>
+                              <span className="font-semibold text-sm whitespace-nowrap">
+                                {i18n.language.startsWith('th') 
+                                  ? (leave.leaveTypeName_th || leave.leaveTypeName_en || getLeaveTypeLabel(leave.leaveType))
+                                  : (leave.leaveTypeName_en || leave.leaveTypeName_th || getLeaveTypeLabel(leave.leaveType))
+                                }
+                              </span>
                               {isBackdatedLeave(leave) && (
                                 <Badge className="bg-red-100 text-red-700 border-red-200 text-xs px-1.5 py-0.5 w-fit whitespace-nowrap">
-                                  {t('leave.backdated', 'ลาย้อนหลัง')}
+                                  {t('leave.backdated')}
                                 </Badge>
                               )}
                             </div>
@@ -1000,17 +1133,7 @@ const EmployeeDetail = () => {
                                 <Eye className="w-3.5 h-3.5 mr-1" />
                                 {t('common.viewDetails')}
                               </Button>
-                              {user?.role === 'superadmin' && (
-                                <Button
-                                  size="sm"
-                                  variant="destructive"
-                                  className="rounded-lg px-3 py-1.5 font-medium bg-gradient-to-r from-red-500 to-red-600 text-white shadow hover:scale-105 transition text-xs"
-                                  onClick={() => setDeleteLeaveId(leave.id)}
-                                >
-                                  <Trash2 className="w-3.5 h-3.5 mr-1" />
-                                  {t('common.delete')}
-                                </Button>
-                              )}
+
                             </div>
                         </TableCell>
                       </TableRow>
@@ -1021,7 +1144,7 @@ const EmployeeDetail = () => {
                           <TableCell colSpan={7} className="text-center py-6 text-gray-500">
                             <div className="flex flex-col items-center gap-2">
                               <Calendar className="w-6 h-6 text-gray-300" />
-                              <span className="text-sm">{t('leave.noHistory', 'ไม่มีประวัติการลา')}</span>
+                              <span className="text-sm">{t('leave.noHistory')}</span>
                             </div>
                           </TableCell>
                         </TableRow>
@@ -1033,7 +1156,7 @@ const EmployeeDetail = () => {
             {leaveTotalPages > 1 && leaveHistory.length > 0 && (
                 <div className="flex justify-center items-center mt-4 gap-2 p-3 bg-gray-50 rounded-lg">
                   <span className="text-sm text-gray-600 mr-2">
-                    {t('common.page', 'หน้า')} {leavePage} {t('common.of', 'จาก')} {leaveTotalPages}
+                    {t('common.page')} {leavePage} {t('common.of')} {leaveTotalPages}
                   </span>
                   <div className="flex gap-1">
                 {Array.from({ length: leaveTotalPages }, (_, i) => (
@@ -1062,27 +1185,7 @@ const EmployeeDetail = () => {
         leaveRequest={selectedLeave}
       />
         
-        {/* Delete Confirmation Dialog */}
-        <AlertDialog open={!!deleteLeaveId} onOpenChange={() => setDeleteLeaveId(null)}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>{t('common.confirmDelete', 'ยืนยันการลบ')}</AlertDialogTitle>
-              <AlertDialogDescription>
-                {t('leave.deleteConfirmMessage', 'คุณต้องการลบใบลานี้หรือไม่? การดำเนินการนี้ไม่สามารถยกเลิกได้')}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>{t('common.cancel')}</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleDeleteLeave}
-                className="bg-red-600 hover:bg-red-700"
-                disabled={deleting}
-              >
-                {deleting ? t('common.deleting', 'กำลังลบ...') : t('common.delete')}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+
     </div>
   );
 }

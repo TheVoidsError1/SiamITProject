@@ -2,6 +2,8 @@ const express = require('express');
 const bcrypt = require('bcrypt');
 const config = require('../config');
 const { calculateDaysBetween, sendSuccess, sendError, sendNotFound } = require('../utils');
+const { avatarUpload, handleUploadError } = require('../middleware/fileUploadMiddleware');
+const fs = require('fs');
 
 /**
  * @swagger
@@ -45,7 +47,7 @@ module.exports = (AppDataSource) => {
       const processRepo = AppDataSource.getRepository('ProcessCheck');
       const adminRepo = AppDataSource.getRepository('Admin');
       const userRepo = AppDataSource.getRepository('User');
-      const lang = (req.headers['accept-language'] || 'en').toLowerCase().startsWith('th') ? 'th' : 'en';
+      // Language detection removed - frontend will handle i18n
 
       // ดึง process_check ทั้งหมด
       const allProcess = await processRepo.find();
@@ -136,53 +138,19 @@ module.exports = (AppDataSource) => {
         // 2. ดึง leaveRequest ที่อนุมัติของ user/admin นี้
         let usedLeaveDays = 0;
         try {
-          const leaveRepo = AppDataSource.getRepository('LeaveRequest');
-          const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
-          const approvedLeaves = await leaveRepo.find({ where: { Repid: id, status: 'approved' } });
-          for (const lr of approvedLeaves) {
-            // หา leaveTypeName
-            let leaveTypeName = lr.leaveType;
-            if (leaveTypeName && leaveTypeName.length > 20) {
-              const leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
-              if (leaveTypeEntity && leaveTypeEntity.leave_type_th) {
-                leaveTypeName = leaveTypeEntity.leave_type_th;
-              }
-            }
-            // ทุกประเภทการลา: สามารถเป็นชั่วโมงหรือวันได้ (9 ชม. = 1 วัน)
-            if (["sick", "ลาป่วย", "vacation", "ลาพักผ่อน", "personal", "ลากิจ"].includes(leaveTypeName)) {
-              if (leaveTypeName === "personal" || leaveTypeName === "ลากิจ") {
-                // personal: อาจเป็นชั่วโมงหรือวัน
-                if (lr.startTime && lr.endTime) {
-                  // ชั่วโมง
-                  const [sh, sm] = lr.startTime.split(":").map(Number);
-                  const [eh, em] = lr.endTime.split(":").map(Number);
-                  let start = sh + (sm || 0) / 60;
-                  let end = eh + (em || 0) / 60;
-                  let diff = end - start;
-                  if (diff < 0) diff += 24;
-                  usedLeaveDays += diff / 9; // configurable working hours per day
-                } else if (lr.startDate && lr.endDate) {
-                  // วัน
-                  const start = new Date(lr.startDate);
-                  const end = new Date(lr.endDate);
-                  let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-                  if (days < 0 || isNaN(days)) days = 0;
-                  usedLeaveDays += days;
-                }
-              } else {
-                // sick, vacation: วันเท่านั้น
-                if (lr.startDate && lr.endDate) {
-                  const start = new Date(lr.startDate);
-                  const end = new Date(lr.endDate);
-                  let days = Math.floor((end - start) / (1000 * 60 * 60 * 24)) + 1;
-                  if (days < 0 || isNaN(days)) days = 0;
-                  usedLeaveDays += days;
-                }
-              }
-            }
-          }
-        } catch (e) { usedLeaveDays = 0; }
-        usedLeaveDays = Math.round(usedLeaveDays * 100) / 100;
+          // Use centralized utility function for leave usage summary
+          const { getLeaveUsageSummary } = require('../utils/leaveUtils');
+          const leaveUsageSummary = await getLeaveUsageSummary(id, null, AppDataSource);
+          
+          // Calculate total used leave days from all leave types
+          usedLeaveDays = leaveUsageSummary.reduce((total, item) => {
+            return total + item.total_used_days;
+          }, 0);
+          
+          usedLeaveDays = Math.round(usedLeaveDays * 100) / 100;
+        } catch (e) { 
+          usedLeaveDays = 0; 
+        }
 
         // --- จบส่วนเพิ่ม ---
 
@@ -203,7 +171,7 @@ module.exports = (AppDataSource) => {
           avatar: proc.avatar_url || null
         });
       }
-      sendSuccess(res, results, 'ดึงข้อมูลผู้ใช้ทั้งหมดสำเร็จ');
+      sendSuccess(res, results, 'Fetch all users success');
     } catch (err) {
       sendError(res, err.message, 500);
     }
@@ -221,7 +189,7 @@ module.exports = (AppDataSource) => {
       const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
       const leaveRequestRepo = AppDataSource.getRepository('LeaveRequest');
-      const lang = (req.headers['accept-language'] || 'en').toLowerCase().startsWith('th') ? 'th' : 'en';
+      // Language detection removed - frontend will handle i18n
 
       // Try to find in admin first
       let profile = await adminRepo.findOne({ where: { id } });
@@ -249,14 +217,23 @@ module.exports = (AppDataSource) => {
       let department_id = '';
       let position = '';
       let position_id = '';
+      let department_th = '';
+      let department_en = '';
+      let position_th = '';
+      let position_en = '';
+      
       if (profile.department) {
         const deptEntity = await departmentRepo.findOne({ where: { id: profile.department } });
-        department = deptEntity ? (lang === 'th' ? deptEntity.department_name_th : deptEntity.department_name_en) : '';
+        department = deptEntity ? deptEntity.department_name_en : '';
+        department_th = deptEntity ? deptEntity.department_name_th : '';
+        department_en = deptEntity ? deptEntity.department_name_en : '';
         department_id = profile.department;
       }
       if (profile.position) {
         const posEntity = await positionRepo.findOne({ where: { id: profile.position } });
-        position = posEntity ? (lang === 'th' ? posEntity.position_name_th : posEntity.position_name_en) : '';
+        position = posEntity ? posEntity.position_name_en : '';
+        position_th = posEntity ? posEntity.position_name_th : '';
+        position_en = posEntity ? posEntity.position_name_en : '';
         position_id = profile.position;
       }
 
@@ -267,10 +244,10 @@ module.exports = (AppDataSource) => {
       let totalLeaveDays = 0;
       try {
         const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
-        const posEntity = await AppDataSource.getRepository('Position').findOne({ where: { position_name_th: position } });
+        // Use position_id instead of position name for the query
         let quota = null;
-        if (posEntity) {
-          quota = await leaveQuotaRepo.findOneBy({ positionId: posEntity.id });
+        if (position_id) {
+          quota = await leaveQuotaRepo.findOneBy({ positionId: position_id });
         }
         if (quota) {
           totalLeaveDays = (quota.sick || 0) + (quota.vacation || 0) + (quota.personal || 0);
@@ -279,53 +256,19 @@ module.exports = (AppDataSource) => {
 
       let usedLeaveDays = 0;
       try {
-        const leaveRepo = AppDataSource.getRepository('LeaveRequest');
-        const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
-        const approvedLeaves = await leaveRepo.find({ where: { Repid: id, status: 'approved' } });
-        for (const lr of approvedLeaves) {
-          // หา leaveTypeName
-          let leaveTypeName = lr.leaveType;
-          if (leaveTypeName && leaveTypeName.length > 20) {
-            const leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
-            if (leaveTypeEntity && leaveTypeEntity.leave_type_th) {
-              leaveTypeName = leaveTypeEntity.leave_type_th;
-            }
-          }
-          // เฉพาะประเภท sick, vacation, personal
-          if (["sick", "ลาป่วย", "vacation", "ลาพักผ่อน", "personal", "ลากิจ"].includes(leaveTypeName)) {
-            if (leaveTypeName === "personal" || leaveTypeName === "ลากิจ") {
-              // personal: อาจเป็นชั่วโมงหรือวัน
-              if (lr.startTime && lr.endTime) {
-                // ชั่วโมง
-                const [sh, sm] = lr.startTime.split(":").map(Number);
-                const [eh, em] = lr.endTime.split(":").map(Number);
-                let start = sh + (sm || 0) / 60;
-                let end = eh + (em || 0) / 60;
-                let diff = end - start;
-                if (diff < 0) diff += 24;
-                usedLeaveDays += diff / config.business.workingHoursPerDay; // configurable working hours per day
-              } else if (lr.startDate && lr.endDate) {
-                // วัน
-                const start = new Date(lr.startDate);
-                const end = new Date(lr.endDate);
-                let days = calculateDaysBetween(start, end);
-                if (days < 0 || isNaN(days)) days = 0;
-                usedLeaveDays += days;
-              }
-            } else {
-              // sick, vacation: วันเท่านั้น
-              if (lr.startDate && lr.endDate) {
-                const start = new Date(lr.startDate);
-                const end = new Date(lr.endDate);
-                let days = calculateDaysBetween(start, end);
-                if (days < 0 || isNaN(days)) days = 0;
-                usedLeaveDays += days;
-              }
-            }
-          }
-        }
-      } catch (e) { usedLeaveDays = 0; }
-      usedLeaveDays = Math.round(usedLeaveDays * 100) / 100;
+        // Use centralized utility function for leave usage summary
+        const { getLeaveUsageSummary } = require('../utils/leaveUtils');
+        const leaveUsageSummary = await getLeaveUsageSummary(id, null, AppDataSource);
+        
+        // Calculate total used leave days from all leave types
+        usedLeaveDays = leaveUsageSummary.reduce((total, item) => {
+          return total + item.total_used_days;
+        }, 0);
+        
+        usedLeaveDays = Math.round(usedLeaveDays * 100) / 100;
+      } catch (e) { 
+        usedLeaveDays = 0; 
+      }
       // --- จบส่วนเพิ่ม ---
 
       res.json({
@@ -337,15 +280,21 @@ module.exports = (AppDataSource) => {
           password,
           position: position,
           position_id: position_id,
+          position_th: position_th,
+          position_en: position_en,
           department: department,
           department_id: department_id,
+          department_th: department_th,
+          department_en: department_en,
           role,
           gender: profile.gender || null,
           dob: profile.dob || null,
           phone_number: profile.phone_number || null,
           start_work: profile.start_work || null,
-          internStartDate: profile.internStartDate || null,
-          internEndDate: profile.internEndDate || null,
+          end_work: profile.end_work || null,
+          // สำหรับฝั่ง frontend ที่ใช้ชื่อ intern*
+          internStartDate: profile.start_work || profile.internStartDate || null,
+          internEndDate: profile.end_work || profile.internEndDate || null,
           usedLeaveDays,
           totalLeaveDays,
           avatar: processCheck ? processCheck.avatar_url || null : null
@@ -365,8 +314,13 @@ module.exports = (AppDataSource) => {
       const email = req.body.email;
       const password = req.body.password;
       // Prefer position_id/department_id if present, else fallback to position/department
-      const position = req.body.position_id !== undefined ? req.body.position_id : req.body.position;
-      const department = req.body.department_id !== undefined ? req.body.department_id : req.body.department;
+      // Handle empty strings and null values properly
+      const position = req.body.position_id !== undefined ? 
+        (req.body.position_id && req.body.position_id.trim() !== '' ? req.body.position_id : null) : 
+        (req.body.position && req.body.position.trim() !== '' ? req.body.position : null);
+      const department = req.body.department_id !== undefined ? 
+        (req.body.department_id && req.body.department_id.trim() !== '' ? req.body.department_id : null) : 
+        (req.body.department && req.body.department.trim() !== '' ? req.body.department : null);
       const processRepo = AppDataSource.getRepository('ProcessCheck');
       const adminRepo = AppDataSource.getRepository('Admin');
       const userRepo = AppDataSource.getRepository('User');
@@ -398,8 +352,9 @@ module.exports = (AppDataSource) => {
         if (req.body.birthdate !== undefined) profile.dob = req.body.birthdate;
         if (req.body.phone !== undefined) profile.phone_number = req.body.phone;
         if (req.body.startWorkDate !== undefined) profile.start_work = req.body.startWorkDate;
-        if (req.body.internStartDate !== undefined) profile.internStartDate = req.body.internStartDate;
-        if (req.body.internEndDate !== undefined) profile.internEndDate = req.body.internEndDate;
+        if (req.body.endWorkDate !== undefined) profile.end_work = req.body.endWorkDate;
+        if (req.body.internStartDate !== undefined) profile.start_work = req.body.internStartDate;
+        if (req.body.internEndDate !== undefined) profile.end_work = req.body.internEndDate;
         await adminRepo.save(profile);
       } else if (role === 'superadmin') {
         if (name !== undefined) profile.superadmin_name = name;
@@ -409,8 +364,9 @@ module.exports = (AppDataSource) => {
         if (req.body.birthdate !== undefined) profile.dob = req.body.birthdate;
         if (req.body.phone !== undefined) profile.phone_number = req.body.phone;
         if (req.body.startWorkDate !== undefined) profile.start_work = req.body.startWorkDate;
-        if (req.body.internStartDate !== undefined) profile.internStartDate = req.body.internStartDate;
-        if (req.body.internEndDate !== undefined) profile.internEndDate = req.body.internEndDate;
+        if (req.body.endWorkDate !== undefined) profile.end_work = req.body.endWorkDate;
+        if (req.body.internStartDate !== undefined) profile.start_work = req.body.internStartDate;
+        if (req.body.internEndDate !== undefined) profile.end_work = req.body.internEndDate;
         await superadminRepo.save(profile);
       } else {
         if (name !== undefined) profile.User_name = name;
@@ -420,8 +376,9 @@ module.exports = (AppDataSource) => {
         if (req.body.birthdate !== undefined) profile.dob = req.body.birthdate;
         if (req.body.phone !== undefined) profile.phone_number = req.body.phone;
         if (req.body.startWorkDate !== undefined) profile.start_work = req.body.startWorkDate;
-        if (req.body.internStartDate !== undefined) profile.internStartDate = req.body.internStartDate;
-        if (req.body.internEndDate !== undefined) profile.internEndDate = req.body.internEndDate;
+        if (req.body.endWorkDate !== undefined) profile.end_work = req.body.endWorkDate;
+        if (req.body.internStartDate !== undefined) profile.start_work = req.body.internStartDate;
+        if (req.body.internEndDate !== undefined) profile.end_work = req.body.internEndDate;
         await userRepo.save(profile);
       }
 
@@ -464,6 +421,81 @@ module.exports = (AppDataSource) => {
     }
   });
 
+  // Upload avatar for employee/admin/superadmin by ID (admin/superadmin only)
+  router.post('/employee/:id/avatar', async (req, res) => {
+    try {
+      const { id } = req.params;
+      const processRepo = AppDataSource.getRepository('ProcessCheck');
+      const adminRepo = AppDataSource.getRepository('Admin');
+      const userRepo = AppDataSource.getRepository('User');
+      const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+
+      // Validate target profile exists
+      let profile = await adminRepo.findOne({ where: { id } })
+        || await userRepo.findOne({ where: { id } })
+        || await superadminRepo.findOne({ where: { id } });
+      if (!profile) return sendNotFound(res, 'User/Admin/SuperAdmin not found');
+
+      // Handle upload
+      avatarUpload.single('avatar')(req, res, async function (err) {
+        if (err) return handleUploadError(err, req, res, () => {});
+        if (!req.file) return sendError(res, 'No file uploaded', 400);
+        try {
+          const avatarUrl = `/uploads/avatars/${req.file.filename}`;
+          const proc = await processRepo.findOne({ where: { Repid: id } });
+          if (!proc) return sendNotFound(res, 'ProcessCheck not found');
+          // HARD DELETE old avatar file if any
+          if (proc.avatar_url) {
+            try {
+              const oldPath = require('path').join(config.getAvatarsUploadPath(), require('path').basename(proc.avatar_url));
+              
+              if (fs.existsSync(oldPath)) {
+                // Force delete the old avatar file (hard delete)
+                fs.unlinkSync(oldPath);
+                
+                // Verify file is actually deleted
+                if (!fs.existsSync(oldPath)) {
+                  console.log(`✅ HARD DELETED old avatar: ${require('path').basename(proc.avatar_url)}`);
+                } else {
+                  console.error(`❌ FAILED to delete old avatar: ${require('path').basename(proc.avatar_url)} - file still exists`);
+                  
+                  // Try alternative deletion method
+                  try {
+                    fs.rmSync(oldPath, { force: true });
+                    console.log(`✅ Force deleted old avatar: ${require('path').basename(proc.avatar_url)}`);
+                  } catch (forceDeleteError) {
+                    console.error(`❌ Force delete also failed for old avatar: ${require('path').basename(proc.avatar_url)}:`, forceDeleteError.message);
+                  }
+                }
+              } else {
+                console.log(`⚠️  Old avatar file not found (already deleted?): ${require('path').basename(proc.avatar_url)}`);
+              }
+            } catch (avatarDeleteError) {
+              console.error(`❌ Error deleting old avatar file ${require('path').basename(proc.avatar_url)}:`, avatarDeleteError.message);
+              
+              // Try alternative deletion method
+              try {
+                const oldPath = require('path').join(config.getAvatarsUploadPath(), require('path').basename(proc.avatar_url));
+                fs.rmSync(oldPath, { force: true });
+                console.log(`✅ Force deleted old avatar: ${require('path').basename(proc.avatar_url)}`);
+              } catch (forceDeleteError) {
+                console.error(`❌ Force delete also failed for old avatar: ${require('path').basename(proc.avatar_url)}:`, forceDeleteError.message);
+              }
+            }
+          }
+          proc.avatar_url = avatarUrl;
+          await processRepo.save(proc);
+          return sendSuccess(res, { avatar_url: avatarUrl }, 'Avatar uploaded successfully');
+        } catch (updateErr) {
+          if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
+          return sendError(res, 'Failed to update avatar URL', 500);
+        }
+      });
+    } catch (err) {
+      return sendError(res, err.message || 'Upload failed', 500);
+    }
+  });
+
   // GET /employee/:id/leave-history - Filter leave history by type, month, year, status
   router.get('/employee/:id/leave-history', async (req, res) => {
     try {
@@ -484,17 +516,49 @@ module.exports = (AppDataSource) => {
           let typeName_th = l.leaveType;
           let typeName_en = l.leaveType;
           if (l.leaveType && l.leaveType.length > 20) {
-            const typeObj = await leaveTypeRepo.findOneBy({ id: l.leaveType });
+            // Try multiple approaches to get the leave type (including soft-deleted records)
+            let typeObj = null;
+            
+            // Approach 1: Try using TypeORM withDeleted option
+            try {
+              const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+              typeObj = await leaveTypeRepo.findOne({
+                where: { id: l.leaveType },
+                withDeleted: true
+              });
+            } catch (error) {
+              // TypeORM withDeleted failed, continue to raw query
+            }
+            
+            // Approach 2: If that fails, try raw query
+            if (!typeObj) {
+              try {
+                const leaveTypeQuery = `SELECT * FROM leave_type WHERE id = ?`;
+                const [leaveTypeResult] = await AppDataSource.query(leaveTypeQuery, [l.leaveType]);
+                typeObj = leaveTypeResult ? leaveTypeResult[0] : null;
+              } catch (error) {
+                // Raw query failed, typeObj will remain null
+              }
+            }
+            
             if (typeObj) {
-              typeName_th = typeObj.leave_type_th || l.leaveType;
-              typeName_en = typeObj.leave_type_en || l.leaveType;
+              if (typeObj.is_active === false) {
+                // Add [DELETED] prefix for inactive/deleted leave types
+                const prefix_th = '[ลบ] ';
+                const prefix_en = '[DELETED] ';
+                typeName_th = prefix_th + (typeObj.leave_type_th || l.leaveType);
+                typeName_en = prefix_en + (typeObj.leave_type_en || l.leaveType);
+              } else {
+                typeName_th = typeObj.leave_type_th || l.leaveType;
+                typeName_en = typeObj.leave_type_en || l.leaveType;
+              }
             }
           }
-          return { ...l, _leaveTypeName_th: typeName_th, _leaveTypeName_en: typeName_en };
+          return { ...l, leaveTypeName_th: typeName_th, leaveTypeName_en: typeName_en };
         }));
         leaves = leaves.filter(l => 
-          (l._leaveTypeName_th && String(l._leaveTypeName_th).trim().toLowerCase().includes(leaveTypeLower)) ||
-          (l._leaveTypeName_en && String(l._leaveTypeName_en).trim().toLowerCase().includes(leaveTypeLower)) ||
+          (l.leaveTypeName_th && String(l.leaveTypeName_th).trim().toLowerCase().includes(leaveTypeLower)) ||
+          (l.leaveTypeName_en && String(l.leaveTypeName_en).trim().toLowerCase().includes(leaveTypeLower)) ||
           (l.leaveType && String(l.leaveType).trim().toLowerCase().includes(leaveTypeLower))
         );
       }
@@ -532,23 +596,27 @@ module.exports = (AppDataSource) => {
       const approvedLeaves = allLeaves.filter(l => l.status === 'approved');
       let totalLeaveDays = 0;
       let totalLeaveHours = 0;
-      approvedLeaves.forEach(l => {
-        if (l.startDate && l.endDate && (!l.startTime || !l.endTime)) {
-          const start = new Date(l.startDate);
-          const end = new Date(l.endDate);
-          let days = calculateDaysBetween(start, end);
-          if (days < 0 || isNaN(days)) days = 0;
-          totalLeaveDays += days;
-        } else if (l.startTime && l.endTime) {
-          const [sh, sm] = l.startTime.split(":").map(Number);
-          const [eh, em] = l.endTime.split(":").map(Number);
-          let start = sh + (sm || 0) / 60;
-          let end = eh + (em || 0) / 60;
-          let diff = end - start;
-          if (diff < 0) diff += 24;
-          totalLeaveHours += Math.floor(diff);
-        }
-      });
+             approvedLeaves.forEach(l => {
+         if (l.startDate && l.endDate && (!l.startTime || !l.endTime)) {
+           const start = new Date(l.startDate);
+           const end = new Date(l.endDate);
+           let days = calculateDaysBetween(start, end);
+           if (days < 0 || isNaN(days)) days = 0;
+           // Ensure minimum duration of 1 day for same-day leaves
+           if (days === 0 && l.startDate === l.endDate) {
+             days = 1;
+           }
+           totalLeaveDays += days;
+         } else if (l.startTime && l.endTime) {
+           const [sh, sm] = l.startTime.split(":").map(Number);
+           const [eh, em] = l.endTime.split(":").map(Number);
+           let start = sh + (sm || 0) / 60;
+           let end = eh + (em || 0) / 60;
+           let diff = end - start;
+           if (diff < 0) diff += 24;
+           totalLeaveHours += Math.floor(diff);
+         }
+       });
       // รวมชั่วโมงเป็นวัน (1 วัน = 9 ชั่วโมง)
                const summaryDays = totalLeaveDays + Math.floor(totalLeaveHours / config.business.workingHoursPerDay);
                const summaryHours = totalLeaveHours % config.business.workingHoursPerDay;
@@ -566,10 +634,42 @@ module.exports = (AppDataSource) => {
         let leaveTypeName_th = l.leaveType;
         let leaveTypeName_en = l.leaveType;
         if (l.leaveType && l.leaveType.length > 20) {
-          const leaveTypeObj = await leaveTypeRepo.findOneBy({ id: l.leaveType });
+          // Try multiple approaches to get the leave type (including soft-deleted records)
+          let leaveTypeObj = null;
+          
+          // Approach 1: Try using TypeORM withDeleted option
+          try {
+            const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+            leaveTypeObj = await leaveTypeRepo.findOne({
+              where: { id: l.leaveType },
+              withDeleted: true
+            });
+          } catch (error) {
+            // TypeORM withDeleted failed, continue to raw query
+          }
+          
+          // Approach 2: If that fails, try raw query
+          if (!leaveTypeObj) {
+            try {
+              const leaveTypeQuery = `SELECT * FROM leave_type WHERE id = ?`;
+              const [leaveTypeResult] = await AppDataSource.query(leaveTypeQuery, [l.leaveType]);
+              leaveTypeObj = leaveTypeResult ? leaveTypeResult[0] : null;
+            } catch (error) {
+              // Raw query failed, leaveTypeObj will remain null
+            }
+          }
+          
           if (leaveTypeObj) {
-            leaveTypeName_th = leaveTypeObj.leave_type_th || l.leaveType;
-            leaveTypeName_en = leaveTypeObj.leave_type_en || l.leaveType;
+            if (leaveTypeObj.is_active === false) {
+              // Add [DELETED] prefix for inactive/deleted leave types
+              const prefix_th = '[ลบ] ';
+              const prefix_en = '[DELETED] ';
+              leaveTypeName_th = prefix_th + (leaveTypeObj.leave_type_th || l.leaveType);
+              leaveTypeName_en = prefix_en + (leaveTypeObj.leave_type_en || l.leaveType);
+            } else {
+              leaveTypeName_th = leaveTypeObj.leave_type_th || l.leaveType;
+              leaveTypeName_en = leaveTypeObj.leave_type_en || l.leaveType;
+            }
           }
         }
         // --- เพิ่มการคำนวณ duration/durationType ---
@@ -591,8 +691,15 @@ module.exports = (AppDataSource) => {
           // ลาวัน
           const start = new Date(l.startDate);
           const end = new Date(l.endDate);
+          
           let days = calculateDaysBetween(start, end);
+          
           if (days < 0 || isNaN(days)) days = 0;
+          // Ensure minimum duration of 1 day for same-day leaves
+          if (days === 0 && l.startDate === l.endDate) {
+            days = 1;
+          }
+          
           durationType = 'day';
           duration = days;
           durationHours = 0;
@@ -621,28 +728,14 @@ module.exports = (AppDataSource) => {
       }));
 
       // ===== เพิ่มส่วนนี้: คำนวณวันลาทั้งหมดที่อนุมัติแล้ว (ไม่สน filter) =====
-      const allApprovedLeaves = await leaveRepo.find({ where: { Repid: id, status: 'approved' } });
-      let totalLeaveDaysAllApproved = 0;
-      let totalLeaveHoursAllApproved = 0;
-      allApprovedLeaves.forEach(l => {
-        if (l.startDate && l.endDate && (!l.startTime || !l.endTime)) {
-          const start = new Date(l.startDate);
-          const end = new Date(l.endDate);
-          let days = calculateDaysBetween(start, end);
-          if (days < 0 || isNaN(days)) days = 0;
-          totalLeaveDaysAllApproved += days;
-        } else if (l.startTime && l.endTime) {
-          const [sh, sm] = l.startTime.split(":").map(Number);
-          const [eh, em] = l.endTime.split(":").map(Number);
-          let start = sh + (sm || 0) / 60;
-          let end = eh + (em || 0) / 60;
-          let diff = end - start;
-          if (diff < 0) diff += 24;
-          totalLeaveHoursAllApproved += Math.floor(diff);
-        }
-      });
-      // รวมชั่วโมงเป็นวัน (1 วัน = 9 ชั่วโมง)
-               const totalLeaveDaysFinal = totalLeaveDaysAllApproved + (totalLeaveHoursAllApproved / config.business.workingHoursPerDay);
+      // Use centralized utility function for leave usage summary
+      const { getLeaveUsageSummary } = require('../utils/leaveUtils');
+      const leaveUsageSummary = await getLeaveUsageSummary(id, null, AppDataSource);
+      
+      // Calculate total leave days from all leave types
+      const totalLeaveDaysFinal = leaveUsageSummary.reduce((total, item) => {
+        return total + item.total_used_days;
+      }, 0);
       // ===== จบส่วนเพิ่ม =====
 
       sendSuccess(res, { 

@@ -1,40 +1,29 @@
+import ImagePreviewDialog from '@/components/dialogs/ImagePreviewDialog';
+import LeaveDetailDialog from '@/components/dialogs/LeaveDetailDialog';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { apiEndpoints } from '@/constants/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSocket } from '@/contexts/SocketContext';
 import { useToast } from "@/hooks/use-toast";
 import { differenceInCalendarDays, format } from "date-fns";
 import { enUS, th } from "date-fns/locale";
-import { AlertCircle, Calendar, CalendarIcon, CheckCircle, ChevronLeft, ChevronRight, Clock, Eye, FileText, History, User, Users, XCircle } from "lucide-react";
+import { AlertCircle, CalendarIcon, CheckCircle, ChevronLeft, ChevronRight, Clock, Eye, Users, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { formatDateLocalized, formatDateOnly } from '../lib/utils';
-import { apiService, apiEndpoints } from '../lib/api';
-import { showToastMessage } from '../lib/toast';
 import { monthNames } from '../constants/common';
+import { apiService } from '../lib/api';
+import { showToastMessage } from '../lib/toast';
+import { formatDateLocalized } from '../lib/utils';
 
-type LeaveRequest = {
-  id: number;
-  Repid: string; // หรือ user_id
-  leaveType: string;
-  startDate: string;
-  endDate: string;
-  reason: string;
-  status: string;
-  createdAt?: string;
-  // เพิ่ม field อื่นๆ ตามที่ backend ส่งมา
-};
-
-// --- เพิ่ม helper สำหรับ clamp ข้อความ ---
-const clampLines = 3;
+// Note: Local inline types and helpers removed if unused
 
 const AdminDashboard = () => {
   const { t, i18n } = useTranslation();
@@ -93,6 +82,9 @@ const AdminDashboard = () => {
   const [historyStatusFilter, setHistoryStatusFilter] = useState('all'); // default เป็น all (All status)
   // รายชื่อเดือนรองรับ i18n
   const currentMonthNames = monthNames[i18n.language === 'th' ? 'th' : 'en'];
+  
+  // กำหนด locale สำหรับปฏิทินตามภาษาที่เลือก
+  const calendarLocale = i18n.language.startsWith('th') ? th : enUS;
 
   // --- เพิ่ม state สำหรับ show more/less ของแต่ละ request ---
   const [expandedRejection, setExpandedRejection] = useState<{ [id: string]: boolean }>({});
@@ -161,45 +153,11 @@ const AdminDashboard = () => {
     },
   ];
 
-  // ปรับการคำนวณสถิติให้ใช้ข้อมูลจาก leave request ที่ดึงมา
-  const pendingCount = pendingRequests.length;
-  const approvedThisMonth = recentRequests.filter(r => {
-    const now = new Date();
-    const approvedDate = r.approvedTime ? new Date(r.approvedTime) : null;
-    return approvedDate && approvedDate.getMonth() === now.getMonth() && approvedDate.getFullYear() === now.getFullYear();
-  }).length;
-  // สมมุติว่าพนักงานทั้งหมดคือ user ที่มีใน leave request
-  const userCount = Array.from(new Set([...pendingRequests, ...recentRequests].map(r => r.user?.id))).length;
-  // วันลาเฉลี่ย (ถ้ามีข้อมูล)
-  const averageDayOff = recentRequests.length > 0 ?
-    (
-      recentRequests.reduce((sum, r) => {
-        const start = r.startDate ? new Date(r.startDate) : null;
-        const end = r.endDate ? new Date(r.endDate) : null;
-        if (start && end && !isNaN(start.getTime()) && !isNaN(end.getTime())) {
-          return sum + ((end.getTime() - start.getTime()) / (1000*60*60*24) + 1);
-        }
-        return sum;
-      }, 0) / recentRequests.length
-    ).toFixed(1)
-    : 0;
+  // Derived statistics previously calculated inline were removed as unused
 
 
 
-  // --- เพิ่มฟังก์ชันคำนวณชั่วโมง ---
-  const calcHours = (start: string, end: string) => {
-    if (!start || !end) return null;
-    const [sh, sm] = start.split(":").map(Number);
-    const [eh, em] = end.split(":").map(Number);
-    const startMins = sh * 60 + sm;
-    const endMins = eh * 60 + em;
-    let diff = endMins - startMins;
-    if (diff < 0) diff += 24 * 60; // ข้ามวัน
-    const hours = Math.floor(diff / 60);
-    const mins = diff % 60;
-    return `${hours}.${mins.toString().padStart(2, '0')}`;
-  };
-  const hourUnit = i18n.language === 'th' ? 'ชม' : 'Hours';
+  // Note: calcHours removed as unused in this component
 
   const handleApprove = (id: string, employeeName: string) => {
     setApprovingRequest({ id, employeeName });
@@ -221,11 +179,11 @@ const AdminDashboard = () => {
           fetchHistoryRequests();
           refreshLeaveRequests();
         } else {
-          showToastMessage.leave.requestError('อนุมัติ', data.message);
+          showToastMessage.leave.requestError('', data.message);
         }
       })
       .catch(() => {
-        showToastMessage.leave.requestError('อนุมัติ');
+        showToastMessage.leave.requestError('');
       })
       .finally(() => {
         setShowApproveDialog(false);
@@ -253,11 +211,11 @@ const AdminDashboard = () => {
           fetchHistoryRequests();
           refreshLeaveRequests();
         } else {
-          showToastMessage.leave.requestError('ปฏิเสธ', data.message);
+          showToastMessage.leave.requestError('', data.message);
         }
       })
       .catch(() => {
-        showToastMessage.leave.requestError('ปฏิเสธ');
+        showToastMessage.leave.requestError('');
       })
       .finally(() => {
         setShowRejectDialog(false);
@@ -577,42 +535,50 @@ const AdminDashboard = () => {
     setFilterYear(currentYear);
   };
 
-  // --- ฟังก์ชันกลางสำหรับแสดงชื่อประเภทการลา ---
-  function getLeaveTypeDisplay(typeIdOrName: string) {
+  // Note: getLeaveTypeDisplay function moved to src/lib/leaveUtils.ts
+  // Helper function for AdminDashboard specific leave type display
+  const getAdminLeaveTypeDisplay = (typeIdOrName: string) => {
     if (!typeIdOrName) return '';
+    
+    // First, try to find in pendingLeaveTypes (active leave types)
     const found = pendingLeaveTypes.find(
       lt => lt.id === typeIdOrName || lt.leave_type === typeIdOrName || lt.leave_type_th === typeIdOrName || lt.leave_type_en === typeIdOrName
     );
     if (found) {
       return i18n.language.startsWith('th') ? found.leave_type_th : found.leave_type_en;
     }
+    
+    // If not found in active types, check if it's a UUID (inactive/deleted leave type)
+    if (typeIdOrName.length > 20) {
+      // This is likely a UUID of an inactive/deleted leave type
+      return i18n.language.startsWith('th') ? t('leaveTypes.deletedLeaveType') : t('leaveTypes.deletedLeaveType');
+    }
+    
+    // Fallback to translation or original value
     return String(t('leaveTypes.' + typeIdOrName, typeIdOrName));
-  }
+  };
 
   // Add a function to fetch leave request details by ID for recent history
   const handleViewDetailsWithFetch = async (request: any) => {
+    setSelectedRequest(request); // Set the request data immediately
     setShowDetailDialog(true);
-    setSelectedRequest(null); // Show loading state if needed
+    
+    // Optionally fetch additional details from API
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        showSessionExpiredDialog();
-        return;
-      }
       const data = await apiService.get(apiEndpoints.leave.detail(request.id), undefined, showSessionExpiredDialog);
       if (data.success) {
         setSelectedRequest({ ...data.data, ...request });
-      } else {
-        setSelectedRequest(request); // fallback
       }
     } catch {
-      setSelectedRequest(request); // fallback
+      // Keep the original request data if API call fails
+      console.error('Error fetching leave detail:', request.id);
     }
   };
 
   // --- State สำหรับลบใบลา ---
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [deletingRequest, setDeletingRequest] = useState<any | null>(null);
+  const [previewImage, setPreviewImage] = useState<{ url: string; name: string } | null>(null);
 
   // --- ฟังก์ชันลบใบลา ---
   const handleDelete = (request: any) => {
@@ -620,21 +586,23 @@ const AdminDashboard = () => {
     setShowDeleteDialog(true);
   };
 
+
+
   const confirmDelete = async () => {
     if (!deletingRequest) return;
     try {
       const data = await apiService.delete(apiEndpoints.leave.delete(deletingRequest.id), undefined, showSessionExpiredDialog);
       if (data.success || data.status === 'success') {
-        showToastMessage.crud.deleteSuccess('ใบลา');
+        showToastMessage.crud.deleteSuccess('ใบลา', t);
         setShowDeleteDialog(false);
         setDeletingRequest(null);
         refreshLeaveRequests();
         fetchHistoryRequests();
       } else {
-        showToastMessage.crud.deleteError('ใบลา', data.message);
+        showToastMessage.crud.deleteError('ใบลา', data.message, t);
       }
     } catch (e) {
-      showToastMessage.crud.deleteError('ใบลา');
+      showToastMessage.crud.deleteError('ใบลา', undefined, t);
     }
   };
 
@@ -1012,7 +980,7 @@ const AdminDashboard = () => {
                 </div>
                 {/* Date Filter */}
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.4s' }}>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.date', 'วันที่')}</label>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.date')}</label>
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -1039,6 +1007,7 @@ const AdminDashboard = () => {
                         onSelect={(date) => handleDateChange(date)}
                         initialFocus
                         className="rounded-md border"
+                        locale={calendarLocale}
                         modifiers={{
                           today: new Date()
                         }}
@@ -1051,7 +1020,7 @@ const AdminDashboard = () => {
                 </div>
                 {/* Month Filter */}
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.5s' }}>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.month', 'เดือน')}</label>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.month')}</label>
                   <select
                     className={`border border-blue-200 rounded-xl px-3 py-2 w-32 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press ${
                       pendingPendingSingleDate 
@@ -1062,7 +1031,7 @@ const AdminDashboard = () => {
                     onChange={e => handleMonthChange(e.target.value ? Number(e.target.value) : '')}
                     disabled={!!pendingPendingSingleDate}
                   >
-                    <option value="">{t('months.all', 'All Months')}</option>
+                    <option value="">{t('common.allMonths')}</option>
                     {currentMonthNames.map((name, idx) => (
                       <option key={idx + 1} value={idx + 1}>{name}</option>
                     ))}
@@ -1070,7 +1039,7 @@ const AdminDashboard = () => {
                 </div>
                 {/* Year Filter */}
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.6s' }}>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.year', 'ปี')}</label>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.year')}</label>
                   <input
                     type="number"
                     min={2000}
@@ -1149,11 +1118,14 @@ const AdminDashboard = () => {
                             <div className="font-bold text-lg text-blue-900 mb-1 truncate animate-slide-in-left">{typeof request.user === "string" ? JSON.parse(request.user).User_name : request.user?.User_name || "-"}</div>
                             {/* ประเภทการลา (leaveType) */}
                             <span className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold mb-1 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-                              {getLeaveTypeDisplay(request.leaveType || request.leaveTypeName)}
+                              {request.leaveTypeName_th && request.leaveTypeName_en 
+                                ? (i18n.language.startsWith('th') ? request.leaveTypeName_th : request.leaveTypeName_en)
+                                : getAdminLeaveTypeDisplay(request.leaveType || request.leaveTypeName)
+                              }
                             </span>
                             {(request.backdated === 1 || request.backdated === "1" || request.backdated === true) && (
                               <Badge className="ml-2 bg-purple-100 text-purple-800 border-purple-200 rounded-full px-3 py-1 text-xs font-bold shadow animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-                                {t('leave.backdated', 'ลาย้อนหลัง')}
+                                {t('leave.backdated')}
                               </Badge>
                             )}
                             <div className="text-sm text-gray-700 mb-1 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>{t('leave.date')}: {request.startDate} - {request.endDate}</div>
@@ -1193,7 +1165,7 @@ const AdminDashboard = () => {
                             <div className="w-px h-4 bg-gray-300"></div>
                             <div className="flex items-center gap-2">
                               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                              <span>{pendingRequests.length} {t('admin.results', 'ผลลัพธ์')}</span>
+                              <span>{pendingRequests.length} {t('admin.results')}</span>
                             </div>
                           </div>
 
@@ -1217,7 +1189,7 @@ const AdminDashboard = () => {
                                   const pages = [];
                                   const maxPageButtons = 5;
                                   let start = Math.max(1, pendingPage - 2);
-                                  let end = Math.min(pendingTotalPages, start + maxPageButtons - 1);
+                                  const end = Math.min(pendingTotalPages, start + maxPageButtons - 1);
                                   if (end - start < maxPageButtons - 1) {
                                     start = Math.max(1, end - maxPageButtons + 1);
                                   }
@@ -1301,7 +1273,7 @@ const AdminDashboard = () => {
                                 ))}
                               </SelectContent>
                             </Select>
-                            <span className="text-sm text-gray-600">{t('admin.itemsPerPage', 'รายการต่อหน้า')}</span>
+                            <span className="text-sm text-gray-600">{t('admin.itemsPerPage')}</span>
                           </div>
                         </div>
                       )}
@@ -1331,13 +1303,13 @@ const AdminDashboard = () => {
                 </div>
                 {/* Month Filter */}
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.5s' }}>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.month', 'เดือน')}</label>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.month')}</label>
                   <select
                     className="border border-blue-200 rounded-xl px-3 py-2 w-32 dark:bg-slate-900 dark:text-white bg-white/80 backdrop-blur hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 transform hover:scale-105 animate-bounce-in btn-press"
                     value={pendingFilterMonth}
                     onChange={e => setPendingFilterMonth(e.target.value ? Number(e.target.value) : '')}
                   >
-                    <option value="">{t('months.all', 'All Months')}</option>
+                    <option value="">{t('common.allMonths')}</option>
                     {currentMonthNames.map((name, idx) => (
                       <option key={idx + 1} value={idx + 1}>{name}</option>
                     ))}
@@ -1345,7 +1317,7 @@ const AdminDashboard = () => {
                 </div>
                 {/* Year Filter */}
                 <div className="animate-slide-in-left" style={{ animationDelay: '0.6s' }}>
-                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.year', 'ปี')}</label>
+                  <label className="block text-sm font-medium text-blue-900 dark:text-blue-100 mb-2 animate-fade-in-up">{t('common.year')}</label>
                   <input
                     type="number"
                     min={2000}
@@ -1457,16 +1429,24 @@ const AdminDashboard = () => {
                             <div className="flex-1 min-w-0">
                               <div className="font-bold text-lg text-blue-900 mb-1 truncate animate-slide-in-left">{request.user?.User_name || "-"}</div>
                               {/* ประเภทการลา (leaveType) */}
-                              <span className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold mb-1 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
-                                {getLeaveTypeDisplay(request.leaveType || request.leaveTypeName)}
-                              </span>
+                                                          <span className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold mb-1 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+                              {request.leaveTypeName_th && request.leaveTypeName_en 
+                                ? (i18n.language.startsWith('th') ? request.leaveTypeName_th : request.leaveTypeName_en)
+                                : getAdminLeaveTypeDisplay(request.leaveType || request.leaveTypeName)
+                              }
+                            </span>
                               {(request.backdated === 1 || request.backdated === "1" || request.backdated === true) && (
                                 <Badge className="ml-2 bg-purple-100 text-purple-800 border-purple-200 rounded-full px-3 py-1 text-xs font-bold shadow animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
-                                  {t('leave.backdated', 'ลาย้อนหลัง')}
+                                  {t('leave.backdated')}
                                 </Badge>
                               )}
                               <div className="text-sm text-gray-700 mb-1 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>{t('leave.date')}: {startStr} - {endStr} ({leaveDays} {t('leave.days')})</div>
-                              <div className="text-xs text-gray-500 animate-fade-in-up" style={{ animationDelay: '0.4s' }}>{t('leave.reason')}: {request.reason}</div>
+                              <div className="text-xs text-gray-500 animate-fade-in-up break-words" style={{ animationDelay: '0.4s' }}>
+                                {t('leave.reason')}: {request.reason && request.reason.length > 50 
+                                  ? request.reason.slice(0, 50) + '...' 
+                                  : request.reason || '-'
+                                }
+                              </div>
                             </div>
                             {/* ปุ่มดูรายละเอียดและลบ */}
                             <div className="flex gap-2 flex-shrink-0 mt-2 md:mt-0">
@@ -1494,7 +1474,7 @@ const AdminDashboard = () => {
                             <div className="w-px h-4 bg-gray-300"></div>
                             <div className="flex items-center gap-2">
                               <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                              <span>{historyRequests.length} {t('admin.results', 'ผลลัพธ์')}</span>
+                              <span>{historyRequests.length} {t('admin.results')}</span>
                             </div>
                           </div>
 
@@ -1518,7 +1498,7 @@ const AdminDashboard = () => {
                                   const pages = [];
                                   const maxPageButtons = 5;
                                   let start = Math.max(1, historyPage - 2);
-                                  let end = Math.min(historyTotalPages, start + maxPageButtons - 1);
+                                  const end = Math.min(historyTotalPages, start + maxPageButtons - 1);
                                   if (end - start < maxPageButtons - 1) {
                                     start = Math.max(1, end - maxPageButtons + 1);
                                   }
@@ -1602,7 +1582,7 @@ const AdminDashboard = () => {
                                 ))}
                               </SelectContent>
                             </Select>
-                            <span className="text-sm text-gray-600">{t('admin.itemsPerPage', 'รายการต่อหน้า')}</span>
+                            <span className="text-sm text-gray-600">{t('admin.itemsPerPage')}</span>
                           </div>
                         </div>
                       )}
@@ -1615,315 +1595,38 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      <Dialog open={showDetailDialog} onOpenChange={setShowDetailDialog}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto animate-scale-in">
-          <DialogHeader>
-            <DialogTitle className="flex items-center">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl font-bold text-blue-600">
-                  {t('common.viewDetails')}
-                </span>
-                {selectedRequest && (
-                  <div className="flex flex-wrap gap-2">
-                    {/* Badge สถานะ */}
-                    {selectedRequest.status === 'approved' && (
-                      <Badge className="bg-green-100 text-green-800 border-green-200"><CheckCircle className="w-3 h-3 mr-1" />{t('leave.approved')}</Badge>
-                    )}
-                    {selectedRequest.status === 'pending' && (
-                      <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200"><AlertCircle className="w-3 h-3 mr-1" />{t('history.pendingApproval')}</Badge>
-                    )}
-                    {selectedRequest.status === 'rejected' && (
-                      <Badge className="bg-red-100 text-red-800 border-red-200"><XCircle className="w-3 h-3 mr-1" />{t('leave.rejected')}</Badge>
-                    )}
-                    {/* Badge ลาย้อนหลัง */}
-                    {(selectedRequest.backdated === 1 || selectedRequest.backdated === "1" || selectedRequest.backdated === true) && (
-                      <Badge className="bg-gradient-to-r from-purple-100 to-pink-100 text-purple-800 border-purple-200 shadow-sm hover:shadow-md transition-all duration-200"><History className="w-3 h-3 mr-1" />{t('history.retroactiveLeave', 'การลาย้อนหลัง')}</Badge>
-                    )}
-                  </div>
-                )}
-              </div>
-            </DialogTitle>
-          </DialogHeader>
-          {selectedRequest && (
-            <div className="space-y-6">
-              {/* Header Section */}
-              <Card className="border-0 shadow-lg bg-gradient-to-r from-blue-50 to-indigo-50">
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      <div className={`text-3xl font-bold text-blue-900`}>
-                        {getLeaveTypeDisplay(selectedRequest.leaveType || selectedRequest.leaveTypeName || selectedRequest.leaveTypeName_th || selectedRequest.leaveTypeName_en)}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-sm text-gray-500">{t('history.submittedOn')}</div>
-                      <div className="text-lg font-semibold text-blue-600">
-                        {selectedRequest.createdAt ? selectedRequest.createdAt.split('T')[0] : "-"}
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+      {/* Leave Detail Dialog */}
+      <LeaveDetailDialog
+        open={showDetailDialog}
+        onOpenChange={setShowDetailDialog}
+        leaveRequest={selectedRequest}
+      />
 
-              {/* Main Information Grid */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Left Column - Basic Info */}
-                <Card className="border-0 shadow-md">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center gap-2">
-                      <Calendar className="w-5 h-5 text-blue-600" />
-                      <h3 className="text-lg font-semibold">{t('leave.dateInformation')}</h3>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-600">{t('leave.startDate')}</Label>
-                        <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
-                          <Calendar className="w-4 h-4 text-blue-500" />
-                          <span className="font-medium text-blue-900">
-                            {formatDateOnly(selectedRequest.startDate, i18n.language)}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-600">{t('leave.endDate')}</Label>
-                        <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
-                          <Calendar className="w-4 h-4 text-blue-500" />
-                          <span className="font-medium text-blue-900">
-                            {formatDateOnly(selectedRequest.endDate, i18n.language)}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-600">{t('leave.duration')}</Label>
-                      <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
-                        <Clock className="w-4 h-4 text-green-500" />
-                        <span className="font-medium text-green-900">
-                          {selectedRequest.startDate && selectedRequest.endDate 
-                            ? differenceInCalendarDays(new Date(selectedRequest.endDate), new Date(selectedRequest.startDate)) + 1 
-                            : 1} {t('leave.days')}
-                        </span>
-                      </div>
-                    </div>
-                    {(selectedRequest.backdated === 1 || selectedRequest.backdated === "1" || selectedRequest.backdated === true) && (
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-purple-600">{t('history.retroactiveLeave')}</Label>
-                        <div className="flex items-center gap-2 p-3 bg-purple-50 rounded-lg">
-                          <History className="w-4 h-4 text-purple-500" />
-                          <span className="text-purple-700">{t('history.retroactiveLeaveDesc')}</span>
-                        </div>
-                      </div>
-                    )}
-                    {/* ลาเป็น ชม. */}
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-600">{t('leave.leaveTime', 'ลาเป็น ชม.')}</Label>
-                      <div className="flex items-center gap-2 p-3 bg-blue-50 rounded-lg">
-                        <Clock className="w-4 h-4 text-blue-500" />
-                        <span className="font-medium text-blue-900">
-                          {selectedRequest.startTime && selectedRequest.endTime
-                            ? `${selectedRequest.startTime} - ${selectedRequest.endTime} (${calcHours(selectedRequest.startTime, selectedRequest.endTime)} ${hourUnit})`
-                            : t('leave.noHourlyLeave', 'ไม่มีการลาเป็น ชม.')}
-                        </span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                {/* Right Column - Status & Approval */}
-                <Card className="border-0 shadow-md">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="w-5 h-5 text-green-600" />
-                      <h3 className="text-lg font-semibold">{t('leave.statusAndApproval')}</h3>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div className="space-y-2">
-                      <Label className="text-sm font-medium text-gray-600">{t('leave.status')}</Label>
-                      <div className="flex items-center gap-2">
-                        {selectedRequest.status === 'approved' && (
-                          <Badge className="bg-green-100 text-green-800 border-green-200"><CheckCircle className="w-3 h-3 mr-1" />{t('leave.approved')}</Badge>
-                        )}
-                        {selectedRequest.status === 'pending' && (
-                          <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200"><AlertCircle className="w-3 h-3 mr-1" />{t('history.pendingApproval')}</Badge>
-                        )}
-                        {selectedRequest.status === 'rejected' && (
-                          <Badge className="bg-red-100 text-red-800 border-red-200"><XCircle className="w-3 h-3 mr-1" />{t('leave.rejected')}</Badge>
-                        )}
-                      </div>
-                    </div>
-                    {selectedRequest.status === "approved" && (selectedRequest.approvedBy || selectedRequest.statusBy) && (
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-600">{t('leave.approvedBy')}</Label>
-                        <div className="flex items-center gap-2 p-3 bg-green-50 rounded-lg">
-                          <CheckCircle className="w-4 h-4 text-green-500" />
-                          <span className="font-medium text-green-900">{selectedRequest.approvedBy || selectedRequest.statusBy}</span>
-                        </div>
-                      </div>
-                    )}
-                    {selectedRequest.status === "rejected" && (
-                      <div className="space-y-4">
-                        <div className="space-y-2">
-                          <Label className="text-sm font-medium text-gray-600">{t('leave.rejectedBy')}</Label>
-                          <div className="flex items-center gap-2 p-3 bg-red-50 rounded-lg">
-                            <XCircle className="w-4 h-4 text-red-500" />
-                            <span className="font-medium text-red-900">{selectedRequest.rejectedBy || selectedRequest.statusBy || '-'}</span>
-                          </div>
-                        </div>
-                        {selectedRequest.rejectionReason && (
-                          <div className="space-y-2">
-                            <Label className="text-sm font-medium text-gray-600">{t('leave.rejectionReason')}</Label>
-                            <div className="flex items-start gap-2 p-3 bg-red-50 rounded-lg">
-                              <FileText className="w-4 h-4 text-red-500 mt-0.5" />
-                              <span className="text-red-900 leading-relaxed">{selectedRequest.rejectionReason}</span>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </div>
-
-              {/* Reason Section */}
-              <Card className="border-0 shadow-md">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center gap-2">
-                    <FileText className="w-5 h-5 text-orange-600" />
-                    <h3 className="text-lg font-semibold">{t('leave.reason')}</h3>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="p-4 bg-orange-50 rounded-lg">
-                    <p className="text-orange-900 leading-relaxed">
-                      {selectedRequest.reason || t('leave.noReasonProvided')}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Contact Information */}
-              {(selectedRequest.contact || selectedRequest.contactInfo || selectedRequest.user?.contact) && (
-                <Card className="border-0 shadow-md">
-                  <CardHeader className="pb-3">
-                    <div className="flex items-center gap-2">
-                      <User className="w-5 h-5 text-teal-600" />
-                      <h3 className="text-lg font-semibold">{t('leave.contactInformation')}</h3>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="p-4 bg-teal-50 rounded-lg">
-                      <p className="text-teal-900 font-medium">{selectedRequest.contact || selectedRequest.contactInfo || selectedRequest.user?.contact}</p>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Attachments Section */}
-              {(() => {
-                const files =
-                  (Array.isArray(selectedRequest.attachments) && selectedRequest.attachments.length > 0)
-                    ? selectedRequest.attachments
-                    : (typeof selectedRequest.attachments === 'string' && selectedRequest.attachments)
-                      ? [selectedRequest.attachments]
-                      : (Array.isArray(selectedRequest.attachment) && selectedRequest.attachment.length > 0)
-                        ? selectedRequest.attachment
-                        : (typeof selectedRequest.attachment === 'string' && selectedRequest.attachment)
-                          ? [selectedRequest.attachment]
-                          : (Array.isArray(selectedRequest.file) && selectedRequest.file.length > 0)
-                            ? selectedRequest.file
-                            : (typeof selectedRequest.file === 'string' && selectedRequest.file)
-                              ? [selectedRequest.file]
-                              : [];
-                if (files.length > 0) {
-                  return (
-                    <Card className="border-0 shadow-md">
-                      <CardHeader className="pb-3">
-                        <div className="flex items-center gap-2">
-                          <FileText className="w-5 h-5 text-indigo-600" />
-                          <h3 className="text-lg font-semibold">{t('leave.attachments')}</h3>
-                          <Badge variant="secondary" className="ml-2">
-                            {files.length} {t('leave.files')}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                          {files.map((file: string, idx: number) => {
-                            const fileName = file.split('/').pop() || file;
-                            const ext = fileName.split('.').pop()?.toLowerCase();
-                            const isImage = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(ext || '');
-                            const fileUrl = `/leave-uploads/${file}`;
-                            return (
-                              <div key={file} className="border rounded-lg p-4 bg-gray-50 hover:bg-gray-100 transition-colors">
-                                {isImage ? (
-                                  <div className="space-y-3">
-                                    <img
-                                      src={fileUrl}
-                                      alt={fileName}
-                                      className="w-full h-32 object-cover rounded-lg border"
-                                      onError={(e) => {
-                                        const target = e.target as HTMLImageElement;
-                                        target.style.display = 'none';
-                                      }}
-                                    />
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-sm text-gray-600 truncate">{fileName}</span>
-                                      <Button size="sm" variant="outline" onClick={() => window.open(fileUrl, '_blank')}>{t('common.view')}</Button>
-                                    </div>
-                                  </div>
-                                ) : (
-                                  <div className="space-y-3">
-                                    <div className="w-full h-32 bg-gray-200 rounded-lg flex items-center justify-center">
-                                      <FileText className="w-8 h-8 text-gray-400" />
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                      <span className="text-sm text-gray-600 truncate">{fileName}</span>
-                                      <Button size="sm" variant="outline" onClick={() => {
-                                        const link = document.createElement('a');
-                                        link.href = fileUrl;
-                                        link.download = fileName;
-                                        link.click();
-                                      }}>{t('common.download')}</Button>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  );
-                }
-                return null;
-              })()}
-            </div>
-          )}
-          <DialogFooter className="pt-6 border-t">
-            <Button variant="outline" onClick={() => setShowDetailDialog(false)} className="btn-press hover-glow">
-              {t('common.close')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {previewImage && (
+        <ImagePreviewDialog
+          isOpen={!!previewImage}
+          onClose={() => setPreviewImage(null)}
+          imageUrl={previewImage.url}
+          imageName={previewImage.name}
+                          title={t('leave.attachmentPreview')}
+        />
+      )}
 
       {/* Dialog สำหรับป้อนเหตุผลไม่อนุมัติ */}
       <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{t('admin.rejectReasonTitle', 'กรุณาระบุเหตุผลในการไม่อนุมัติ')}</DialogTitle>
+            <DialogTitle>{t('admin.rejectReasonTitle')}</DialogTitle>
           </DialogHeader>
           <textarea
-            className="w-full border rounded p-2 mt-2"
+            className="w-full border rounded p-2 mt-2 break-all overflow-wrap-anywhere whitespace-pre-wrap"
             rows={3}
-            placeholder={t('admin.rejectReasonPlaceholder', 'กรอกเหตุผล...')}
+                          placeholder={t('admin.rejectReasonPlaceholder')}
             value={rejectReason}
             onChange={e => setRejectReason(e.target.value)}
           />
           <DialogFooter className="flex gap-2 justify-end mt-4">
-            <Button variant="outline" onClick={() => setShowRejectDialog(false)}>{t('common.back', 'ย้อนกลับ')}</Button>
+            <Button variant="outline" onClick={() => setShowRejectDialog(false)}>{t('common.back')}</Button>
             <Button variant="destructive" onClick={confirmReject} disabled={!rejectReason.trim()}>{t('common.confirm')}</Button>
           </DialogFooter>
         </DialogContent>
@@ -1933,13 +1636,13 @@ const AdminDashboard = () => {
       <Dialog open={showApproveDialog} onOpenChange={setShowApproveDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{t('admin.approveConfirmTitle', 'ยืนยันการอนุมัติ')}</DialogTitle>
+            <DialogTitle>{t('admin.approveConfirmTitle')}</DialogTitle>
             <DialogDescription>
               {t('admin.approveConfirmDesc', { name: approvingRequest?.employeeName || '' })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2 justify-end mt-4">
-            <Button variant="outline" onClick={() => setShowApproveDialog(false)}>{t('common.cancel', 'ยกเลิก')}</Button>
+            <Button variant="outline" onClick={() => setShowApproveDialog(false)}>{t('common.cancel')}</Button>
             <Button className="bg-green-600 hover:bg-green-700" onClick={confirmApprove}>{t('common.confirm')}</Button>
           </DialogFooter>
         </DialogContent>
@@ -1949,13 +1652,13 @@ const AdminDashboard = () => {
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>{t('system.confirmDeleteLeave', 'ยืนยันการลบใบลา')}</DialogTitle>
+            <DialogTitle>{t('system.confirmDeleteLeave')}</DialogTitle>
             <DialogDescription>
-              {t('system.confirmDeleteLeaveDesc', 'คุณต้องการลบใบลานี้หรือไม่?')}
+              {t('system.confirmDeleteLeaveDesc')}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="flex gap-2 justify-end mt-4">
-            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>{t('common.cancel', 'ยกเลิก')}</Button>
+            <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>{t('common.cancel')}</Button>
             <Button variant="destructive" onClick={confirmDelete}>{t('common.confirm', 'ยืนยัน')}</Button>
           </DialogFooter>
         </DialogContent>

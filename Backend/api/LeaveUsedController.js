@@ -44,13 +44,16 @@ module.exports = (AppDataSource) => {
       // Get leave type details for each record
       const result = await Promise.all(
         leaveUsedRecords.map(async (record) => {
-          const leaveType = await leaveTypeRepo.findOneBy({ id: record.leave_type_id });
+          // Use raw query to include soft-deleted records
+          const leaveTypeQuery = `SELECT * FROM leave_type WHERE id = ?`;
+          const [leaveTypeResult] = await AppDataSource.query(leaveTypeQuery, [record.leave_type_id]);
+          const leaveType = leaveTypeResult ? leaveTypeResult[0] : null;
           return {
             id: record.id,
             user_id: record.user_id,
             leave_type_id: record.leave_type_id,
-            leave_type_name_th: leaveType?.leave_type_th || 'ไม่ระบุ',
-            leave_type_name_en: leaveType?.leave_type_en || 'Unknown',
+            leave_type_name_th: leaveType?.is_active === false ? '[DELETED] ' + (leaveType?.leave_type_th || 'Unknown') : (leaveType?.leave_type_th || 'Unknown'),
+            leave_type_name_en: leaveType?.is_active === false ? '[DELETED] ' + (leaveType?.leave_type_en || 'Unknown') : (leaveType?.leave_type_en || 'Unknown'),
             days: record.days || 0,
             hours: record.hour || 0,
             created_at: record.created_at,
@@ -88,13 +91,16 @@ module.exports = (AppDataSource) => {
       }
 
       const leaveUsedRecord = await leaveUsedRepo.findOne({ where: whereClause });
-      const leaveType = await leaveTypeRepo.findOneBy({ id: leaveTypeId });
+      // Use raw query to include soft-deleted records
+      const leaveTypeQuery = `SELECT * FROM leave_type WHERE id = ?`;
+      const [leaveTypeResult] = await AppDataSource.query(leaveTypeQuery, [leaveTypeId]);
+      const leaveType = leaveTypeResult ? leaveTypeResult[0] : null;
 
       if (!leaveUsedRecord) {
         return sendSuccess(res, {
           user_id: userId,
           leave_type_id: leaveTypeId,
-          leave_type_name_th: leaveType?.leave_type_th || 'ไม่ระบุ',
+          leave_type_name_th: leaveType?.leave_type_th || 'Unknown',
           leave_type_name_en: leaveType?.leave_type_en || 'Unknown',
           days: 0,
           hours: 0,
@@ -108,8 +114,8 @@ module.exports = (AppDataSource) => {
         id: leaveUsedRecord.id,
         user_id: leaveUsedRecord.user_id,
         leave_type_id: leaveUsedRecord.leave_type_id,
-        leave_type_name_th: leaveType?.leave_type_th || 'ไม่ระบุ',
-        leave_type_name_en: leaveType?.leave_type_en || 'Unknown',
+        leave_type_name_th: leaveType?.is_active === false ? '[DELETED] ' + (leaveType?.leave_type_th || 'Unknown') : (leaveType?.leave_type_th || 'Unknown'),
+        leave_type_name_en: leaveType?.is_active === false ? '[DELETED] ' + (leaveType?.leave_type_en || 'Unknown') : (leaveType?.leave_type_en || 'Unknown'),
         days: leaveUsedRecord.days || 0,
         hours: leaveUsedRecord.hour || 0,
         total_days: totalDays,
@@ -158,8 +164,19 @@ module.exports = (AppDataSource) => {
       // Group by leave type and calculate totals
       const summary = {};
       for (const record of leaveUsedRecords) {
-        const leaveType = await leaveTypeRepo.findOneBy({ id: record.leave_type_id });
-        const leaveTypeName = leaveType?.leave_type_th || leaveType?.leave_type_en || 'Unknown';
+        // Use raw query to include soft-deleted records
+        const leaveTypeQuery = `SELECT * FROM leave_type WHERE id = ?`;
+        const [leaveTypeResult] = await AppDataSource.query(leaveTypeQuery, [record.leave_type_id]);
+        const leaveType = leaveTypeResult ? leaveTypeResult[0] : null;
+        let leaveTypeName = 'Unknown';
+        if (leaveType) {
+                  if (leaveType.is_active === false) {
+          // Add [DELETED] prefix for inactive/deleted leave types
+          leaveTypeName = '[DELETED] ' + (leaveType.leave_type_th || leaveType.leave_type_en || 'Unknown');
+        } else {
+          leaveTypeName = leaveType.leave_type_th || leaveType.leave_type_en || 'Unknown';
+        }
+        }
 
         if (!summary[leaveTypeName]) {
           summary[leaveTypeName] = {

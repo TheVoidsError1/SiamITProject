@@ -5,7 +5,8 @@ const {
   toDayHour, 
   calculateDaysBetween, 
   convertTimeRangeToDecimal,
-  convertToMinutes
+  convertToMinutes,
+  getLeaveUsageSummary
 } = require('../utils');
 
 // LINE Bot configuration using environment variables
@@ -186,11 +187,11 @@ To link your account for full access, please visit the web application and use L
       function getStatusDisplay(status) {
         switch (status.toLowerCase()) {
           case 'approved':
-            return 'อนุมัติ (Approved)';
+            return 'Approved';
           case 'pending':
-            return 'รอการอนุมัติ (Pending)';
+            return 'Pending';
           case 'rejected':
-            return 'ไม่อนุมัติ (Rejected)';
+            return 'Rejected';
           default:
             return status;
         }
@@ -207,10 +208,22 @@ To link your account for full access, please visit the web application and use L
           let leaveTypeNameEn = lr.leaveType;
           
           if (lr.leaveType && lr.leaveType.length > 20) {
-            // ID-based leave type
-            const leaveType = await leaveTypeRepo.findOneBy({ id: lr.leaveType });
-            leaveTypeNameTh = leaveType ? leaveType.leave_type_th : lr.leaveType;
-            leaveTypeNameEn = leaveType ? leaveType.leave_type_en : lr.leaveType;
+            // ID-based leave type - Use raw query to include soft-deleted records
+            const leaveTypeQuery = `SELECT * FROM leave_type WHERE id = ?`;
+            const [leaveTypeResult] = await AppDataSource.query(leaveTypeQuery, [lr.leaveType]);
+            const leaveType = leaveTypeResult ? leaveTypeResult[0] : null;
+            if (leaveType) {
+                          if (leaveType.is_active === false) {
+              // Add [DELETED] prefix for inactive/deleted leave types
+              const prefix_th = '[DELETED] ';
+              const prefix_en = '[DELETED] ';
+              leaveTypeNameTh = prefix_th + (leaveType.leave_type_th || lr.leaveType);
+              leaveTypeNameEn = prefix_en + (leaveType.leave_type_en || lr.leaveType);
+            } else {
+              leaveTypeNameTh = leaveType.leave_type_th || lr.leaveType;
+              leaveTypeNameEn = leaveType.leave_type_en || lr.leaveType;
+            }
+            }
           } else {
             // String-based leave type
             const leaveType = await leaveTypeRepo.findOne({
@@ -274,42 +287,9 @@ To link your account for full access, please visit the web application and use L
   // Get leave balance from API and format for LINE
   static async getLeaveBalance(user) {
     try {
-      // Get leave entitlements directly from database like /api/leave-quota/me endpoint
-      const leaveQuotaRepo = global.AppDataSource.getRepository('LeaveQuota');
-      const leaveTypeRepo = global.AppDataSource.getRepository('LeaveType');
-      const leaveRequestRepo = global.AppDataSource.getRepository('LeaveRequest');
-      const userRepo = global.AppDataSource.getRepository('User');
-      const adminRepo = global.AppDataSource.getRepository('Admin');
-      const superadminRepo = global.AppDataSource.getRepository('SuperAdmin');
-
-      // Get user's position ID
-      let positionId = null;
-      let userEntity = await userRepo.findOne({ where: { id: user.Repid } });
-      if (userEntity) {
-        positionId = userEntity.position;
-      } else {
-        let adminEntity = await adminRepo.findOne({ where: { id: user.Repid } });
-        if (adminEntity) {
-          positionId = adminEntity.position;
-        } else {
-          let superadminEntity = await superadminRepo.findOne({ where: { id: user.Repid } });
-          if (superadminEntity) {
-            positionId = superadminEntity.position;
-          }
-        }
-      }
-
-      if (!positionId) {
-        return { type: 'text', text: '❌ Position not found for user.' };
-      }
-
-      // Get quotas, leave types, and approved leave requests
-      const quotas = await leaveQuotaRepo.find({ where: { positionId } });
-      const leaveTypes = await leaveTypeRepo.find();
-      const leaveRequests = await leaveRequestRepo.find({ where: { Repid: user.Repid, status: 'approved' } });
-
-             // Helper: Convert decimal days to days/hours (configurable working hours per day)
-       // Using utility function instead of local function
+      // ใช้ getLeaveUsageSummary แทนการคำนวณแบบ manual
+      const currentYear = new Date().getFullYear();
+      const remainingLeaveData = await getLeaveUsageSummary(user.Repid, currentYear, global.AppDataSource);
 
       // Helper: Format duration display
       function formatDuration(day, hour) {
@@ -326,67 +306,17 @@ To link your account for full access, please visit the web application and use L
 
       let message = '💰 Leave Entitlements:\n\n';
       
-      // Calculate for each leave type
-      for (const leaveType of leaveTypes) {
-        // Find quota for this leave type
-        const quotaRow = quotas.find(q => q.leaveTypeId === leaveType.id);
-        const quota = quotaRow ? quotaRow.quota : 0;
-        
-        // Calculate used leave for this type
-        let used = 0;
-        for (const lr of leaveRequests) {
-          let leaveTypeName = lr.leaveType;
-          if (leaveTypeName && leaveTypeName.length > 20) {
-            const leaveTypeEntity = await leaveTypeRepo.findOneBy({ id: leaveTypeName });
-            if (leaveTypeEntity && leaveTypeEntity.leave_type_en) {
-              leaveTypeName = leaveTypeEntity.leave_type_en;
-            }
-          }
-          
-          if (
-            leaveTypeName === leaveType.leave_type_en ||
-            leaveTypeName === leaveType.leave_type_th ||
-            leaveTypeName === leaveType.id
-          ) {
-            // Personal leave: may be by hour or day
-            if (leaveType.leave_type_en?.toLowerCase() === 'personal' || leaveType.leave_type_th === 'ลากิจ') {
-              if (lr.startTime && lr.endTime) {
-                const timeRange = convertTimeRangeToDecimal(
-                  ...lr.startTime.split(":").map(Number),
-                  ...lr.endTime.split(":").map(Number)
-                );
-                let diff = timeRange.end - timeRange.start;
-                if (diff < 0) diff += 24;
-                used += diff / config.business.workingHoursPerDay; // configurable working hours per day
-              } else if (lr.startDate && lr.endDate) {
-                const start = new Date(lr.startDate);
-                const end = new Date(lr.endDate);
-                let days = calculateDaysBetween(start, end);
-                if (days < 0 || isNaN(days)) days = 0;
-                used += days;
-              }
-            } else {
-              // Other types: by day
-              if (lr.startDate && lr.endDate) {
-                const start = new Date(lr.startDate);
-                const end = new Date(lr.endDate);
-                let days = calculateDaysBetween(start, end);
-                if (days < 0 || isNaN(days)) days = 0;
-                used += days;
-              }
-            }
-          }
-        }
-        
-        const remaining = Math.max(0, quota - used);
-        const usedObj = toDayHour(used);
-        const remainingObj = toDayHour(remaining);
-        const quotaObj = toDayHour(quota);
+      // Display for each leave type
+      for (const leaveData of remainingLeaveData) {
+        // Convert to day/hour format for display
+        const quotaObj = toDayHour(leaveData.quota_days);
+        const usedObj = toDayHour(leaveData.total_used_days);
+        const remainingObj = toDayHour(leaveData.remaining_days);
 
         // Display leave type in both languages
-        const leaveTypeDisplay = leaveType.leave_type_en && leaveType.leave_type_en !== leaveType.leave_type_th 
-          ? `${leaveType.leave_type_th} (${leaveType.leave_type_en})`
-          : leaveType.leave_type_th;
+        const leaveTypeDisplay = leaveData.leave_type_name_en && leaveData.leave_type_name_en !== leaveData.leave_type_name_th 
+          ? `${leaveData.leave_type_name_th} (${leaveData.leave_type_name_en})`
+          : leaveData.leave_type_name_th;
 
         message += `${leaveTypeDisplay}:\n`;
         message += `   📊 Total: ${formatDuration(quotaObj.day, quotaObj.hour)}\n`;

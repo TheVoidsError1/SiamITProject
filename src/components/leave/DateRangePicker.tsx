@@ -63,6 +63,7 @@ export const DateRangePicker = ({
               initialFocus
               disabled={minDateToUse ? (date => date < minDateToUse) : undefined}
               className="rounded-md border"
+              locale={currentLocale}
               modifiers={{
                 today: today
               }}
@@ -100,6 +101,7 @@ export const DateRangePicker = ({
               // ปรับ logic: endDate เลือกได้ไม่น้อยกว่า startDate
               disabled={startDate ? (date => date < startDate) : undefined}
               className="rounded-md border"
+              locale={currentLocale}
               modifiers={{
                 today: today
               }}
