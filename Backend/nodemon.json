@@ -1,0 +1,17 @@
+{
+  "watch": [
+    "EnityTable/**/*.js",
+    "index.js",
+    "config.js"
+  ],
+  "ext": "js,json",
+  "ignore": [
+    "node_modules/**/*",
+    "uploads/**/*",
+    "migrations/**/*"
+  ],
+  "exec": "node index.js",
+  "env": {
+    "NODE_ENV": "development"
+  }
+}

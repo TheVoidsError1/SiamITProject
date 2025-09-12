@@ -44,8 +44,7 @@ module.exports = (AppDataSource) => {
 
   router.get('/employees', async (req, res) => {
     try {
-      const processRepo = AppDataSource.getRepository('ProcessCheck');
-      const adminRepo = AppDataSource.getRepository('Admin');
+      const processRepo = AppDataSource.getRepository('User');
       const userRepo = AppDataSource.getRepository('User');
       // Language detection removed - frontend will handle i18n
 
@@ -71,7 +70,7 @@ module.exports = (AppDataSource) => {
         if (proc.Role === 'admin') {
           profile = await adminRepo.findOneBy({ id: proc.Repid });
           if (profile) {
-            name = profile.admin_name;
+            name = profile.name;
             // ดึงชื่อ position และ department
             const posEntity = await AppDataSource.getRepository('Position').findOne({ where: { id: profile.position } });
             const deptEntity = await AppDataSource.getRepository('Department').findOne({ where: { id: profile.department } });
@@ -86,10 +85,9 @@ module.exports = (AppDataSource) => {
             id = profile.id;
           }
         } else if (proc.Role === 'superadmin') {
-          const superadminRepo = AppDataSource.getRepository('SuperAdmin');
           profile = await superadminRepo.findOneBy({ id: proc.Repid });
           if (profile) {
-            name = profile.superadmin_name;
+            name = profile.name;
             const posEntity = await AppDataSource.getRepository('Position').findOne({ where: { id: profile.position } });
             const deptEntity = await AppDataSource.getRepository('Department').findOne({ where: { id: profile.department } });
             position_id = profile.position || '';
@@ -105,7 +103,7 @@ module.exports = (AppDataSource) => {
         } else {
           profile = await userRepo.findOneBy({ id: proc.Repid });
           if (profile) {
-            name = profile.User_name;
+            name = profile.name;
             // ดึงชื่อ position และ department
             const posEntity = await AppDataSource.getRepository('Position').findOne({ where: { id: profile.position } });
             const deptEntity = await AppDataSource.getRepository('Department').findOne({ where: { id: profile.department } });
@@ -181,8 +179,7 @@ module.exports = (AppDataSource) => {
   router.get('/employee/:id', async (req, res) => {
     try {
       const { id } = req.params;
-      const processRepo = AppDataSource.getRepository('ProcessCheck');
-      const adminRepo = AppDataSource.getRepository('Admin');
+      const processRepo = AppDataSource.getRepository('User');
       const userRepo = AppDataSource.getRepository('User');
       const departmentRepo = AppDataSource.getRepository('Department');
       const positionRepo = AppDataSource.getRepository('Position');
@@ -200,7 +197,6 @@ module.exports = (AppDataSource) => {
       }
       if (!profile) {
         // Try superadmin
-        const superadminRepo = AppDataSource.getRepository('SuperAdmin');
         profile = await superadminRepo.findOne({ where: { id } });
         role = 'superadmin';
       }
@@ -275,7 +271,7 @@ module.exports = (AppDataSource) => {
         success: true,
         data: {
           id,
-          name: profile.admin_name || profile.User_name || profile.superadmin_name || '',
+          name: profile.name || '',
           email,
           password,
           position: position,
@@ -321,10 +317,8 @@ module.exports = (AppDataSource) => {
       const department = req.body.department_id !== undefined ? 
         (req.body.department_id && req.body.department_id.trim() !== '' ? req.body.department_id : null) : 
         (req.body.department && req.body.department.trim() !== '' ? req.body.department : null);
-      const processRepo = AppDataSource.getRepository('ProcessCheck');
-      const adminRepo = AppDataSource.getRepository('Admin');
+      const processRepo = AppDataSource.getRepository('User');
       const userRepo = AppDataSource.getRepository('User');
-      const superadminRepo = AppDataSource.getRepository('SuperAdmin');
       const departmentRepo = AppDataSource.getRepository('Department');
       const positionRepo = AppDataSource.getRepository('Position');
 
@@ -345,7 +339,7 @@ module.exports = (AppDataSource) => {
 
       // Update fields
       if (role === 'admin') {
-        if (name !== undefined) profile.admin_name = name;
+        if (name !== undefined) profile.name = name;
         if (position !== undefined) profile.position = position;
         if (department !== undefined) profile.department = department;
         if (req.body.gender !== undefined) profile.gender = req.body.gender;
@@ -357,7 +351,7 @@ module.exports = (AppDataSource) => {
         if (req.body.internEndDate !== undefined) profile.end_work = req.body.internEndDate;
         await adminRepo.save(profile);
       } else if (role === 'superadmin') {
-        if (name !== undefined) profile.superadmin_name = name;
+        if (name !== undefined) profile.name = name;
         if (position !== undefined) profile.position = position;
         if (department !== undefined) profile.department = department;
         if (req.body.gender !== undefined) profile.gender = req.body.gender;
@@ -369,7 +363,7 @@ module.exports = (AppDataSource) => {
         if (req.body.internEndDate !== undefined) profile.end_work = req.body.internEndDate;
         await superadminRepo.save(profile);
       } else {
-        if (name !== undefined) profile.User_name = name;
+        if (name !== undefined) profile.name = name;
         if (position !== undefined) profile.position = position;
         if (department !== undefined) profile.department = department;
         if (req.body.gender !== undefined) profile.gender = req.body.gender;
@@ -407,7 +401,7 @@ module.exports = (AppDataSource) => {
 
       sendSuccess(res, {
         id,
-        name: profile.admin_name || profile.User_name || profile.superadmin_name || '',
+        name: profile.name || '',
         email: processCheck ? processCheck.Email : (profile.email || ''),
         password: processCheck ? processCheck.Password : '',
         position: positionName,
@@ -425,10 +419,8 @@ module.exports = (AppDataSource) => {
   router.post('/employee/:id/avatar', async (req, res) => {
     try {
       const { id } = req.params;
-      const processRepo = AppDataSource.getRepository('ProcessCheck');
-      const adminRepo = AppDataSource.getRepository('Admin');
+      const processRepo = AppDataSource.getRepository('User');
       const userRepo = AppDataSource.getRepository('User');
-      const superadminRepo = AppDataSource.getRepository('SuperAdmin');
 
       // Validate target profile exists
       let profile = await adminRepo.findOne({ where: { id } })
@@ -504,7 +496,6 @@ module.exports = (AppDataSource) => {
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
       const userRepo = AppDataSource.getRepository('User');
-      const adminRepo = AppDataSource.getRepository('Admin');
 
       // ดึง leave ทั้งหมดของ user/admin
       let leaves = await leaveRepo.find({ where: { Repid: id }, order: { createdAt: 'DESC' } });

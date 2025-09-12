@@ -192,7 +192,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        User_name: userData.full_name,
+        name: userData.full_name,
         position: userData.position,
         department: userData.department,
         email: email,         // <-- แก้ตรงนี้

@@ -314,12 +314,12 @@ class LineLoginController {
         };
       }
 
-      const processRepo = AppDataSource.getRepository('ProcessCheck');
+      const userRepo = AppDataSource.getRepository('User');
       
-      // Find the user in ProcessCheck table using Repid
-      const processCheck = await processRepo.findOneBy({ Repid: databaseUserId });
+      // Find the user in unified users table using id
+      const user = await userRepo.findOneBy({ id: databaseUserId });
       
-      if (!processCheck) {
+      if (!user) {
         return {
           success: false,
           error: 'User not found in database'
@@ -327,8 +327,8 @@ class LineLoginController {
       }
 
       // Check if LINE user ID is already linked to another user
-      const existingLink = await processRepo.findOneBy({ lineUserId });
-      if (existingLink && existingLink.Repid !== databaseUserId) {
+      const existingLink = await userRepo.findOneBy({ lineUserId });
+      if (existingLink && existingLink.id !== databaseUserId) {
         return {
           success: false,
           error: 'This LINE account is already linked to another user'
@@ -336,15 +336,15 @@ class LineLoginController {
       }
 
       // Link the LINE user ID
-      processCheck.lineUserId = lineUserId;
-      await processRepo.save(processCheck);
+      user.lineUserId = lineUserId;
+      await userRepo.save(user);
 
       return {
         success: true,
         message: 'LINE account linked successfully',
         user: {
-          id: processCheck.Repid,
-          email: processCheck.Email,
+          id: user.id,
+          email: user.Email,
           lineUserId: lineUserId,
           displayName: displayName
         }
@@ -372,16 +372,16 @@ class LineLoginController {
       }
 
       const AppDataSource = global.AppDataSource;
-      const processRepo = AppDataSource.getRepository('ProcessCheck');
+      const userRepo = AppDataSource.getRepository('User');
       
-      // Find the ProcessCheck entry using Repid
-      const processCheck = await processRepo.findOneBy({ Repid: userId });
+      // Find the user entry using id
+      const user = await userRepo.findOneBy({ id: userId });
       
-      if (processCheck && processCheck.lineUserId) {
+      if (user && user.lineUserId) {
         res.json({
           success: true,
           linked: true,
-          lineUserId: processCheck.lineUserId
+          lineUserId: user.lineUserId
         });
       } else {
         res.json({
@@ -412,19 +412,19 @@ class LineLoginController {
       }
 
       const AppDataSource = global.AppDataSource;
-      const processRepo = AppDataSource.getRepository('ProcessCheck');
+      const userRepo = AppDataSource.getRepository('User');
       
-      // Find the ProcessCheck entry using Repid
-      const processCheck = await processRepo.findOneBy({ Repid: userId });
+      // Find the user entry using id
+      const user = await userRepo.findOneBy({ id: userId });
       
-      if (!processCheck) {
+      if (!user) {
         return res.status(404).json({ 
           success: false, 
           error: 'User not found' 
         });
       }
 
-      if (!processCheck.lineUserId) {
+      if (!user.lineUserId) {
         return res.status(400).json({ 
           success: false, 
           error: 'No LINE account linked' 
@@ -432,8 +432,8 @@ class LineLoginController {
       }
 
       // Unlink the LINE account
-      processCheck.lineUserId = null;
-      await processRepo.save(processCheck);
+      user.lineUserId = null;
+      await userRepo.save(user);
 
       res.json({
         success: true,

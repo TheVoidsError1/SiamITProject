@@ -141,8 +141,6 @@ const getUserLeaveQuota = async (userId, leaveTypeId, AppDataSource) => {
   try {
     const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
     const userRepo = AppDataSource.getRepository('User');
-    const adminRepo = AppDataSource.getRepository('Admin');
-    const superAdminRepo = AppDataSource.getRepository('SuperAdmin');
     
     // Get user's position
     let positionId = null;
@@ -197,8 +195,6 @@ const getLeaveUsageSummary = async (userId, year = null, AppDataSource) => {
     const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
     const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
     const userRepo = AppDataSource.getRepository('User');
-    const adminRepo = AppDataSource.getRepository('Admin');
-    const superadminRepo = AppDataSource.getRepository('SuperAdmin');
     
     // Get user's position
     let positionId = null;

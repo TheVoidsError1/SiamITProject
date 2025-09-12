@@ -417,10 +417,8 @@ module.exports = (AppDataSource) => {
       const userId = req.user.userId;
       
       // Get repositories
-      const processRepo = AppDataSource.getRepository('ProcessCheck');
+      const processRepo = AppDataSource.getRepository('User');
       const userRepo = AppDataSource.getRepository('User');
-      const adminRepo = AppDataSource.getRepository('Admin');
-      const superadminRepo = AppDataSource.getRepository('SuperAdmin');
       const departmentRepo = AppDataSource.getRepository('Department');
       const positionRepo = AppDataSource.getRepository('Position');
 
@@ -456,11 +454,11 @@ module.exports = (AppDataSource) => {
       // Get user name based on role
       let userName = '';
       if (role === 'admin') {
-        userName = userProfile.admin_name || '';
+        userName = userProfile.name || '';
       } else if (role === 'superadmin') {
-        userName = userProfile.superadmin_name || '';
+        userName = userProfile.name || '';
       } else {
-        userName = userProfile.User_name || '';
+        userName = userProfile.name || '';
       }
 
       // Get department information

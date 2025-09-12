@@ -22,7 +22,6 @@ module.exports = (AppDataSource) => {
       }
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
-      const adminRepo = AppDataSource.getRepository('Admin');
 
       // --- เพิ่ม paging ---
       const page = parseInt(req.query.page) || 1;
@@ -289,19 +288,18 @@ module.exports = (AppDataSource) => {
         if (leave.statusBy && leave.status === 'approved') {
           const admin = await adminRepo.findOneBy({ id: leave.statusBy });
           if (admin) {
-            approvedBy = admin.admin_name;
+            approvedBy = admin.name;
           } else {
             // ลองหาใน user table
             const userRepo = AppDataSource.getRepository('User');
             const user = await userRepo.findOneBy({ id: leave.statusBy });
             if (user) {
-              approvedBy = user.User_name;
+              approvedBy = user.name;
             } else {
               // ลองหาใน superadmin table
-              const superadminRepo = AppDataSource.getRepository('SuperAdmin');
               const superadmin = await superadminRepo.findOneBy({ id: leave.statusBy });
               if (superadmin) {
-                approvedBy = superadmin.superadmin_name;
+                approvedBy = superadmin.name;
               } else {
                 approvedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
               }
@@ -311,19 +309,18 @@ module.exports = (AppDataSource) => {
         if (leave.statusBy && leave.status === 'rejected') {
           const admin = await adminRepo.findOneBy({ id: leave.statusBy });
           if (admin) {
-            rejectedBy = admin.admin_name;
+            rejectedBy = admin.name;
           } else {
             // ลองหาใน user table
             const userRepo = AppDataSource.getRepository('User');
             const user = await userRepo.findOneBy({ id: leave.statusBy });
             if (user) {
-              rejectedBy = user.User_name;
+              rejectedBy = user.name;
             } else {
               // ลองหาใน superadmin table
-              const superadminRepo = AppDataSource.getRepository('SuperAdmin');
               const superadmin = await superadminRepo.findOneBy({ id: leave.statusBy });
               if (superadmin) {
-                rejectedBy = superadmin.superadmin_name;
+                rejectedBy = superadmin.name;
               } else {
                 rejectedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
               }
