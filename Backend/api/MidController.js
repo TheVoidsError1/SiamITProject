@@ -205,7 +205,14 @@ module.exports = (AppDataSource) => {
    */
   router.get('/admins', async (req, res) => {
     try {
-      const admins = await adminController.findAll(AppDataSource);
+      // Get users with admin or superadmin role from unified User table
+      const userRepo = AppDataSource.getRepository('User');
+      const admins = await userRepo.find({
+        where: [
+          { Role: 'admin' },
+          { Role: 'superadmin' }
+        ]
+      });
       sendSuccess(res, admins, 'Fetch admins success');
     } catch (err) {
       sendError(res, err.message, 500);
