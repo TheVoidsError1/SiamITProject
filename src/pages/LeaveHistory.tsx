@@ -1,6 +1,5 @@
-import ImagePreviewDialog from '@/components/dialogs/ImagePreviewDialog';
+import LeaveDetailDialog from '@/components/dialogs/LeaveDetailDialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -13,15 +12,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { format } from "date-fns";
 import { enUS, th } from "date-fns/locale";
-import { AlertCircle, Calendar, CheckCircle, ChevronLeft, ChevronRight, Clock, Eye, FileText, Filter, History, Trash2, User, X, XCircle } from "lucide-react";
+import { AlertCircle, Calendar, CheckCircle, ChevronLeft, ChevronRight, Clock, Eye, FileText, Filter, History, Trash2, X, XCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from 'react-router-dom';
+import { getRetroactiveBadge, getStatusBadge } from '../components/leave/LeaveBadges';
 import { monthNames } from '../constants/common';
-import { apiService, createAuthenticatedFileUrl } from '../lib/api';
-import LeaveDetailDialog from '@/components/dialogs/LeaveDetailDialog';
-import { isRetroactiveLeave, calcHours, getTypeColor, getLeaveTypeLabel, translateLeaveType } from '../lib/leaveUtils';
-import { getStatusBadge, getRetroactiveBadge } from '../components/leave/LeaveBadges';
+import { apiService } from '../lib/api';
+import { calcHours, getLeaveTypeLabel, getTypeColor, isRetroactiveLeave, translateLeaveType } from '../lib/leaveUtils';
 import { formatDateLocalized } from '../lib/utils';
 
 const LeaveHistory = () => {
@@ -930,15 +928,28 @@ const LeaveHistory = () => {
 
                         <SelectItem value="all" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{t('leave.statusAll')}</SelectItem>
 
-                        {statusOptions.map(status => (
+                        {statusOptions.map(status => {
 
-                          <SelectItem key={status} value={status} className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">
+                          // Map status values to translation keys
+                          const getStatusTranslation = (statusValue: string) => {
+                            switch (statusValue.toLowerCase()) {
+                              case 'pending':
+                                return t('leave.pending');
+                              case 'approved':
+                                return t('leave.approved');
+                              case 'rejected':
+                                return t('leave.rejected');
+                              default:
+                                return statusValue; // fallback to original value
+                            }
+                          };
 
-                            {t(`leave.${status}`, status)}
-
-                          </SelectItem>
-
-                        ))}
+                          return (
+                            <SelectItem key={status} value={status} className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">
+                              {getStatusTranslation(status)}
+                            </SelectItem>
+                          );
+                        })}
 
                       </SelectContent>
 
@@ -970,10 +981,10 @@ const LeaveHistory = () => {
                           {t('leave.allTypes')}
                         </SelectItem>
                         <SelectItem value="normal" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">
-                          {t('history.normalLeave')}
+                          {t('leave.notBackdated')}
                         </SelectItem>
                         <SelectItem value="retroactive" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">
-                          {t('history.retroactiveLeave')}
+                          {t('leave.backdatedOnly')}
                         </SelectItem>
                       </SelectContent>
                     </Select>

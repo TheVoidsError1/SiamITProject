@@ -22,7 +22,13 @@ import { Link, useLocation } from "react-router-dom";
 import NotificationBell from "./NotificationBell";
 
 const items = [
-  // Prioritize leave actions at the top of the main menu
+  // Dashboard at the top of the main menu
+  {
+    title: "navigation.home",
+    url: "/",
+    icon: Home,
+  },
+  // Prioritize leave actions after dashboard
   {
     title: "navigation.leaveRequest",
     url: "/leave-request",
@@ -42,11 +48,6 @@ const items = [
     title: "navigation.announcementsFeed",
     url: "/announcements",
     icon: Rss,
-  },
-  {
-    title: "navigation.home",
-    url: "/",
-    icon: Home,
   },
   {
     title: "navigation.profile",
