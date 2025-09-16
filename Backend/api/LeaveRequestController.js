@@ -29,6 +29,8 @@
      try {
        const leaveUsedRepo = AppDataSource.getRepository('LeaveUsed');
        const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+    
+       
        
                // Get leave type entity
         let leaveTypeEntity = null;
