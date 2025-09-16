@@ -176,6 +176,9 @@
   "markAllAsRead": "Mark All as Read",
   "leave": {
     "all": "All",
+    "pending": "Pending",
+    "rejected": "Rejected",
+    "approved": "Approved",
     "currentNotice": "Today",
     "statusAll": "All Statuses",
     "leaveRequest": "Leave Request",

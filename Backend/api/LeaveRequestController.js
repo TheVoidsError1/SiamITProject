@@ -155,21 +155,21 @@
      // Function to send LINE notification when leave request status changes
   async function sendLineNotification(leave, status, approverName, rejectedReason) {
     try {
-      // Get the user's LINE user ID from ProcessCheck table
-      const processRepo = AppDataSource.getRepository('User');
-      const processCheck = await processRepo.findOneBy({ Repid: leave.Repid });
+      // Get the user's LINE user ID from unified User table
+      const userRepo = AppDataSource.getRepository('User');
+      const user = await userRepo.findOneBy({ id: leave.Repid });
       
       console.log('=== LINE Notification Database Debug ===');
       console.log('Leave Repid:', leave.Repid);
-      console.log('ProcessCheck found:', !!processCheck);
-      if (processCheck) {
-        console.log('ProcessCheck lineUserId:', processCheck.lineUserId);
-        console.log('ProcessCheck lineUserId type:', typeof processCheck.lineUserId);
-        console.log('ProcessCheck lineUserId length:', processCheck.lineUserId ? processCheck.lineUserId.length : 0);
+      console.log('User found:', !!user);
+      if (user) {
+        console.log('User lineUserId:', user.lineUserId);
+        console.log('User lineUserId type:', typeof user.lineUserId);
+        console.log('User lineUserId length:', user.lineUserId ? user.lineUserId.length : 0);
       }
       console.log('========================================');
       
-      if (!processCheck || !processCheck.lineUserId) {
+      if (!user || !user.lineUserId) {
         console.log('User not linked to LINE or not found:', leave.Repid);
         return; // User not linked to LINE
       }
@@ -1568,10 +1568,9 @@
      // GET /api/leave-request/detail/:id - For dialog details
      router.get('/detail/:id', async (req, res) => {
        try {
-         const leaveRepo = AppDataSource.getRepository('LeaveRequest');
-         const userRepo = AppDataSource.getRepository('User');
-         const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
-         const processRepo = AppDataSource.getRepository('User');
+        const leaveRepo = AppDataSource.getRepository('LeaveRequest');
+        const userRepo = AppDataSource.getRepository('User');
+        const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
          const { id } = req.params;
           // --- i18n: Detect language (fallback to 'th') ---
           let lang = req.headers['accept-language'] || req.query.lang || 'th';
@@ -1586,26 +1585,13 @@
          console.log('StartDate from database:', leave.startDate);
          console.log('EndDate from database:', leave.endDate);
 
-         // Get name by looking up Repid in ProcessCheck, then correct table by role
-         let name = '-';
-         if (leave.Repid) {
-           const process = await processRepo.findOneBy({ Repid: leave.Repid });
-           console.log('Repid:', leave.Repid, 'Process:', process);
-           if (process && process.Role) {
-             if (process.Role === 'admin') {
-               const admin = await adminRepo.findOneBy({ id: leave.Repid });
-               console.log('Admin lookup:', admin);
-               if (admin && admin.name) name = admin.name;
-             } else if (process.Role === 'superadmin') {
-               const superadmin = await superadminRepo.findOneBy({ id: leave.Repid });
-               if (superadmin && superadmin.name) name = superadmin.name;
-             } else {
-               const user = await userRepo.findOneBy({ id: leave.Repid });
-               console.log('User lookup:', user);
-               if (user && user.name) name = user.name;
-             }
-           }
-         }
+        // Get name by looking up Repid in unified User table
+        let name = '-';
+        if (leave.Repid) {
+          const user = await userRepo.findOneBy({ id: leave.Repid });
+          console.log('User lookup:', user);
+          if (user && user.name) name = user.name;
+        }
 
                    // Get leave type name
           let leaveTypeName = leave.leaveType;
@@ -2242,13 +2228,7 @@
 
         // ตรวจสอบว่า user ที่จะสร้าง leave request ให้มีอยู่จริง
         const userRepo = AppDataSource.getRepository('User');
-        let targetUser = await userRepo.findOneBy({ id: repid });
-        if (!targetUser) {
-          targetUser = await adminRepo.findOneBy({ id: repid });
-        }
-        if (!targetUser) {
-          targetUser = await superadminRepo.findOneBy({ id: repid });
-        }
+        const targetUser = await userRepo.findOneBy({ id: repid });
         if (!targetUser) {
           return sendNotFound(res, 'Target user not found');
         }
