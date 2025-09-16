@@ -46,6 +46,8 @@ module.exports = (AppDataSource) => {
     try {
       const processRepo = AppDataSource.getRepository('User');
       const userRepo = AppDataSource.getRepository('User');
+      const adminRepo = AppDataSource.getRepository('User'); // Admin users are stored in User table
+      const superadminRepo = AppDataSource.getRepository('User'); // Superadmin users are also stored in User table
       // Language detection removed - frontend will handle i18n
 
       // ดึง process_check ทั้งหมด
@@ -181,6 +183,8 @@ module.exports = (AppDataSource) => {
       const { id } = req.params;
       const processRepo = AppDataSource.getRepository('User');
       const userRepo = AppDataSource.getRepository('User');
+      const adminRepo = AppDataSource.getRepository('User'); // Admin users are stored in User table
+      const superadminRepo = AppDataSource.getRepository('User'); // Superadmin users are also stored in User table
       const departmentRepo = AppDataSource.getRepository('Department');
       const positionRepo = AppDataSource.getRepository('Position');
       const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
@@ -319,6 +323,8 @@ module.exports = (AppDataSource) => {
         (req.body.department && req.body.department.trim() !== '' ? req.body.department : null);
       const processRepo = AppDataSource.getRepository('User');
       const userRepo = AppDataSource.getRepository('User');
+      const adminRepo = AppDataSource.getRepository('User'); // Admin users are stored in User table
+      const superadminRepo = AppDataSource.getRepository('User'); // Superadmin users are also stored in User table
       const departmentRepo = AppDataSource.getRepository('Department');
       const positionRepo = AppDataSource.getRepository('Position');
 
@@ -421,6 +427,8 @@ module.exports = (AppDataSource) => {
       const { id } = req.params;
       const processRepo = AppDataSource.getRepository('User');
       const userRepo = AppDataSource.getRepository('User');
+      const adminRepo = AppDataSource.getRepository('User'); // Admin users are stored in User table
+      const superadminRepo = AppDataSource.getRepository('User'); // Superadmin users are also stored in User table
 
       // Validate target profile exists
       let profile = await adminRepo.findOne({ where: { id } })

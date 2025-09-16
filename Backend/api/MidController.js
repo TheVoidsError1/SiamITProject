@@ -349,6 +349,7 @@ module.exports = (AppDataSource) => {
     try {
       const { id } = req.params;
       const { deleteUserComprehensive } = require('../utils/userDeletionUtils');
+      const adminRepo = AppDataSource.getRepository('User'); // Admin users are stored in User table
 
       const result = await deleteUserComprehensive(AppDataSource, id, 'admin', adminRepo);
       

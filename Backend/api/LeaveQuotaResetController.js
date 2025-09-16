@@ -58,6 +58,8 @@ module.exports = (AppDataSource) => {
 
       const positionRepo = queryRunner.manager.getRepository('Position');
       const userRepo = queryRunner.manager.getRepository('User');
+      const adminRepo = queryRunner.manager.getRepository('User'); // Admin users are stored in User table
+      const superAdminRepo = queryRunner.manager.getRepository('User'); // Superadmin users are also stored in User table
       const leaveUsedRepo = queryRunner.manager.getRepository('LeaveUsed');
 
       // คัดเลือกตำแหน่งเป้าหมาย

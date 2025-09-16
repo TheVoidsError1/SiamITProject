@@ -14,6 +14,8 @@ module.exports = (AppDataSource) => {
     try {
       // Find the user by ID in User, Admin, and SuperAdmin tables
       const userRepo = AppDataSource.getRepository('User');
+      const adminRepo = AppDataSource.getRepository('User'); // Admin users are stored in User table
+      const superadminRepo = AppDataSource.getRepository('User'); // Superadmin users are also stored in User table
       // Try to find user in User table
       let user = await userRepo.findOne({
         where: { id: userId }
