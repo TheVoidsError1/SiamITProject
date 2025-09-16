@@ -6,10 +6,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const entities = [
-  require('../EnityTable/user.js'),
-  require('../EnityTable/ProcessCheck.entity.js'),
-  require('../EnityTable/admin.js'),
-  require('../EnityTable/superadmin.js'),
+  require('../EnityTable/User.entity.js'),
   require('../EnityTable/leaveRequest.entity.js'),
   require('../EnityTable/position.js'),
   require('../EnityTable/leaveType.js'),
