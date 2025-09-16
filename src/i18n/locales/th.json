@@ -173,6 +173,9 @@
   "markAllAsRead": "อ่านทั้งหมด",
   "leave": {
     "all": "ทั้งหมด",
+    "pending": "รอการอนุมัติ",
+    "rejected": "ปฏิเสธ",
+    "approved": "อนุมัติ",
     "statusAll": "ทุกสถานะ",
     "leaveRequest": "ขอลา",
     "businessHours": "เวลาทำงาน",

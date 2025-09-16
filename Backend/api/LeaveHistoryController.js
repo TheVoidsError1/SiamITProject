@@ -22,6 +22,8 @@ module.exports = (AppDataSource) => {
       }
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+      const adminRepo = AppDataSource.getRepository('User'); // Admin users are stored in User table
+      const superadminRepo = AppDataSource.getRepository('User'); // Superadmin users are also stored in User table
 
       // --- เพิ่ม paging ---
       const page = parseInt(req.query.page) || 1;
@@ -429,6 +431,8 @@ module.exports = (AppDataSource) => {
       if (!userId) return res.status(401).json({ status: 'error', message: 'Unauthorized' });
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+      const adminRepo = AppDataSource.getRepository('User'); // Admin users are stored in User table
+      const superadminRepo = AppDataSource.getRepository('User'); // Superadmin users are also stored in User table
 
       // ดึง leave ทั้งหมดของ user
       const leaves = await leaveRepo.find({ where: { Repid: userId } });

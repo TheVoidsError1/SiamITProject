@@ -17,9 +17,6 @@ module.exports = new EntitySchema({
     endDate: { type: 'date' },
     startTime: { type: 'varchar', nullable: true },
     endTime: { type: 'varchar', nullable: true },
-    days: { type: 'decimal', precision: 10, scale: 2, nullable: true }, // จำนวนวัน
-    durationType: { type: 'varchar', nullable: true }, // 'day' หรือ 'hour'
-    durationHours: { type: 'decimal', precision: 10, scale: 2, nullable: true }, // จำนวนชั่วโมง
     reason: { type: 'text' },
     rejectedReason: { type: 'text', nullable: true},
     contact: { type: 'varchar', nullable: true },

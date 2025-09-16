@@ -29,6 +29,8 @@
      try {
        const leaveUsedRepo = AppDataSource.getRepository('LeaveUsed');
        const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
+    
+       
        
                // Get leave type entity
         let leaveTypeEntity = null;
@@ -153,21 +155,21 @@
      // Function to send LINE notification when leave request status changes
   async function sendLineNotification(leave, status, approverName, rejectedReason) {
     try {
-      // Get the user's LINE user ID from ProcessCheck table
-      const processRepo = AppDataSource.getRepository('User');
-      const processCheck = await processRepo.findOneBy({ Repid: leave.Repid });
+      // Get the user's LINE user ID from unified User table
+      const userRepo = AppDataSource.getRepository('User');
+      const user = await userRepo.findOneBy({ id: leave.Repid });
       
       console.log('=== LINE Notification Database Debug ===');
       console.log('Leave Repid:', leave.Repid);
-      console.log('ProcessCheck found:', !!processCheck);
-      if (processCheck) {
-        console.log('ProcessCheck lineUserId:', processCheck.lineUserId);
-        console.log('ProcessCheck lineUserId type:', typeof processCheck.lineUserId);
-        console.log('ProcessCheck lineUserId length:', processCheck.lineUserId ? processCheck.lineUserId.length : 0);
+      console.log('User found:', !!user);
+      if (user) {
+        console.log('User lineUserId:', user.lineUserId);
+        console.log('User lineUserId type:', typeof user.lineUserId);
+        console.log('User lineUserId length:', user.lineUserId ? user.lineUserId.length : 0);
       }
       console.log('========================================');
       
-      if (!processCheck || !processCheck.lineUserId) {
+      if (!user || !user.lineUserId) {
         console.log('User not linked to LINE or not found:', leave.Repid);
         return; // User not linked to LINE
       }
@@ -300,6 +302,10 @@
 
   module.exports = (AppDataSource) => {
     const router = express.Router();
+    
+    // Define repositories for unified User table (adminRepo and superadminRepo are now just aliases for User)
+    const adminRepo = AppDataSource.getRepository('User');
+    const superadminRepo = AppDataSource.getRepository('User');
 
     // POST /api/leave-request
     router.post('/', leaveAttachmentsUpload.array('attachments', 10), async (req, res) => {
@@ -320,20 +326,12 @@
           }
         }
         // Language detection removed - frontend will handle i18n
-        // ดึงตำแหน่งจาก user หรือ admin
+        // ดึงตำแหน่งจาก unified User table
         let employeeType = null;
         if (userId) {
-          if (role === 'admin') {
-            const admin = await adminRepo.findOneBy({ id: userId });
-            employeeType = admin ? admin.position : null;
-          } else if (role === 'superadmin') {
-            const superadmin = await superadminRepo.findOneBy({ id: userId });
-            employeeType = superadmin ? superadmin.position : null;
-          } else {
-            const userRepo = AppDataSource.getRepository('User');
-            const user = await userRepo.findOneBy({ id: userId });
-            employeeType = user ? user.position : null;
-          }
+          const userRepo = AppDataSource.getRepository('User');
+          const user = await userRepo.findOneBy({ id: userId });
+          employeeType = user ? user.position : null;
         }
         const {
           /* employeeType, */ leaveType, personalLeaveType, startDate, endDate,
@@ -587,7 +585,6 @@
           reason,
           supervisor,
           contact,
-          imgLeave: attachmentsArr.length === 1 ? attachmentsArr[0] : null, // backward compatible
           attachments: attachmentsArr.length > 0 ? JSON.stringify(attachmentsArr) : null,
           status: 'pending',
           backdated, // set backdated column
@@ -604,18 +601,10 @@
           let leaveTypeName = leaveType;
           
           try {
-            // Get user name based on role
-            if (role === 'admin') {
-              const admin = await adminRepo.findOneBy({ id: userId });
-              userName = admin ? admin.name : 'Unknown User';
-            } else if (role === 'superadmin') {
-              const superadmin = await superadminRepo.findOneBy({ id: userId });
-              userName = superadmin ? superadmin.name : 'Unknown User';
-            } else {
-              const userRepo = AppDataSource.getRepository('User');
-              const user = await userRepo.findOneBy({ id: userId });
-              userName = user ? user.name : 'Unknown User';
-            }
+            // Get user name from unified User table
+            const userRepo = AppDataSource.getRepository('User');
+            const user = await userRepo.findOneBy({ id: userId });
+            userName = user ? user.name : 'Unknown User';
             
                          // Get leave type name
              if (leaveTypeEntity) {
@@ -716,19 +705,7 @@
           let leaveTypeObj = null;
           if (leave.Repid) {
             user = await userRepo.findOneBy({ id: leave.Repid });
-            if (!user) {
-              // ถ้าไม่เจอใน user ให้ลองหาใน admin
-              const admin = await adminRepo.findOneBy({ id: leave.Repid });
-              if (admin) {
-                user = { name: admin.name, department: admin.department, position: admin.position };
-              } else {
-                // ถ้าไม่เจอใน admin ให้ลองหาใน superadmin
-                const superadmin = await superadminRepo.findOneBy({ id: leave.Repid });
-                if (superadmin) {
-                  user = { name: superadmin.name, department: superadmin.department, position: superadmin.position };
-                }
-              }
-            } else {
+            if (user) {
               user = { name: user.name, department: user.department, position: user.position };
             }
           }
@@ -965,19 +942,7 @@
           let leaveTypeObj = null;
           if (leave.Repid) {
             user = await userRepo.findOneBy({ id: leave.Repid });
-            if (!user) {
-              // ถ้าไม่เจอใน user ให้ลองหาใน admin
-              const admin = await adminRepo.findOneBy({ id: leave.Repid });
-              if (admin) {
-                user = { name: admin.name, department: admin.department, position: admin.position };
-              } else {
-                // ถ้าไม่เจอใน admin ให้ลองหาใน superadmin
-                const superadmin = await superadminRepo.findOneBy({ id: leave.Repid });
-                if (superadmin) {
-                  user = { name: superadmin.name, department: superadmin.department, position: superadmin.position };
-                }
-              }
-            } else {
+            if (user) {
               user = { name: user.name, department: user.department, position: user.position };
             }
           }
@@ -1592,7 +1557,6 @@
          const attachmentsArr = req.files ? req.files.map(f => f.filename) : [];
          if (attachmentsArr.length > 0) {
            leave.attachments = JSON.stringify(attachmentsArr);
-           leave.imgLeave = attachmentsArr.length === 1 ? attachmentsArr[0] : null;
          }
          await leaveRepo.save(leave);
          res.json({ success: true, data: leave, message: 'Leave request updated' });
@@ -1604,10 +1568,9 @@
      // GET /api/leave-request/detail/:id - For dialog details
      router.get('/detail/:id', async (req, res) => {
        try {
-         const leaveRepo = AppDataSource.getRepository('LeaveRequest');
-         const userRepo = AppDataSource.getRepository('User');
-         const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
-         const processRepo = AppDataSource.getRepository('User');
+        const leaveRepo = AppDataSource.getRepository('LeaveRequest');
+        const userRepo = AppDataSource.getRepository('User');
+        const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
          const { id } = req.params;
           // --- i18n: Detect language (fallback to 'th') ---
           let lang = req.headers['accept-language'] || req.query.lang || 'th';
@@ -1619,30 +1582,16 @@
          console.log('Detail API called for leave id:', id);
          if (!leave) return res.status(404).json({ success: false, message: 'Not found' });
          console.log('Leave row:', leave);
-         console.log('Days from database:', leave.days);
          console.log('StartDate from database:', leave.startDate);
          console.log('EndDate from database:', leave.endDate);
 
-         // Get name by looking up Repid in ProcessCheck, then correct table by role
-         let name = '-';
-         if (leave.Repid) {
-           const process = await processRepo.findOneBy({ Repid: leave.Repid });
-           console.log('Repid:', leave.Repid, 'Process:', process);
-           if (process && process.Role) {
-             if (process.Role === 'admin') {
-               const admin = await adminRepo.findOneBy({ id: leave.Repid });
-               console.log('Admin lookup:', admin);
-               if (admin && admin.name) name = admin.name;
-             } else if (process.Role === 'superadmin') {
-               const superadmin = await superadminRepo.findOneBy({ id: leave.Repid });
-               if (superadmin && superadmin.name) name = superadmin.name;
-             } else {
-               const user = await userRepo.findOneBy({ id: leave.Repid });
-               console.log('User lookup:', user);
-               if (user && user.name) name = user.name;
-             }
-           }
-         }
+        // Get name by looking up Repid in unified User table
+        let name = '-';
+        if (leave.Repid) {
+          const user = await userRepo.findOneBy({ id: leave.Repid });
+          console.log('User lookup:', user);
+          if (user && user.name) name = user.name;
+        }
 
                    // Get leave type name
           let leaveTypeName = leave.leaveType;
@@ -1779,9 +1728,6 @@
              // เพิ่มข้อมูลที่จำเป็นสำหรับการแสดงผล
              startTime: leave.startTime,
              endTime: leave.endTime,
-             days: leave.days, // ส่งค่า days จากฐานข้อมูลโดยตรง
-             durationType: leave.durationType || 'day', // ถ้าไม่มีให้เป็น day
-             durationHours: leave.durationHours || null,
              statusBy: leave.statusBy,
              approvedTime: leave.approvedTime,
              rejectedTime: leave.rejectedTime,
@@ -2121,27 +2067,7 @@
            // Find user information
            if (leave.Repid) {
              user = await userRepo.findOneBy({ id: leave.Repid });
-             if (!user) {
-               // Try admin
-               const admin = await adminRepo.findOneBy({ id: leave.Repid });
-               if (admin) {
-                 user = { 
-                   name: admin.name, 
-                   department: admin.department, 
-                   position: admin.position 
-                 };
-               } else {
-                 // Try superadmin
-                 const superadmin = await superadminRepo.findOneBy({ id: leave.Repid });
-                 if (superadmin) {
-                   user = { 
-                     name: superadmin.name, 
-                     department: superadmin.department, 
-                     position: superadmin.position 
-                   };
-                 }
-               }
-             } else {
+             if (user) {
                user = { 
                  name: user.name, 
                  department: user.department, 
@@ -2302,13 +2228,7 @@
 
         // ตรวจสอบว่า user ที่จะสร้าง leave request ให้มีอยู่จริง
         const userRepo = AppDataSource.getRepository('User');
-        let targetUser = await userRepo.findOneBy({ id: repid });
-        if (!targetUser) {
-          targetUser = await adminRepo.findOneBy({ id: repid });
-        }
-        if (!targetUser) {
-          targetUser = await superadminRepo.findOneBy({ id: repid });
-        }
+        const targetUser = await userRepo.findOneBy({ id: repid });
         if (!targetUser) {
           return sendNotFound(res, 'Target user not found');
         }

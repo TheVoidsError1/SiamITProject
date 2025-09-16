@@ -45,6 +45,8 @@ module.exports = (AppDataSource) => {
   router.get('/employees', async (req, res) => {
     try {
       const userRepo = AppDataSource.getRepository('User');
+      const adminRepo = AppDataSource.getRepository('User'); // Admin users are stored in User table
+      const superadminRepo = AppDataSource.getRepository('User'); // Superadmin users are also stored in User table
       // Language detection removed - frontend will handle i18n
 
       // ดึงข้อมูลผู้ใช้ทั้งหมดจาก table User โดยตรง
@@ -141,6 +143,8 @@ module.exports = (AppDataSource) => {
     try {
       const { id } = req.params;
       const userRepo = AppDataSource.getRepository('User');
+      const adminRepo = AppDataSource.getRepository('User'); // Admin users are stored in User table
+      const superadminRepo = AppDataSource.getRepository('User'); // Superadmin users are also stored in User table
       const departmentRepo = AppDataSource.getRepository('Department');
       const positionRepo = AppDataSource.getRepository('Position');
       const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
@@ -267,6 +271,8 @@ module.exports = (AppDataSource) => {
         (req.body.department_id && req.body.department_id.trim() !== '' ? req.body.department_id : null) : 
         (req.body.department && req.body.department.trim() !== '' ? req.body.department : null);
       const userRepo = AppDataSource.getRepository('User');
+      const adminRepo = AppDataSource.getRepository('User'); // Admin users are stored in User table
+      const superadminRepo = AppDataSource.getRepository('User'); // Superadmin users are also stored in User table
       const departmentRepo = AppDataSource.getRepository('Department');
       const positionRepo = AppDataSource.getRepository('Position');
 
@@ -332,6 +338,8 @@ module.exports = (AppDataSource) => {
     try {
       const { id } = req.params;
       const userRepo = AppDataSource.getRepository('User');
+      const adminRepo = AppDataSource.getRepository('User'); // Admin users are stored in User table
+      const superadminRepo = AppDataSource.getRepository('User'); // Superadmin users are also stored in User table
 
       // Validate target profile exists
       const profile = await userRepo.findOne({ where: { id } });
