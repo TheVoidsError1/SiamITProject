@@ -675,13 +675,13 @@ const EmployeeDetail = () => {
                           value={editData.gender}
                           onChange={e => setEditData({ ...editData, gender: e.target.value })}
                         >
-                          <option value="">{t('employee.selectGender')}</option>
                           <option value="male">{t('employee.male')}</option>
                           <option value="female">{t('employee.female')}</option>
+                          <option value="other">{t('employee.other')}</option>
                         </select>
                       ) : (
                         <p className="text-lg text-blue-700">
-                          {employee.gender === 'male' ? t('employee.male') : employee.gender === 'female' ? t('employee.female') : '-'}
+                          {employee.gender === 'male' ? t('employee.male') : employee.gender === 'female' ? t('employee.female') : employee.gender === 'other' ? t('employee.other') : '-'}
                         </p>
                       )}
                     </div>
