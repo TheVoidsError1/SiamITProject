@@ -9,7 +9,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { apiService } from '@/lib/api';
 import { ArrowLeftCircle, CalendarDays, CheckCircle, ClipboardList, Clock, FileText, Phone, Send, Shield, User, UserCheck, XCircle, Ban, CheckCircle2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from 'react-router-dom';
 import { FileUpload } from "./FileUpload";
@@ -70,7 +70,15 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
   const [positions, setPositions] = useState<{ id: string; position_name_th: string; position_name_en: string }[]>([]);
   const [admins, setAdmins] = useState<{ id: string; name: string; role: string }[]>([]);
   const [superadmins, setSuperadmins] = useState<{ id: string; name: string; role: string }[]>([]);
-  const approverList = [...admins, ...superadmins];
+  
+  // Create unique approver list to avoid duplicate keys
+  const approverList = React.useMemo(() => {
+    const allApprovers = [...admins, ...superadmins];
+    const uniqueApprovers = allApprovers.filter((approver, index, self) => 
+      index === self.findIndex(a => a.id === approver.id)
+    );
+    return uniqueApprovers;
+  }, [admins, superadmins]);
   const [users, setUsers] = useState<{ id: string; name: string; email: string; role: string; department_name_th?: string; department_name_en?: string; position_name_th?: string; position_name_en?: string }[]>([]);
   const { user } = useAuth();
   const [timeError, setTimeError] = useState("");
