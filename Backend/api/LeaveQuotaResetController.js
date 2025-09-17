@@ -82,18 +82,10 @@ module.exports = (AppDataSource) => {
         return sendSuccess(res, { positions: 0, users: 0, affected: 0 }, 'No positions to reset');
       }
 
-      // ค้นหาผู้ใช้ในตำแหน่งเป้าหมาย (user/admin/superadmin)
-      const [users, admins, supers] = await Promise.all([
-        userRepo.find({ where: { position: In(positionIds) } }),
-        adminRepo.find({ where: { position: In(positionIds) } }),
-        superAdminRepo.find({ where: { position: In(positionIds) } })
-      ]);
+      // ค้นหาผู้ใช้ในตำแหน่งเป้าหมาย (unified users table)
+      const users = await userRepo.find({ where: { position: In(positionIds) } });
 
-      const userIds = [
-        ...users.map(u => u.id),
-        ...admins.map(a => a.id),
-        ...supers.map(s => s.id),
-      ];
+      const userIds = users.map(u => u.id);
 
       if (userIds.length === 0) {
         await queryRunner.commitTransaction();

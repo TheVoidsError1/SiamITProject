@@ -173,9 +173,6 @@
   "markAllAsRead": "อ่านทั้งหมด",
   "leave": {
     "all": "ทั้งหมด",
-    "pending": "รอการอนุมัติ",
-    "rejected": "ปฏิเสธ",
-    "approved": "อนุมัติ",
     "statusAll": "ทุกสถานะ",
     "leaveRequest": "ขอลา",
     "businessHours": "เวลาทำงาน",
@@ -593,6 +590,10 @@
     "days": "วัน"
   },
   "admin": {
+    "pending": "รอการอนุมัติ",
+    "reject": "ปฏิเสธ",
+    "rejected": "ปฏิเสธ",
+    "approved": "อนุมัติแล้ว",
     "pendingRequests": "คำขอรออนุมัติ",
     "approvedThisMonth": "อนุมัติในเดือนนี้",
     "totalEmployees": "พนักงานทั้งหมด",

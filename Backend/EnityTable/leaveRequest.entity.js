@@ -10,7 +10,7 @@ module.exports = new EntitySchema({
       length: 36,
       generated: 'uuid',
     },
-    Repid: { type: 'varchar', nullable: true}, // Repid  ของ ProcessCheck เชื่อมกับ id ของ ProcessCheck
+    Repid: { type: 'varchar', nullable: true}, // Repid เชื่อมกับ id ของ users table
     employeeType: { type: 'varchar' },
     leaveType: { type: 'varchar' },
     startDate: { type: 'date' },

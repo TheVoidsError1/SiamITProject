@@ -22,8 +22,7 @@ module.exports = (AppDataSource) => {
       }
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
-      const adminRepo = AppDataSource.getRepository('User'); // Admin users are stored in User table
-      const superadminRepo = AppDataSource.getRepository('User'); // Superadmin users are also stored in User table
+      const userRepo = AppDataSource.getRepository('User');
 
       // --- เพิ่ม paging ---
       const page = parseInt(req.query.page) || 1;
@@ -288,45 +287,21 @@ module.exports = (AppDataSource) => {
           }
         }
         if (leave.statusBy && leave.status === 'approved') {
-          const admin = await adminRepo.findOneBy({ id: leave.statusBy });
-          if (admin) {
-            approvedBy = admin.name;
+          // Look up approver in unified users table
+          const approver = await userRepo.findOneBy({ id: leave.statusBy });
+          if (approver) {
+            approvedBy = approver.name;
           } else {
-            // ลองหาใน user table
-            const userRepo = AppDataSource.getRepository('User');
-            const user = await userRepo.findOneBy({ id: leave.statusBy });
-            if (user) {
-              approvedBy = user.name;
-            } else {
-              // ลองหาใน superadmin table
-              const superadmin = await superadminRepo.findOneBy({ id: leave.statusBy });
-              if (superadmin) {
-                approvedBy = superadmin.name;
-              } else {
-                approvedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
-              }
-            }
+            approvedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
           }
         }
         if (leave.statusBy && leave.status === 'rejected') {
-          const admin = await adminRepo.findOneBy({ id: leave.statusBy });
-          if (admin) {
-            rejectedBy = admin.name;
+          // Look up rejector in unified users table
+          const rejector = await userRepo.findOneBy({ id: leave.statusBy });
+          if (rejector) {
+            rejectedBy = rejector.name;
           } else {
-            // ลองหาใน user table
-            const userRepo = AppDataSource.getRepository('User');
-            const user = await userRepo.findOneBy({ id: leave.statusBy });
-            if (user) {
-              rejectedBy = user.name;
-            } else {
-              // ลองหาใน superadmin table
-              const superadmin = await superadminRepo.findOneBy({ id: leave.statusBy });
-              if (superadmin) {
-                rejectedBy = superadmin.name;
-              } else {
-                rejectedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
-              }
-            }
+            rejectedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
           }
         }
         // คำนวณระยะเวลาการลา
@@ -431,8 +406,7 @@ module.exports = (AppDataSource) => {
       if (!userId) return res.status(401).json({ status: 'error', message: 'Unauthorized' });
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
-      const adminRepo = AppDataSource.getRepository('User'); // Admin users are stored in User table
-      const superadminRepo = AppDataSource.getRepository('User'); // Superadmin users are also stored in User table
+      const userRepo = AppDataSource.getRepository('User');
 
       // ดึง leave ทั้งหมดของ user
       const leaves = await leaveRepo.find({ where: { Repid: userId } });

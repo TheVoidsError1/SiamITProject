@@ -31,8 +31,7 @@ module.exports = (AppDataSource) => {
    *     summary: Get the logged-in user's profile information
    *     description: >
    *       Returns the name, email, position, and department of the currently logged-in user.
-   *       The system checks the JWT token, finds the user in the ProcessCheck table by token,
-   *       and then fetches profile info from the User or Admin table based on the user's role.
+   *       The system checks the JWT token and finds the user in the unified users table by token.
    *     tags: [Profile]
    *     security:
    *       - bearerAuth: []
@@ -89,7 +88,7 @@ module.exports = (AppDataSource) => {
    *                   type: string
    *                   example: Invalid token
    *       404:
-   *         description: User not found in ProcessCheck/User/Admin table
+   *         description: User not found in users table
    *         content:
    *           application/json:
    *             schema:
@@ -100,7 +99,7 @@ module.exports = (AppDataSource) => {
    *                   example: false
    *                 message:
    *                   type: string
-   *                   example: User not found in ProcessCheck
+   *                   example: User not found
    *       500:
    *         description: Internal server error
    *         content:
@@ -200,7 +199,7 @@ module.exports = (AppDataSource) => {
    *   put:
    *     summary: Update the logged-in user's profile information
    *     description: >
-   *       Allows the user to update their name, email, position, and department. The system checks the JWT token, finds the user in the ProcessCheck table by token, and updates the User or Admin table based on the user's role.
+   *       Allows the user to update their name, email, position, and department. The system checks the JWT token, finds the user in the unified users table by token, and updates the user's information.
    *     tags: [Profile]
    *     security:
    *       - bearerAuth: []
@@ -344,7 +343,7 @@ module.exports = (AppDataSource) => {
    *   post:
    *     summary: Upload avatar image for logged-in user
    *     description: >
-   *       Uploads an avatar image for the currently logged-in user and stores the URL in the ProcessCheck table.
+   *       Uploads an avatar image for the currently logged-in user and stores the URL in the users table.
    *       The image is saved to the server and the avatar_url field is updated in the database.
    *     tags: [Profile]
    *     security:
@@ -384,7 +383,7 @@ module.exports = (AppDataSource) => {
    *       403:
    *         description: Invalid token
    *       404:
-   *         description: User not found in ProcessCheck
+   *         description: User not found
    *       500:
    *         description: Internal server error
    */
@@ -452,7 +451,7 @@ module.exports = (AppDataSource) => {
    *   get:
    *     summary: Get avatar URL for logged-in user
    *     description: >
-   *       Returns the avatar URL for the currently logged-in user from the ProcessCheck table.
+   *       Returns the avatar URL for the currently logged-in user from the users table.
    *     tags: [Profile]
    *     security:
    *       - bearerAuth: []
@@ -475,7 +474,7 @@ module.exports = (AppDataSource) => {
    *       403:
    *         description: Invalid token
    *       404:
-   *         description: User not found in ProcessCheck
+   *         description: User not found
    *       500:
    *         description: Internal server error
    */
@@ -519,7 +518,7 @@ module.exports = (AppDataSource) => {
    *   delete:
    *     summary: Delete avatar for logged-in user
    *     description: >
-   *       Deletes the avatar image for the currently logged-in user and removes the URL from the ProcessCheck table.
+   *       Deletes the avatar image for the currently logged-in user and removes the URL from the users table.
    *     tags: [Profile]
    *     security:
    *       - bearerAuth: []
@@ -542,7 +541,7 @@ module.exports = (AppDataSource) => {
    *       403:
    *         description: Invalid token
    *       404:
-   *         description: User not found in ProcessCheck
+   *         description: User not found
    *       500:
    *         description: Internal server error
    */

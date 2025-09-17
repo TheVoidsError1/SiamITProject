@@ -254,16 +254,16 @@
          message += `\n\nIf you have any questions, please contact the administrator.`;
        }
 
-       // Send the notification via LINE
-       const notificationResult = await LineController.sendNotification(processCheck.lineUserId, message);
-       
-       if (notificationResult.success) {
-         console.log('LINE notification sent successfully to:', processCheck.lineUserId);
-       } else {
-         console.error('Failed to send LINE notification:', notificationResult.error);
-         console.log('LINE user ID:', processCheck.lineUserId);
-         console.log('Message length:', message.length);
-       }
+      // Send the notification via LINE
+      const notificationResult = await LineController.sendNotification(user.lineUserId, message);
+      
+      if (notificationResult.success) {
+        console.log('LINE notification sent successfully to:', user.lineUserId);
+      } else {
+        console.error('Failed to send LINE notification:', notificationResult.error);
+        console.log('LINE user ID:', user.lineUserId);
+        console.log('Message length:', message.length);
+      }
        
      } catch (error) {
        console.error('Error sending LINE notification:', error);
@@ -997,45 +997,21 @@
           let approvedBy = null;
           let rejectedBy = null;
           if (leave.statusBy && leave.status === 'approved') {
-            // statusBy ตอนนี้เป็น ID แล้ว ให้ดึงชื่อจาก ID
-            const admin = await adminRepo.findOneBy({ id: leave.statusBy });
-            if (admin) {
-              approvedBy = admin.name;
+            // statusBy ตอนนี้เป็น ID แล้ว ให้ดึงชื่อจาก unified users table
+            const approver = await userRepo.findOneBy({ id: leave.statusBy });
+            if (approver) {
+              approvedBy = approver.name;
             } else {
-              // ลองหาใน user table
-              const user = await userRepo.findOneBy({ id: leave.statusBy });
-              if (user) {
-                approvedBy = user.name;
-              } else {
-                // ลองหาใน superadmin table
-                const superadmin = await superadminRepo.findOneBy({ id: leave.statusBy });
-                if (superadmin) {
-                  approvedBy = superadmin.name;
-                } else {
-                  approvedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
-                }
-              }
+              approvedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
             }
           }
           if (leave.statusBy && leave.status === 'rejected') {
-            // statusBy ตอนนี้เป็น ID แล้ว ให้ดึงชื่อจาก ID
-            const admin = await adminRepo.findOneBy({ id: leave.statusBy });
-            if (admin) {
-              rejectedBy = admin.name;
+            // statusBy ตอนนี้เป็น ID แล้ว ให้ดึงชื่อจาก unified users table
+            const rejector = await userRepo.findOneBy({ id: leave.statusBy });
+            if (rejector) {
+              rejectedBy = rejector.name;
             } else {
-              // ลองหาใน user table
-              const user = await userRepo.findOneBy({ id: leave.statusBy });
-              if (user) {
-                rejectedBy = user.name;
-              } else {
-                // ลองหาใน superadmin table
-                const superadmin = await superadminRepo.findOneBy({ id: leave.statusBy });
-                if (superadmin) {
-                  rejectedBy = superadmin.name;
-                } else {
-                  rejectedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
-                }
-              }
+              rejectedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
             }
           }
           // Get proper leave type names using helper function
@@ -1266,21 +1242,10 @@
            let leaveTypeName_th = null;
            let leaveTypeName_en = null;
            if (leave.Repid) {
-             user = await userRepo.findOneBy({ id: leave.Repid });
-             if (!user) {
-               // ถ้าไม่เจอใน user ให้ลองหาใน admin
-               const admin = await adminRepo.findOneBy({ id: leave.Repid });
-               if (admin) {
-                 user = { name: admin.name, department: admin.department, position: admin.position };
-               } else {
-                 // ถ้าไม่เจอใน admin ให้ลองหาใน superadmin
-                 const superadmin = await superadminRepo.findOneBy({ id: leave.Repid });
-                 if (superadmin) {
-                   user = { name: superadmin.name, department: superadmin.department, position: superadmin.position };
-                 }
-               }
-             } else {
-               user = { name: user.name, department: user.department, position: user.position };
+             // Look up user directly in unified users table
+             const userData = await userRepo.findOneBy({ id: leave.Repid });
+             if (userData) {
+               user = { name: userData.name, department: userData.department, position: userData.position };
              }
            }
            if (leave.leaveType) {
@@ -1345,43 +1310,21 @@
            let approvedBy = null;
            let rejectedBy = null;
            if (leave.statusBy && leave.status === 'approved') {
-             const admin = await adminRepo.findOneBy({ id: leave.statusBy });
-             if (admin) {
-               approvedBy = admin.name;
+             // Look up approver in unified users table
+             const approver = await userRepo.findOneBy({ id: leave.statusBy });
+             if (approver) {
+               approvedBy = approver.name;
              } else {
-               // ลองหาใน user table
-               const user = await userRepo.findOneBy({ id: leave.statusBy });
-               if (user) {
-                 approvedBy = user.name;
-               } else {
-                 // ลองหาใน superadmin table
-                 const superadmin = await superadminRepo.findOneBy({ id: leave.statusBy });
-                 if (superadmin) {
-                   approvedBy = superadmin.name;
-                 } else {
-                   approvedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
-                 }
-               }
+               approvedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
              }
            }
            if (leave.statusBy && leave.status === 'rejected') {
-             const admin = await adminRepo.findOneBy({ id: leave.statusBy });
-             if (admin) {
-               rejectedBy = admin.name;
+             // Look up rejector in unified users table
+             const rejector = await userRepo.findOneBy({ id: leave.statusBy });
+             if (rejector) {
+               rejectedBy = rejector.name;
              } else {
-               // ลองหาใน user table
-               const user = await userRepo.findOneBy({ id: leave.statusBy });
-               if (user) {
-                 rejectedBy = user.name;
-               } else {
-                 // ลองหาใน superadmin table
-                 const superadmin = await superadminRepo.findOneBy({ id: leave.statusBy });
-                 if (superadmin) {
-                   rejectedBy = superadmin.name;
-                 } else {
-                   rejectedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
-                 }
-               }
+               rejectedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
              }
            }
 
@@ -1435,21 +1378,10 @@
 
          let user = null;
          if (leave.Repid) {
-           user = await userRepo.findOneBy({ id: leave.Repid });
-           if (!user) {
-             // Try admin
-             const admin = await adminRepo.findOneBy({ id: leave.Repid });
-             if (admin) {
-               user = { name: admin.name, department: admin.department, position: admin.position };
-             } else {
-               // Try superadmin
-               const superadmin = await superadminRepo.findOneBy({ id: leave.Repid });
-               if (superadmin) {
-                   user = { name: superadmin.name, department: superadmin.department, position: superadmin.position };
-               }
-             }
-           } else {
-               user = { name: user.name, department: user.department, position: user.position };
+           // Look up user directly in unified users table
+           const userData = await userRepo.findOneBy({ id: leave.Repid });
+           if (userData) {
+             user = { name: userData.name, department: userData.department, position: userData.position };
            }
          }
                    let leaveTypeObj = null;
@@ -1666,43 +1598,21 @@
          let approvedBy = null;
          let rejectedBy = null;
          if (leave.statusBy && leave.status === 'approved') {
-           const admin = await adminRepo.findOneBy({ id: leave.statusBy });
-           if (admin) {
-             approvedBy = admin.name;
+           // Look up approver in unified users table
+           const approver = await userRepo.findOneBy({ id: leave.statusBy });
+           if (approver) {
+             approvedBy = approver.name;
            } else {
-             // ลองหาใน user table
-             const user = await userRepo.findOneBy({ id: leave.statusBy });
-             if (user) {
-                 approvedBy = user.name;
-             } else {
-               // ลองหาใน superadmin table
-               const superadmin = await superadminRepo.findOneBy({ id: leave.statusBy });
-               if (superadmin) {
-                   approvedBy = superadmin.name;
-               } else {
-                 approvedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
-               }
-             }
+             approvedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
            }
          }
          if (leave.statusBy && leave.status === 'rejected') {
-           const admin = await adminRepo.findOneBy({ id: leave.statusBy });
-           if (admin) {
-               rejectedBy = admin.name;
+           // Look up rejector in unified users table
+           const rejector = await userRepo.findOneBy({ id: leave.statusBy });
+           if (rejector) {
+               rejectedBy = rejector.name;
            } else {
-             // ลองหาใน user table
-             const user = await userRepo.findOneBy({ id: leave.statusBy });
-             if (user) {
-                 rejectedBy = user.name;
-             } else {
-               // ลองหาใน superadmin table
-               const superadmin = await superadminRepo.findOneBy({ id: leave.statusBy });
-               if (superadmin) {
-                   rejectedBy = superadmin.name;
-               } else {
-                 rejectedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
-               }
-             }
+             rejectedBy = leave.statusBy; // fallback ใช้ ID ถ้าไม่เจอชื่อ
            }
          }
 
@@ -1811,21 +1721,10 @@
            // ดึงชื่อผู้อนุมัติสำหรับ LINE notification
            let approverName = 'System';
            if (approverId) {
-             const user = await userRepo.findOneBy({ id: approverId });
-             if (user) {
-               approverName = user.name;
-             } else {
-               // ลองหาใน admin table
-               const admin = await adminRepo.findOneBy({ id: approverId });
-               if (admin) {
-                 approverName = admin.name;
-               } else {
-                 // ลองหาใน superadmin table
-                 const superadmin = await superadminRepo.findOneBy({ id: approverId });
-                 if (superadmin) {
-                   approverName = superadmin.name;
-                 }
-               }
+             // Look up approver in unified users table
+             const approver = await userRepo.findOneBy({ id: approverId });
+             if (approver) {
+               approverName = approver.name;
              }
            }
            await sendLineNotification(leave, status, approverName, rejectedReason);
