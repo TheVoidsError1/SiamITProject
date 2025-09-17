@@ -534,8 +534,8 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
   }, [durationType, leaveDate]);
 
   return (
-    <div className="max-w-2xl mx-auto my-8 animate-fade-in">
-      <div className="glass shadow-2xl rounded-3xl p-8 md:p-10 border border-blue-100 dark:border-gray-800">
+    <div className="max-w-2xl mx-auto my-4 md:my-8 animate-fade-in px-4">
+      <div className="glass shadow-2xl rounded-3xl p-4 sm:p-6 md:p-8 lg:p-10 border border-blue-100 dark:border-gray-800">
         <div className="flex items-center gap-3 mb-8">
           <ClipboardList className="w-7 h-7 text-blue-600 dark:text-blue-400" />
           <h2 className="text-2xl md:text-3xl font-bold gradient-text drop-shadow">{t('leave.leaveRequestForm')}</h2>
@@ -804,10 +804,10 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
                   )}
 
                   {/* Section: ปุ่ม */}
-                  <div className="flex gap-3 pt-6">
+                  <div className="flex flex-col sm:flex-row gap-3 pt-6">
                     <Button 
                       type="submit" 
-                      className="flex-1 gradient-bg text-white font-semibold text-lg h-12 rounded-xl shadow-lg hover:scale-105 transition-transform duration-200"
+                      className="flex-1 gradient-bg text-white font-semibold text-base sm:text-lg h-12 rounded-xl shadow-lg hover:scale-105 transition-transform duration-200"
                       size="lg"
                     >
                       <Send className="w-5 h-5 mr-2" />
@@ -818,7 +818,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
                       variant="outline" 
                       onClick={() => { navigate("/"); }}
                       size="lg"
-                      className="flex-1 h-12 rounded-xl border-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-lg"
+                      className="flex-1 h-12 rounded-xl border-2 hover:bg-gray-50 dark:hover:bg-gray-800 text-base sm:text-lg"
                     >
                       <ArrowLeftCircle className="w-5 h-5 mr-2" />
                       {t('common.cancel')}

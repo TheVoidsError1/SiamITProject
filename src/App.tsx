@@ -31,6 +31,7 @@ import AdminLeaveRequest from './pages/AdminLeaveRequest';
 
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 const queryClient = new QueryClient();
 
@@ -58,13 +59,16 @@ const AppContent = () => {
   return (
     <SidebarProvider defaultOpen={true}>
       <div className="min-h-screen flex w-full relative">
+        {/* Hamburger for mobile */}
+        <div className="fixed top-4 left-4 z-50 md:hidden">
+          <SidebarTrigger className="bg-white/80 rounded-full shadow p-2" />
+        </div>
         {/* Global Language Switcher */}
         <div className="fixed top-4 right-4 z-50">
           <LanguageSwitcher />
         </div>
-
         <AppSidebar />
-        <main className="flex-1">
+        <main className="flex-1 min-w-0">
           <Routes>
             <Route path="/" element={
               <ProtectedRoute>

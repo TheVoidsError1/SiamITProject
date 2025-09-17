@@ -405,9 +405,9 @@ const EmployeeManagement = () => {
         </div>
       </div>
       <div className="w-full max-w-6xl mx-auto px-4 mt-0 animate-fade-in flex-1">
-        <div className="bg-white/70 backdrop-blur-md rounded-3xl shadow-2xl p-8">
+        <div className="bg-white/70 backdrop-blur-md rounded-3xl shadow-2xl p-4 sm:p-6 md:p-8">
           {/* Stats Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 mb-6 sm:mb-8">
             {stats.map((stat, index) => {
               const Icon = stat.icon;
               return (
@@ -442,7 +442,7 @@ const EmployeeManagement = () => {
             </CardHeader>
             <CardContent className="p-0 flex-1 flex flex-col">
               {/* Filter Bar */}
-              <div className="flex flex-nowrap gap-3 px-6 pt-6 pb-2 items-end flex-shrink-0">
+              <div className="flex flex-col sm:flex-row gap-3 px-4 sm:px-6 pt-4 sm:pt-6 pb-2 items-stretch sm:items-end flex-shrink-0">
                 <div className="flex flex-col">
                   <label className="text-xs text-gray-500 font-semibold mb-1" htmlFor="position-filter">{t('auth.position')}</label>
                   <select
@@ -494,9 +494,9 @@ const EmployeeManagement = () => {
                     <option value="user">{t('auth.roles.user')}</option>
                   </select>
                 </div>
-                <div className="flex gap-3 items-end h-full shrink-0">
+                <div className="flex flex-col sm:flex-row gap-3 items-stretch sm:items-end h-full shrink-0">
                   <button
-                    className="min-h-[42px] min-w-[100px] px-5 py-2.5 rounded-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-500 text-white shadow-lg hover:from-blue-700 hover:to-indigo-600 hover:shadow-xl transition-all duration-200 transform hover:scale-105 text-sm"
+                    className="min-h-[42px] flex-1 sm:min-w-[100px] px-5 py-2.5 rounded-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-500 text-white shadow-lg hover:from-blue-700 hover:to-indigo-600 hover:shadow-xl transition-all duration-200 transform hover:scale-105 text-sm"
                     onClick={() => {
                       setPositionFilter(pendingPositionFilter);
                       setDepartmentFilter(pendingDepartmentFilter);
@@ -506,7 +506,7 @@ const EmployeeManagement = () => {
                     {t('common.confirm')}
                   </button>
                   <button
-                    className="min-h-[42px] min-w-[90px] px-4 py-2.5 rounded-lg font-bold border-2 border-blue-400 text-blue-600 bg-white hover:bg-blue-50 hover:border-blue-500 hover:shadow-md transition-all duration-200 transform hover:scale-105 text-sm"
+                    className="min-h-[42px] flex-1 sm:min-w-[90px] px-4 py-2.5 rounded-lg font-bold border-2 border-blue-400 text-blue-600 bg-white hover:bg-blue-50 hover:border-blue-500 hover:shadow-md transition-all duration-200 transform hover:scale-105 text-sm"
                     onClick={() => {
                       setPendingPositionFilter("");
                       setPendingDepartmentFilter("");
@@ -551,9 +551,10 @@ const EmployeeManagement = () => {
                         </button>
                       </div>
                     ) : (
-                                             <table className="w-full">
-                         <thead className="sticky top-0 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 z-10">
-                           <tr className="text-sm">
+                                             <div className="overflow-x-auto">
+                        <table className="w-full min-w-[600px]">
+                          <thead className="sticky top-0 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 z-10">
+                            <tr className="text-xs sm:text-sm">
                              <th 
                                className="px-3 py-2 text-left font-bold text-blue-900 cursor-pointer hover:bg-blue-100 transition-colors select-none"
                                onClick={() => handleSort("full_name")}
@@ -612,13 +613,13 @@ const EmployeeManagement = () => {
                              <th className="px-3 py-2 text-center font-bold text-blue-900">{t('system.management')}</th>
                            </tr>
                          </thead>
-                        <tbody>
-                          {paginatedEmployees.map((employee, idx) => (
-                            <tr
-                              key={employee.id}
-                              className="transition hover:bg-blue-50/60 group animate-fade-in-up text-sm"
-                              style={{ animationDelay: `${idx * 60}ms` }}
-                            >
+                          <tbody>
+                            {paginatedEmployees.map((employee, idx) => (
+                              <tr
+                                key={employee.id}
+                                className="transition hover:bg-blue-50/60 group animate-fade-in-up text-xs sm:text-sm"
+                                style={{ animationDelay: `${idx * 60}ms` }}
+                              >
                               <td className="px-3 py-2 whitespace-nowrap flex items-center gap-2">
                                 {/* Avatar with image or initials */}
                                 {employee.avatar ? (
@@ -668,16 +669,17 @@ const EmployeeManagement = () => {
                                   </span>
                                 )}
                               </td>
-                              <td className="px-3 py-3 text-center flex gap-1.5 justify-start">
+                              <td className="px-3 py-3 text-center flex flex-col sm:flex-row gap-1.5 justify-start">
                                 <Button 
                                   asChild 
                                   size="sm" 
                                   variant="secondary"
-                                  className="min-w-[120px] rounded-lg px-3 py-1.5 font-medium bg-gradient-to-r from-blue-500 to-indigo-400 text-white shadow hover:scale-105 transition text-xs"
+                                  className="min-w-[100px] sm:min-w-[120px] rounded-lg px-2 sm:px-3 py-1.5 font-medium bg-gradient-to-r from-blue-500 to-indigo-400 text-white shadow hover:scale-105 transition text-xs"
                                 >
                                   <Link to={`/admin/employees/${employee.id}?role=${employee.role}`}> 
                                     <Eye className="w-3.5 h-3.5 mr-1" />
-                                    {t('common.viewDetails')}
+                                    <span className="hidden sm:inline">{t('common.viewDetails')}</span>
+                                    <span className="sm:hidden">{t('common.view')}</span>
                                   </Link>
                                 </Button>
                                 {/* ปุ่มลบพนักงาน - แสดงเฉพาะเมื่อมีสิทธิ์ลบ */}
@@ -687,11 +689,12 @@ const EmployeeManagement = () => {
                                       <Button
                                         size="sm"
                                         variant="destructive"
-                                        className="rounded-lg px-3 py-1.5 font-medium bg-gradient-to-r from-red-500 to-red-600 text-white shadow hover:scale-105 transition text-xs"
+                                        className="rounded-lg px-2 sm:px-3 py-1.5 font-medium bg-gradient-to-r from-red-500 to-red-600 text-white shadow hover:scale-105 transition text-xs"
                                         onClick={() => setDeleteTarget(employee)}
                                       >
                                         <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3m5 0H6" /></svg>
-                                        {t('common.delete')}
+                                        <span className="hidden sm:inline">{t('common.delete')}</span>
+                                        <span className="sm:hidden">Del</span>
                                       </Button>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
@@ -712,8 +715,9 @@ const EmployeeManagement = () => {
                               </td>
                             </tr>
                           ))}
-                        </tbody>
-                      </table>
+                            </tbody>
+                          </table>
+                        </div>
                     )}
                   </div>
                   {/* Pagination */}

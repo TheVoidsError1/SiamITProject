@@ -240,11 +240,11 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
-      <div className="absolute top-4 right-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 relative">
+      <div className="absolute top-4 right-4 z-10">
         <LanguageSwitcher />
       </div>
-      <div className="w-full max-w-md space-y-8 animate-fade-in">
+      <div className="w-full max-w-md lg:max-w-lg space-y-8 animate-fade-in">
         <div className="text-center">
           <img
             src="/lovable-uploads/IMG_4486-removebg-preview.png"
@@ -261,7 +261,7 @@ const Register = () => {
 
         <Card className="shadow-lg border-0">
           {/* Removed duplicate Register title and description in the card header */}
-          <CardContent className="pt-6">
+          <CardContent className="pt-6 px-4 sm:px-6">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2 mb-4 mt-4">
                 <Label htmlFor="full_name" className="mb-2 block">{t('auth.fullName')}</Label>

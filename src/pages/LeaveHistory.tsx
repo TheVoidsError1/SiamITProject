@@ -520,27 +520,27 @@ const LeaveHistory = () => {
 
       <div className="p-4 md:p-6 animate-fade-in">
 
-        <div className="max-w-6xl mx-auto space-y-8">
+        <div className="max-w-6xl mx-auto space-y-6 md:space-y-8">
 
           {/* Summary Stats */}
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-8">
 
             <Card className="glass shadow-xl border-0 hover:scale-[1.03] hover:shadow-2xl transition-all duration-300 animate-fade-in-up hover-lift">
 
-              <CardContent className="p-5 flex items-center gap-4">
+              <CardContent className="p-3 sm:p-4 md:p-5 flex items-center gap-2 sm:gap-3 md:gap-4">
 
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md transition-all duration-300 group-hover:scale-110">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md transition-all duration-300 group-hover:scale-110">
 
-                  <Calendar className="w-6 h-6 text-white transition-all duration-300" />
+                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white transition-all duration-300" />
 
                 </div>
 
                 <div>
 
-                  <p className="text-2xl font-bold text-blue-800 transition-all duration-300 group-hover:scale-110">{totalLeaveDays}</p>
+                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-blue-800 transition-all duration-300 group-hover:scale-110">{totalLeaveDays}</p>
 
-                  <p className="text-sm text-blue-600 font-medium leading-tight">{t('history.totalLeaveDays')}</p>
+                  <p className="text-xs sm:text-sm text-blue-600 font-medium leading-tight">{t('history.totalLeaveDays')}</p>
 
                 </div>
 
@@ -550,19 +550,19 @@ const LeaveHistory = () => {
 
             <Card className="glass shadow-xl border-0 hover:scale-[1.03] hover:shadow-2xl transition-all duration-300 animate-fade-in-up hover-lift">
 
-              <CardContent className="p-5 flex items-center gap-4">
+              <CardContent className="p-3 sm:p-4 md:p-5 flex items-center gap-2 sm:gap-3 md:gap-4">
 
-                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md transition-all duration-300 group-hover:scale-110">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md transition-all duration-300 group-hover:scale-110">
 
-                  <Clock className="w-6 h-6 text-white transition-all duration-300" />
+                  <Clock className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white transition-all duration-300" />
 
                 </div>
 
                 <div>
 
-                  <p className="text-2xl font-bold text-indigo-800 transition-all duration-300 group-hover:scale-110">{totalLeaveHours}</p>
+                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-indigo-800 transition-all duration-300 group-hover:scale-110">{totalLeaveHours}</p>
 
-                  <p className="text-sm text-indigo-600 font-medium leading-tight">{t('history.totalLeaveHours')}</p>
+                  <p className="text-xs sm:text-sm text-indigo-600 font-medium leading-tight">{t('history.totalLeaveHours')}</p>
 
                 </div>
 
@@ -572,19 +572,19 @@ const LeaveHistory = () => {
 
             <Card className="glass shadow-xl border-0 hover:scale-[1.03] hover:shadow-2xl transition-all duration-300 animate-fade-in-up hover-lift">
 
-              <CardContent className="p-5 flex items-center gap-4">
+              <CardContent className="p-3 sm:p-4 md:p-5 flex items-center gap-2 sm:gap-3 md:gap-4">
 
-                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-md transition-all duration-300 group-hover:scale-110">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-md transition-all duration-300 group-hover:scale-110">
 
-                  <CheckCircle className="w-6 h-6 text-white transition-all duration-300" />
+                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white transition-all duration-300" />
 
                 </div>
 
                 <div>
 
-                  <p className="text-2xl font-bold text-green-700 transition-all duration-300 group-hover:scale-110">{approvedCount}</p>
+                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-green-700 transition-all duration-300 group-hover:scale-110">{approvedCount}</p>
 
-                  <p className="text-sm text-green-600 font-medium leading-tight">{t('history.approvedRequests')}</p>
+                  <p className="text-xs sm:text-sm text-green-600 font-medium leading-tight">{t('history.approvedRequests')}</p>
 
                 </div>
 
@@ -594,19 +594,19 @@ const LeaveHistory = () => {
 
             <Card className="glass shadow-xl border-0 hover:scale-[1.03] hover:shadow-2xl transition-all duration-300 animate-fade-in-up hover-lift">
 
-              <CardContent className="p-5 flex items-center gap-4">
+              <CardContent className="p-3 sm:p-4 md:p-5 flex items-center gap-2 sm:gap-3 md:gap-4">
 
-                <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center shadow-md transition-all duration-300 group-hover:scale-110">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center shadow-md transition-all duration-300 group-hover:scale-110">
 
-                  <Clock className="w-6 h-6 text-white transition-all duration-300" />
+                  <Clock className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white transition-all duration-300" />
 
                 </div>
 
                 <div>
 
-                  <p className="text-2xl font-bold text-yellow-700 transition-all duration-300 group-hover:scale-110">{pendingCount}</p>
+                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-yellow-700 transition-all duration-300 group-hover:scale-110">{pendingCount}</p>
 
-                  <p className="text-sm text-yellow-600 font-medium leading-tight">{t('history.pendingRequests')}</p>
+                  <p className="text-xs sm:text-sm text-yellow-600 font-medium leading-tight">{t('history.pendingRequests')}</p>
 
                 </div>
 
@@ -616,19 +616,19 @@ const LeaveHistory = () => {
 
             <Card className="glass shadow-xl border-0 hover:scale-[1.03] hover:shadow-2xl transition-all duration-300 animate-fade-in-up hover-lift">
 
-              <CardContent className="p-5 flex items-center gap-4">
+              <CardContent className="p-3 sm:p-4 md:p-5 flex items-center gap-2 sm:gap-3 md:gap-4">
 
-                <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center shadow-md transition-all duration-300 group-hover:scale-110">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center shadow-md transition-all duration-300 group-hover:scale-110">
 
-                  <XCircle className="w-6 h-6 text-white transition-all duration-300" />
+                  <XCircle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white transition-all duration-300" />
 
                 </div>
 
                 <div>
 
-                  <p className="text-2xl font-bold text-red-700 transition-all duration-300 group-hover:scale-110">{rejectedCount}</p>
+                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-red-700 transition-all duration-300 group-hover:scale-110">{rejectedCount}</p>
 
-                  <p className="text-sm text-red-600 font-medium leading-tight">{t('history.rejectedRequests')}</p>
+                  <p className="text-xs sm:text-sm text-red-600 font-medium leading-tight">{t('history.rejectedRequests')}</p>
 
                 </div>
 
@@ -638,19 +638,19 @@ const LeaveHistory = () => {
 
             <Card className="glass shadow-xl border-0 hover:scale-[1.03] hover:shadow-2xl transition-all duration-300 animate-fade-in-up hover-lift">
 
-              <CardContent className="p-5 flex items-center gap-4">
+              <CardContent className="p-3 sm:p-4 md:p-5 flex items-center gap-2 sm:gap-3 md:gap-4">
 
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md transition-all duration-300 group-hover:scale-110">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md transition-all duration-300 group-hover:scale-110">
 
-                  <History className="w-6 h-6 text-white transition-all duration-300" />
+                  <History className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white transition-all duration-300" />
 
                 </div>
 
                 <div>
 
-                  <p className="text-2xl font-bold text-purple-700 transition-all duration-300 group-hover:scale-110">{retroactiveCount}</p>
+                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-purple-700 transition-all duration-300 group-hover:scale-110">{retroactiveCount}</p>
 
-                  <p className="text-sm text-purple-600 font-medium leading-tight">{t('history.retroactiveLeave')}</p>
+                  <p className="text-xs sm:text-sm text-purple-600 font-medium leading-tight">{t('history.retroactiveLeave')}</p>
 
                 </div>
 
@@ -750,7 +750,7 @@ const LeaveHistory = () => {
 
                 {/* Filter Grid */}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-6">
 
                   {/* Single Date Filter */}
 
@@ -1277,7 +1277,7 @@ const LeaveHistory = () => {
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
 
-                  <CardHeader className="pb-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                  <CardHeader className="pb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
 
                     <div className="flex items-center gap-4">
 
@@ -1300,7 +1300,7 @@ const LeaveHistory = () => {
 
                     </div>
 
-                    <div className="text-sm text-blue-400 font-medium md:text-right">
+                    <div className="text-sm text-blue-400 font-medium sm:text-right">
 
                       {formatDateLocalized(leave.submittedDate, i18n.language)}
 
@@ -1310,7 +1310,7 @@ const LeaveHistory = () => {
 
                   <CardContent className="pt-0 pb-4">
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
 
                       <div className="space-y-3">
 
@@ -1506,7 +1506,7 @@ const LeaveHistory = () => {
 
                         )}
 
-                        <div className="flex justify-end mt-6 gap-2">
+                        <div className="flex flex-col sm:flex-row justify-end mt-6 gap-2">
 
                           <Button 
                             size="sm" 
