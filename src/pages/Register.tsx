@@ -343,7 +343,17 @@ const Register = () => {
               {/* Phone number */}
               <div className="space-y-2 mb-4">
                 <Label htmlFor="phone" className="mb-2 block">{t('employee.phoneNumber')}</Label>
-                <Input id="phone" type="tel" placeholder={t('employee.enterPhoneNumber')} value={formData.phone_number} onChange={(e) => setFormData(prev => ({ ...prev, phone_number: e.target.value }))} />
+                <Input 
+                  id="phone" 
+                  type="tel" 
+                  placeholder={t('employee.enterPhoneNumber')} 
+                  value={formData.phone_number} 
+                  onChange={(e) => {
+                    // อนุญาตเฉพาะตัวเลขและเครื่องหมาย + - ( ) และช่องว่าง
+                    const value = e.target.value.replace(/[^0-9+\-() ]/g, '');
+                    setFormData(prev => ({ ...prev, phone_number: value }));
+                  }} 
+                />
               </div>
 
               {/* Start/End work dates: Start Work Date always shows; End Work Date shows only when position has Request Quote enabled */}
