@@ -106,13 +106,6 @@ const Profile = () => {
         const res = await apiService.get(apiEndpoints.auth.profile);
         const data = res.data;
         
-        console.log('Backend profile data:', data);
-        console.log('Backend position_id:', data.position_id);
-        console.log('Backend position_name:', data.position_name);
-        console.log('Backend department_id:', data.department_id);
-        console.log('Backend department_name:', data.department_name);
-        console.log('Positions array:', positions);
-        console.log('Departments array:', departments);
 
         // Only set form data if profile hasn't been loaded yet
         if (!profileLoaded) {
@@ -205,9 +198,6 @@ const Profile = () => {
       setLeaveLoading(true);
       try {
         const res = await apiService.get(apiEndpoints.leaveQuota.me);
-        if (res.debug) {
-          console.log('LEAVE QUOTA DEBUG:', res.debug);
-        }
         if (res.success) {
           setLeaveQuota(res.data);
         } else {
@@ -413,13 +403,9 @@ const Profile = () => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const dataUrl = e.target?.result as string;
-      console.log('Profile: File selected, dataUrl length:', dataUrl?.length);
       setSelectedImageSrc(dataUrl);
       if (setAvatarPreviewUrl) {
         setAvatarPreviewUrl(dataUrl);
-        console.log('Profile: avatarPreviewUrl set to context, length:', dataUrl?.length);
-      } else {
-        console.log('Profile: setAvatarPreviewUrl is undefined!');
       }
     };
     reader.readAsDataURL(file);
@@ -593,7 +579,6 @@ const Profile = () => {
                     end_work: (positions.find(p => String(p.id) === formData.position)?.require_enddate ? (formData.end_work || null) : null),
       };
       
-      console.log('Sending profile update data:', requestData);
       
       const res = await apiService.put(apiEndpoints.auth.profile, requestData);
       if (res.success) {
@@ -624,7 +609,6 @@ const Profile = () => {
           ...(avatarUploadedUrl ? { avatar_url: avatarUploadedUrl } : {}),
         });
         
-        console.log('Profile updated successfully:', updatedData);
         setIsEditing(false);
         setPendingAvatarFile(null);
         setPendingCroppedFile(null);
@@ -645,13 +629,6 @@ const Profile = () => {
     }
   };
 
-  // Debug output for leaveQuota and allLeaveTypes
-  useEffect(() => {
-    if (!leaveLoading) {
-      console.log('leaveQuota:', leaveQuota);
-      console.log('allLeaveTypes:', allLeaveTypes);
-    }
-  }, [leaveQuota, allLeaveTypes, leaveLoading]);
 
   // Define a color palette for leave types
   const leaveTypeColors = [
@@ -713,11 +690,7 @@ const Profile = () => {
                 src={avatarUrl ? `${avatarUrl}&force=${forceRefresh}&t=${Date.now()}` : undefined} 
                 onError={() => {
                   // If image fails to load, force a refresh
-                  console.log('Avatar image failed to load, forcing refresh');
                   setForceRefresh(prev => prev + 1);
-                }}
-                onLoad={() => {
-                  console.log('Avatar image loaded successfully');
                 }}
                 alt="Profile picture"
                 className="object-cover"

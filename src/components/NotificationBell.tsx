@@ -87,7 +87,6 @@ const NotificationBell = () => {
     if (socket && isConnected && pushNotificationEnabled) {
       // Listen for leave request updates
       socket.on('leaveRequestUpdated', (data) => {
-        console.log('Received leave request update:', data);
         
         // Show toast notification
         toast({

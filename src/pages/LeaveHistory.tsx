@@ -139,15 +139,6 @@ const LeaveHistory = () => {
     try {
       let url = `${apiEndpoints.leaveHistory.list}?page=${page}&limit=${limit}`;
       
-      // Debug log เพื่อตรวจสอบค่า filter
-      console.log('Debug - Filter values:', {
-        filterLeaveType,
-        filterMonth,
-        filterYear,
-        filterStatus,
-        filterRetroactive,
-        singleDate
-      });
       
       if (filterLeaveType && filterLeaveType !== 'all') {
         url += `&leaveType=${filterLeaveType}`;
@@ -156,12 +147,10 @@ const LeaveHistory = () => {
       // แก้ไขการส่งค่า month และ year ให้ถูกต้อง
       if (filterMonth !== '' && filterMonth !== null && filterMonth !== undefined) {
         url += `&month=${filterMonth}`;
-        console.log('Debug - Adding month filter:', filterMonth);
       }
       
       if (filterYear !== '' && filterYear !== null && filterYear !== undefined) {
         url += `&year=${filterYear}`;
-        console.log('Debug - Adding year filter:', filterYear);
       }
       
       if (filterStatus && filterStatus !== 'all') {
@@ -176,7 +165,6 @@ const LeaveHistory = () => {
         url += `&date=${format(singleDate, 'yyyy-MM-dd')}`;
       }
       
-      console.log('Debug - Final URL:', url);
       
       // Use apiService.get
       const data = await apiService.get(url, undefined, showSessionExpiredDialog);
@@ -315,7 +303,6 @@ const LeaveHistory = () => {
   // ฟังก์ชันล้าง filter ทั้งหมด
 
   const clearAllFilters = () => {
-    console.log('Debug - Clearing all filters');
     setFilterLeaveType('');
     setFilterMonth('');
     setFilterYear('');
@@ -331,15 +318,6 @@ const LeaveHistory = () => {
 
   const hasActiveFilters = () => {
     const hasFilters = filterLeaveType || filterMonth || filterYear || filterStatus || filterRetroactive || singleDate;
-    console.log('Debug - hasActiveFilters:', {
-      filterLeaveType,
-      filterMonth,
-      filterYear,
-      filterStatus,
-      filterRetroactive,
-      singleDate,
-      hasFilters
-    });
     return hasFilters;
   };
 
@@ -1011,7 +989,6 @@ const LeaveHistory = () => {
                         value={filterMonth ? filterMonth.toString() : "all"} 
                         onValueChange={v => {
                           const newValue = v === "all" ? '' : Number(v);
-                          console.log('Debug - Setting filterMonth:', { oldValue: filterMonth, newValue, v });
                           setFilterMonth(newValue);
                         }} 
                         disabled={!!singleDate}
@@ -1041,7 +1018,6 @@ const LeaveHistory = () => {
                         value={filterYear ? filterYear.toString() : "all"} 
                         onValueChange={v => {
                           const newValue = v === "all" ? '' : Number(v);
-                          console.log('Debug - Setting filterYear:', { oldValue: filterYear, newValue, v });
                           setFilterYear(newValue);
                         }} 
                         disabled={!!singleDate}

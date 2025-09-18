@@ -161,7 +161,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (err) {
       // Profile fetch failed, but login is still successful
-      console.log('Failed to fetch profile:', err);
     }
 
     // Fetch avatar URL after login
@@ -182,7 +181,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (err) {
       // Avatar fetch failed, but login is still successful
-      console.log('Failed to fetch avatar:', err);
     }
   };
 

@@ -106,8 +106,6 @@ export default function ManagePost() {
   };
 
   useEffect(() => {
-    console.log('=== ManagePost Component Loaded ===');
-    console.log('Current user:', user);
     console.log('===============================');
     fetchNews();
     // eslint-disable-next-line

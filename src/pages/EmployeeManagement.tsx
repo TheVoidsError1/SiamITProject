@@ -82,7 +82,6 @@ const EmployeeManagement = () => {
             avatar: item.avatar || undefined,
           }));
 
-          console.log('Processed employees data:', employees);
           setEmployees(employees);
         } else {
           console.error('Invalid employees data format:', data);
@@ -105,7 +104,6 @@ const EmployeeManagement = () => {
         // ดึงข้อมูลตำแหน่ง
         const positionsData = await apiService.get(apiEndpoints.positions);
         if (positionsData.success && Array.isArray(positionsData.data)) {
-          console.log('Processed positions data:', positionsData.data);
           setPositions(positionsData.data);
         } else {
           console.error('Invalid positions data format:', positionsData);
@@ -114,7 +112,6 @@ const EmployeeManagement = () => {
         // ดึงข้อมูลแผนก
         const departmentsData = await apiService.get(apiEndpoints.departments);
         if (departmentsData.success && Array.isArray(departmentsData.data)) {
-          console.log('Processed departments data:', departmentsData.data);
           setDepartments(departmentsData.data);
         } else {
           console.error('Invalid departments data format:', departmentsData);
@@ -178,20 +175,6 @@ const EmployeeManagement = () => {
     const departmentMatch = departmentFilter === "" || emp.department === departmentFilter;
     const roleMatch = roleFilter === "" || emp.role === roleFilter;
     
-    // Debug logging only when filters are active
-    if (positionFilter !== "" || departmentFilter !== "" || roleFilter !== "") {
-      console.log('Filtering employee:', emp.full_name, {
-        position: emp.position,
-        positionFilter,
-        positionMatch,
-        department: emp.department,
-        departmentFilter,
-        departmentMatch,
-        role: emp.role,
-        roleFilter,
-        roleMatch
-      });
-    }
     
     return positionMatch && departmentMatch && roleMatch;
   });
