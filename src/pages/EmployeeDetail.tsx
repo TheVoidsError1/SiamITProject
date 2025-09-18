@@ -27,6 +27,8 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { API_BASE_URL, apiService } from '../lib/api';
 import { apiEndpoints } from '@/constants/api';
 import { LeaveRequest } from '@/types';
+import { withCacheBust } from '@/lib/url';
+import { getLeaveTypeLabel } from '@/lib/leaveUtils';
 
 const EmployeeDetail = () => {
   const { id } = useParams();
@@ -96,7 +98,6 @@ const EmployeeDetail = () => {
   const [avatarLocalGif, setAvatarLocalGif] = useState<File | null>(null);
   const [avatarKey, setAvatarKey] = useState(0); // Add key to force re-render
   const [avatarTimestamp, setAvatarTimestamp] = useState(Date.now()); // Add timestamp for cache busting
-  const withCacheBust = (url: string) => `${url}${url.includes('?') ? '&' : '?'}v=${avatarTimestamp}&k=${avatarKey}&t=${Date.now()}`;
 
   // เพิ่ม state สำหรับ force render เมื่อเปลี่ยนภาษา
   const [langVersion, setLangVersion] = useState(0);

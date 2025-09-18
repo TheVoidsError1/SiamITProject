@@ -15,28 +15,10 @@ import { useNavigate } from 'react-router-dom';
 import { FileUpload } from "./FileUpload";
 import { isValidTimeFormat, autoFormatTimeInput } from '../../lib/leaveUtils';
 import { format } from "date-fns";
+import { formatDateLocal } from '@/lib/dateUtils';
+import { isValidPhoneNumber, isValidEmail } from '@/lib/validators';
 
-// ฟังก์ชันแปลงวันที่เป็น yyyy-mm-dd ตาม local time (ไม่ใช่ UTC)
-function formatDateLocal(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-const isValidPhoneNumber = (input: string) => {
-  // เฉพาะตัวเลข, 9-10 หลัก, ขึ้นต้น 0, ไม่ใช่เลขซ้ำหมด เช่น 0000000000
-  if (!/^[0-9]{9,10}$/.test(input)) return false;
-  if (!input.startsWith('0')) return false;
-  if (/^(\d)\1{8,9}$/.test(input)) return false; // เช่น 0000000000, 1111111111
-  // อาจเพิ่ม blacklist เพิ่มเติมได้
-  return true;
-};
-
-const isValidEmail = (input: string) => {
-  // เช็ค email format พื้นฐาน
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input);
-};
+// formatDateLocal, isValidPhoneNumber, isValidEmail moved to shared utils
 
 export interface AdminLeaveFormProps {
   initialData?: any;

@@ -16,11 +16,10 @@ import { Building2, ChevronLeft, Edit2, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate, useParams } from 'react-router-dom';
+import { getDaysInMonth } from '@/lib/dateUtils';
  
 
-function getDaysInMonth(year: number, month: number) {
-  return new Date(year, month + 1, 0).getDate();
-}
+// getDaysInMonth moved to src/lib/dateUtils
 
 interface CompanyEvent {
   id: string;
