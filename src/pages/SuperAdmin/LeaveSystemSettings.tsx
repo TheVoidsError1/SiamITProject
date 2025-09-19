@@ -28,7 +28,7 @@ import { QUOTA_RESET_STRATEGIES, POSITION_SETTINGS, CLEANUP_OPERATIONS } from '@
 // Mock data for demonstration
 // Remove mockDepartments
 
-const ManageAll: React.FC = () => {
+const LeaveSystemSettings: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
 
@@ -1374,4 +1374,4 @@ const ManageAll: React.FC = () => {
   );
 };
 
-export default ManageAll; 
+export default LeaveSystemSettings; 

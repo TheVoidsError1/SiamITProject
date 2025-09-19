@@ -25,7 +25,7 @@ import { formatDateLocalized } from '../lib/utils';
 
 // Note: Local inline types and helpers removed if unused
 
-const AdminDashboard = () => {
+const ApproveLeave = () => {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const { user, showSessionExpiredDialog } = useAuth();
@@ -1669,4 +1669,4 @@ const AdminDashboard = () => {
   );
 };
 
-export default AdminDashboard;
+export default ApproveLeave;

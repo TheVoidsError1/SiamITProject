@@ -14,14 +14,14 @@ import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 import LeaveRequest from "./pages/LeaveRequest";
 import LeaveHistory from "./pages/LeaveHistory";
-import AdminDashboard from "./pages/AdminDashboard";
+import ApproveLeave from "./pages/ApproveLeave";
 import EmployeeManagement from "./pages/EmployeeManagement";
 import EmployeeDetail from "./pages/EmployeeDetail";
 import NotFound from "./pages/NotFound";
 import '@/i18n';
 import { PushNotificationProvider } from "@/contexts/PushNotificationContext";
 import { SocketProvider } from "@/contexts/SocketContext";
-import ManageAll from './pages/SuperAdmin/ManageAll';
+import LeaveSystemSettings from './pages/SuperAdmin/LeaveSystemSettings';
 import SuperAdminList from './pages/SuperAdmin/SuperAdminList';
 import ManagePost from './pages/ManagePost';
 import CalendarPage from './pages/CalendarPage';
@@ -97,7 +97,7 @@ const AppContent = () => {
 
             <Route path="/admin" element={
               <ProtectedRoute adminOnly>
-                <AdminDashboard />
+                <ApproveLeave />
               </ProtectedRoute>
             } />
             <Route path="/admin/employees" element={
@@ -117,7 +117,7 @@ const AppContent = () => {
             } />
             <Route path="/superadmin/manage-all" element={
               <ProtectedRoute superadminOnly>
-                <ManageAll />
+                <LeaveSystemSettings />
               </ProtectedRoute>
             } />
             <Route path="/superadmin/superadmins" element={
