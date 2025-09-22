@@ -59,6 +59,8 @@
     "adminDashboard": "Approve Leave",
     "employeeManagement": "Employee Management",
     "mainMenu": "Main Menu",
+    "adminFunctions": "Admin Functions",
+    "superAdminFunctions": "Super Admin Functions",
     "allEmployees": "All Employees",
     "createUser": "Create User",
     "manageAll": "Leave System Settings", 

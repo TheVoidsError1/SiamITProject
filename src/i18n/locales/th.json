@@ -56,6 +56,8 @@
     "adminDashboard": "อนุมัติการลา",
     "employeeManagement": "จัดการพนักงาน",
     "mainMenu": "เมนูหลัก",
+    "adminFunctions": "ฟังก์ชันผู้ดูแลระบบ",
+    "superAdminFunctions": "ฟังก์ชันซูเปอร์แอดมิน",
     "allEmployees": "บุคลากรทั้งหมด",
     "createUser": "สร้างผู้ใช้",
     "manageAll": "ตั้งค่าระบบการลา",
