@@ -628,8 +628,8 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
                 </div>
                 <div className={`px-3 py-1 rounded-full text-xs font-medium ${
                   allowBackdated === 0 
-                    ? 'bg-red-100 text-red-700 border border-red-200' 
-                    : 'bg-green-100 text-green-700 border border-green-200'
+                    ? 'bg-green-100 text-green-700 border border-green-200' 
+                    : 'bg-red-100 text-red-700 border border-red-200'
                 }`}>
                   {allowBackdated === 0 ? t('leave.disallowBackdated') : t('leave.allowBackdated')}
                 </div>
@@ -640,33 +640,33 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
                 <div 
                   className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                     allowBackdated === 0 
-                      ? 'border-red-400 bg-red-50 shadow-md' 
-                      : 'border-gray-200 bg-white hover:border-red-300 hover:bg-red-25'
+                      ? 'border-green-400 bg-green-50 shadow-md' 
+                      : 'border-gray-200 bg-white hover:border-green-300 hover:bg-green-25'
                   }`}
                   onClick={() => setAllowBackdated(0)}
                 >
                   <div className="flex items-center gap-3">
                     <div className={`p-1 rounded-full ${
-                      allowBackdated === 0 ? 'bg-red-100' : 'bg-gray-100'
+                      allowBackdated === 0 ? 'bg-green-100' : 'bg-gray-100'
                     }`}>
                       <Ban className={`w-4 h-4 ${
-                        allowBackdated === 0 ? 'text-red-600' : 'text-gray-500'
+                        allowBackdated === 0 ? 'text-green-600' : 'text-gray-500'
                       }`} />
                     </div>
                     <div className="flex-1">
                       <span className={`text-sm font-semibold ${
-                        allowBackdated === 0 ? 'text-red-700' : 'text-gray-700'
+                        allowBackdated === 0 ? 'text-green-700' : 'text-gray-700'
                       }`}>
                         {t('leave.disallowBackdated')}
                       </span>
                       <p className={`text-xs mt-1 ${
-                        allowBackdated === 0 ? 'text-red-600' : 'text-gray-500'
+                        allowBackdated === 0 ? 'text-green-600' : 'text-gray-500'
                       }`}>
                         {t('leave.disallowBackdatedDesc')}
                       </p>
                     </div>
                     {allowBackdated === 0 && (
-                      <CheckCircle2 className="w-5 h-5 text-red-600" />
+                      <CheckCircle2 className="w-5 h-5 text-green-600" />
                     )}
                   </div>
                 </div>
@@ -675,33 +675,33 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
                 <div 
                   className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                     allowBackdated === 1 
-                      ? 'border-green-400 bg-green-50 shadow-md' 
-                      : 'border-gray-200 bg-white hover:border-green-300 hover:bg-green-25'
+                      ? 'border-red-400 bg-red-50 shadow-md' 
+                      : 'border-gray-200 bg-white hover:border-red-300 hover:bg-red-25'
                   }`}
                   onClick={() => setAllowBackdated(1)}
                 >
                   <div className="flex items-center gap-3">
                     <div className={`p-1 rounded-full ${
-                      allowBackdated === 1 ? 'bg-green-100' : 'bg-gray-100'
+                      allowBackdated === 1 ? 'bg-red-100' : 'bg-gray-100'
                     }`}>
                       <Clock className={`w-4 h-4 ${
-                        allowBackdated === 1 ? 'text-green-600' : 'text-gray-500'
+                        allowBackdated === 1 ? 'text-red-600' : 'text-gray-500'
                       }`} />
                     </div>
                     <div className="flex-1">
                       <span className={`text-sm font-semibold ${
-                        allowBackdated === 1 ? 'text-green-700' : 'text-gray-700'
+                        allowBackdated === 1 ? 'text-red-700' : 'text-gray-700'
                       }`}>
                         {t('leave.allowBackdated')}
                       </span>
                       <p className={`text-xs mt-1 ${
-                        allowBackdated === 1 ? 'text-green-600' : 'text-gray-500'
+                        allowBackdated === 1 ? 'text-red-600' : 'text-gray-500'
                       }`}>
                         {t('leave.allowBackdatedDesc')}
                       </p>
                     </div>
                     {allowBackdated === 1 && (
-                      <CheckCircle2 className="w-5 h-5 text-green-600" />
+                      <CheckCircle2 className="w-5 h-5 text-red-600" />
                     )}
                   </div>
                 </div>
