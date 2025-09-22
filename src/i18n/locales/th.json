@@ -375,7 +375,18 @@
     "dateManagement": "จัดการวันที่",
     "approvalControl": "การอนุมัติ",
     "businessHoursError": "เวลาลาต้องอยู่ในช่วงเวลาทำงาน (09:00 น. - 18:00 น.)",
-    "endTimeMustBeAfterStartTime": "เวลาสิ้นสุดต้องมากกว่าเวลาเริ่มต้น"
+    "endTimeMustBeAfterStartTime": "เวลาสิ้นสุดต้องมากกว่าเวลาเริ่มต้น",
+    "confirm": {
+      "reviewBeforeSubmit": "โปรดตรวจสอบข้อมูลก่อนยืนยันส่งคำขอ",
+      "labelLeaveType": "ประเภทการลา",
+      "labelMode": "รูปแบบ",
+      "labelDateRange": "ช่วงวันที่",
+      "labelLeaveDate": "วันที่ลา",
+      "labelTime": "เวลา",
+      "labelReason": "เหตุผล",
+      "labelContact": "ช่องทางติดต่อ",
+      "labelAttachments": "ไฟล์แนบ"
+    }
 
   },
   "leaveTypes": {

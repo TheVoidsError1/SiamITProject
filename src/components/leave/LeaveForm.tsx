@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -64,6 +65,15 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
     contact: '',
   });
   const [submitted, setSubmitted] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  // Keep a simple flag to indicate that validation passed and we're awaiting user confirm
+  const [readyToSubmit, setReadyToSubmit] = useState(false);
+
+  // Preview dialog state for attachments
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [previewName, setPreviewName] = useState<string | null>(null);
 
   // Dynamic attachment requirement based on selected leave type
   const selected = leaveTypes.find(type => type.id === leaveType);
@@ -194,7 +204,115 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
     };
   };
 
-  // handleSubmit: ถ้า onSubmit ถูกส่งมา ให้เรียก onSubmit(data) แทน submit ปกติ
+  // Final API submission (called after user confirms)
+  const submitToApi = async () => {
+    try {
+      const formData = new FormData();
+      formData.append("leaveType", leaveType);
+      if (durationType) formData.append("durationType", durationType);
+      // Use only formatDateLocal and check type
+      if (startDate instanceof Date && !isNaN(startDate.getTime())) {
+        formData.append("startDate", formatDateLocal(startDate));
+      }
+      if (endDate instanceof Date && !isNaN(endDate.getTime())) {
+        formData.append("endDate", formatDateLocal(endDate));
+      }
+      // เพิ่มวันที่ลาสำหรับลาแบบชั่วโมง
+      if (durationType === 'hour' && leaveDate instanceof Date && !isNaN(leaveDate.getTime())) {
+        formData.append("leaveDate", formatDateLocal(leaveDate));
+      }
+      // Only send time fields for hourly leave
+      if (durationType === 'hour') {
+        if (startTime) formData.append("startTime", startTime);
+        if (endTime) formData.append("endTime", endTime);
+      }
+      formData.append("reason", reason);
+      formData.append("contact", contact);
+      // แนบไฟล์ทุกประเภทใน attachments array
+      attachments.forEach(file => {
+        formData.append('attachments', file);
+      });
+      // เพิ่ม repid (id ของ user ปัจจุบัน)
+      if (user?.id) {
+        formData.append("repid", user.id);
+      }
+      // เพิ่ม position (id ของ position ของ user ปัจจุบัน)
+      if (user?.position) {
+        formData.append("position", user.position);
+      }
+      // ส่ง API
+      const token = localStorage.getItem('token');
+      let response, data;
+      if (mode === 'edit' && initialData?.id) {
+        // PUT สำหรับอัปเดตใบลา
+        response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/leave-request/${initialData.id}`, {
+          method: "PUT",
+          body: formData,
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Accept-Language': i18n.language
+          },
+        });
+      } else {
+        // POST สำหรับสร้างใหม่
+        response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/leave-request`, {
+          method: "POST",
+          body: formData,
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Accept-Language': i18n.language
+          },
+        });
+      }
+      data = await response.json();
+      if (!response.ok) {
+        // ถ้ามี message จาก backend ให้แสดงใน toast
+        toast({
+          title: t('leave.notice'),
+          description: data.message || t('leave.submitError'),
+          variant: "default",
+        });
+        return;
+      }
+      if (mode === 'edit') {
+        toast({
+          title: t('leave.updateSuccess'),
+          description: t('leave.updateSuccessDesc'),
+          variant: 'default',
+          className: 'border-green-500 bg-green-50 text-green-900',
+        });
+      } else {
+        toast({
+          title: t('leave.leaveRequestSuccess'),
+          description: t('leave.leaveRequestSuccessDesc'),
+        });
+      }
+      // Reset form เฉพาะ create
+      if (mode !== 'edit') {
+        setStartDate(undefined);
+        setEndDate(undefined);
+        setLeaveDate(undefined);
+        setLeaveType("");
+        setStartTime("");
+        setEndTime("");
+        setReason("");
+        setEmployeeType("");
+        setAttachments([]);
+        setContact("");
+        if (formRef.current) formRef.current.reset();
+      }
+      // ถ้ามี onSubmit callback ให้เรียก (เช่นปิด modal)
+      if (onSubmit) onSubmit(data);
+    } catch (err: any) {
+      toast({
+        title: t('error.title'),
+        description: err.message || t('leave.submitError'),
+        variant: "destructive",
+      });
+    }
+  };
+
+  // handleSubmit: validate and open confirm dialog
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
@@ -343,129 +461,9 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
       });
       return;
     }
-
-    // --- API Integration ---
-    try {
-      const formData = new FormData();
-      formData.append("leaveType", leaveType);
-      if (durationType) formData.append("durationType", durationType);
-      // Use only formatDateLocal and check type
-      if (startDate instanceof Date && !isNaN(startDate.getTime())) {
-        formData.append("startDate", formatDateLocal(startDate));
-      }
-      if (endDate instanceof Date && !isNaN(endDate.getTime())) {
-        formData.append("endDate", formatDateLocal(endDate));
-      }
-      // เพิ่มวันที่ลาสำหรับลาแบบชั่วโมง
-      if (durationType === 'hour' && leaveDate instanceof Date && !isNaN(leaveDate.getTime())) {
-        formData.append("leaveDate", formatDateLocal(leaveDate));
-      }
-      // Only send time fields for hourly leave
-      if (durationType === 'hour') {
-        if (startTime) formData.append("startTime", startTime);
-        if (endTime) formData.append("endTime", endTime);
-      }
-      formData.append("reason", reason);
-      formData.append("contact", contact);
-      // แนบไฟล์ทุกประเภทใน attachments array
-      attachments.forEach(file => {
-        formData.append('attachments', file);
-      });
-      // เพิ่ม repid (id ของ user ปัจจุบัน)
-      if (user?.id) {
-        formData.append("repid", user.id);
-      }
-      // เพิ่ม position (id ของ position ของ user ปัจจุบัน)
-      if (user?.position) {
-        formData.append("position", user.position);
-      }
-      // ส่ง API
-      const token = localStorage.getItem('token');
-      let response, data;
-      if (mode === 'edit' && initialData?.id) {
-        // PUT สำหรับอัปเดตใบลา
-        response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/leave-request/${initialData.id}`, {
-          method: "PUT",
-          body: formData,
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Accept-Language': i18n.language
-          },
-        });
-      } else {
-        // POST สำหรับสร้างใหม่
-        response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/leave-request`, {
-          method: "POST",
-          body: formData,
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Accept-Language': i18n.language
-          },
-        });
-      }
-      data = await response.json();
-      if (!response.ok) {
-        // ถ้ามี message จาก backend ให้แสดงใน toast
-        toast({
-          title: t('leave.notice'),
-          description: data.message || t('leave.submitError'),
-          variant: "default", // เปลี่ยนจาก destructive เป็น default (สีเทา)
-        });
-        return;
-      }
-      if (mode === 'edit') {
-        toast({
-                  title: t('leave.updateSuccess'),
-        description: t('leave.updateSuccessDesc'),
-          variant: 'default',
-          className: 'border-green-500 bg-green-50 text-green-900',
-        });
-      } else {
-        toast({
-          title: t('leave.leaveRequestSuccess'),
-          description: t('leave.leaveRequestSuccessDesc'),
-        });
-      }
-      // Reset form เฉพาะ create
-      if (mode !== 'edit') {
-        setStartDate(undefined);
-        setEndDate(undefined);
-        setLeaveDate(undefined); // เพิ่มการ reset leaveDate
-        setLeaveType("");
-        setStartTime("");
-        setEndTime("");
-        setReason("");
-        setEmployeeType("");
-        setAttachments([]);
-        setContact("");
-        if (formRef.current) formRef.current.reset();
-      }
-      // ถ้ามี onSubmit callback ให้เรียก (เช่นปิด modal)
-      if (onSubmit) onSubmit(data);
-      toast({
-        title: t('leave.leaveRequestSuccess'),
-        description: t('leave.leaveRequestSuccessDesc'),
-      });
-      // Reset form
-      setStartDate(undefined);
-      setEndDate(undefined);
-      setLeaveDate(undefined); // เพิ่มการ reset leaveDate
-      setLeaveType("");
-      setDurationType("");
-      setStartTime("");
-      setEndTime("");
-      setReason("");
-      setEmployeeType("");
-      setAttachments([]);
-      setContact("");
-      if (formRef.current) formRef.current.reset();
-    } catch (err: any) {
-      toast({
-        title: t('error.title'),
-        description: err.message || t('leave.submitError'),
-        variant: "destructive",
-      });
-    }
+    // Passed validation → open confirm dialog
+    setReadyToSubmit(true);
+    setConfirmOpen(true);
   };
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -811,6 +809,79 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
             </>
           )}
         </form>
+        {/* Confirmation Dialog */}
+        <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+          <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>{t('leave.submitLeave')}</DialogTitle>
+              <DialogDescription>
+                {t('common.confirm')} — {t('leave.confirm.reviewBeforeSubmit')}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 text-sm">
+              <div className="flex justify-between"><span className="text-gray-500">{t('leave.confirm.labelLeaveType')}</span><span className="font-medium">{(leaveTypes.find(l=>l.id===leaveType)?.[i18n.language.startsWith('th') ? 'leave_type_th':'leave_type_en']) || '-'}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">{t('leave.confirm.labelMode')}</span><span className="font-medium">{durationType === 'hour' ? t('leave.hourly') : t('leave.fullDay')}</span></div>
+              {durationType === 'hour' ? (
+                <>
+                  <div className="flex justify-between"><span className="text-gray-500">{t('leave.confirm.labelLeaveDate')}</span><span className="font-medium">{leaveDate ? format(leaveDate, 'dd/MM/yyyy') : '-'}</span></div>
+                  <div className="flex justify-between"><span className="text-gray-500">{t('leave.confirm.labelTime')}</span><span className="font-medium">{startTime || '-'} - {endTime || '-'}</span></div>
+                </>
+              ) : (
+                <div className="flex justify-between"><span className="text-gray-500">{t('leave.confirm.labelDateRange')}</span><span className="font-medium">{startDate ? format(startDate,'dd/MM/yyyy') : '-'} → {endDate ? format(endDate,'dd/MM/yyyy') : '-'}</span></div>
+              )}
+              <div className="flex justify-between"><span className="text-gray-500">{t('leave.confirm.labelReason')}</span><span className="font-medium break-all text-right max-w-[60%]">{reason || '-'}</span></div>
+              <div className="flex justify-between"><span className="text-gray-500">{t('leave.confirm.labelContact')}</span><span className="font-medium break-all text-right max-w-[60%]">{contact || '-'}</span></div>
+              {(() => {
+                const imageFiles = (attachments || []).filter((f: any) => f?.type?.startsWith?.('image/')) as any[];
+                if (imageFiles.length === 0) return null;
+                return (
+                  <div className="space-y-2">
+                    <div className="text-gray-500">{t('leave.confirm.labelAttachments')}</div>
+                    <div className="grid grid-cols-3 gap-2">
+                      {imageFiles.map((file: any, idx: number) => {
+                        const url = URL.createObjectURL(file);
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => { setPreviewUrl(url); setPreviewName(file?.name || `attachment-${idx+1}`); setPreviewOpen(true); }}
+                            className="block focus:outline-none"
+                            aria-label={`preview-attachment-${idx}`}
+                          >
+                            <img src={url} alt={`attachment-${idx}`} className="w-full h-20 object-cover rounded-md border" />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+            </div>
+            {/* Image Preview Dialog */}
+            <Dialog open={previewOpen} onOpenChange={(o)=>{ if(!o){ if(previewUrl) URL.revokeObjectURL(previewUrl); setPreviewUrl(null); setPreviewName(null);} setPreviewOpen(o); }}>
+              <DialogContent className="sm:max-w-3xl">
+                <DialogHeader>
+                  <DialogTitle>{previewName || t('leave.confirm.labelAttachments')}</DialogTitle>
+                  <DialogDescription>{t('common.viewDetails')}</DialogDescription>
+                </DialogHeader>
+                {previewUrl && (
+                  <div className="max-h-[70vh] overflow-auto">
+                    <img src={previewUrl} alt={previewName || 'preview'} className="w-full h-auto rounded-lg" />
+                  </div>
+                )}
+                <DialogFooter>
+                  <Button variant="outline" onClick={()=>setPreviewOpen(false)}>{t('common.close')}</Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={()=>setConfirmOpen(false)}>{t('common.cancel')}</Button>
+              <Button onClick={async ()=>{ if (readyToSubmit){ setConfirmOpen(false); await submitToApi(); } }} className="gradient-bg text-white">
+                {t('common.confirm')}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );

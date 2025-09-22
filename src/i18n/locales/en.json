@@ -381,7 +381,18 @@
     "dateManagement": "Date Management",
     "approvalControl": "Approval Control",
     "businessHoursError": "Leave time must be within business hours (09:00 AM - 06:00 PM)",
-    "endTimeMustBeAfterStartTime": "End time must be after start time"
+    "endTimeMustBeAfterStartTime": "End time must be after start time",
+    "confirm": {
+      "reviewBeforeSubmit": "Please review your information before confirming",
+      "labelLeaveType": "Leave Type",
+      "labelMode": "Mode",
+      "labelDateRange": "Date Range",
+      "labelLeaveDate": "Leave Date",
+      "labelTime": "Time",
+      "labelReason": "Reason",
+      "labelContact": "Contact",
+      "labelAttachments": "Attachments"
+    }
   },
   "leaveTypes": {
     "all": "All Types",
