@@ -482,20 +482,15 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                               </div>
                             </div>
                           ) : (
-                            <div className="space-y-3">
-                              <div className="w-full h-32 bg-gray-200 rounded-lg flex items-center justify-center">
-                                <FileText className="w-8 h-8 text-gray-400" />
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm text-gray-600 truncate">{fileName}</span>
-                                <Button 
-                                  size="sm" 
-                                  variant="outline"
-                                  onClick={() => handleDownload(authenticatedFilePath, fileName)}
-                                >
-                                  {t('common.download')}
-                                </Button>
-                              </div>
+                            <div>
+                              <button
+                                className="text-sm text-blue-600 underline truncate text-left hover:text-blue-800 focus:outline-none"
+                                onClick={() => handleDownload(authenticatedFilePath, fileName)}
+                                title={fileName}
+                                type="button"
+                              >
+                                {fileName}
+                              </button>
                             </div>
                           )}
                         </div>

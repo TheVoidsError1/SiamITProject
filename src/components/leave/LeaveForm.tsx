@@ -74,6 +74,7 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [previewName, setPreviewName] = useState<string | null>(null);
+  const [previewType, setPreviewType] = useState<string | null>(null);
 
   // Dynamic attachment requirement based on selected leave type
   const selected = leaveTypes.find(type => type.id === leaveType);
@@ -831,34 +832,40 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
               )}
               <div className="flex justify-between"><span className="text-gray-500">{t('leave.confirm.labelReason')}</span><span className="font-medium break-all text-right max-w-[60%]">{reason || '-'}</span></div>
               <div className="flex justify-between"><span className="text-gray-500">{t('leave.confirm.labelContact')}</span><span className="font-medium break-all text-right max-w-[60%]">{contact || '-'}</span></div>
-              {(() => {
-                const imageFiles = (attachments || []).filter((f: any) => f?.type?.startsWith?.('image/')) as any[];
-                if (imageFiles.length === 0) return null;
-                return (
-                  <div className="space-y-2">
-                    <div className="text-gray-500">{t('leave.confirm.labelAttachments')}</div>
-                    <div className="grid grid-cols-3 gap-2">
-                      {imageFiles.map((file: any, idx: number) => {
-                        const url = URL.createObjectURL(file);
-                        return (
-                          <button
-                            key={idx}
-                            type="button"
-                            onClick={() => { setPreviewUrl(url); setPreviewName(file?.name || `attachment-${idx+1}`); setPreviewOpen(true); }}
-                            className="block focus:outline-none"
-                            aria-label={`preview-attachment-${idx}`}
-                          >
+              {(attachments && attachments.length > 0) && (
+                <div className="space-y-2">
+                  <div className="text-gray-500">{t('leave.confirm.labelAttachments')}</div>
+                  <div className="grid grid-cols-3 gap-2">
+                    {(attachments as any[]).map((file: any, idx: number) => {
+                      const mime = file?.type || '';
+                      const url = URL.createObjectURL(file);
+                      const isImage = mime.startsWith('image/');
+                      const isPdf = mime === 'application/pdf' || (file?.name || '').toLowerCase().endsWith('.pdf');
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => { setPreviewUrl(url); setPreviewName(file?.name || `attachment-${idx+1}`); setPreviewType(mime); setPreviewOpen(true); }}
+                          className="block focus:outline-none group"
+                          aria-label={`preview-attachment-${idx}`}
+                          title={file?.name}
+                        >
+                          {isImage ? (
                             <img src={url} alt={`attachment-${idx}`} className="w-full h-20 object-cover rounded-md border" />
-                          </button>
-                        );
-                      })}
-                    </div>
+                          ) : (
+                            <div className="w-full h-20 rounded-md border flex items-center justify-center bg-gray-50 text-gray-700 text-xs p-2 text-center">
+                              {isPdf ? 'PDF' : (file?.name?.split('.').pop() || 'FILE').toUpperCase()}
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
-                );
-              })()}
+                </div>
+              )}
             </div>
             {/* Image Preview Dialog */}
-            <Dialog open={previewOpen} onOpenChange={(o)=>{ if(!o){ if(previewUrl) URL.revokeObjectURL(previewUrl); setPreviewUrl(null); setPreviewName(null);} setPreviewOpen(o); }}>
+            <Dialog open={previewOpen} onOpenChange={(o)=>{ if(!o){ if(previewUrl) URL.revokeObjectURL(previewUrl); setPreviewUrl(null); setPreviewName(null); setPreviewType(null);} setPreviewOpen(o); }}>
               <DialogContent className="sm:max-w-3xl">
                 <DialogHeader>
                   <DialogTitle>{previewName || t('leave.confirm.labelAttachments')}</DialogTitle>
@@ -866,7 +873,18 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
                 </DialogHeader>
                 {previewUrl && (
                   <div className="max-h-[70vh] overflow-auto">
-                    <img src={previewUrl} alt={previewName || 'preview'} className="w-full h-auto rounded-lg" />
+                    {previewType?.startsWith('image/') ? (
+                      <img src={previewUrl} alt={previewName || 'preview'} className="w-full h-auto rounded-lg" />
+                    ) : previewType === 'application/pdf' || (previewName || '').toLowerCase().endsWith('.pdf') ? (
+                      <iframe title="pdf-preview" src={previewUrl} className="w-full h-[70vh] rounded-lg" />
+                    ) : (
+                      <div className="p-6 text-center text-gray-700 space-y-3">
+                        <div className="text-sm">{t('common.view')} {previewName}</div>
+                        <a href={previewUrl} download={previewName || 'file'} className="inline-flex items-center px-3 py-2 rounded-md border bg-white hover:bg-gray-50">
+                          {t('file.downloadSuccess')}
+                        </a>
+                      </div>
+                    )}
                   </div>
                 )}
                 <DialogFooter>
