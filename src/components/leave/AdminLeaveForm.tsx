@@ -77,6 +77,7 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
     contact: '',
     approvalStatus: '',
     approverName: '',
+    approvalNote: '', // เพิ่ม error สำหรับเหตุผลไม่อนุมัติ
   });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -221,6 +222,7 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
       contact: '',
       approvalStatus: '',
       approverName: '',
+      approvalNote: '', // เพิ่ม error สำหรับเหตุผลไม่อนุมัติ
     };
 
     if (!selectedUserId) {
@@ -254,8 +256,8 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
       }
     }
 
-    if (approvalStatus === 'rejected' && !reason.trim()) {
-      newErrors.reason = t('leave.enterReasonRequired');
+    if (approvalStatus === 'rejected' && !approvalNote.trim()) {
+      newErrors.approvalNote = t('leave.enterRejectionReasonRequired');
     }
 
     if (!contact.trim()) {
@@ -358,6 +360,11 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
         } else if (approvalStatus === 'rejected' && approvedTime) {
           formData.append("rejectedTime", approvedTime);
         }
+      }
+      
+      // ส่งเหตุผลไม่อนุมัติ (rejectedReason) เมื่อ rejected - แยกออกมาเพื่อให้แน่ใจว่าส่งเสมอ
+      if (approvalStatus === 'rejected' && approvalNote) {
+        formData.append('rejectedReason', approvalNote);
       }
       
       // Add selected user ID instead of current user
@@ -956,8 +963,11 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
                   placeholder={t('leave.rejectionNotePlaceholder')}
                   value={approvalNote}
                   onChange={(e) => setApprovalNote(e.target.value)}
-                  className="min-h-[100px] border-gray-200 hover:border-blue-300"
+                  className={`min-h-[100px] border-gray-200 hover:border-blue-300 ${errors.approvalNote ? 'border-red-500 ring-red-200' : ''}`}
                 />
+                {errors.approvalNote && (
+                  <p className="text-sm text-red-500">{errors.approvalNote}</p>
+                )}
               </div>
             )}
           </div>

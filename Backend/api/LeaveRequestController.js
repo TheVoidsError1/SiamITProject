@@ -1408,6 +1408,7 @@
              rejectedBy,
              rejectionReason: leave.rejectedReason || null,
              attachments: parseAttachments(leave.attachments),
+             contact: leave.contact || null,
              // เพิ่ม backdated
              backdated: Number(leave.backdated),
            };
@@ -2191,8 +2192,10 @@
           allowBackdated,
           backdated: backdatedFromBody,
           approvedTime,
-          rejectedTime
+          rejectedTime,
+          rejectedReason // <<== เพิ่มตรงนี้
         } = req.body;
+
 
         // Validation
         if (!repid) {
@@ -2314,12 +2317,14 @@
           approverName: approverName || null,
           statusBy: statusBy || null,
           approvalNote: approvalNote || null,
+          rejectedReason: rejectedReason || null, // <<== เพิ่ม map ตรงนี้
           backdated: isBackdated,
           approvedTime: approvedTime || null,
           rejectedTime: rejectedTime || null,
           createdAt: new Date(),
           updatedAt: new Date()
         });
+
 
         // Handle attachments
         if (req.files && req.files.length > 0) {
