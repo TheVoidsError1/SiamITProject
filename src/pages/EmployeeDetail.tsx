@@ -1,26 +1,19 @@
 import AvatarCropDialog from '@/components/dialogs/AvatarCropDialog';
 import { LeaveDetailDialog } from "@/components/dialogs/LeaveDetailDialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from "@/components/ui/label";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { apiEndpoints } from '@/constants/api';
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { LeaveRequest } from '@/types';
 import { format } from 'date-fns';
 import { th } from 'date-fns/locale';
-import { Calendar, Camera, ChevronLeft, Edit, Eye, Mail, Trash2, User } from "lucide-react";
+import { Calendar, Camera, ChevronLeft, Edit, Eye, Mail, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
@@ -689,11 +682,11 @@ const EmployeeDetail = () => {
                     <div>
                       <Label className="text-sm font-semibold text-blue-700 mb-2 block">{t('employee.birthdate')}</Label>
                       {isEditing ? (
-                        <input
-                          type="date"
-                          className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white"
-                          value={editData.birthdate}
-                          onChange={e => setEditData({ ...editData, birthdate: e.target.value })}
+                        <DatePicker
+                          date={editData.birthdate}
+                          onDateChange={(date) => setEditData({ ...editData, birthdate: date })}
+                          placeholder={t('admin.enterBirthdate')}
+                          className="w-full py-3 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 border-blue-200 border-2 bg-white/80 backdrop-blur-sm"
                         />
                       ) : (
                         <p className="text-lg text-blue-700">{employee.dob ? format(new Date(employee.dob), 'dd/MM/yyyy') : '-'}</p>
@@ -776,11 +769,11 @@ const EmployeeDetail = () => {
                         <div>
                           <Label className="text-sm font-semibold text-indigo-700 mb-2 block">{t('employee.internStartDate')}</Label>
                           {isEditing ? (
-                            <input
-                              type="date"
-                              className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-white"
-                              value={editData.internStartDate}
-                              onChange={e => setEditData({ ...editData, internStartDate: e.target.value })}
+                            <DatePicker
+                              date={editData.internStartDate}
+                              onDateChange={(date) => setEditData({ ...editData, internStartDate: date })}
+                              placeholder={t('admin.enterInternStartDate')}
+                              className="w-full py-3 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 border-indigo-200 border-2 bg-white/80 backdrop-blur-sm"
                             />
                           ) : (
                             <p className="text-lg text-indigo-700">{employee.internStartDate ? format(new Date(employee.internStartDate), 'dd/MM/yyyy') : '-'}</p>
@@ -789,11 +782,11 @@ const EmployeeDetail = () => {
                         <div>
                           <Label className="text-sm font-semibold text-indigo-700 mb-2 block">{t('employee.internEndDate')}</Label>
                           {isEditing ? (
-                            <input
-                              type="date"
-                              className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-white"
-                              value={editData.internEndDate}
-                              onChange={e => setEditData({ ...editData, internEndDate: e.target.value })}
+                            <DatePicker
+                              date={editData.internEndDate}
+                              onDateChange={(date) => setEditData({ ...editData, internEndDate: date })}
+                              placeholder={t('admin.enterInternEndDate')}
+                              className="w-full py-3 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 border-indigo-200 border-2 bg-white/80 backdrop-blur-sm"
                             />
                           ) : (
                             <p className="text-lg text-indigo-700">{employee.internEndDate ? format(new Date(employee.internEndDate), 'dd/MM/yyyy') : '-'}</p>
