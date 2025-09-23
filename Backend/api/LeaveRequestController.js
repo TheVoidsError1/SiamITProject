@@ -308,7 +308,18 @@
     const superadminRepo = AppDataSource.getRepository('User');
 
     // POST /api/leave-request
-    router.post('/', leaveAttachmentsUpload.array('attachments', 10), async (req, res) => {
+    // Wrap multer to ensure errors are handled by handleUploadError and returned as JSON
+    router.post('/',
+      (req, res, next) => {
+        // invoke multer and intercept possible errors
+        leaveAttachmentsUpload.array('attachments', 10)(req, res, (err) => {
+          if (err) {
+            return handleUploadError(err, req, res, next);
+          }
+          next();
+        });
+      },
+      async (req, res) => {
       try {
         const leaveRepo = AppDataSource.getRepository('LeaveRequest');
         let userId = null;
@@ -560,7 +571,7 @@
           if (leaveStart && leaveStart < today) {
             // ถ้าวันลาอยู่ในอดีต (ย้อนหลัง) ให้ backdated = 1
             backdated = 1;
-          }
+    }
           // ถ้าวันลาเป็นวันปัจจุบันหรืออนาคต ให้ backdated = 0 (ไม่นับเป็นย้อนหลัง)
         }
 
