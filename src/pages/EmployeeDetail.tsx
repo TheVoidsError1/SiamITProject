@@ -18,8 +18,6 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { API_BASE_URL, apiService } from '../lib/api';
-import { apiEndpoints } from '@/constants/api';
-import { LeaveRequest } from '@/types';
 import { withCacheBust } from '@/lib/url';
 import { getLeaveTypeLabel } from '@/lib/leaveUtils';
 
