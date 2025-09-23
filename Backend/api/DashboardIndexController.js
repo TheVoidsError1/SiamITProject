@@ -417,51 +417,22 @@ module.exports = (AppDataSource) => {
       const userId = req.user.userId;
       
       // Get repositories
-      const processRepo = AppDataSource.getRepository('User');
       const userRepo = AppDataSource.getRepository('User');
-      const adminRepo = AppDataSource.getRepository('User'); // Admin users are stored in User table
-      const superadminRepo = AppDataSource.getRepository('User'); // Superadmin users are also stored in User table
       const departmentRepo = AppDataSource.getRepository('Department');
       const positionRepo = AppDataSource.getRepository('Position');
 
-      // Find ProcessCheck entry by Repid (userId)
-      const processCheck = await processRepo.findOne({ where: { Repid: userId } });
-      if (!processCheck) {
-        return res.status(404).json({ 
-          status: 'error', 
-          message: 'User not found in ProcessCheck table' 
-        });
-      }
-
-      // Get user details based on role
-      let userProfile = null;
-      let role = processCheck.Role;
-
-      if (role === 'admin') {
-        userProfile = await adminRepo.findOne({ where: { id: userId } });
-      } else if (role === 'superadmin') {
-        userProfile = await superadminRepo.findOne({ where: { id: userId } });
-      } else {
-        // Default to user
-        userProfile = await userRepo.findOne({ where: { id: userId } });
-      }
-
+      // Find user directly in unified users table
+      const userProfile = await userRepo.findOne({ where: { id: userId } });
       if (!userProfile) {
         return res.status(404).json({ 
           status: 'error', 
-          message: 'User profile not found' 
+          message: 'User not found' 
         });
       }
 
-      // Get user name based on role
-      let userName = '';
-      if (role === 'admin') {
-        userName = userProfile.name || '';
-      } else if (role === 'superadmin') {
-        userName = userProfile.name || '';
-      } else {
-        userName = userProfile.name || '';
-      }
+      // Get user role and name from unified table
+      const role = userProfile.Role;
+      const userName = userProfile.name || '';
 
       // Get department information
       let departmentInfo = {
@@ -501,8 +472,8 @@ module.exports = (AppDataSource) => {
         status: 'success',
         data: {
           name: userName,
-          email: processCheck.Email,
-          avatar: processCheck.avatar_url,
+          email: userProfile.Email,
+          avatar: userProfile.avatar_url,
           role: role,
           department: departmentInfo,
           position: positionInfo

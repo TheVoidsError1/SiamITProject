@@ -59,7 +59,7 @@
     "adminDashboard": "Approve Leave",
     "employeeManagement": "Employee Management",
     "mainMenu": "Main Menu",
-    "allEmployees": "All Employees",
+    "allEmployees": "Employee Management",
     "createUser": "Create User",
     "manageAll": "Leave System Settings", 
     "companyNews": "Company News",
@@ -589,6 +589,10 @@
     "days": "days"
   },
   "admin": {
+    "pending": "Pending",
+    "reject": "Reject",
+    "rejected": "Rejected",
+    "approved": "Approved",
     "pendingRequests": "Pending Requests",
     "approvedThisMonth": "Approved This Month",
     "totalEmployees": "Total Employees",

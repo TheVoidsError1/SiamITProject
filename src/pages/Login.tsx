@@ -189,6 +189,18 @@ const Login = () => {
           box-shadow: 0 0 0 2px #3b82f644;
           outline: none;
         }
+        .input-blue-login::-ms-reveal {
+          display: none !important;
+        }
+        .input-blue-login::-webkit-credentials-auto-fill-button {
+          display: none !important;
+        }
+        .input-blue-login::-webkit-strong-password-auto-fill-button {
+          display: none !important;
+        }
+        .input-blue-login::-webkit-textfield-decoration-container {
+          display: none !important;
+        }
         .btn-blue-login {
           background: linear-gradient(90deg, #3b82f6 0%, #6366f1 100%);
           color: #fff;

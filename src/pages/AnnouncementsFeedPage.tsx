@@ -385,11 +385,9 @@ const AnnouncementsFeedPage = () => {
                           alt={announcement.createdByName}
                           className="object-cover"
                           onError={(e) => {
-                            console.log('Avatar failed to load:', announcement.avatar);
                             e.currentTarget.style.display = 'none';
                           }}
                           onLoad={() => {
-                            console.log('Avatar loaded successfully:', announcement.avatar);
                           }}
                         />
                         <AvatarFallback className="bg-blue-100 text-blue-600 font-bold text-lg">

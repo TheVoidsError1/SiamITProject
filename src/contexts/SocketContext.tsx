@@ -25,24 +25,20 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     });
 
     newSocket.on('connect', () => {
-      console.log('Connected to Socket.io server');
       setIsConnected(true);
       
       // Join user room if user is logged in
       if (user?.id) {
         newSocket.emit('joinRoom', user.id);
-        console.log('Joined user room:', user.id);
       }
       
       // Join admin room if user is admin
       if (user?.role === 'admin' || user?.role === 'superadmin') {
         newSocket.emit('joinAdminRoom');
-        console.log('Joined admin room');
       }
     });
 
     newSocket.on('disconnect', () => {
-      console.log('Disconnected from Socket.io server');
       setIsConnected(false);
     });
 

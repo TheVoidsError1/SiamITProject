@@ -572,7 +572,6 @@ const EmployeeDetail = () => {
                     form.append('avatar', file);
                     const res = await apiService.post(apiEndpoints.employees.avatar(String(id)), form);
                     if (res?.success) {
-                      console.log('Avatar upload successful:', res.avatar_url);
                       
                       // Update employee data with new avatar URL immediately
                       setEmployee((prev: any) => {

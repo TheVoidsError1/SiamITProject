@@ -40,7 +40,7 @@ module.exports = new EntitySchema({
             onUpdate: 'CURRENT_TIMESTAMP',
         },
     },
-    // No foreign key constraint - user_id can reference users, admin, or superadmin tables
+    // No foreign key constraint - user_id references unified users table
     // relations: {
     //     user: {
     //         type: 'many-to-one',

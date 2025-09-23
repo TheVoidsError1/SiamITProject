@@ -362,7 +362,7 @@ class LineLoginController {
   // Check if user is linked
   static async checkLinkStatus(req, res) {
     try {
-      const userId = req.user?.userId; // This is the Repid from ProcessCheck
+      const userId = req.user?.userId; // This is the user ID from unified users table
       
       if (!userId) {
         return res.status(401).json({ 
@@ -402,7 +402,7 @@ class LineLoginController {
   // Unlink LINE account
   static async unlinkAccount(req, res) {
     try {
-      const userId = req.user?.userId; // This is the Repid from ProcessCheck
+      const userId = req.user?.userId; // This is the user ID from unified users table
       
       if (!userId) {
         return res.status(401).json({ 
