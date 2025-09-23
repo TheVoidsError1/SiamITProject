@@ -1,19 +1,17 @@
+import ImagePreviewDialog from '@/components/dialogs/ImagePreviewDialog';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { format } from 'date-fns';
-import { th } from 'date-fns/locale';
+import { apiEndpoints } from '@/constants/api';
 import { Calendar, CheckCircle, Clock, FileText, History, User, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { apiService, createAuthenticatedFileUrl } from '../../lib/api';
+import { calcHours, getLeaveTypeDisplay, getTypeColor, isRetroactiveLeave } from '../../lib/leaveUtils';
 import { formatDateLocalized } from '../../lib/utils';
-import { createAuthenticatedFileUrl, apiService } from '../../lib/api';
-import { apiEndpoints } from '@/constants/api';
-import ImagePreviewDialog from '@/components/dialogs/ImagePreviewDialog';
-import { isRetroactiveLeave, calcHours, getTypeColor, getLeaveTypeLabel, getLeaveTypeDisplay } from '../../lib/leaveUtils';
-import { getStatusBadge, getRetroactiveBadge } from '../leave/LeaveBadges';
+import { getRetroactiveBadge, getStatusBadge } from '../leave/LeaveBadges';
 
 interface LeaveRequest {
   id: string;
@@ -482,15 +480,27 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                               </div>
                             </div>
                           ) : (
-                            <div>
-                              <button
-                                className="text-sm text-blue-600 underline truncate text-left hover:text-blue-800 focus:outline-none"
+                            <div className="flex items-center gap-3 p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition group">
+                              <FileText className="w-8 h-8 text-indigo-500 flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <a
+                                  href={authenticatedFilePath}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="block text-base font-medium text-gray-800 hover:underline truncate"
+                                  title={fileName}
+                                >
+                                  {fileName}
+                                </a>
+                              </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="ml-2"
                                 onClick={() => handleDownload(authenticatedFilePath, fileName)}
-                                title={fileName}
-                                type="button"
                               >
-                                {fileName}
-                              </button>
+                                {t('common.download')}
+                              </Button>
                             </div>
                           )}
                         </div>
