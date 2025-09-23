@@ -600,10 +600,6 @@
     "days": "วัน"
   },
   "admin": {
-    "pending": "รอการอนุมัติ",
-    "reject": "ปฏิเสธ",
-    "rejected": "ปฏิเสธ",
-    "approved": "อนุมัติแล้ว",
     "pendingRequests": "คำขอรออนุมัติ",
     "approvedThisMonth": "อนุมัติในเดือนนี้",
     "totalEmployees": "พนักงานทั้งหมด",

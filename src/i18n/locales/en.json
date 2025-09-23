@@ -591,10 +591,6 @@
     "days": "days"
   },
   "admin": {
-    "pending": "Pending",
-    "reject": "Reject",
-    "rejected": "Rejected",
-    "approved": "Approved",
     "pendingRequests": "Pending Requests",
     "approvedThisMonth": "Approved This Month",
     "totalEmployees": "Total Employees",
