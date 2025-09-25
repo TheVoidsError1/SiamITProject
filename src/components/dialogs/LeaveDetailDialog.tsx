@@ -208,7 +208,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                   <div className="text-right">
                     <div className="text-sm text-gray-500">{t('history.submittedOn')}</div>
                     <div className="text-lg font-semibold text-blue-600">
-                      {formatDateLocalized(leaveDetail.submittedDate || leaveDetail.createdAt || '', i18n.language)}
+                      {formatDateLocalized(leaveDetail.createdAt || leaveDetail.submittedDate|| '', i18n.language)}
                     </div>
                   </div>
                 </div>
