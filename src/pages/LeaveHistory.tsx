@@ -1,4 +1,5 @@
 import LeaveDetailDialog from '@/components/dialogs/LeaveDetailDialog';
+import PaginationBar from "@/components/PaginationBar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
@@ -12,7 +13,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { format } from "date-fns";
 import { enUS, th } from "date-fns/locale";
-import { AlertCircle, Calendar, CheckCircle, ChevronLeft, ChevronRight, Clock, Eye, FileText, Filter, History, Trash2, X, XCircle } from "lucide-react";
+import { AlertCircle, Calendar, CheckCircle, Clock, Eye, FileText, Filter, History, Trash2, X, XCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from 'react-router-dom';
@@ -1595,252 +1596,16 @@ const LeaveHistory = () => {
 
             )}
 
-            {/* Enhanced Pagination */}
-
+            {/* Enhanced Pagination (replaced with reusable component) */}
             {(totalPages >= 1 || leaveHistory.length > 0) && (
-
-              <div className="flex flex-col sm:flex-row justify-center items-center mt-8 gap-4 p-6 glass shadow-xl border-0 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
-
-                {/* Pagination Info */}
-
-                <div className="flex items-center gap-4 text-sm text-gray-600">
-
-                  <div className="flex items-center gap-2">
-
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-
-                    <span>{t('history.pageInfo', { page: page || 1, totalPages: totalPages || 1 })}</span>
-
-                  </div>
-
-                  <div className="w-px h-4 bg-gray-300"></div>
-
-                  <div className="flex items-center gap-2">
-
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-
-                    <span>{leaveHistory.length} {t('history.results')}</span>
-
-                  </div>
-
-                </div>
-
-
-
-                {/* Pagination Controls */}
-
-                {totalPages > 1 && (
-
-                  <div className="flex items-center gap-2">
-
-                    {/* Previous Button */}
-
-                    <Button
-
-                      variant="outline"
-
-                      size="sm"
-
-                      onClick={() => setPage(Math.max(1, page - 1))}
-
-                      disabled={page === 1}
-
-                      className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 rounded-lg px-3 py-2 transform hover:scale-105 hover:shadow-md btn-press"
-
-                    >
-
-                      <ChevronLeft className="w-4 h-4" />
-
-                    </Button>
-
-
-
-                    {/* Page Numbers */}
-
-                    <div className="flex items-center gap-1">
-
-                      {(() => {
-
-                        const pages = [];
-
-                        const maxPageButtons = 5;
-
-                        let start = Math.max(1, page - 2);
-
-                        let end = Math.min(totalPages, start + maxPageButtons - 1);
-
-                        if (end - start < maxPageButtons - 1) {
-
-                          start = Math.max(1, end - maxPageButtons + 1);
-
-                        }
-
-                        if (start > 1) {
-
-                          pages.push(
-
-                            <Button
-
-                              key={1}
-
-                              variant={page === 1 ? "default" : "outline"}
-
-                              size="sm"
-
-                              onClick={() => setPage(1)}
-
-                              className={`rounded-lg px-3 py-2 transition-all duration-300 transform hover:scale-105 hover:shadow-md ${page === 1 ? 'bg-blue-600 text-white' : 'border-blue-200 text-blue-700 hover:bg-blue-50'}`}
-
-                            >
-
-                              1
-
-                            </Button>
-
-                          );
-
-                          if (start > 2) pages.push(
-
-                            <span key="start-ellipsis" className="px-2 text-gray-400">...</span>
-
-                          );
-
-                        }
-
-                        for (let i = start; i <= end; i++) {
-
-                          pages.push(
-
-                            <Button
-
-                              key={i}
-
-                              variant={page === i ? "default" : "outline"}
-
-                              size="sm"
-
-                              onClick={() => setPage(i)}
-
-                              className={`rounded-lg px-3 py-2 transition-all duration-300 transform hover:scale-105 hover:shadow-md ${page === i ? 'bg-blue-600 text-white' : 'border-blue-200 text-blue-700 hover:bg-blue-50'}`}
-
-                            >
-
-                              {i}
-
-                            </Button>
-
-                          );
-
-                        }
-
-                        if (end < totalPages) {
-
-                          if (end < totalPages - 1) pages.push(
-
-                            <span key="end-ellipsis" className="px-2 text-gray-400">...</span>
-
-                          );
-
-                          pages.push(
-
-                            <Button
-
-                              key={totalPages}
-
-                              variant={page === totalPages ? "default" : "outline"}
-
-                              size="sm"
-
-                              onClick={() => setPage(totalPages)}
-
-                              className={`rounded-lg px-3 py-2 transition-all duration-300 transform hover:scale-105 hover:shadow-md ${page === totalPages ? 'bg-blue-600 text-white' : 'border-blue-200 text-blue-700 hover:bg-blue-50'}`}
-
-                            >
-
-                              {totalPages}
-
-                            </Button>
-
-                          );
-
-                        }
-
-                        return pages;
-
-                      })()}
-
-                    </div>
-
-
-
-                    {/* Next Button */}
-
-                    <Button
-
-                      variant="outline"
-
-                      size="sm"
-
-                      onClick={() => setPage(Math.min(totalPages, page + 1))}
-
-                      disabled={page === totalPages}
-
-                      className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 rounded-lg px-3 py-2 transform hover:scale-105 hover:shadow-md btn-press"
-
-                    >
-
-                      <ChevronRight className="w-4 h-4" />
-
-                    </Button>
-
-                  </div>
-
-                )}
-
-
-
-                {/* Items per page select */}
-
-                <div className="flex items-center gap-2">
-
-                  <Select
-
-                    value={limit.toString()}
-
-                    onValueChange={(value) => {
-
-                      setLimit(Number(value));
-
-                      setPage(1);
-
-                    }}
-
-                  >
-
-                    <SelectTrigger className="w-20 bg-white/90 backdrop-blur border-blue-200 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 rounded-lg h-9 transform hover:scale-105 hover:shadow-md">
-
-                      <SelectValue />
-
-                    </SelectTrigger>
-
-                    <SelectContent className="border-0 shadow-xl rounded-xl">
-
-                      {[5, 10, 20, 50].map(n => (
-
-                        <SelectItem key={n} value={n.toString()} className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{n}</SelectItem>
-
-                      ))}
-
-                    </SelectContent>
-
-                  </Select>
-
-                  <span className="text-sm text-gray-600">{t('admin.itemsPerPage')}</span>
-
-                </div>
-
-              </div>
-
+              <PaginationBar
+                page={page}
+                totalPages={totalPages}
+                totalResults={leaveHistory.length}
+                pageSize={limit}
+                onPageChange={setPage}
+                onPageSizeChange={(n) => setLimit(n)}
+              />
             )}
 
           </div>

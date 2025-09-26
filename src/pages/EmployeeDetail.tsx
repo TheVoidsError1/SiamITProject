@@ -1,5 +1,6 @@
 import AvatarCropDialog from '@/components/dialogs/AvatarCropDialog';
 import { LeaveDetailDialog } from "@/components/dialogs/LeaveDetailDialog";
+import PaginationBar from "@/components/PaginationBar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { apiEndpoints } from '@/constants/api';
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { withCacheBust } from '@/lib/url';
 import { LeaveRequest } from '@/types';
 import { format } from 'date-fns';
 import { th } from 'date-fns/locale';
@@ -18,8 +20,6 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { API_BASE_URL, apiService } from '../lib/api';
-import { withCacheBust } from '@/lib/url';
-import { getLeaveTypeLabel } from '@/lib/leaveUtils';
 
 const EmployeeDetail = () => {
   const { id } = useParams();
@@ -1144,28 +1144,14 @@ const EmployeeDetail = () => {
                 </Table>
               </div>
             </CardContent>
-            {leaveTotalPages > 1 && leaveHistory.length > 0 && (
-                <div className="flex justify-center items-center mt-4 gap-2 p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-gray-600 mr-2">
-                    {t('common.page')} {leavePage} {t('common.of')} {leaveTotalPages}
-                  </span>
-                  <div className="flex gap-1">
-                {Array.from({ length: leaveTotalPages }, (_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setLeavePage(i + 1)}
-                        className={`px-2.5 py-1 rounded-md border text-sm font-medium transition-all duration-200 ${
-                          leavePage === i + 1 
-                            ? 'bg-blue-600 text-white border-blue-600 shadow-md' 
-                            : 'bg-white text-blue-600 border-blue-300 hover:bg-blue-50 hover:border-blue-400'
-                        }`}
-                    disabled={leavePage === i + 1}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
-                  </div>
-              </div>
+            {(leaveTotalPages >= 1 || leaveHistory.length > 0) && (
+              <PaginationBar
+                page={leavePage}
+                totalPages={leaveTotalPages}
+                totalResults={leaveHistory.length}
+                pageSize={6}
+                onPageChange={setLeavePage}
+              />
             )}
           </Card>
         </div>

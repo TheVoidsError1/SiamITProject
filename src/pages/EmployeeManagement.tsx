@@ -1,3 +1,4 @@
+import PaginationBar from "@/components/PaginationBar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -709,18 +710,16 @@ const EmployeeManagement = () => {
                     )}
                   </div>
                   {/* Pagination */}
-                  {totalPages > 1 && (
-                    <div className="flex justify-center mt-4 gap-2 flex-shrink-0 pb-6">
-                      {Array.from({ length: totalPages }, (_, idx) => idx + 1).map((page) => (
-                        <button
-                          key={page}
-                          onClick={() => setCurrentPage(page)}
-                          className={`px-4 py-2 rounded-full border text-sm font-bold shadow-lg transition-all duration-200 hover:scale-105 ${currentPage === page ? 'bg-gradient-to-r from-blue-500 to-indigo-400 text-white border-blue-400 scale-110 shadow-blue-200' : 'bg-white text-blue-600 border-blue-200 hover:bg-blue-50 hover:border-blue-300'}`}
-                        >
-                          {page}
-                        </button>
-                      ))}
-                    </div>
+                  {(totalPages >= 1 || paginatedEmployees.length > 0) && (
+                    <PaginationBar
+                      page={currentPage}
+                      totalPages={totalPages}
+                      totalResults={paginatedEmployees.length}
+                      pageSize={itemsPerPage}
+                      onPageChange={setCurrentPage}
+                      compact
+                      showInfo
+                    />
                   )}
                 </div>
               )}
