@@ -65,6 +65,13 @@ const fetchWithAuth = async (
       }
       return null;
     }
+    
+    // Check for other error status codes
+    if (!response.ok) {
+      console.error(`API request failed with status: ${response.status}`);
+      // Still return the response so safeJsonParse can handle it
+    }
+    
     return response;
   } catch (error) {
     console.error('API request failed:', error);

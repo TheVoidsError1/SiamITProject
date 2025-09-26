@@ -1409,25 +1409,7 @@ const ApproveLeave = () => {
                             className={`relative glass bg-gradient-to-br from-white/80 via-blue-50/80 to-indigo-100/80 border-0 rounded-2xl p-5 shadow-md hover:shadow-xl transition-all flex flex-col md:flex-row md:items-center md:justify-between gap-4 animate-fade-in-up hover-lift`}
                             style={{ animationDelay: `${0.1 + idx * 0.07}s` }}
                           >
-                            <Badge
-                              className={
-                                (request.status === "approved"
-                                  ? "bg-green-100 text-green-800 border-green-200"
-                                  : "bg-red-100 text-red-800 border-red-200") +
-                                " flex items-center absolute right-6 top-6 rounded-full px-3 py-1 font-bold shadow animate-fade-in-up"
-                              }
-                              style={{ animationDelay: '0.2s' }}
-                            >
-                              {request.status === "approved" ? (
-                                <>
-                                  <CheckCircle className="w-4 h-4 mr-1" /> {t('admin.approved')}
-                                </>
-                              ) : (
-                                <>
-                                  <XCircle className="w-4 h-4 mr-1" /> {t('admin.rejected')}
-                                </>
-                              )}
-                            </Badge>
+                            {/* ย้ายสถานะมาอยู่ข้างประเภทการลา */}
                             <div className="flex-1 min-w-0">
                               <div className="font-bold text-lg text-blue-900 mb-1 truncate animate-slide-in-left">{request.user?.name || "-"}</div>
                               {/* ประเภทการลา (leaveType) */}
@@ -1437,6 +1419,15 @@ const ApproveLeave = () => {
                                 : getAdminLeaveTypeDisplay(request.leaveType || request.leaveTypeName)
                               }
                             </span>
+                            {request.status === "approved" ? (
+                              <Badge className="ml-2 bg-green-100 text-green-800 border-green-200 rounded-full px-3 py-1 text-xs font-bold shadow inline-flex items-center animate-fade-in-up" style={{ animationDelay: '0.25s' }}>
+                                <CheckCircle className="w-3.5 h-3.5 mr-1" /> {t('admin.approved')}
+                              </Badge>
+                            ) : (
+                              <Badge className="ml-2 bg-red-100 text-red-800 border-red-200 rounded-full px-3 py-1 text-xs font-bold shadow inline-flex items-center animate-fade-in-up" style={{ animationDelay: '0.25s' }}>
+                                <XCircle className="w-3.5 h-3.5 mr-1" /> {t('admin.rejected')}
+                              </Badge>
+                            )}
                               {(request.backdated === 1 || request.backdated === "1" || request.backdated === true) && (
                                 <Badge className="ml-2 bg-purple-100 text-purple-800 border-purple-200 rounded-full px-3 py-1 text-xs font-bold shadow animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
                                   {t('leave.backdated')}

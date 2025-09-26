@@ -314,7 +314,10 @@ const EmployeeManagement = () => {
     }
     try {
       const data = await apiService.delete(url);
-      if (data.success) {
+      
+      // ตรวจสอบว่า response มี success: true หรือไม่
+      if (data && data.success === true) {
+        // ลบพนักงานออกจาก state
         setEmployees((prev) => prev.filter((e) => e.id !== deleteTarget.id));
         setDeleteTarget(null);
         
@@ -334,18 +337,20 @@ const EmployeeManagement = () => {
         }
         
         toast({
-                  title: t('system.deleteSuccess'),
-        description: t('system.deleteUserSuccessDesc'),
+          title: t('system.deleteSuccess'),
+          description: t('system.deleteUserSuccessDesc'),
           className: 'border-green-500 bg-green-50 text-green-900'
         });
       } else {
+        // แสดง error message เฉพาะเมื่อลบไม่สำเร็จจริง ๆ
         toast({
-                  title: t('system.deleteFailed'),
-        description: data.message || t('system.deleteFailed'),
+          title: t('system.deleteFailed'),
+          description: data?.message || t('system.deleteFailed'),
           variant: "destructive",
         });
       }
     } catch (e) {
+      console.error('Delete employee error:', e);
       toast({
         title: t('system.deleteFailed'),
         description: t('system.deleteFailed'),

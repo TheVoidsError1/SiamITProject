@@ -141,14 +141,8 @@ async function deleteUserComprehensive(AppDataSource, userId, userRole, userRepo
       throw new Error(`${userRole} not found`);
     }
 
-    // Delete all related data and files
+    // Delete all related data and files (including user record)
     const deletionSummary = await deleteUserData(AppDataSource, userId, userRole);
-
-    // Delete from user table
-    const result = await userRepo.delete({ id: userId });
-    if (result.affected === 0) {
-      throw new Error(`${userRole} not found`);
-    }
 
     return {
       success: true,
