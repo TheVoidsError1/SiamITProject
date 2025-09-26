@@ -41,6 +41,7 @@
     "selectRole": "Select Role",
     "sessionExpiredDesc": "Your session has expired. Please login again.",
     "loginAgain": "Login Again",
+    "passwordRequired": "Please enter new password and confirm password",
     "allPositions": "All Positions",
     "allRoles": "All Roles",
     "allDepartments": "All Departments",
@@ -159,7 +160,8 @@
     "clearFiltered": "Clear",
     "showing": "Showing",
     "selected": "Selected",
-    "noResults": "No results"
+    "noResults": "No results",
+    "characters": "characters"
   },
   "line": {
     "linkAccount": "Link LINE Account",
@@ -254,6 +256,7 @@
     "contactInfo": "Contact Information",
     "contactPlaceholder": "Phone number or email",
     "contactFreePlaceholder": "Contact information (e.g. Line, Facebook, etc.)",
+    "contact": "Contact",
     "submitLeave": "Submit Leave Request",
     "requiresAttachment": "Requires attachment",
     "attachmentRequired": "Attachment required",
@@ -434,6 +437,21 @@
     "11": "November",
     "12": "December"
   },
+  "month": {
+    "allMonths": "All months",
+    "jan": "January",
+    "feb": "February",
+    "mar": "March",
+    "apr": "April",
+    "may": "May",
+    "jun": "June",
+    "jul": "July",
+    "aug": "August",
+    "sep": "September",
+    "oct": "October",
+    "nov": "November",
+    "dec": "December"
+  },
   "departments": {
     "itDepartment": "IT Department",
     "humanResources": "Human Resources",
@@ -493,7 +511,9 @@
     "noCompanyHolidays": "No company holidays this month",
     "announcements": "Announcements",
     "noAnnouncements": "No announcements",
-    "noRecentLeaveRequests": "No recent leave requests"
+    "noRecentLeaveRequests": "No recent leave requests",
+    "recentNotifications": "Recent Notifications",
+    "upcomingHolidays": "Upcoming Holidays/Events"
   },
   "profile": {
     "personalInfo": "Personal Information",
@@ -745,7 +765,8 @@
   "error": {
     "apiConnectionError": "API Connection Error",
     "title": "Error",
-    "message": "Error in API connection"
+    "message": "Error in API connection",
+    "cannotLoadStats": "Cannot load statistics"
   },
   "employee": {
     "details": "Employee Details",
@@ -802,7 +823,11 @@
     "selectInternshipEndDate": "Select End Work Date",
     "selectDate": "Select Date",
     "other": "Other",
-    "preferNotToSay": "Prefer not to say"
+    "preferNotToSay": "Prefer not to say",
+    "notFound": "Employee not found",
+    "loadError": "Cannot load employee data",
+    "noProcessCheckId": "No process check ID found",
+    "newPassword": "New password"
   },
   "notification": {
     "notifications": "Notifications",
@@ -833,7 +858,17 @@
     "tooltipUnreadCount": "unread messages",
     "statusChanged": "Request Status Changed",
     "request": "Request",
-    "hasBeen": "has been"
+    "hasBeen": "has been",
+    "setNewPassword": "Set new password",
+    "name": "Name",
+    "newAnnouncement": "New Announcement",
+    "announcementUpdated": "Announcement Updated",
+    "announcementDeleted": "Announcement Deleted",
+    "newLeaveRequest": "New Leave Request",
+    "leaveStatusChanged": "Leave Status Changed",
+    "newCompanyEvent": "New Company Event",
+    "companyEventUpdated": "Company Event Updated",
+    "companyEventDeleted": "Company Event Deleted"
   },
   "notifications": {
     "approved": "Approved",
@@ -851,6 +886,15 @@
     "companyEventDeleted": "Company Event Deleted"
   },
   "usedLeaveDaysText": "Used leave days:",
+  "leaveDetail": {
+    "details": "Leave Details",
+    "approvedTime": "Approval Time",
+    "viewAttachment": "View Attachment",
+    "rejectionReason": "Reason for rejection",
+    "approvedBy": "Approved by",
+    "attachments": "Attachments",
+    "submittedDate": "Submitted Date"
+  },
   "status": {
     "approved": "Approved",
     "pending": "Pending",
@@ -908,7 +952,8 @@
     "addTitle": "Add Company Event",
     "monthlyActivities": "Company Activities This Month",
     "deleteConfirmTitle": "Confirm Delete Event",
-    "deleteConfirmMessage": "Are you sure you want to delete this event?"
+    "deleteConfirmMessage": "Are you sure you want to delete this event?",
+    "deleteConfirm": "Are you sure you want to delete this event?"
   },
   "announcementsFeed": {
     "title": "Announcements Feed",
