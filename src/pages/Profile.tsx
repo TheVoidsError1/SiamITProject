@@ -339,6 +339,53 @@ const Profile = () => {
     }
   };
 
+  // Refresh page data when cancel is clicked
+  const handleCancel = async () => {
+    setIsEditing(false);
+    
+    // Fetch fresh profile data
+    try {
+      setLoading(true);
+      const res = await apiService.get(apiEndpoints.auth.profile);
+      const data = res.data;
+      
+      setFormData({
+        full_name: data.full_name || '',
+        email: data.email || '',
+        department: data.department?.id || '',
+        position: data.position?.id || '',
+        gender: data.gender || '',
+        dob: data.dob || '',
+        phone_number: data.phone_number || '',
+        start_work: data.start_work || '',
+        end_work: data.end_work || '',
+      });
+      
+      // Update user context
+      updateUser({
+        full_name: data.full_name,
+        email: data.email,
+        department: data.department,
+        position: data.position,
+        gender: data.gender,
+        dob: data.dob,
+        phone_number: data.phone_number,
+        start_work: data.start_work,
+        end_work: data.end_work,
+      });
+      
+      setProfileLoaded(true);
+    } catch (err: any) {
+      console.error('Failed to refresh profile data:', err);
+      if (err.response?.status === 401) {
+        showSessionExpiredDialog();
+        return;
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Upload avatar utility with optional optimistic preview URL and realtime fan-out
   const uploadAvatar = async (file: File, localUrl?: string) => {
     const previousUrl = avatarUrl;
@@ -957,7 +1004,7 @@ const Profile = () => {
                            </>
                          )}
                        </Button>
-                       <Button type="button" variant="outline" className="btn-blue-outline px-6 py-2 text-lg" onClick={() => { setIsEditing(false); }} disabled={saving || loading}>
+                       <Button type="button" variant="outline" className="btn-blue-outline px-6 py-2 text-lg" onClick={handleCancel} disabled={saving || loading}>
                          {t('common.cancel')}
                        </Button>
                      </>
