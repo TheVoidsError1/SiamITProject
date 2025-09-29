@@ -34,7 +34,6 @@ const Profile = () => {
   const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null);
   const { socket, isConnected } = useSocket();
   const [avatarKey, setAvatarKey] = useState<number>(0);
-  const [forceRefresh, setForceRefresh] = useState<number>(0);
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
@@ -148,7 +147,7 @@ const Profile = () => {
       try {
         const res = await apiService.get(apiEndpoints.auth.avatar);
         if (res.success && res.avatar_url) {
-          setAvatarUrl(withCacheBust(`${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}`));
+          setAvatarUrl(`${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}`);
           if (!user?.avatar_url) {
             updateUser({ avatar_url: res.avatar_url });
           }
@@ -316,7 +315,6 @@ const Profile = () => {
         setTimeout(() => {
           setAvatarUrl(newUrl);
           setAvatarKey(prev => prev + 1);
-          setForceRefresh(prev => prev + 1);
           updateUser({ avatar_url: res.avatar_url });
         }, 50);
       }
@@ -331,7 +329,6 @@ const Profile = () => {
       // Clear current avatar
       setAvatarUrl(null);
       setAvatarKey(prev => prev + 1);
-      setForceRefresh(prev => prev + 1);
       
       // Wait a moment then fetch fresh avatar
       setTimeout(async () => {
@@ -339,6 +336,53 @@ const Profile = () => {
       }, 100);
     } catch (err) {
       console.error('Failed to force complete avatar refresh:', err);
+    }
+  };
+
+  // Refresh page data when cancel is clicked
+  const handleCancel = async () => {
+    setIsEditing(false);
+    
+    // Fetch fresh profile data
+    try {
+      setLoading(true);
+      const res = await apiService.get(apiEndpoints.auth.profile);
+      const data = res.data;
+      
+      setFormData({
+        full_name: data.full_name || '',
+        email: data.email || '',
+        department: data.department?.id || '',
+        position: data.position?.id || '',
+        gender: data.gender || '',
+        dob: data.dob || '',
+        phone_number: data.phone_number || '',
+        start_work: data.start_work || '',
+        end_work: data.end_work || '',
+      });
+      
+      // Update user context
+      updateUser({
+        full_name: data.full_name,
+        email: data.email,
+        department: data.department,
+        position: data.position,
+        gender: data.gender,
+        dob: data.dob,
+        phone_number: data.phone_number,
+        start_work: data.start_work,
+        end_work: data.end_work,
+      });
+      
+      setProfileLoaded(true);
+    } catch (err: any) {
+      console.error('Failed to refresh profile data:', err);
+      if (err.response?.status === 401) {
+        showSessionExpiredDialog();
+        return;
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -364,7 +408,6 @@ const Profile = () => {
         setTimeout(() => {
           setAvatarUrl(finalUrl);
           setAvatarKey(prev => prev + 1);
-          setForceRefresh(prev => prev + 1);
           updateUser({ avatar_url: res.avatar_url });
         }, 100);
         
@@ -470,7 +513,6 @@ const Profile = () => {
       if (user?.id && String(data.userId) === String(user.id)) {
         setAvatarUrl(withCacheBust(`${baseUrl}${data.avatar_url}`));
         setAvatarKey(prev => prev + 1);
-        setAvatarKey(prev => prev + 1);
         updateUser({ avatar_url: data.avatar_url });
       }
     };
@@ -483,7 +525,6 @@ const Profile = () => {
         const data = JSON.parse(e.newValue);
         if (user?.id && String(data.userId) === String(user.id)) {
           setAvatarUrl(withCacheBust(`${baseUrl}${data.avatar_url}`));
-          setAvatarKey(prev => prev + 1);
           setAvatarKey(prev => prev + 1);
           updateUser({ avatar_url: data.avatar_url });
         }
@@ -685,12 +726,13 @@ const Profile = () => {
         <div className="flex flex-col items-center -mt-16">
           <div className="relative">
 
-            <Avatar key={`${avatarUrl}-${avatarKey}-${forceRefresh}`} className="h-28 w-28 shadow-lg border-4 border-white bg-white/80 backdrop-blur rounded-full">
+            <Avatar key={`${avatarUrl}-${avatarKey}`} className="h-28 w-28 shadow-lg border-4 border-white bg-white/80 backdrop-blur rounded-full">
               <AvatarImage 
-                src={avatarUrl ? `${avatarUrl}&force=${forceRefresh}&t=${Date.now()}` : undefined} 
-                onError={() => {
-                  // If image fails to load, force a refresh
-                  setForceRefresh(prev => prev + 1);
+                src={avatarUrl ? avatarUrl : undefined} 
+                onError={(e) => {
+                  // If image fails to load, set a fallback and don't retry infinitely
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
                 }}
                 alt="Profile picture"
                 className="object-cover"
@@ -962,7 +1004,7 @@ const Profile = () => {
                            </>
                          )}
                        </Button>
-                       <Button type="button" variant="outline" className="btn-blue-outline px-6 py-2 text-lg" onClick={() => { setIsEditing(false); }} disabled={saving || loading}>
+                       <Button type="button" variant="outline" className="btn-blue-outline px-6 py-2 text-lg" onClick={handleCancel} disabled={saving || loading}>
                          {t('common.cancel')}
                        </Button>
                      </>

@@ -265,7 +265,13 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
           },
         });
       }
-      data = await response.json();
+      // พยายาม parse เป็น JSON ถ้า backend ส่ง HTML error (เช่น 500) ให้สร้าง object เอง
+      let text = await response.text();
+      try {
+        data = text ? JSON.parse(text) : {};
+      } catch {
+        data = { message: text || 'Server error' };
+      }
       if (!response.ok) {
         // ถ้ามี message จาก backend ให้แสดงใน toast
         toast({
@@ -467,9 +473,29 @@ export const LeaveForm = ({ initialData, onSubmit, mode = 'create' }: LeaveFormP
     setConfirmOpen(true);
   };
 
+  // handleFileUpload: validate file count and size
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const newFiles = Array.from(e.target.files);
+      // จำกัดจำนวนไฟล์รวม (เดิม + ใหม่) ไม่เกิน 10
+      if (attachments.length + newFiles.length > 10) {
+        toast({
+          title: t('leave.attachmentLimitTitle', 'แนบไฟล์ได้สูงสุด 10 ไฟล์'),
+          description: t('leave.attachmentLimitDesc', 'กรุณาลบไฟล์เก่าก่อนแนบไฟล์ใหม่'),
+          variant: 'destructive',
+        });
+        return;
+      }
+      // จำกัดขนาดไฟล์แต่ละไฟล์ไม่เกิน 5MB
+      const oversize = newFiles.find(f => f.size > 5 * 1024 * 1024);
+      if (oversize) {
+        toast({
+          title: t('leave.attachmentSizeTitle', 'ขนาดไฟล์เกิน 5MB'),
+          description: t('leave.attachmentSizeDesc', 'กรุณาเลือกไฟล์ที่มีขนาดไม่เกิน 5MB'),
+          variant: 'destructive',
+        });
+        return;
+      }
       setAttachments(prev => [...prev, ...newFiles]);
     }
   };
