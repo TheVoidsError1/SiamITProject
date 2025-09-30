@@ -1063,7 +1063,7 @@ const ApproveLeave = () => {
                     value={pendingPendingBackdatedFilter}
                     onChange={e => setPendingPendingBackdatedFilter(e.target.value)}
                   >
-                    <option value="all">{t('leave.allBackdated', 'All Types')}</option>
+                    <option value="all">{t('leave.allBackdated')}</option>
                     <option value="backdated">{t('leave.backdatedOnly')}</option>
                     <option value="normal">{t('leave.notBackdatedOnly')}</option>
                   </select>
@@ -1338,7 +1338,7 @@ const ApproveLeave = () => {
                     value={pendingHistoryBackdatedFilter}
                     onChange={e => setPendingHistoryBackdatedFilter(e.target.value)}
                   >
-                    <option value="all">{t('leave.allBackdated', 'All Types')}</option>
+                    <option value="all">{t('leave.allBackdated')}</option>
                     <option value="backdated">{t('leave.backdatedOnly')}</option>
                     <option value="normal">{t('leave.notBackdatedOnly')}</option>
                   </select>

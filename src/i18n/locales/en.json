@@ -301,7 +301,7 @@
     "pleaseSelectAtLeastOne": "Please select at least one option",
     "noHistoryForPeriod": "No leave history for this period.",
     "allTypes": "All Leave Types",
-    "allBackdated": "All",
+    "allBackdated": "All Backdated",
     "backdatedOnly": "Retroactive Only",
     "notBackdated": "Not Retroactive",
     "invalidPhone": "Please enter a valid phone number, e.g. 0912456147",
