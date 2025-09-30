@@ -593,16 +593,16 @@ const ApproveLeave = () => {
     try {
       const data = await apiService.delete(apiEndpoints.leave.delete(deletingRequest.id), undefined, showSessionExpiredDialog);
       if (data.success || data.status === 'success') {
-        showToastMessage.crud.deleteSuccess('ใบลา', t);
+        showToastMessage.crud.deleteSuccess(t('leave.leaveRequest'), t);
         setShowDeleteDialog(false);
         setDeletingRequest(null);
         refreshLeaveRequests();
         fetchHistoryRequests();
       } else {
-        showToastMessage.crud.deleteError('ใบลา', data.message, t);
+        showToastMessage.crud.deleteError(t('leave.leaveRequest'), data.message, t);
       }
     } catch (e) {
-      showToastMessage.crud.deleteError('ใบลา', undefined, t);
+      showToastMessage.crud.deleteError(t('leave.leaveRequest'), undefined, t);
     }
   };
 
