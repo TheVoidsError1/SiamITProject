@@ -965,7 +965,8 @@
     "attachedImage": "Attached image",
     "managePosts": "Manage Posts",
     "createPost": "Create Post",
-    "selectImage": "Select Image"
+    "selectImage": "Select Image",
+    "invalidImageFile": "Please select a valid image file"
   },
   "holidays": {
     "newYearsDay": "New Year's Day",

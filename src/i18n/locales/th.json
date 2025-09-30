@@ -948,7 +948,8 @@
     "attachedImage": "รูปภาพแนบ",
     "managePosts": "จัดการโพสต์",
     "createPost": "สร้างโพสต์",
-    "selectImage": "เลือกรูปภาพ"
+    "selectImage": "เลือกรูปภาพ",
+    "invalidImageFile": "กรุณาเลือกรูปภาพที่ถูกต้อง"
   },
   "holidays": {
     "newYearsDay": "วันขึ้นปีใหม่",

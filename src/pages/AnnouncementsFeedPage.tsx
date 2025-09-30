@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Textarea } from '@/components/ui/textarea';
+import { apiEndpoints } from '@/constants/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSocket } from '@/contexts/SocketContext';
 import { useToast } from '@/hooks/use-toast';
@@ -13,7 +14,6 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { apiService } from '../lib/api';
-import { apiEndpoints } from '@/constants/api';
 import { formatDate, getImageUrl, handleFileSelect, handleImageError, removeSelectedFile } from '../lib/utils';
 
 interface Announcement {
@@ -150,7 +150,7 @@ const AnnouncementsFeedPage = () => {
     
     // ตรวจสอบว่ามีไฟล์ที่เลือกและไฟล์นั้นไม่ถูกต้อง
     if (selectedFile && !isValidFile) {
-      setError('กรุณาเลือกไฟล์รูปภาพที่ถูกต้อง');
+      setError(t('announcementsFeed.invalidImageFile'));
       return;
     }
     
@@ -320,7 +320,7 @@ const AnnouncementsFeedPage = () => {
                                 onClick={() => removeSelectedFile(setSelectedFile, setImagePreview, setFileError, setIsValidFile, fileInputRef)}
                                 className="text-red-500 hover:text-red-700 text-sm font-medium"
                               >
-                                ลบ
+                                {t('common.delete')}
                               </button>
                             </div>
                           )}

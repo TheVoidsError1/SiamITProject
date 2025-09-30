@@ -211,11 +211,11 @@ const EmployeeDetail = () => {
           setLeaveTypes(data.data);
         } else {
           setLeaveTypes([]);
-          setLeaveTypesError(data.message || 'Failed to fetch leave types');
+          setLeaveTypesError(data.message || t('common.error'));
         }
       } catch (err: any) {
         setLeaveTypes([]);
-        setLeaveTypesError(err.message || 'Failed to fetch leave types');
+        setLeaveTypesError(err.message || t('common.error'));
       } finally {
         setLeaveTypesLoading(false);
       }
@@ -462,8 +462,7 @@ const EmployeeDetail = () => {
     const combined = namesToCheck.join(' ');
     return (
       combined.includes('intern') ||
-      combined.includes('ฝึกงาน') ||
-      combined.includes('นักศึกษาฝึกงาน')
+      combined.includes(t('employeeTypes.intern').toLowerCase())
     );
   };
 
@@ -831,7 +830,7 @@ const EmployeeDetail = () => {
                 <div className="flex justify-end items-center gap-3">
                   <Calendar className="w-6 h-6 text-gray-600" />
                   <span className="text-base font-semibold text-gray-800">
-                    {t('leave.usedLeaveDays')}: {leaveSummary.days || 0} {t('leave.days', 'วัน')} {leaveSummary.hours > 0 ? `${leaveSummary.hours} ${t('leave.hours', 'ชั่วโมง')}` : ''}
+                    {t('leave.usedLeaveDays')}: {leaveSummary.days || 0} {t('leave.days')} {leaveSummary.hours > 0 ? `${leaveSummary.hours} ${t('leave.hours')}` : ''}
                   </span>
                 </div>
               </div>
@@ -996,11 +995,11 @@ const EmployeeDetail = () => {
                     <TableRow className="border-b border-gray-200">
                       <TableHead className="w-[15%] font-semibold text-gray-700 whitespace-nowrap px-4">{t('leave.type')}</TableHead>
                       <TableHead className="w-[18%] font-semibold text-gray-700 whitespace-nowrap px-4">{t('leave.date')}</TableHead>
-                      <TableHead className="w-[12%] font-semibold text-gray-700 whitespace-nowrap px-4">{t('leave.duration') || 'จำนวนวัน'}</TableHead>
+                      <TableHead className="w-[12%] font-semibold text-gray-700 whitespace-nowrap px-4">{t('leave.duration')}</TableHead>
                       <TableHead className="w-[22%] font-semibold text-gray-700 whitespace-nowrap px-4">{t('leave.reason')}</TableHead>
                       <TableHead className="w-[12%] font-semibold text-gray-700 whitespace-nowrap px-4">{t('leave.status')}</TableHead>
                       <TableHead className="w-[12%] font-semibold text-gray-700 whitespace-nowrap px-4">{t('leave.submittedDate')}</TableHead>
-                      <TableHead className="w-[9%] text-center font-semibold text-gray-700 whitespace-nowrap px-4">{t('common.actions') || 'การจัดการ'}</TableHead>
+                      <TableHead className="w-[9%] text-center font-semibold text-gray-700 whitespace-nowrap px-4">{t('common.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

@@ -1652,7 +1652,7 @@ const ApproveLeave = () => {
           </DialogHeader>
           <DialogFooter className="flex gap-2 justify-end mt-4">
             <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>{t('common.cancel')}</Button>
-            <Button variant="destructive" onClick={confirmDelete}>{t('common.confirm', 'ยืนยัน')}</Button>
+            <Button variant="destructive" onClick={confirmDelete}>{t('common.confirm')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
