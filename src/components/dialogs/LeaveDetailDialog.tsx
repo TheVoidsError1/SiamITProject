@@ -1,25 +1,23 @@
+import ImagePreviewDialog from '@/components/dialogs/ImagePreviewDialog';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { format } from 'date-fns';
-import { th } from 'date-fns/locale';
+import { apiEndpoints } from '@/constants/api';
 import { Calendar, CheckCircle, Clock, FileText, History, User, XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { apiService, createAuthenticatedFileUrl } from '../../lib/api';
+import { calcHours, getLeaveTypeDisplay, getTypeColor, isRetroactiveLeave } from '../../lib/leaveUtils';
 import { formatDateLocalized } from '../../lib/utils';
-import { createAuthenticatedFileUrl, apiService } from '../../lib/api';
-import { apiEndpoints } from '@/constants/api';
-import ImagePreviewDialog from '@/components/dialogs/ImagePreviewDialog';
-import { isRetroactiveLeave, calcHours, getTypeColor, getLeaveTypeLabel, getLeaveTypeDisplay } from '../../lib/leaveUtils';
-import { getStatusBadge, getRetroactiveBadge } from '../leave/LeaveBadges';
+import { getRetroactiveBadge, getStatusBadge } from '../leave/LeaveBadges';
 
 interface LeaveRequest {
   id: string;
   type?: string;
   leaveTypeName?: string;
-  user?: { User_name?: string; department?: string; position?: string; department_name_th?: string; position_name_th?: string };
+  user?: { name?: string; department?: string; position?: string; department_name_th?: string; position_name_th?: string };
   startDate: string;
   endDate: string;
   days?: number;
@@ -210,7 +208,7 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                   <div className="text-right">
                     <div className="text-sm text-gray-500">{t('history.submittedOn')}</div>
                     <div className="text-lg font-semibold text-blue-600">
-                      {formatDateLocalized(leaveDetail.submittedDate || leaveDetail.createdAt || '', i18n.language)}
+                      {formatDateLocalized(leaveDetail.createdAt || leaveDetail.submittedDate || '', i18n.language)}
                     </div>
                   </div>
                 </div>
@@ -482,20 +480,27 @@ export const LeaveDetailDialog = ({ open, onOpenChange, leaveRequest }: LeaveDet
                               </div>
                             </div>
                           ) : (
-                            <div className="space-y-3">
-                              <div className="w-full h-32 bg-gray-200 rounded-lg flex items-center justify-center">
-                                <FileText className="w-8 h-8 text-gray-400" />
-                              </div>
-                              <div className="flex items-center justify-between">
-                                <span className="text-sm text-gray-600 truncate">{fileName}</span>
-                                <Button 
-                                  size="sm" 
-                                  variant="outline"
-                                  onClick={() => handleDownload(authenticatedFilePath, fileName)}
+                            <div className="flex items-center gap-3 p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:bg-gray-50 transition group">
+                              <FileText className="w-8 h-8 text-indigo-500 flex-shrink-0" />
+                              <div className="flex-1 min-w-0">
+                                <a
+                                  href={authenticatedFilePath}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="block text-base font-medium text-gray-800 hover:underline truncate"
+                                  title={fileName}
                                 >
-                                  {t('common.download')}
-                                </Button>
+                                  {fileName}
+                                </a>
                               </div>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="ml-2"
+                                onClick={() => handleDownload(authenticatedFilePath, fileName)}
+                              >
+                                {t('common.download')}
+                              </Button>
                             </div>
                           )}
                         </div>

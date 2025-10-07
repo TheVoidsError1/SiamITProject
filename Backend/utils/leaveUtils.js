@@ -141,24 +141,12 @@ const getUserLeaveQuota = async (userId, leaveTypeId, AppDataSource) => {
   try {
     const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
     const userRepo = AppDataSource.getRepository('User');
-    const adminRepo = AppDataSource.getRepository('Admin');
-    const superAdminRepo = AppDataSource.getRepository('SuperAdmin');
     
-    // Get user's position
+    // Get user's position from unified users table
     let positionId = null;
-    let userEntity = await userRepo.findOne({ where: { id: userId } });
+    const userEntity = await userRepo.findOne({ where: { id: userId } });
     if (userEntity) {
       positionId = userEntity.position;
-    } else {
-      userEntity = await adminRepo.findOne({ where: { id: userId } });
-      if (userEntity) {
-        positionId = userEntity.position;
-      } else {
-        userEntity = await superAdminRepo.findOne({ where: { id: userId } });
-        if (userEntity) {
-          positionId = userEntity.position;
-        }
-      }
     }
     
     if (!positionId) {
@@ -197,24 +185,12 @@ const getLeaveUsageSummary = async (userId, year = null, AppDataSource) => {
     const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
     const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
     const userRepo = AppDataSource.getRepository('User');
-    const adminRepo = AppDataSource.getRepository('Admin');
-    const superadminRepo = AppDataSource.getRepository('SuperAdmin');
     
-    // Get user's position
+    // Get user's position from unified users table
     let positionId = null;
-    let userEntity = await userRepo.findOne({ where: { id: userId } });
+    const userEntity = await userRepo.findOne({ where: { id: userId } });
     if (userEntity) {
       positionId = userEntity.position;
-    } else {
-      userEntity = await adminRepo.findOne({ where: { id: userId } });
-      if (userEntity) {
-        positionId = userEntity.position;
-      } else {
-        userEntity = await superadminRepo.findOne({ where: { id: userId } });
-        if (userEntity) {
-          positionId = userEntity.position;
-        }
-      }
     }
     
     if (!positionId) {

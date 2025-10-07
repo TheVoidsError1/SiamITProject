@@ -12,38 +12,16 @@ module.exports = (AppDataSource) => {
     if (!userId) return 'Unknown User';
     
     try {
-      // Find the user by ID in User, Admin, and SuperAdmin tables
+      // Find the user by ID in unified users table
       const userRepo = AppDataSource.getRepository('User');
-      const adminRepo = AppDataSource.getRepository('Admin');
-      const superadminRepo = AppDataSource.getRepository('SuperAdmin');
-      
-      // Try to find user in User table
-      let user = await userRepo.findOne({
+      const user = await userRepo.findOne({
         where: { id: userId }
       });
       
-      // If not found in User table, try Admin table
-      if (!user) {
-        user = await adminRepo.findOne({
-          where: { id: userId }
-        });
-      }
-      
-      // If not found in Admin table, try SuperAdmin table
-      if (!user) {
-        user = await superadminRepo.findOne({
-          where: { id: userId }
-        });
-      }
-      
       // If user found, get their name
       if (user) {
-        if (user.User_name) {
-          return user.User_name;
-        } else if (user.admin_name) {
-          return user.admin_name;
-        } else if (user.superadmin_name) {
-          return user.superadmin_name;
+        if (user.name) {
+          return user.name;
         }
       }
       

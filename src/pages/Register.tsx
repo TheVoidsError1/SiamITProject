@@ -1,20 +1,20 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { RegisterConfirmDialog } from '@/components/dialogs/RegisterConfirmDialog';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { DatePicker } from '@/components/ui/date-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DatePicker } from '@/components/ui/date-picker';
+import { apiEndpoints } from '@/constants/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { apiService } from '@/lib/api';
-import { apiEndpoints } from '@/constants/api';
 import { showToastMessage } from '@/lib/toast';
-import { Eye, EyeOff, Mail, Lock, User, Building, AlertCircle, CheckCircle, Sparkles, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, User } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import LanguageSwitcher from '@/components/LanguageSwitcher';
-import { RegisterConfirmDialog } from '@/components/dialogs/RegisterConfirmDialog';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Register = () => {
   const { t, i18n } = useTranslation();
@@ -246,21 +246,57 @@ const Register = () => {
       navigate('/login');
     } catch (error: any) {
       const errMsg = error.message || t('common.error');
-      console.log('Registration error object:', error);
-      console.log('Registration error message:', errMsg);
+      
       const newError: { email?: string; full_name?: string; general?: string } = {};
       const lowerMsg = errMsg.toLowerCase();
-      if (lowerMsg.includes('user') || lowerMsg.includes('ชื่อผู้ใช')) {
-        newError.full_name = errMsg;
-      } else if (lowerMsg.includes('email')) {
-        newError.email = errMsg;
+      
+      // Better error categorization and translation
+      let translatedMessage = errMsg;
+      
+      // Check for specific error patterns first
+      if (lowerMsg.includes('อีเมล') && lowerMsg.includes('ถูกใช้ไปแล้ว')) {
+        // Email already exists error - must contain both email and "already used"
+        translatedMessage = lang === 'th' 
+          ? 'อีเมลนี้ถูกใช้ไปแล้ว กรุณาใช้อีเมลอื่น' 
+          : 'This email is already in use. Please use a different email.';
+        newError.email = translatedMessage;
+      } else if (lowerMsg.includes('ชื่อ') && (lowerMsg.includes('ถูกใช้ไปแล้ว') || lowerMsg.includes('มีอยู่แล้ว'))) {
+        // Name already exists error
+        translatedMessage = lang === 'th' 
+          ? 'ชื่อนี้ถูกใช้ไปแล้ว กรุณาใช้ชื่ออื่น' 
+          : 'This name is already in use. Please use a different name.';
+        newError.full_name = translatedMessage;
+      } else if (lowerMsg.includes('ชื่อ') || lowerMsg.includes('name') || lowerMsg.includes('user')) {
+        // General name-related error
+        translatedMessage = lang === 'th' 
+          ? 'ข้อมูลชื่อไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง' 
+          : 'Name information is invalid. Please check again.';
+        newError.full_name = translatedMessage;
+      } else if (lowerMsg.includes('แผนก') || lowerMsg.includes('department')) {
+        translatedMessage = lang === 'th' 
+          ? 'ข้อมูลแผนกไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง' 
+          : 'Department information is invalid. Please check again.';
+        newError.general = translatedMessage;
+      } else if (lowerMsg.includes('ตำแหน่ง') || lowerMsg.includes('position')) {
+        translatedMessage = lang === 'th' 
+          ? 'ข้อมูลตำแหน่งไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง' 
+          : 'Position information is invalid. Please check again.';
+        newError.general = translatedMessage;
+      } else if (lowerMsg.includes('รหัสผ่าน') || lowerMsg.includes('password')) {
+        translatedMessage = lang === 'th' 
+          ? 'ข้อมูลรหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง' 
+          : 'Password information is invalid. Please check again.';
+        newError.general = translatedMessage;
       } else {
-        newError.general = errMsg;
+        // Generic error - keep original message but translate if needed
+        translatedMessage = errMsg;
+        newError.general = translatedMessage;
       }
+      
       setError(newError);
       toast({
         title: t('auth.registerError'),
-        description: errMsg,
+        description: translatedMessage,
         variant: "destructive",
       });
     } finally {
@@ -269,50 +305,33 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex items-center justify-center p-4 relative overflow-hidden">
-      {/* Animated background elements */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob"></div>
-        <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-yellow-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-2000"></div>
-        <div className="absolute top-40 left-40 w-80 h-80 bg-pink-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
-      </div>
-
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4 relative">
       <div className="absolute top-4 right-4 z-10">
         <LanguageSwitcher />
       </div>
-
-      <div className="w-full max-w-lg space-y-8 relative z-10">
-        {/* Header Section */}
-        <div className="text-center space-y-4">
-          <div className="relative inline-block">
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full blur-lg opacity-20 animate-pulse"></div>
-            <img
-              src="/lovable-uploads/IMG_4486-removebg-preview.png"
-              alt="Siam IT Logo"
-              className="relative mx-auto h-20 w-auto mb-6 drop-shadow-lg"
-            />
-          </div>
-          <div className="space-y-2">
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent">
-              {t('auth.register')}
-            </h1>
-            <p className="text-lg text-gray-600 max-w-md mx-auto">
-              {t('main.onlineLeaveSystemCompany')}
-            </p>
-          </div>
+      <div className="w-full max-w-md lg:max-w-lg space-y-8 animate-fade-in">
+        <div className="text-center">
+          <img
+            src="/lovable-uploads/IMG_4486-removebg-preview.png"
+            alt="Siam IT Logo"
+            className="mx-auto h-16 w-auto mb-6"
+          />
+          <h2 className="text-3xl font-bold text-gray-900">
+            {t('auth.register')}
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            {t('main.onlineLeaveSystemCompany')}
+          </p>
         </div>
 
-        {/* Main Form Card */}
-        <Card className="shadow-2xl border-0 bg-white/80 backdrop-blur-sm">
-          <CardContent className="p-8">
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Full Name Field */}
-              <div className="space-y-2">
-                <Label htmlFor="full_name" className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <User className="h-4 w-4" />
-                  {t('auth.fullName')}
-                </Label>
-                <div className="relative group">
+        <Card className="shadow-lg border-0">
+          {/* Removed duplicate Register title and description in the card header */}
+          <CardContent className="pt-6 px-4 sm:px-6">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2 mb-4 mt-4">
+                <Label htmlFor="full_name" className="mb-2 block">{t('auth.fullName')}</Label>
+                <div className="relative">
+                  <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     id="full_name"
                     placeholder={t('auth.fullName')}
@@ -323,12 +342,6 @@ const Register = () => {
                   />
                   <User className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
                 </div>
-                {error.full_name && (
-                  <div className="flex items-center gap-2 text-red-500 text-sm mt-1">
-                    <AlertCircle className="h-4 w-4" />
-                    {error.full_name}
-                  </div>
-                )}
               </div>
 
               {/* Gender */}
@@ -399,7 +412,17 @@ const Register = () => {
               {/* Phone number */}
               <div className="space-y-2 mb-4">
                 <Label htmlFor="phone" className="mb-2 block">{t('employee.phoneNumber')}</Label>
-                <Input id="phone" type="tel" placeholder={t('employee.enterPhoneNumber')} value={formData.phone_number} onChange={(e) => setFormData(prev => ({ ...prev, phone_number: e.target.value }))} />
+                <Input 
+                  id="phone" 
+                  type="tel" 
+                  placeholder={t('employee.enterPhoneNumber')} 
+                  value={formData.phone_number} 
+                  onChange={(e) => {
+                    // อนุญาตเฉพาะตัวเลขและเครื่องหมาย + - ( ) และช่องว่าง
+                    const value = e.target.value.replace(/[^0-9+\-() ]/g, '');
+                    setFormData(prev => ({ ...prev, phone_number: value }));
+                  }} 
+                />
               </div>
 
               {/* Start/End work dates: Start Work Date always shows; End Work Date shows only when position has Request Quote enabled */}
@@ -439,39 +462,12 @@ const Register = () => {
                     type="email"
                     placeholder={t('auth.email')}
                     value={formData.email}
-                    onChange={(e) => {
-                      const email = e.target.value;
-                      setFormData(prev => ({ ...prev, email }));
-                      
-                      // ตรวจสอบรูปแบบอีเมลแบบ real-time
-                      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                        setError(prev => ({ ...prev, email: t('auth.invalidEmailFormat') }));
-                      } else if (email && email.includes('@') && !email.includes('.')) {
-                        // ตรวจสอบกรณีพิเศษ เช่น @g, @gmail
-                        setError(prev => ({ ...prev, email: t('auth.invalidEmailFormat') }));
-                      } else if (email && email.includes('@') && email.includes('.')) {
-                        // ตรวจสอบว่าโดเมนต้องมีอย่างน้อย 2 ตัวอักษรหลังจุด
-                        const domainMatch = email.match(/@[^@]+\.([^.]+)$/);
-                        if (domainMatch && domainMatch[1].length < 2) {
-                          setError(prev => ({ ...prev, email: t('auth.invalidEmailFormat') }));
-                        } else {
-                          setError(prev => ({ ...prev, email: undefined }));
-                        }
-                      } else {
-                        setError(prev => ({ ...prev, email: undefined }));
-                      }
-                    }}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                     className="pl-10"
                     required
                   />
                   <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
                 </div>
-                {error.email && (
-                  <div className="flex items-center gap-2 text-red-500 text-sm mt-1">
-                    <AlertCircle className="h-4 w-4" />
-                    {error.email}
-                  </div>
-                )}
               </div>
               
               {/* Password Field */}
@@ -557,7 +553,7 @@ const Register = () => {
               <Button 
                 type="submit" 
                 className="w-full" 
-                disabled={loading || !!error.email}
+                disabled={loading}
               >
                 {loading ? (
                   <div className="flex items-center justify-center">
@@ -573,16 +569,7 @@ const Register = () => {
                 )}
               </Button>
             </form>
-
-            {error.general && (
-              <div className="flex items-center gap-2 text-red-500 text-sm mt-4 p-3 bg-red-50 rounded-lg border border-red-200">
-                <AlertCircle className="h-4 w-4" />
-                {error.general}
-              </div>
-            )}
-
-            {/* Login Link */}
-            <div className="mt-8 text-center">
+            <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
                 {t('auth.alreadyHaveAccount')}{' '}
                 <Link 

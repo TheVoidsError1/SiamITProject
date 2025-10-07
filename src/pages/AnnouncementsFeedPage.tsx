@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Textarea } from '@/components/ui/textarea';
+import { apiEndpoints } from '@/constants/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { useSocket } from '@/contexts/SocketContext';
 import { useToast } from '@/hooks/use-toast';
@@ -13,8 +14,7 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { apiService } from '../lib/api';
-import { apiEndpoints } from '@/constants/api';
-import { formatDate, getImageUrl, handleFileSelect, handleImageError } from '../lib/utils';
+import { formatDate, getImageUrl, handleFileSelect, handleImageError, removeSelectedFile } from '../lib/utils';
 
 interface Announcement {
   id: string;
@@ -47,6 +47,9 @@ const AnnouncementsFeedPage = () => {
   const [previewImageOpen, setPreviewImageOpen] = useState(false);
   const [previewImageUrl, setPreviewImageUrl] = useState<string>('');
   const [previewImageName, setPreviewImageName] = useState<string>('');
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [isValidFile, setIsValidFile] = useState<boolean>(false);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
 
   // Socket.io event listeners for real-time announcements
   useEffect(() => {
@@ -144,6 +147,13 @@ const AnnouncementsFeedPage = () => {
 
   const handleCreateAnnouncement = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // ตรวจสอบว่ามีไฟล์ที่เลือกและไฟล์นั้นไม่ถูกต้อง
+    if (selectedFile && !isValidFile) {
+      setError(t('announcementsFeed.invalidImageFile'));
+      return;
+    }
+    
     setCreateLoading(true);
     setError(null);
     try {
@@ -152,7 +162,7 @@ const AnnouncementsFeedPage = () => {
       formData.append('detail', createForm.detail);
       formData.append('createdBy', user?.id || '');
       formData.append('createdAt', new Date().toISOString());
-      if (selectedFile) {
+      if (selectedFile && isValidFile) {
         formData.append('Image', selectedFile);
       }
       const data = await apiService.post(apiEndpoints.announcements, formData, showSessionExpiredDialog);
@@ -161,6 +171,8 @@ const AnnouncementsFeedPage = () => {
         setCreateForm({ subject: '', detail: '', Image: '' });
         setSelectedFile(null);
         setImagePreview(null);
+        setFileError(null);
+        setIsValidFile(false);
         // Refresh the announcements list
         const fetchAnnouncements = async () => {
           try {
@@ -291,35 +303,40 @@ const AnnouncementsFeedPage = () => {
                           <label className="flex items-center justify-center w-10 h-10 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg cursor-pointer transition-colors border border-blue-200 hover:border-blue-300">
                             <Image className="w-5 h-5" />
                             <input
+                              ref={fileInputRef}
                               type="file"
                               accept="image/*"
-                              onChange={(e) => handleFileSelect(e, setSelectedFile, setImagePreview)}
+                              onChange={(e) => handleFileSelect(e, setSelectedFile, setImagePreview, setFileError, setIsValidFile)}
                               className="hidden"
                             />
                           </label>
                           {selectedFile && (
-                            <span className="text-sm text-green-600 font-medium">
-                              ✓ {selectedFile.name}
-                            </span>
+                            <div className="flex items-center gap-2">
+                              <span className={`text-sm font-medium ${isValidFile ? 'text-green-600' : 'text-red-600'}`}>
+                                {isValidFile ? '✓' : '✗'} {selectedFile.name}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => removeSelectedFile(setSelectedFile, setImagePreview, setFileError, setIsValidFile, fileInputRef)}
+                                className="text-red-500 hover:text-red-700 text-sm font-medium"
+                              >
+                                {t('common.delete')}
+                              </button>
+                            </div>
                           )}
                         </div>
-                        {imagePreview && (
+                        {fileError && (
+                          <div className="text-red-600 text-sm bg-red-50 p-2 rounded-lg">
+                            {fileError}
+                          </div>
+                        )}
+                        {imagePreview && isValidFile && (
                           <div className="relative">
                             <img
                               src={imagePreview}
                               alt="Preview"
                               className="w-full max-h-48 object-contain rounded-lg border border-gray-200 bg-gray-50"
                             />
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedFile(null);
-                                setImagePreview(null);
-                              }}
-                              className="absolute top-2 right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-sm"
-                            >
-                              ×
-                            </button>
                           </div>
                         )}
                       </div>
@@ -340,7 +357,7 @@ const AnnouncementsFeedPage = () => {
                       </Button>
                       <Button
                         type="submit"
-                        disabled={createLoading}
+                        disabled={createLoading || (selectedFile && !isValidFile)}
                         className="bg-blue-600 hover:bg-blue-700"
                       >
                         {createLoading ? t('companyNews.saving') : t('companyNews.save')}
@@ -385,11 +402,9 @@ const AnnouncementsFeedPage = () => {
                           alt={announcement.createdByName}
                           className="object-cover"
                           onError={(e) => {
-                            console.log('Avatar failed to load:', announcement.avatar);
                             e.currentTarget.style.display = 'none';
                           }}
                           onLoad={() => {
-                            console.log('Avatar loaded successfully:', announcement.avatar);
                           }}
                         />
                         <AvatarFallback className="bg-blue-100 text-blue-600 font-bold text-lg">

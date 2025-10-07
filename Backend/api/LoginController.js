@@ -8,21 +8,21 @@ module.exports = (AppDataSource) => {
 
   router.post('/login', async (req, res) => {
     const { email, password } = req.body;
-    const processRepo = AppDataSource.getRepository('ProcessCheck');
-    const processCheck = await processRepo.findOneBy({ Email: email });
-    if (!processCheck) {
+    const userRepo = AppDataSource.getRepository('User');
+    const user = await userRepo.findOneBy({ Email: email });
+    if (!user) {
       return res.status(401).json({ success: false, data: null, message: 'Email หรือ Password ไม่ถูกต้อง' });
     }
-    const isPasswordValid = await bcrypt.compare(password, processCheck.Password);
+    const isPasswordValid = await bcrypt.compare(password, user.Password);
     if (!isPasswordValid) {
       return res.status(401).json({ success: false, data: null, message: 'Email หรือ Password ไม่ถูกต้อง' });
     }
     // Use the same secret as ProfileController
-    const token = jwt.sign({ userId: processCheck.Repid, role: processCheck.Role }, config.server.jwtSecret, { expiresIn: config.server.jwtExpiresIn });
-    // Save token to ProcessCheck table
-    processCheck.Token = token;
-    await processRepo.save(processCheck);
-    res.json({ success: true, data: { token, role: processCheck.Role, userId: processCheck.Repid }, message: 'Login successful' });
+    const token = jwt.sign({ userId: user.id, role: user.Role }, config.server.jwtSecret, { expiresIn: config.server.jwtExpiresIn });
+    // Save token to unified users table
+    user.Token = token;
+    await userRepo.save(user);
+    res.json({ success: true, data: { token, role: user.Role, userId: user.id }, message: 'Login successful' });
   });
   return router;
 };

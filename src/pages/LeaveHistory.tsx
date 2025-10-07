@@ -1,6 +1,6 @@
-import ImagePreviewDialog from '@/components/dialogs/ImagePreviewDialog';
+import LeaveDetailDialog from '@/components/dialogs/LeaveDetailDialog';
+import PaginationBar from "@/components/PaginationBar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -13,15 +13,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { format } from "date-fns";
 import { enUS, th } from "date-fns/locale";
-import { AlertCircle, Calendar, CheckCircle, ChevronLeft, ChevronRight, Clock, Eye, FileText, Filter, History, Trash2, User, X, XCircle } from "lucide-react";
+import { AlertCircle, Calendar, CheckCircle, Clock, Eye, FileText, Filter, History, Trash2, X, XCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from 'react-router-dom';
+import { getRetroactiveBadge, getStatusBadge } from '../components/leave/LeaveBadges';
 import { monthNames } from '../constants/common';
-import { apiService, createAuthenticatedFileUrl } from '../lib/api';
-import LeaveDetailDialog from '@/components/dialogs/LeaveDetailDialog';
-import { isRetroactiveLeave, calcHours, getTypeColor, getLeaveTypeLabel, translateLeaveType } from '../lib/leaveUtils';
-import { getStatusBadge, getRetroactiveBadge } from '../components/leave/LeaveBadges';
+import { apiService } from '../lib/api';
+import { calcHours, getLeaveTypeLabel, getTypeColor, isRetroactiveLeave, translateLeaveType } from '../lib/leaveUtils';
 import { formatDateLocalized } from '../lib/utils';
 
 const LeaveHistory = () => {
@@ -141,15 +140,6 @@ const LeaveHistory = () => {
     try {
       let url = `${apiEndpoints.leaveHistory.list}?page=${page}&limit=${limit}`;
       
-      // Debug log เพื่อตรวจสอบค่า filter
-      console.log('Debug - Filter values:', {
-        filterLeaveType,
-        filterMonth,
-        filterYear,
-        filterStatus,
-        filterRetroactive,
-        singleDate
-      });
       
       if (filterLeaveType && filterLeaveType !== 'all') {
         url += `&leaveType=${filterLeaveType}`;
@@ -158,12 +148,10 @@ const LeaveHistory = () => {
       // แก้ไขการส่งค่า month และ year ให้ถูกต้อง
       if (filterMonth !== '' && filterMonth !== null && filterMonth !== undefined) {
         url += `&month=${filterMonth}`;
-        console.log('Debug - Adding month filter:', filterMonth);
       }
       
       if (filterYear !== '' && filterYear !== null && filterYear !== undefined) {
         url += `&year=${filterYear}`;
-        console.log('Debug - Adding year filter:', filterYear);
       }
       
       if (filterStatus && filterStatus !== 'all') {
@@ -178,7 +166,6 @@ const LeaveHistory = () => {
         url += `&date=${format(singleDate, 'yyyy-MM-dd')}`;
       }
       
-      console.log('Debug - Final URL:', url);
       
       // Use apiService.get
       const data = await apiService.get(url, undefined, showSessionExpiredDialog);
@@ -317,7 +304,6 @@ const LeaveHistory = () => {
   // ฟังก์ชันล้าง filter ทั้งหมด
 
   const clearAllFilters = () => {
-    console.log('Debug - Clearing all filters');
     setFilterLeaveType('');
     setFilterMonth('');
     setFilterYear('');
@@ -333,15 +319,6 @@ const LeaveHistory = () => {
 
   const hasActiveFilters = () => {
     const hasFilters = filterLeaveType || filterMonth || filterYear || filterStatus || filterRetroactive || singleDate;
-    console.log('Debug - hasActiveFilters:', {
-      filterLeaveType,
-      filterMonth,
-      filterYear,
-      filterStatus,
-      filterRetroactive,
-      singleDate,
-      hasFilters
-    });
     return hasFilters;
   };
 
@@ -522,27 +499,27 @@ const LeaveHistory = () => {
 
       <div className="p-4 md:p-6 animate-fade-in">
 
-        <div className="max-w-6xl mx-auto space-y-8">
+        <div className="max-w-6xl mx-auto space-y-6 md:space-y-8">
 
           {/* Summary Stats */}
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 mb-8">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4 md:gap-6 mb-6 sm:mb-8">
 
             <Card className="glass shadow-xl border-0 hover:scale-[1.03] hover:shadow-2xl transition-all duration-300 animate-fade-in-up hover-lift">
 
-              <CardContent className="p-5 flex items-center gap-4">
+              <CardContent className="p-3 sm:p-4 md:p-5 flex items-center gap-2 sm:gap-3 md:gap-4">
 
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md transition-all duration-300 group-hover:scale-110">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center shadow-md transition-all duration-300 group-hover:scale-110">
 
-                  <Calendar className="w-6 h-6 text-white transition-all duration-300" />
+                  <Calendar className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white transition-all duration-300" />
 
                 </div>
 
                 <div>
 
-                  <p className="text-2xl font-bold text-blue-800 transition-all duration-300 group-hover:scale-110">{totalLeaveDays}</p>
+                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-blue-800 transition-all duration-300 group-hover:scale-110">{totalLeaveDays}</p>
 
-                  <p className="text-sm text-blue-600 font-medium leading-tight">{t('history.totalLeaveDays')}</p>
+                  <p className="text-xs sm:text-sm text-blue-600 font-medium leading-tight">{t('history.totalLeaveDays')}</p>
 
                 </div>
 
@@ -552,19 +529,19 @@ const LeaveHistory = () => {
 
             <Card className="glass shadow-xl border-0 hover:scale-[1.03] hover:shadow-2xl transition-all duration-300 animate-fade-in-up hover-lift">
 
-              <CardContent className="p-5 flex items-center gap-4">
+              <CardContent className="p-3 sm:p-4 md:p-5 flex items-center gap-2 sm:gap-3 md:gap-4">
 
-                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md transition-all duration-300 group-hover:scale-110">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-indigo-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md transition-all duration-300 group-hover:scale-110">
 
-                  <Clock className="w-6 h-6 text-white transition-all duration-300" />
+                  <Clock className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white transition-all duration-300" />
 
                 </div>
 
                 <div>
 
-                  <p className="text-2xl font-bold text-indigo-800 transition-all duration-300 group-hover:scale-110">{totalLeaveHours}</p>
+                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-indigo-800 transition-all duration-300 group-hover:scale-110">{totalLeaveHours}</p>
 
-                  <p className="text-sm text-indigo-600 font-medium leading-tight">{t('history.totalLeaveHours')}</p>
+                  <p className="text-xs sm:text-sm text-indigo-600 font-medium leading-tight">{t('history.totalLeaveHours')}</p>
 
                 </div>
 
@@ -574,19 +551,19 @@ const LeaveHistory = () => {
 
             <Card className="glass shadow-xl border-0 hover:scale-[1.03] hover:shadow-2xl transition-all duration-300 animate-fade-in-up hover-lift">
 
-              <CardContent className="p-5 flex items-center gap-4">
+              <CardContent className="p-3 sm:p-4 md:p-5 flex items-center gap-2 sm:gap-3 md:gap-4">
 
-                <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-md transition-all duration-300 group-hover:scale-110">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center shadow-md transition-all duration-300 group-hover:scale-110">
 
-                  <CheckCircle className="w-6 h-6 text-white transition-all duration-300" />
+                  <CheckCircle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white transition-all duration-300" />
 
                 </div>
 
                 <div>
 
-                  <p className="text-2xl font-bold text-green-700 transition-all duration-300 group-hover:scale-110">{approvedCount}</p>
+                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-green-700 transition-all duration-300 group-hover:scale-110">{approvedCount}</p>
 
-                  <p className="text-sm text-green-600 font-medium leading-tight">{t('history.approvedRequests')}</p>
+                  <p className="text-xs sm:text-sm text-green-600 font-medium leading-tight">{t('history.approvedRequests')}</p>
 
                 </div>
 
@@ -596,19 +573,19 @@ const LeaveHistory = () => {
 
             <Card className="glass shadow-xl border-0 hover:scale-[1.03] hover:shadow-2xl transition-all duration-300 animate-fade-in-up hover-lift">
 
-              <CardContent className="p-5 flex items-center gap-4">
+              <CardContent className="p-3 sm:p-4 md:p-5 flex items-center gap-2 sm:gap-3 md:gap-4">
 
-                <div className="w-12 h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center shadow-md transition-all duration-300 group-hover:scale-110">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-lg flex items-center justify-center shadow-md transition-all duration-300 group-hover:scale-110">
 
-                  <Clock className="w-6 h-6 text-white transition-all duration-300" />
+                  <Clock className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white transition-all duration-300" />
 
                 </div>
 
                 <div>
 
-                  <p className="text-2xl font-bold text-yellow-700 transition-all duration-300 group-hover:scale-110">{pendingCount}</p>
+                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-yellow-700 transition-all duration-300 group-hover:scale-110">{pendingCount}</p>
 
-                  <p className="text-sm text-yellow-600 font-medium leading-tight">{t('history.pendingRequests')}</p>
+                  <p className="text-xs sm:text-sm text-yellow-600 font-medium leading-tight">{t('history.pendingRequests')}</p>
 
                 </div>
 
@@ -618,19 +595,19 @@ const LeaveHistory = () => {
 
             <Card className="glass shadow-xl border-0 hover:scale-[1.03] hover:shadow-2xl transition-all duration-300 animate-fade-in-up hover-lift">
 
-              <CardContent className="p-5 flex items-center gap-4">
+              <CardContent className="p-3 sm:p-4 md:p-5 flex items-center gap-2 sm:gap-3 md:gap-4">
 
-                <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center shadow-md transition-all duration-300 group-hover:scale-110">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-red-500 to-red-600 rounded-lg flex items-center justify-center shadow-md transition-all duration-300 group-hover:scale-110">
 
-                  <XCircle className="w-6 h-6 text-white transition-all duration-300" />
+                  <XCircle className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white transition-all duration-300" />
 
                 </div>
 
                 <div>
 
-                  <p className="text-2xl font-bold text-red-700 transition-all duration-300 group-hover:scale-110">{rejectedCount}</p>
+                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-red-700 transition-all duration-300 group-hover:scale-110">{rejectedCount}</p>
 
-                  <p className="text-sm text-red-600 font-medium leading-tight">{t('history.rejectedRequests')}</p>
+                  <p className="text-xs sm:text-sm text-red-600 font-medium leading-tight">{t('history.rejectedRequests')}</p>
 
                 </div>
 
@@ -640,19 +617,19 @@ const LeaveHistory = () => {
 
             <Card className="glass shadow-xl border-0 hover:scale-[1.03] hover:shadow-2xl transition-all duration-300 animate-fade-in-up hover-lift">
 
-              <CardContent className="p-5 flex items-center gap-4">
+              <CardContent className="p-3 sm:p-4 md:p-5 flex items-center gap-2 sm:gap-3 md:gap-4">
 
-                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md transition-all duration-300 group-hover:scale-110">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center shadow-md transition-all duration-300 group-hover:scale-110">
 
-                  <History className="w-6 h-6 text-white transition-all duration-300" />
+                  <History className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 text-white transition-all duration-300" />
 
                 </div>
 
                 <div>
 
-                  <p className="text-2xl font-bold text-purple-700 transition-all duration-300 group-hover:scale-110">{retroactiveCount}</p>
+                  <p className="text-lg sm:text-xl md:text-2xl font-bold text-purple-700 transition-all duration-300 group-hover:scale-110">{retroactiveCount}</p>
 
-                  <p className="text-sm text-purple-600 font-medium leading-tight">{t('history.retroactiveLeave')}</p>
+                  <p className="text-xs sm:text-sm text-purple-600 font-medium leading-tight">{t('history.retroactiveLeave')}</p>
 
                 </div>
 
@@ -752,7 +729,7 @@ const LeaveHistory = () => {
 
                 {/* Filter Grid */}
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-6">
 
                   {/* Single Date Filter */}
 
@@ -930,15 +907,28 @@ const LeaveHistory = () => {
 
                         <SelectItem value="all" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{t('leave.statusAll')}</SelectItem>
 
-                        {statusOptions.map(status => (
+                        {statusOptions.map(status => {
 
-                          <SelectItem key={status} value={status} className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">
+                          // Map status values to translation keys
+                          const getStatusTranslation = (statusValue: string) => {
+                            switch (statusValue.toLowerCase()) {
+                              case 'pending':
+                                return t('leave.pending');
+                              case 'approved':
+                                return t('leave.approved');
+                              case 'rejected':
+                                return t('leave.rejected');
+                              default:
+                                return statusValue; // fallback to original value
+                            }
+                          };
 
-                            {t(`leave.${status}`, status)}
-
-                          </SelectItem>
-
-                        ))}
+                          return (
+                            <SelectItem key={status} value={status} className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">
+                              {getStatusTranslation(status)}
+                            </SelectItem>
+                          );
+                        })}
 
                       </SelectContent>
 
@@ -970,10 +960,10 @@ const LeaveHistory = () => {
                           {t('leave.allTypes')}
                         </SelectItem>
                         <SelectItem value="normal" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">
-                          {t('history.normalLeave')}
+                          {t('leave.notBackdated')}
                         </SelectItem>
                         <SelectItem value="retroactive" className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">
-                          {t('history.retroactiveLeave')}
+                          {t('leave.backdatedOnly')}
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -1000,7 +990,6 @@ const LeaveHistory = () => {
                         value={filterMonth ? filterMonth.toString() : "all"} 
                         onValueChange={v => {
                           const newValue = v === "all" ? '' : Number(v);
-                          console.log('Debug - Setting filterMonth:', { oldValue: filterMonth, newValue, v });
                           setFilterMonth(newValue);
                         }} 
                         disabled={!!singleDate}
@@ -1030,7 +1019,6 @@ const LeaveHistory = () => {
                         value={filterYear ? filterYear.toString() : "all"} 
                         onValueChange={v => {
                           const newValue = v === "all" ? '' : Number(v);
-                          console.log('Debug - Setting filterYear:', { oldValue: filterYear, newValue, v });
                           setFilterYear(newValue);
                         }} 
                         disabled={!!singleDate}
@@ -1266,7 +1254,7 @@ const LeaveHistory = () => {
                   style={{ animationDelay: `${index * 0.1}s` }}
                 >
 
-                  <CardHeader className="pb-3 flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                  <CardHeader className="pb-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
 
                     <div className="flex items-center gap-4">
 
@@ -1289,7 +1277,7 @@ const LeaveHistory = () => {
 
                     </div>
 
-                    <div className="text-sm text-blue-400 font-medium md:text-right">
+                    <div className="text-sm text-blue-400 font-medium sm:text-right">
 
                       {formatDateLocalized(leave.submittedDate, i18n.language)}
 
@@ -1299,7 +1287,7 @@ const LeaveHistory = () => {
 
                   <CardContent className="pt-0 pb-4">
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
 
                       <div className="space-y-3">
 
@@ -1495,7 +1483,7 @@ const LeaveHistory = () => {
 
                         )}
 
-                        <div className="flex justify-end mt-6 gap-2">
+                        <div className="flex flex-col sm:flex-row justify-end mt-6 gap-2">
 
                           <Button 
                             size="sm" 
@@ -1608,252 +1596,16 @@ const LeaveHistory = () => {
 
             )}
 
-            {/* Enhanced Pagination */}
-
+            {/* Enhanced Pagination (replaced with reusable component) */}
             {(totalPages >= 1 || leaveHistory.length > 0) && (
-
-              <div className="flex flex-col sm:flex-row justify-center items-center mt-8 gap-4 p-6 glass shadow-xl border-0 animate-fade-in-up" style={{ animationDelay: '0.5s' }}>
-
-                {/* Pagination Info */}
-
-                <div className="flex items-center gap-4 text-sm text-gray-600">
-
-                  <div className="flex items-center gap-2">
-
-                    <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-
-                    <span>{t('history.pageInfo', { page: page || 1, totalPages: totalPages || 1 })}</span>
-
-                  </div>
-
-                  <div className="w-px h-4 bg-gray-300"></div>
-
-                  <div className="flex items-center gap-2">
-
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-
-                    <span>{leaveHistory.length} {t('history.results')}</span>
-
-                  </div>
-
-                </div>
-
-
-
-                {/* Pagination Controls */}
-
-                {totalPages > 1 && (
-
-                  <div className="flex items-center gap-2">
-
-                    {/* Previous Button */}
-
-                    <Button
-
-                      variant="outline"
-
-                      size="sm"
-
-                      onClick={() => setPage(Math.max(1, page - 1))}
-
-                      disabled={page === 1}
-
-                      className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 rounded-lg px-3 py-2 transform hover:scale-105 hover:shadow-md btn-press"
-
-                    >
-
-                      <ChevronLeft className="w-4 h-4" />
-
-                    </Button>
-
-
-
-                    {/* Page Numbers */}
-
-                    <div className="flex items-center gap-1">
-
-                      {(() => {
-
-                        const pages = [];
-
-                        const maxPageButtons = 5;
-
-                        let start = Math.max(1, page - 2);
-
-                        let end = Math.min(totalPages, start + maxPageButtons - 1);
-
-                        if (end - start < maxPageButtons - 1) {
-
-                          start = Math.max(1, end - maxPageButtons + 1);
-
-                        }
-
-                        if (start > 1) {
-
-                          pages.push(
-
-                            <Button
-
-                              key={1}
-
-                              variant={page === 1 ? "default" : "outline"}
-
-                              size="sm"
-
-                              onClick={() => setPage(1)}
-
-                              className={`rounded-lg px-3 py-2 transition-all duration-300 transform hover:scale-105 hover:shadow-md ${page === 1 ? 'bg-blue-600 text-white' : 'border-blue-200 text-blue-700 hover:bg-blue-50'}`}
-
-                            >
-
-                              1
-
-                            </Button>
-
-                          );
-
-                          if (start > 2) pages.push(
-
-                            <span key="start-ellipsis" className="px-2 text-gray-400">...</span>
-
-                          );
-
-                        }
-
-                        for (let i = start; i <= end; i++) {
-
-                          pages.push(
-
-                            <Button
-
-                              key={i}
-
-                              variant={page === i ? "default" : "outline"}
-
-                              size="sm"
-
-                              onClick={() => setPage(i)}
-
-                              className={`rounded-lg px-3 py-2 transition-all duration-300 transform hover:scale-105 hover:shadow-md ${page === i ? 'bg-blue-600 text-white' : 'border-blue-200 text-blue-700 hover:bg-blue-50'}`}
-
-                            >
-
-                              {i}
-
-                            </Button>
-
-                          );
-
-                        }
-
-                        if (end < totalPages) {
-
-                          if (end < totalPages - 1) pages.push(
-
-                            <span key="end-ellipsis" className="px-2 text-gray-400">...</span>
-
-                          );
-
-                          pages.push(
-
-                            <Button
-
-                              key={totalPages}
-
-                              variant={page === totalPages ? "default" : "outline"}
-
-                              size="sm"
-
-                              onClick={() => setPage(totalPages)}
-
-                              className={`rounded-lg px-3 py-2 transition-all duration-300 transform hover:scale-105 hover:shadow-md ${page === totalPages ? 'bg-blue-600 text-white' : 'border-blue-200 text-blue-700 hover:bg-blue-50'}`}
-
-                            >
-
-                              {totalPages}
-
-                            </Button>
-
-                          );
-
-                        }
-
-                        return pages;
-
-                      })()}
-
-                    </div>
-
-
-
-                    {/* Next Button */}
-
-                    <Button
-
-                      variant="outline"
-
-                      size="sm"
-
-                      onClick={() => setPage(Math.min(totalPages, page + 1))}
-
-                      disabled={page === totalPages}
-
-                      className="border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 rounded-lg px-3 py-2 transform hover:scale-105 hover:shadow-md btn-press"
-
-                    >
-
-                      <ChevronRight className="w-4 h-4" />
-
-                    </Button>
-
-                  </div>
-
-                )}
-
-
-
-                {/* Items per page select */}
-
-                <div className="flex items-center gap-2">
-
-                  <Select
-
-                    value={limit.toString()}
-
-                    onValueChange={(value) => {
-
-                      setLimit(Number(value));
-
-                      setPage(1);
-
-                    }}
-
-                  >
-
-                    <SelectTrigger className="w-20 bg-white/90 backdrop-blur border-blue-200 hover:bg-blue-50 hover:border-blue-300 transition-all duration-300 rounded-lg h-9 transform hover:scale-105 hover:shadow-md">
-
-                      <SelectValue />
-
-                    </SelectTrigger>
-
-                    <SelectContent className="border-0 shadow-xl rounded-xl">
-
-                      {[5, 10, 20, 50].map(n => (
-
-                        <SelectItem key={n} value={n.toString()} className="rounded-lg transition-all duration-200 hover:bg-blue-50 hover:scale-105">{n}</SelectItem>
-
-                      ))}
-
-                    </SelectContent>
-
-                  </Select>
-
-                  <span className="text-sm text-gray-600">{t('admin.itemsPerPage')}</span>
-
-                </div>
-
-              </div>
-
+              <PaginationBar
+                page={page}
+                totalPages={totalPages}
+                totalResults={leaveHistory.length}
+                pageSize={limit}
+                onPageChange={setPage}
+                onPageSizeChange={(n) => setLimit(n)}
+              />
             )}
 
           </div>

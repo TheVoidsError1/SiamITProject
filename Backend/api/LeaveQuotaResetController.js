@@ -58,8 +58,8 @@ module.exports = (AppDataSource) => {
 
       const positionRepo = queryRunner.manager.getRepository('Position');
       const userRepo = queryRunner.manager.getRepository('User');
-      const adminRepo = queryRunner.manager.getRepository('Admin');
-      const superAdminRepo = queryRunner.manager.getRepository('SuperAdmin');
+      const adminRepo = queryRunner.manager.getRepository('User'); // Admin users are stored in User table
+      const superAdminRepo = queryRunner.manager.getRepository('User'); // Superadmin users are also stored in User table
       const leaveUsedRepo = queryRunner.manager.getRepository('LeaveUsed');
 
       // คัดเลือกตำแหน่งเป้าหมาย
@@ -82,18 +82,10 @@ module.exports = (AppDataSource) => {
         return sendSuccess(res, { positions: 0, users: 0, affected: 0 }, 'No positions to reset');
       }
 
-      // ค้นหาผู้ใช้ในตำแหน่งเป้าหมาย (user/admin/superadmin)
-      const [users, admins, supers] = await Promise.all([
-        userRepo.find({ where: { position: In(positionIds) } }),
-        adminRepo.find({ where: { position: In(positionIds) } }),
-        superAdminRepo.find({ where: { position: In(positionIds) } })
-      ]);
+      // ค้นหาผู้ใช้ในตำแหน่งเป้าหมาย (unified users table)
+      const users = await userRepo.find({ where: { position: In(positionIds) } });
 
-      const userIds = [
-        ...users.map(u => u.id),
-        ...admins.map(a => a.id),
-        ...supers.map(s => s.id),
-      ];
+      const userIds = users.map(u => u.id);
 
       if (userIds.length === 0) {
         await queryRunner.commitTransaction();

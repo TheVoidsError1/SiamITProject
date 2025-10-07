@@ -65,12 +65,11 @@ const AppDataSource = new DataSource({
   password: config.database.password,
   database: config.database.database,
   synchronize: true, // dev only! จะสร้าง/อัปเดต table อัตโนมัติ
-  logging: false, //
+  logging: false, // Disable database query logging
+  dropSchema: false, // Don't drop schema on restart
+  migrationsRun: false, // Don't run migrations automatically
   entities: [
-    require('./EnityTable/user.js'),
-    require('./EnityTable/ProcessCheck.entity.js'),
-    require('./EnityTable/admin.js'),
-    require('./EnityTable/superadmin.js'),
+    require('./EnityTable/User.entity.js'),
     require('./EnityTable/leaveRequest.entity.js'),
     require('./EnityTable/position.js'),
     require('./EnityTable/leaveType.js'),
@@ -91,6 +90,7 @@ AppDataSource.initialize()
   });
 
 app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use(cors({
   origin: function (origin, callback) {
@@ -185,12 +185,11 @@ app.get('/users', async (req, res) => {
 // สมัครสมาชิก
 app.post('/register', async (req, res) => {
   try {
-    const { User_name, position, department, Email, Password } = req.body;
+    const { name, position, department, Email, Password } = req.body;
     const userRepo = AppDataSource.getRepository('User');
-    const processRepo = AppDataSource.getRepository('ProcessCheck');
 
     // ตรวจสอบ email ซ้ำ
-    const exist = await processRepo.findOneBy({ Email });
+    const exist = await userRepo.findOneBy({ Email });
     if (exist) {
       return res.status(400).json({ error: 'Email นี้ถูกใช้ไปแล้ว' });
     }
@@ -198,24 +197,27 @@ app.post('/register', async (req, res) => {
     // hash password
     const hashedPassword = await bcrypt.hash(Password, 10);
 
-    // สร้าง ProcessCheck
-    const processCheck = processRepo.create({ Email, Password: hashedPassword });
-    await processRepo.save(processCheck);
-
     // สร้าง User
-    const user = userRepo.create({ User_name, position, department });
+    const user = userRepo.create({ 
+      name, 
+      position, 
+      department, 
+      Email, 
+      Password: hashedPassword,
+      Role: 'user'
+    });
     await userRepo.save(user);
 
     // สร้าง JWT
-            const token = jwt.sign(
-              { userId: user.id, email: Email },
-              config.server.jwtSecret,
-              { expiresIn: config.server.jwtExpiresIn }
-            );
+    const token = jwt.sign(
+      { userId: user.id, email: Email },
+      config.server.jwtSecret,
+      { expiresIn: config.server.jwtExpiresIn }
+    );
 
-    // อัปเดต token ใน ProcessCheck (optional)
-    processCheck.Token = token;
-    await processRepo.save(processCheck);
+    // อัปเดต token ใน User
+    user.Token = token;
+    await userRepo.save(user);
 
     res.json({ token });
   } catch (err) {

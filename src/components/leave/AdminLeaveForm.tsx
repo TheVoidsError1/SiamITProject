@@ -9,34 +9,16 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { apiService } from '@/lib/api';
 import { ArrowLeftCircle, CalendarDays, CheckCircle, ClipboardList, Clock, FileText, Phone, Send, Shield, User, UserCheck, XCircle, Ban, CheckCircle2 } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from 'react-router-dom';
 import { FileUpload } from "./FileUpload";
 import { isValidTimeFormat, autoFormatTimeInput } from '../../lib/leaveUtils';
 import { format } from "date-fns";
+import { formatDateLocal } from '@/lib/dateUtils';
+import { isValidPhoneNumber, isValidEmail } from '@/lib/validators';
 
-// ฟังก์ชันแปลงวันที่เป็น yyyy-mm-dd ตาม local time (ไม่ใช่ UTC)
-function formatDateLocal(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-const isValidPhoneNumber = (input: string) => {
-  // เฉพาะตัวเลข, 9-10 หลัก, ขึ้นต้น 0, ไม่ใช่เลขซ้ำหมด เช่น 0000000000
-  if (!/^[0-9]{9,10}$/.test(input)) return false;
-  if (!input.startsWith('0')) return false;
-  if (/^(\d)\1{8,9}$/.test(input)) return false; // เช่น 0000000000, 1111111111
-  // อาจเพิ่ม blacklist เพิ่มเติมได้
-  return true;
-};
-
-const isValidEmail = (input: string) => {
-  // เช็ค email format พื้นฐาน
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(input);
-};
+// formatDateLocal, isValidPhoneNumber, isValidEmail moved to shared utils
 
 export interface AdminLeaveFormProps {
   initialData?: any;
@@ -70,7 +52,15 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
   const [positions, setPositions] = useState<{ id: string; position_name_th: string; position_name_en: string }[]>([]);
   const [admins, setAdmins] = useState<{ id: string; name: string; role: string }[]>([]);
   const [superadmins, setSuperadmins] = useState<{ id: string; name: string; role: string }[]>([]);
-  const approverList = [...admins, ...superadmins];
+  
+  // Create unique approver list to avoid duplicate keys
+  const approverList = React.useMemo(() => {
+    const allApprovers = [...admins, ...superadmins];
+    const uniqueApprovers = allApprovers.filter((approver, index, self) => 
+      index === self.findIndex(a => a.id === approver.id)
+    );
+    return uniqueApprovers;
+  }, [admins, superadmins]);
   const [users, setUsers] = useState<{ id: string; name: string; email: string; role: string; department_name_th?: string; department_name_en?: string; position_name_th?: string; position_name_en?: string }[]>([]);
   const { user } = useAuth();
   const [timeError, setTimeError] = useState("");
@@ -87,6 +77,7 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
     contact: '',
     approvalStatus: '',
     approverName: '',
+    approvalNote: '', // เพิ่ม error สำหรับเหตุผลไม่อนุมัติ
   });
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -189,7 +180,7 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
         if (adminRes.success && Array.isArray(adminRes.data)) {
           adminList = adminRes.data.map((a: any) => ({
             id: a.id,
-            name: a.admin_name || a.name || a.email || 'Admin',
+            name: a.name || a.email || 'Admin',
             role: 'admin',
           }));
         }
@@ -200,7 +191,7 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
         if (superRes.success && Array.isArray(superRes.data)) {
           superList = superRes.data.map((s: any) => ({
             id: s.id,
-            name: s.superadmin_name || s.name || s.email || 'Superadmin',
+            name: s.name || s.email || 'Superadmin',
             role: 'superadmin',
           }));
         }
@@ -231,6 +222,7 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
       contact: '',
       approvalStatus: '',
       approverName: '',
+      approvalNote: '', // เพิ่ม error สำหรับเหตุผลไม่อนุมัติ
     };
 
     if (!selectedUserId) {
@@ -264,8 +256,8 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
       }
     }
 
-    if (approvalStatus === 'rejected' && !reason.trim()) {
-      newErrors.reason = t('leave.enterReasonRequired');
+    if (approvalStatus === 'rejected' && !approvalNote.trim()) {
+      newErrors.approvalNote = t('leave.enterRejectionReasonRequired');
     }
 
     if (!contact.trim()) {
@@ -368,6 +360,11 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
         } else if (approvalStatus === 'rejected' && approvedTime) {
           formData.append("rejectedTime", approvedTime);
         }
+      }
+      
+      // ส่งเหตุผลไม่อนุมัติ (rejectedReason) เมื่อ rejected - แยกออกมาเพื่อให้แน่ใจว่าส่งเสมอ
+      if (approvalStatus === 'rejected' && approvalNote) {
+        formData.append('rejectedReason', approvalNote);
       }
       
       // Add selected user ID instead of current user
@@ -631,8 +628,8 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
                 </div>
                 <div className={`px-3 py-1 rounded-full text-xs font-medium ${
                   allowBackdated === 0 
-                    ? 'bg-red-100 text-red-700 border border-red-200' 
-                    : 'bg-green-100 text-green-700 border border-green-200'
+                    ? 'bg-green-100 text-green-700 border border-green-200' 
+                    : 'bg-red-100 text-red-700 border border-red-200'
                 }`}>
                   {allowBackdated === 0 ? t('leave.disallowBackdated') : t('leave.allowBackdated')}
                 </div>
@@ -643,33 +640,33 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
                 <div 
                   className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                     allowBackdated === 0 
-                      ? 'border-red-400 bg-red-50 shadow-md' 
-                      : 'border-gray-200 bg-white hover:border-red-300 hover:bg-red-25'
+                      ? 'border-green-400 bg-green-50 shadow-md' 
+                      : 'border-gray-200 bg-white hover:border-green-300 hover:bg-green-25'
                   }`}
                   onClick={() => setAllowBackdated(0)}
                 >
                   <div className="flex items-center gap-3">
                     <div className={`p-1 rounded-full ${
-                      allowBackdated === 0 ? 'bg-red-100' : 'bg-gray-100'
+                      allowBackdated === 0 ? 'bg-green-100' : 'bg-gray-100'
                     }`}>
                       <Ban className={`w-4 h-4 ${
-                        allowBackdated === 0 ? 'text-red-600' : 'text-gray-500'
+                        allowBackdated === 0 ? 'text-green-600' : 'text-gray-500'
                       }`} />
                     </div>
                     <div className="flex-1">
                       <span className={`text-sm font-semibold ${
-                        allowBackdated === 0 ? 'text-red-700' : 'text-gray-700'
+                        allowBackdated === 0 ? 'text-green-700' : 'text-gray-700'
                       }`}>
                         {t('leave.disallowBackdated')}
                       </span>
                       <p className={`text-xs mt-1 ${
-                        allowBackdated === 0 ? 'text-red-600' : 'text-gray-500'
+                        allowBackdated === 0 ? 'text-green-600' : 'text-gray-500'
                       }`}>
                         {t('leave.disallowBackdatedDesc')}
                       </p>
                     </div>
                     {allowBackdated === 0 && (
-                      <CheckCircle2 className="w-5 h-5 text-red-600" />
+                      <CheckCircle2 className="w-5 h-5 text-green-600" />
                     )}
                   </div>
                 </div>
@@ -678,33 +675,33 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
                 <div 
                   className={`p-4 rounded-xl border-2 cursor-pointer transition-all duration-200 ${
                     allowBackdated === 1 
-                      ? 'border-green-400 bg-green-50 shadow-md' 
-                      : 'border-gray-200 bg-white hover:border-green-300 hover:bg-green-25'
+                      ? 'border-red-400 bg-red-50 shadow-md' 
+                      : 'border-gray-200 bg-white hover:border-red-300 hover:bg-red-25'
                   }`}
                   onClick={() => setAllowBackdated(1)}
                 >
                   <div className="flex items-center gap-3">
                     <div className={`p-1 rounded-full ${
-                      allowBackdated === 1 ? 'bg-green-100' : 'bg-gray-100'
+                      allowBackdated === 1 ? 'bg-red-100' : 'bg-gray-100'
                     }`}>
                       <Clock className={`w-4 h-4 ${
-                        allowBackdated === 1 ? 'text-green-600' : 'text-gray-500'
+                        allowBackdated === 1 ? 'text-red-600' : 'text-gray-500'
                       }`} />
                     </div>
                     <div className="flex-1">
                       <span className={`text-sm font-semibold ${
-                        allowBackdated === 1 ? 'text-green-700' : 'text-gray-700'
+                        allowBackdated === 1 ? 'text-red-700' : 'text-gray-700'
                       }`}>
                         {t('leave.allowBackdated')}
                       </span>
                       <p className={`text-xs mt-1 ${
-                        allowBackdated === 1 ? 'text-green-600' : 'text-gray-500'
+                        allowBackdated === 1 ? 'text-red-600' : 'text-gray-500'
                       }`}>
                         {t('leave.allowBackdatedDesc')}
                       </p>
                     </div>
                     {allowBackdated === 1 && (
-                      <CheckCircle2 className="w-5 h-5 text-green-600" />
+                      <CheckCircle2 className="w-5 h-5 text-red-600" />
                     )}
                   </div>
                 </div>
@@ -966,8 +963,11 @@ export const AdminLeaveForm = ({ initialData, onSubmit, mode = 'create' }: Admin
                   placeholder={t('leave.rejectionNotePlaceholder')}
                   value={approvalNote}
                   onChange={(e) => setApprovalNote(e.target.value)}
-                  className="min-h-[100px] border-gray-200 hover:border-blue-300"
+                  className={`min-h-[100px] border-gray-200 hover:border-blue-300 ${errors.approvalNote ? 'border-red-500 ring-red-200' : ''}`}
                 />
+                {errors.approvalNote && (
+                  <p className="text-sm text-red-500">{errors.approvalNote}</p>
+                )}
               </div>
             )}
           </div>

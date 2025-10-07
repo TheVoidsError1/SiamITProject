@@ -22,18 +22,57 @@ import { useToast } from "@/hooks/use-toast";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const items = [
-  { title: "navigation.home", url: "/", icon: Home },
-  { title: "navigation.announcementsFeed", url: "/announcements", icon: Rss },
-  { title: "navigation.calendar", url: "/calendar", icon: Calendar },
-  { title: "navigation.leaveRequest", url: "/leave-request", icon: Calendar },
-  { title: "navigation.leaveHistory", url: "/leave-history", icon: Clock },
-  { title: "navigation.profile", url: "/profile", icon: User },
+  // Dashboard at the top of the main menu
+  {
+    title: "navigation.home",
+    url: "/",
+    icon: Home,
+  },
+  // Prioritize leave actions after dashboard
+  {
+    title: "navigation.leaveRequest",
+    url: "/leave-request",
+    icon: Calendar,
+  },
+  {
+    title: "navigation.leaveHistory",
+    url: "/leave-history",
+    icon: Clock,
+  },
+  {
+    title: "navigation.calendar",
+    url: "/calendar",
+    icon: Calendar,
+  },
+  {
+    title: "navigation.announcementsFeed",
+    url: "/announcements",
+    icon: Rss,
+  },
+  {
+    title: "navigation.profile",
+    url: "/profile",
+    icon: User,
+  },
 ];
 
 const adminItems = [
-  { title: "navigation.adminDashboard", url: "/admin", icon: Settings },
-  { title: "navigation.allEmployees", url: "/admin/employees", icon: Users },
-  { title: "navigation.adminLeaveRequest", url: "/admin/leave-request", icon: Calendar },
+  // Prioritize admin leave management first
+  {
+    title: "navigation.adminLeaveRequest",
+    url: "/admin/leave-request",
+    icon: Calendar,
+  },
+  {
+    title: "navigation.adminDashboard",
+    url: "/admin",
+    icon: Settings,
+  },
+  {
+    title: "navigation.allEmployees",
+    url: "/admin/employees",
+    icon: Users,
+  },
 ];
 
 const superadminItems = [
@@ -124,26 +163,25 @@ export function AppSidebar() {
     );
   }
 
-  const allItems = user?.role === 'superadmin'
-    ? [...items, ...adminItems, ...superadminExtraItems]
-    : user?.role === 'admin'
-      ? [...items, ...adminItems]
-      : items;
+  // Determine visibility of admin/superadmin sections
+  const showAdmin = user?.role === 'admin' || user?.role === 'superadmin';
+  const showSuperAdmin = user?.role === 'superadmin';
+  const adminOnlyItems = showAdmin ? adminItems : [];
 
   return (
-    <Sidebar className="border-r border-border/50 bg-white/60 dark:dark-sidebar-gradient backdrop-blur-xl shadow-2xl dark:dark-shadow animate-slide-in-left transition-all duration-300">
-      <SidebarHeader className="p-6">
-        <div className="flex items-center gap-3">
+    <Sidebar className="border-r border-border/50 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl shadow-2xl animate-slide-in-left transition-all duration-300 h-full">
+      <SidebarHeader className="p-3">
+        <div className="flex items-center gap-1.5">
           <img
             src="/lovable-uploads/IMG_4486-removebg-preview.png"
             alt={t('company.logoAlt')}
-            className="w-12 h-12 object-contain drop-shadow-lg"
+            className="w-10 h-10 object-contain drop-shadow-lg"
           />
           <div className="flex-1">
-            <h2 className="text-lg font-bold text-sidebar-foreground">
+            <h2 className="text-sm font-bold text-sidebar-foreground leading-tight">
               {t('company.name')}
             </h2>
-            <p className="text-sm text-sidebar-foreground/70">
+            <p className="text-[11px] text-sidebar-foreground/70 leading-tight">
               {t('system.onlineLeaveSystem')}
             </p>
           </div>
@@ -154,31 +192,98 @@ export function AppSidebar() {
         </div>
       </SidebarHeader>
       
-      <SidebarContent className="overflow-hidden">
+      <SidebarContent className="flex-1 overflow-hidden">
+        {/* Single group: main + role-based sections */}
         <SidebarGroup>
-          <SidebarGroupLabel className="text-sidebar-foreground/70 font-semibold tracking-wide uppercase mb-2">
+          <SidebarGroupLabel className="text-sidebar-foreground/70 font-semibold tracking-wide uppercase mb-0 text-[12px]">
             {t('navigation.mainMenu')}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {allItems.map((item) => (
+              {items.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton 
                     asChild 
                     isActive={location.pathname === item.url}
                     className={
-                      `w-full justify-start group relative px-2 py-1.5 rounded-xl transition-all duration-200
+                      `w-full justify-start group relative px-2 py-1 rounded-lg transition-all duration-200
                       ${location.pathname === item.url ? 'bg-gradient-to-r from-blue-400/20 to-indigo-400/10 shadow-lg before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1.5 before:h-8 before:rounded-full before:bg-gradient-to-b before:from-blue-500 before:to-indigo-500' : 'hover:bg-blue-100/40 dark:hover:bg-gray-800/40'}
                       `
                     }
                   >
-                    <Link to={item.url} className="flex items-center gap-3 relative z-10">
+                    <Link to={item.url} className="flex items-center gap-1.5 relative z-10">
                       <item.icon className={
-                        `w-5 h-5 transition-transform duration-200 group-hover:scale-125
+                        `w-4 h-4 transition-transform duration-200 group-hover:scale-105
                         ${location.pathname === item.url ? 'text-blue-600 drop-shadow-glow' : 'text-gray-500 group-hover:text-blue-500'}`
                       } />
                       <span className={
-                        `font-medium transition-colors duration-200
+                        `text-sm font-medium transition-colors duration-200
+                        ${location.pathname === item.url ? 'text-blue-700 dark:text-blue-300' : 'text-sidebar-foreground group-hover:text-blue-600'}`
+                      }>
+                        {t(item.title)}
+                      </span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+
+              {showAdmin && (
+                <div className="mt-2 mb-1 px-2 text-[12px] font-semibold uppercase text-sidebar-foreground/70">
+                  {t('navigation.adminFunctions')}
+                </div>
+              )}
+
+              {showAdmin && adminOnlyItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={location.pathname === item.url}
+                    className={
+                      `w-full justify-start group relative px-2 py-1 rounded-lg transition-all duration-200
+                      ${location.pathname === item.url ? 'bg-gradient-to-r from-blue-400/20 to-indigo-400/10 shadow-lg before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1.5 before:h-8 before:rounded-full before:bg-gradient-to-b before:from-blue-500 before:to-indigo-500' : 'hover:bg-blue-100/40 dark:hover:bg-gray-800/40'}
+                      `
+                    }
+                  >
+                    <Link to={item.url} className="flex items-center gap-1.5 relative z-10">
+                      <item.icon className={
+                        `w-4 h-4 transition-transform duration-200 group-hover:scale-105
+                        ${location.pathname === item.url ? 'text-blue-600 drop-shadow-glow' : 'text-gray-500 group-hover:text-blue-500'}`
+                      } />
+                      <span className={
+                        `text-sm font-medium transition-colors duration-200
+                        ${location.pathname === item.url ? 'text-blue-700 dark:text-blue-300' : 'text-sidebar-foreground group-hover:text-blue-600'}`
+                      }>
+                        {t(item.title)}
+                      </span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+
+              {showSuperAdmin && (
+                <div className="mt-2 mb-1 px-2 text-[12px] font-semibold uppercase text-sidebar-foreground/70">
+                  {t('navigation.superAdminFunctions')}
+                </div>
+              )}
+
+              {showSuperAdmin && superadminExtraItems.map((item) => (
+                <SidebarMenuItem key={item.title}>
+                  <SidebarMenuButton 
+                    asChild 
+                    isActive={location.pathname === item.url}
+                    className={
+                      `w-full justify-start group relative px-2 py-1 rounded-lg transition-all duration-200
+                      ${location.pathname === item.url ? 'bg-gradient-to-r from-blue-400/20 to-indigo-400/10 shadow-lg before:absolute before:left-0 before:top-1/2 before:-translate-y-1/2 before:w-1.5 before:h-8 before:rounded-full before:bg-gradient-to-b before:from-blue-500 before:to-indigo-500' : 'hover:bg-blue-100/40 dark:hover:bg-gray-800/40'}
+                      `
+                    }
+                  >
+                    <Link to={item.url} className="flex items-center gap-1.5 relative z-10">
+                      <item.icon className={
+                        `w-4 h-4 transition-transform duration-200 group-hover:scale-105
+                        ${location.pathname === item.url ? 'text-blue-600 drop-shadow-glow' : 'text-gray-500 group-hover:text-blue-500'}`
+                      } />
+                      <span className={
+                        `text-sm font-medium transition-colors duration-200
                         ${location.pathname === item.url ? 'text-blue-700 dark:text-blue-300' : 'text-sidebar-foreground group-hover:text-blue-600'}`
                       }>
                         {t(item.title)}
@@ -192,24 +297,24 @@ export function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       
-      <SidebarFooter className="p-6">
-        <div className="space-y-4">
+      <SidebarFooter className="p-5">
+        <div className="space-y-5">
           <Link to="/profile" className="block">
-            <div className="flex items-center gap-3 p-4 rounded-2xl bg-white/50 dark:dark-card-gradient backdrop-blur-md shadow-lg dark:dark-glow hover:shadow-xl dark:hover:dark-glow transition-all cursor-pointer border border-white/20 dark:border-purple-500/30">
-              <Avatar className="w-8 h-8">
+            <div className="flex items-center gap-2 p-2 rounded-md bg-white/50 dark:bg-gray-900/50 backdrop-blur-md shadow-md hover:shadow-lg transition-all cursor-pointer border border-white/20 dark:border-gray-700 w-full">
+              <Avatar className="w-12 h-12">
                 <AvatarImage 
                   src={user?.avatar_url ? `${API_BASE_URL}${user.avatar_url}` : undefined} 
                   alt={user?.full_name || 'User'}
                 />
-                <AvatarFallback className="text-xs font-medium bg-sidebar-accent text-sidebar-foreground">
+                <AvatarFallback className="text-[12px] font-medium bg-sidebar-accent text-sidebar-foreground">
                   {user?.full_name?.split(' ').map(n => n[0]).join('') || 'U'}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-sidebar-foreground truncate">
+                <p className="text-[14px] font-semibold text-sidebar-foreground truncate">
                   {user?.full_name || t('common.user')}
                 </p>
-                <p className="text-xs text-sidebar-foreground/70 truncate">
+                <p className="text-[12px] text-sidebar-foreground/70 truncate">
                   {(() => {
                     if (isLoading) {
                       return t('common.loading');

@@ -99,7 +99,6 @@ module.exports = (AppDataSource) => {
   router.get('/announcements/feed', async (req, res) => {
     try {
       const announcementRepo = AppDataSource.getRepository('Announcements');
-      const processCheckRepo = AppDataSource.getRepository('ProcessCheck');
       
       // Get all announcements
       const announcements = await announcementRepo.find({
@@ -108,6 +107,7 @@ module.exports = (AppDataSource) => {
         }
       });
 
+
       // Get avatar data and user names for each announcement
       const announcementsWithAvatar = await Promise.all(
         announcements.map(async (announcement) => {
@@ -115,48 +115,24 @@ module.exports = (AppDataSource) => {
           let userName = 'Unknown User';
           
           if (announcement.createdBy) {
-            // First, find the user by ID in User, Admin, and SuperAdmin tables
+            // Find the user by ID in the unified User table
             const userRepo = AppDataSource.getRepository('User');
-            const adminRepo = AppDataSource.getRepository('Admin');
-            const superadminRepo = AppDataSource.getRepository('SuperAdmin');
             
-            // Try to find user in User table
+            // Find user in User table (unified table with Role field)
             let user = await userRepo.findOne({
               where: { id: announcement.createdBy }
             });
             
-            // If not found in User table, try Admin table
-            if (!user) {
-              user = await adminRepo.findOne({
-                where: { id: announcement.createdBy }
-              });
-            }
-            
-            // If not found in Admin table, try SuperAdmin table
-            if (!user) {
-              user = await superadminRepo.findOne({
-                where: { id: announcement.createdBy }
-              });
-            }
-            
             // If user found, get their name and avatar
             if (user) {
-              // Get user name based on which table they were found in
-              if (user.User_name) {
-                userName = user.User_name;
-              } else if (user.admin_name) {
-                userName = user.admin_name;
-              } else if (user.superadmin_name) {
-                userName = user.superadmin_name;
+              // Get user name from the unified User table
+              if (user.name) {
+                userName = user.name;
               }
               
-              // Get avatar from ProcessCheck table
-              const processCheck = await processCheckRepo.findOne({
-                where: { Repid: user.id }
-              });
-              
-              if (processCheck && processCheck.avatar_url) {
-                avatar = processCheck.avatar_url;
+              // Get avatar from the unified User table (avatar_url field)
+              if (user.avatar_url) {
+                avatar = user.avatar_url;
               }
             }
           }

@@ -9,12 +9,13 @@ import { Label } from '@/components/ui/label';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { apiEndpoints } from '@/constants/api';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePushNotification } from '@/contexts/PushNotificationContext';
 import { useSocket } from '@/contexts/SocketContext';
 import { useToast } from '@/hooks/use-toast';
-import { apiEndpoints } from '@/constants/api';
 import { apiService } from '@/lib/api';
+import { withCacheBust } from '@/lib/url';
 import { Bell, Building, Camera, Crown, Lock, Mail, Save, Shield } from 'lucide-react';
 import React, { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -33,7 +34,6 @@ const Profile = () => {
   const [selectedImageSrc, setSelectedImageSrc] = useState<string | null>(null);
   const { socket, isConnected } = useSocket();
   const [avatarKey, setAvatarKey] = useState<number>(0);
-  const [forceRefresh, setForceRefresh] = useState<number>(0);
   const [formData, setFormData] = useState({
     full_name: '',
     email: '',
@@ -55,7 +55,6 @@ const Profile = () => {
   const [leaveQuota, setLeaveQuota] = useState<any[]>([]);
   const [leaveLoading, setLeaveLoading] = useState(false);
   const [allLeaveTypes, setAllLeaveTypes] = useState<any[]>([]);
-  const withCacheBust = (url: string) => `${url}${url.includes('?') ? '&' : '?'}v=${Date.now()}&t=${Math.random()}`;
   const [isEditing, setIsEditing] = useState(false);
   const [pendingAvatarFile, setPendingAvatarFile] = useState<File | null>(null);
   const [pendingCroppedFile, setPendingCroppedFile] = useState<File | null>(null);
@@ -106,13 +105,6 @@ const Profile = () => {
         const res = await apiService.get(apiEndpoints.auth.profile);
         const data = res.data;
         
-        console.log('Backend profile data:', data);
-        console.log('Backend position_id:', data.position_id);
-        console.log('Backend position_name:', data.position_name);
-        console.log('Backend department_id:', data.department_id);
-        console.log('Backend department_name:', data.department_name);
-        console.log('Positions array:', positions);
-        console.log('Departments array:', departments);
 
         // Only set form data if profile hasn't been loaded yet
         if (!profileLoaded) {
@@ -155,7 +147,7 @@ const Profile = () => {
       try {
         const res = await apiService.get(apiEndpoints.auth.avatar);
         if (res.success && res.avatar_url) {
-          setAvatarUrl(withCacheBust(`${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}`));
+          setAvatarUrl(`${import.meta.env.VITE_API_BASE_URL}${res.avatar_url}`);
           if (!user?.avatar_url) {
             updateUser({ avatar_url: res.avatar_url });
           }
@@ -205,9 +197,6 @@ const Profile = () => {
       setLeaveLoading(true);
       try {
         const res = await apiService.get(apiEndpoints.leaveQuota.me);
-        if (res.debug) {
-          console.log('LEAVE QUOTA DEBUG:', res.debug);
-        }
         if (res.success) {
           setLeaveQuota(res.data);
         } else {
@@ -326,7 +315,6 @@ const Profile = () => {
         setTimeout(() => {
           setAvatarUrl(newUrl);
           setAvatarKey(prev => prev + 1);
-          setForceRefresh(prev => prev + 1);
           updateUser({ avatar_url: res.avatar_url });
         }, 50);
       }
@@ -341,7 +329,6 @@ const Profile = () => {
       // Clear current avatar
       setAvatarUrl(null);
       setAvatarKey(prev => prev + 1);
-      setForceRefresh(prev => prev + 1);
       
       // Wait a moment then fetch fresh avatar
       setTimeout(async () => {
@@ -349,6 +336,53 @@ const Profile = () => {
       }, 100);
     } catch (err) {
       console.error('Failed to force complete avatar refresh:', err);
+    }
+  };
+
+  // Refresh page data when cancel is clicked
+  const handleCancel = async () => {
+    setIsEditing(false);
+    
+    // Fetch fresh profile data
+    try {
+      setLoading(true);
+      const res = await apiService.get(apiEndpoints.auth.profile);
+      const data = res.data;
+      
+      setFormData({
+        full_name: data.full_name || '',
+        email: data.email || '',
+        department: data.department?.id || '',
+        position: data.position?.id || '',
+        gender: data.gender || '',
+        dob: data.dob || '',
+        phone_number: data.phone_number || '',
+        start_work: data.start_work || '',
+        end_work: data.end_work || '',
+      });
+      
+      // Update user context
+      updateUser({
+        full_name: data.full_name,
+        email: data.email,
+        department: data.department,
+        position: data.position,
+        gender: data.gender,
+        dob: data.dob,
+        phone_number: data.phone_number,
+        start_work: data.start_work,
+        end_work: data.end_work,
+      });
+      
+      setProfileLoaded(true);
+    } catch (err: any) {
+      console.error('Failed to refresh profile data:', err);
+      if (err.response?.status === 401) {
+        showSessionExpiredDialog();
+        return;
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -374,7 +408,6 @@ const Profile = () => {
         setTimeout(() => {
           setAvatarUrl(finalUrl);
           setAvatarKey(prev => prev + 1);
-          setForceRefresh(prev => prev + 1);
           updateUser({ avatar_url: res.avatar_url });
         }, 100);
         
@@ -413,13 +446,9 @@ const Profile = () => {
     const reader = new FileReader();
     reader.onload = (e) => {
       const dataUrl = e.target?.result as string;
-      console.log('Profile: File selected, dataUrl length:', dataUrl?.length);
       setSelectedImageSrc(dataUrl);
       if (setAvatarPreviewUrl) {
         setAvatarPreviewUrl(dataUrl);
-        console.log('Profile: avatarPreviewUrl set to context, length:', dataUrl?.length);
-      } else {
-        console.log('Profile: setAvatarPreviewUrl is undefined!');
       }
     };
     reader.readAsDataURL(file);
@@ -484,7 +513,6 @@ const Profile = () => {
       if (user?.id && String(data.userId) === String(user.id)) {
         setAvatarUrl(withCacheBust(`${baseUrl}${data.avatar_url}`));
         setAvatarKey(prev => prev + 1);
-        setAvatarKey(prev => prev + 1);
         updateUser({ avatar_url: data.avatar_url });
       }
     };
@@ -497,7 +525,6 @@ const Profile = () => {
         const data = JSON.parse(e.newValue);
         if (user?.id && String(data.userId) === String(user.id)) {
           setAvatarUrl(withCacheBust(`${baseUrl}${data.avatar_url}`));
-          setAvatarKey(prev => prev + 1);
           setAvatarKey(prev => prev + 1);
           updateUser({ avatar_url: data.avatar_url });
         }
@@ -593,7 +620,6 @@ const Profile = () => {
                     end_work: (positions.find(p => String(p.id) === formData.position)?.require_enddate ? (formData.end_work || null) : null),
       };
       
-      console.log('Sending profile update data:', requestData);
       
       const res = await apiService.put(apiEndpoints.auth.profile, requestData);
       if (res.success) {
@@ -624,7 +650,6 @@ const Profile = () => {
           ...(avatarUploadedUrl ? { avatar_url: avatarUploadedUrl } : {}),
         });
         
-        console.log('Profile updated successfully:', updatedData);
         setIsEditing(false);
         setPendingAvatarFile(null);
         setPendingCroppedFile(null);
@@ -645,13 +670,6 @@ const Profile = () => {
     }
   };
 
-  // Debug output for leaveQuota and allLeaveTypes
-  useEffect(() => {
-    if (!leaveLoading) {
-      console.log('leaveQuota:', leaveQuota);
-      console.log('allLeaveTypes:', allLeaveTypes);
-    }
-  }, [leaveQuota, allLeaveTypes, leaveLoading]);
 
   // Define a color palette for leave types
   const leaveTypeColors = [
@@ -708,16 +726,13 @@ const Profile = () => {
         <div className="flex flex-col items-center -mt-16">
           <div className="relative">
 
-            <Avatar key={`${avatarUrl}-${avatarKey}-${forceRefresh}`} className="h-28 w-28 shadow-lg border-4 border-white bg-white/80 backdrop-blur rounded-full">
+            <Avatar key={`${avatarUrl}-${avatarKey}`} className="h-28 w-28 shadow-lg border-4 border-white bg-white/80 backdrop-blur rounded-full">
               <AvatarImage 
-                src={avatarUrl ? `${avatarUrl}&force=${forceRefresh}&t=${Date.now()}` : undefined} 
-                onError={() => {
-                  // If image fails to load, force a refresh
-                  console.log('Avatar image failed to load, forcing refresh');
-                  setForceRefresh(prev => prev + 1);
-                }}
-                onLoad={() => {
-                  console.log('Avatar image loaded successfully');
+                src={avatarUrl ? avatarUrl : undefined} 
+                onError={(e) => {
+                  // If image fails to load, set a fallback and don't retry infinitely
+                  const target = e.target as HTMLImageElement;
+                  target.style.display = 'none';
                 }}
                 alt="Profile picture"
                 className="object-cover"
@@ -925,7 +940,11 @@ const Profile = () => {
                       id="phone_number"
                       type="tel"
                       value={formData.phone_number}
-                      onChange={(e) => setFormData(prev => ({ ...prev, phone_number: e.target.value }))}
+                      onChange={(e) => {
+                        // อนุญาตเฉพาะตัวเลขและเครื่องหมาย + - ( ) และช่องว่าง
+                        const value = e.target.value.replace(/[^0-9+\-() ]/g, '');
+                        setFormData(prev => ({ ...prev, phone_number: value }));
+                      }}
                       placeholder={t('employee.enterPhoneNumber')}
                       className="input-blue"
                       disabled={!isEditing}
@@ -985,7 +1004,7 @@ const Profile = () => {
                            </>
                          )}
                        </Button>
-                       <Button type="button" variant="outline" className="btn-blue-outline px-6 py-2 text-lg" onClick={() => { setIsEditing(false); }} disabled={saving || loading}>
+                       <Button type="button" variant="outline" className="btn-blue-outline px-6 py-2 text-lg" onClick={handleCancel} disabled={saving || loading}>
                          {t('common.cancel')}
                        </Button>
                      </>
@@ -1045,13 +1064,6 @@ const Profile = () => {
 
             <TabsContent value="settings" className="p-8 bg-white/90 rounded-3xl">
               <div className="space-y-6">
-                <div className="flex items-center justify-between p-6 border rounded-2xl bg-blue-50 shadow-sm">
-                  <div>
-                    <h3 className="font-semibold text-blue-900 flex items-center gap-2"><Mail className="h-5 w-5 text-blue-400" /> {t('profile.emailNotifications')}</h3>
-                    <p className="text-sm text-gray-500 mt-1">{t('profile.emailNotificationsDesc')}</p>
-                  </div>
-                  <Button variant="outline" size="sm" className="btn-blue-outline">{t('common.enable')}</Button>
-                </div>
                 <div className="flex items-center justify-between p-6 border rounded-2xl bg-blue-50 shadow-sm">
                   <div>
                     <h3 className="font-semibold text-blue-900 flex items-center gap-2"><Bell className="h-5 w-5 text-blue-400" /> {t('profile.pushNotifications')}</h3>

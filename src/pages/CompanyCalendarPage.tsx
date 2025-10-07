@@ -6,12 +6,11 @@ import { Switch } from '@/components/ui/switch';
 import { getAllThaiHolidays } from '@/constants/getThaiHolidays';
 import { monthNames } from '@/constants/common';
 import { apiService } from '@/lib/api';
+import { getDaysInMonth } from '@/lib/dateUtils';
 import { apiEndpoints } from '@/constants/api';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 
-function getDaysInMonth(year: number, month: number) {
-  return new Date(year, month + 1, 0).getDate();
-}
+// getDaysInMonth moved to src/lib/dateUtils
 
 interface CompanyEvent {
   id: string;

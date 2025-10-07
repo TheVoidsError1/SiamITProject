@@ -25,7 +25,7 @@ import { formatDateLocalized } from '../lib/utils';
 
 // Note: Local inline types and helpers removed if unused
 
-const AdminDashboard = () => {
+const ApproveLeave = () => {
   const { t, i18n } = useTranslation();
   const { toast } = useToast();
   const { user, showSessionExpiredDialog } = useAuth();
@@ -593,16 +593,16 @@ const AdminDashboard = () => {
     try {
       const data = await apiService.delete(apiEndpoints.leave.delete(deletingRequest.id), undefined, showSessionExpiredDialog);
       if (data.success || data.status === 'success') {
-        showToastMessage.crud.deleteSuccess('ใบลา', t);
+        showToastMessage.crud.deleteSuccess(t('leave.leaveRequest'), t);
         setShowDeleteDialog(false);
         setDeletingRequest(null);
         refreshLeaveRequests();
         fetchHistoryRequests();
       } else {
-        showToastMessage.crud.deleteError('ใบลา', data.message, t);
+        showToastMessage.crud.deleteError(t('leave.leaveRequest'), data.message, t);
       }
     } catch (e) {
-      showToastMessage.crud.deleteError('ใบลา', undefined, t);
+      showToastMessage.crud.deleteError(t('leave.leaveRequest'), undefined, t);
     }
   };
 
@@ -1063,7 +1063,7 @@ const AdminDashboard = () => {
                     value={pendingPendingBackdatedFilter}
                     onChange={e => setPendingPendingBackdatedFilter(e.target.value)}
                   >
-                    <option value="all">{t('leave.allBackdated', 'All Types')}</option>
+                    <option value="all">{t('leave.allBackdated')}</option>
                     <option value="backdated">{t('leave.backdatedOnly')}</option>
                     <option value="normal">{t('leave.notBackdatedOnly')}</option>
                   </select>
@@ -1115,7 +1115,12 @@ const AdminDashboard = () => {
                           style={{ animationDelay: `${0.1 + idx * 0.07}s` }}
                         >
                           <div className="flex-1 min-w-0">
-                            <div className="font-bold text-lg text-blue-900 mb-1 truncate animate-slide-in-left">{typeof request.user === "string" ? JSON.parse(request.user).User_name : request.user?.User_name || "-"}</div>
+                            <div className="font-bold text-lg text-blue-900 mb-1 truncate animate-slide-in-left">
+                              {(() => {
+                                const userName = typeof request.user === "string" ? JSON.parse(request.user).name : request.user?.name;
+                                return userName === 'deleted_user' ? t('admin.deletedUser') : (userName || "-");
+                              })()}
+                            </div>
                             {/* ประเภทการลา (leaveType) */}
                             <span className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold mb-1 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                               {request.leaveTypeName_th && request.leaveTypeName_en 
@@ -1123,19 +1128,21 @@ const AdminDashboard = () => {
                                 : getAdminLeaveTypeDisplay(request.leaveType || request.leaveTypeName)
                               }
                             </span>
+                            <Badge className="ml-2 bg-yellow-100 text-yellow-700 border-yellow-200 rounded-full px-3 py-1 text-xs font-bold shadow animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+                              {t('admin.pending')}
+                            </Badge>
                             {(request.backdated === 1 || request.backdated === "1" || request.backdated === true) && (
-                              <Badge className="ml-2 bg-purple-100 text-purple-800 border-purple-200 rounded-full px-3 py-1 text-xs font-bold shadow animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+                              <Badge className="ml-2 bg-purple-100 text-purple-800 border-purple-200 rounded-full px-3 py-1 text-xs font-bold shadow animate-fade-in-up" style={{ animationDelay: '0.35s' }}>
                                 {t('leave.backdated')}
                               </Badge>
                             )}
                             <div className="text-sm text-gray-700 mb-1 animate-fade-in-up" style={{ animationDelay: '0.3s' }}>{t('leave.date')}: {request.startDate} - {request.endDate}</div>
                           </div>
-                          <Badge variant="outline" className="text-xs font-bold rounded-full px-4 py-1 bg-yellow-100 text-yellow-700 border-yellow-200 shadow animate-fade-in-up" style={{ animationDelay: '0.3s' }}>{t('admin.pending')}</Badge>
                           <div className="flex gap-2 flex-shrink-0">
                             <Button 
                               size="sm" 
                               className="rounded-full px-4 py-2 font-bold bg-gradient-to-r from-green-500 to-emerald-400 text-white shadow hover:scale-105 transition animate-bounce-in btn-press hover-glow"
-                              onClick={() => handleApprove(request.id, typeof request.user === "string" ? JSON.parse(request.user).User_name : request.user?.User_name || "")}
+                              onClick={() => handleApprove(request.id, typeof request.user === "string" ? JSON.parse(request.user).name : request.user?.name || "")}
                             >
                               <CheckCircle className="w-4 h-4 mr-1" />{t('admin.approve')}
                             </Button>
@@ -1143,7 +1150,7 @@ const AdminDashboard = () => {
                               size="sm" 
                               variant="destructive"
                               className="rounded-full px-4 py-2 font-bold shadow hover:scale-105 transition animate-bounce-in btn-press hover-glow"
-                              onClick={() => handleReject(request.id, typeof request.user === "string" ? JSON.parse(request.user).User_name : request.user?.User_name || "")}
+                              onClick={() => handleReject(request.id, typeof request.user === "string" ? JSON.parse(request.user).name : request.user?.name || "")}
                             >
                               <XCircle className="w-4 h-4 mr-1" />{t('admin.reject')}
                             </Button>
@@ -1336,7 +1343,7 @@ const AdminDashboard = () => {
                     value={pendingHistoryBackdatedFilter}
                     onChange={e => setPendingHistoryBackdatedFilter(e.target.value)}
                   >
-                    <option value="all">{t('leave.allBackdated', 'All Types')}</option>
+                    <option value="all">{t('leave.allBackdated')}</option>
                     <option value="backdated">{t('leave.backdatedOnly')}</option>
                     <option value="normal">{t('leave.notBackdatedOnly')}</option>
                   </select>
@@ -1407,27 +1414,11 @@ const AdminDashboard = () => {
                             className={`relative glass bg-gradient-to-br from-white/80 via-blue-50/80 to-indigo-100/80 border-0 rounded-2xl p-5 shadow-md hover:shadow-xl transition-all flex flex-col md:flex-row md:items-center md:justify-between gap-4 animate-fade-in-up hover-lift`}
                             style={{ animationDelay: `${0.1 + idx * 0.07}s` }}
                           >
-                            <Badge
-                              className={
-                                (request.status === "approved"
-                                  ? "bg-green-100 text-green-800 border-green-200"
-                                  : "bg-red-100 text-red-800 border-red-200") +
-                                " flex items-center absolute right-6 top-6 rounded-full px-3 py-1 font-bold shadow animate-fade-in-up"
-                              }
-                              style={{ animationDelay: '0.2s' }}
-                            >
-                              {request.status === "approved" ? (
-                                <>
-                                  <CheckCircle className="w-4 h-4 mr-1" /> {t('admin.approved')}
-                                </>
-                              ) : (
-                                <>
-                                  <XCircle className="w-4 h-4 mr-1" /> {t('admin.rejected')}
-                                </>
-                              )}
-                            </Badge>
+                            {/* ย้ายสถานะมาอยู่ข้างประเภทการลา */}
                             <div className="flex-1 min-w-0">
-                              <div className="font-bold text-lg text-blue-900 mb-1 truncate animate-slide-in-left">{request.user?.User_name || "-"}</div>
+                              <div className="font-bold text-lg text-blue-900 mb-1 truncate animate-slide-in-left">
+                                {request.user?.name === 'deleted_user' ? t('admin.deletedUser') : (request.user?.name || "-")}
+                              </div>
                               {/* ประเภทการลา (leaveType) */}
                                                           <span className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold mb-1 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                               {request.leaveTypeName_th && request.leaveTypeName_en 
@@ -1435,6 +1426,15 @@ const AdminDashboard = () => {
                                 : getAdminLeaveTypeDisplay(request.leaveType || request.leaveTypeName)
                               }
                             </span>
+                            {request.status === "approved" ? (
+                              <Badge className="ml-2 bg-green-100 text-green-800 border-green-200 rounded-full px-3 py-1 text-xs font-bold shadow inline-flex items-center animate-fade-in-up" style={{ animationDelay: '0.25s' }}>
+                                <CheckCircle className="w-3.5 h-3.5 mr-1" /> {t('admin.approved')}
+                              </Badge>
+                            ) : (
+                              <Badge className="ml-2 bg-red-100 text-red-800 border-red-200 rounded-full px-3 py-1 text-xs font-bold shadow inline-flex items-center animate-fade-in-up" style={{ animationDelay: '0.25s' }}>
+                                <XCircle className="w-3.5 h-3.5 mr-1" /> {t('admin.rejected')}
+                              </Badge>
+                            )}
                               {(request.backdated === 1 || request.backdated === "1" || request.backdated === true) && (
                                 <Badge className="ml-2 bg-purple-100 text-purple-800 border-purple-200 rounded-full px-3 py-1 text-xs font-bold shadow animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
                                   {t('leave.backdated')}
@@ -1659,7 +1659,7 @@ const AdminDashboard = () => {
           </DialogHeader>
           <DialogFooter className="flex gap-2 justify-end mt-4">
             <Button variant="outline" onClick={() => setShowDeleteDialog(false)}>{t('common.cancel')}</Button>
-            <Button variant="destructive" onClick={confirmDelete}>{t('common.confirm', 'ยืนยัน')}</Button>
+            <Button variant="destructive" onClick={confirmDelete}>{t('common.confirm')}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1667,4 +1667,4 @@ const AdminDashboard = () => {
   );
 };
 
-export default AdminDashboard;
+export default ApproveLeave;

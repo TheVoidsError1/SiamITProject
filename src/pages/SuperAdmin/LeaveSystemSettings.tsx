@@ -28,7 +28,7 @@ import { QUOTA_RESET_STRATEGIES, POSITION_SETTINGS, CLEANUP_OPERATIONS } from '@
 // Mock data for demonstration
 // Remove mockDepartments
 
-const ManageAll: React.FC = () => {
+const LeaveSystemSettings: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { user } = useAuth();
 
@@ -330,7 +330,6 @@ const ManageAll: React.FC = () => {
           quotasForBackend[lt.id] = inlineEdit.quotas[lt.id];
         }
       });
-      console.log('Submitting quotasForBackend:', quotasForBackend);
       const data = await apiService.put(`${apiEndpoints.positionsWithQuotas}/${inlineEdit.id}`, {
         position_name_en: inlineEdit.name_en,
         position_name_th: inlineEdit.name_th,
@@ -496,8 +495,6 @@ const ManageAll: React.FC = () => {
     lt => lt.leave_type_en?.toLowerCase() !== 'emergency' && lt.leave_type_th !== ''
   );
 
-  // Debug: Log leave type keys for quota mapping
-  console.log('Filtered leave types for quota:', filteredLeaveTypes.map(lt => ({ id: lt.id, leave_type: lt.leave_type, leave_type_en: lt.leave_type_en, leave_type_th: lt.leave_type_th })));
   const handlePositionSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setPositionError(null);
@@ -1377,4 +1374,8 @@ const ManageAll: React.FC = () => {
   );
 };
 
+<<<<<<< HEAD:src/pages/SuperAdmin/ManageAll.tsx
 export default ManageAll;
+=======
+export default LeaveSystemSettings; 
+>>>>>>> 1d2208abf013df777330a36be95426ccc78280a3:src/pages/SuperAdmin/LeaveSystemSettings.tsx

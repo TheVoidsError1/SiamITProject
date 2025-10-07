@@ -140,23 +140,81 @@ export function handleImageClick(
 }
 
 /**
- * Utility function to handle file selection
+ * Utility function to handle file selection with validation
  * @param e - The file input change event
  * @param setFile - Function to set selected file
  * @param setPreview - Function to set preview URL
+ * @param setError - Function to set error message
+ * @param setIsValidFile - Function to set file validation status
  */
 export function handleFileSelect(
   e: React.ChangeEvent<HTMLInputElement>,
   setFile: (file: File | null) => void,
-  setPreview: (url: string | null) => void
+  setPreview: (url: string | null) => void,
+  setError?: (error: string | null) => void,
+  setIsValidFile?: (isValid: boolean) => void
 ): void {
   const file = e.target.files?.[0];
   if (file) {
+    // ตรวจสอบประเภทไฟล์ - อนุญาตเฉพาะไฟล์รูปภาพ
+    const allowedImageTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    
+    if (!allowedImageTypes.includes(file.type)) {
+      setError?.('กรุณาเลือกไฟล์รูปภาพเท่านั้น (JPG, PNG, GIF, WebP)');
+      setIsValidFile?.(false);
+      setFile(null);
+      setPreview(null);
+      // รีเซ็ต input file
+      e.target.value = '';
+      return;
+    }
+    
+    // ตรวจสอบขนาดไฟล์ (จำกัดที่ 10MB)
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      setError?.('ขนาดไฟล์ใหญ่เกินไป กรุณาเลือกไฟล์ที่มีขนาดไม่เกิน 10MB');
+      setIsValidFile?.(false);
+      setFile(null);
+      setPreview(null);
+      e.target.value = '';
+      return;
+    }
+    
+    // ไฟล์ผ่านการตรวจสอบ
+    setError?.(null);
+    setIsValidFile?.(true);
     setFile(file);
+    
     if (file.type.startsWith('image/')) {
       const url = URL.createObjectURL(file);
       setPreview(url);
     }
+  }
+}
+
+/**
+ * Utility function to remove selected file
+ * @param setFile - Function to set selected file to null
+ * @param setPreview - Function to set preview URL to null
+ * @param setError - Function to clear error message
+ * @param setIsValidFile - Function to set file validation status
+ * @param fileInputRef - Reference to file input element
+ */
+export function removeSelectedFile(
+  setFile: (file: File | null) => void,
+  setPreview: (url: string | null) => void,
+  setError?: (error: string | null) => void,
+  setIsValidFile?: (isValid: boolean) => void,
+  fileInputRef?: React.RefObject<HTMLInputElement>
+): void {
+  setFile(null);
+  setPreview(null);
+  setError?.(null);
+  setIsValidFile?.(false);
+  
+  // รีเซ็ต file input
+  if (fileInputRef?.current) {
+    fileInputRef.current.value = '';
   }
 }
 

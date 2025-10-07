@@ -5,7 +5,7 @@ module.exports = (AppDataSource) => {
   const router = express.Router();
   // Create base controller instances
   const userController = new BaseController('User');
-  const adminController = new BaseController('Admin');
+  const adminController = new BaseController('User');
 
   /**
    * @swagger
@@ -36,7 +36,7 @@ module.exports = (AppDataSource) => {
    *                     properties:
    *                       id:
    *                         type: string
-   *                       User_name:
+   *                       name:
    *                         type: string
    *                       department:
    *                         type: string
@@ -67,7 +67,7 @@ module.exports = (AppDataSource) => {
    *           schema:
    *             type: object
    *             properties:
-   *               User_name:
+   *               name:
    *                 type: string
    *               department:
    *                 type: string
@@ -88,7 +88,7 @@ module.exports = (AppDataSource) => {
    *                   properties:
    *                     id:
    *                       type: string
-   *                     User_name:
+   *                     name:
    *                       type: string
    *                     department:
    *                       type: string
@@ -99,8 +99,8 @@ module.exports = (AppDataSource) => {
    */
   router.post('/users', async (req, res) => {
     try {
-      const { User_name, department, position } = req.body;
-      const user = await userController.create(AppDataSource, { User_name, department, position });
+      const { name, department, position } = req.body;
+      const user = await userController.create(AppDataSource, { name, department, position });
       sendSuccess(res, user, 'Create user success', 201);
     } catch (err) {
       sendError(res, err.message, 500);
@@ -194,7 +194,7 @@ module.exports = (AppDataSource) => {
    *                     properties:
    *                       id:
    *                         type: string
-   *                       admin_name:
+   *                       name:
    *                         type: string
    *                       department:
    *                         type: string
@@ -205,7 +205,14 @@ module.exports = (AppDataSource) => {
    */
   router.get('/admins', async (req, res) => {
     try {
-      const admins = await adminController.findAll(AppDataSource);
+      // Get users with admin or superadmin role from unified User table
+      const userRepo = AppDataSource.getRepository('User');
+      const admins = await userRepo.find({
+        where: [
+          { Role: 'admin' },
+          { Role: 'superadmin' }
+        ]
+      });
       sendSuccess(res, admins, 'Fetch admins success');
     } catch (err) {
       sendError(res, err.message, 500);
@@ -229,7 +236,7 @@ module.exports = (AppDataSource) => {
    *                 type: string
    *               password:
    *                 type: string
-   *               admin_name:
+   *               name:
    *                 type: string
    *               department:
    *                 type: string
@@ -257,9 +264,8 @@ module.exports = (AppDataSource) => {
 
   router.post('/admins/register', async (req, res) => {
     try {
-      const { email, password, admin_name, department, position } = req.body;
-      const adminRepo = AppDataSource.getRepository('Admin');
-      const processRepo = AppDataSource.getRepository('ProcessCheck');
+      const { email, password, name, department, position } = req.body;
+      const processRepo = AppDataSource.getRepository('User');
 
       // ตรวจสอบ email ซ้ำ
       const exist = await processRepo.findOneBy({ Email: email });
@@ -270,33 +276,27 @@ module.exports = (AppDataSource) => {
       // hash password
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      // สร้าง admin ก่อน เพื่อให้ได้ id
-      const admin = adminRepo.create({
-        id: uuidv4(),
-        admin_name,
-        department,
-        position
-      });
-      await adminRepo.save(admin);
-
       // สร้าง JWT Token
+      const adminId = uuidv4();
       const token = jwt.sign(
-        { adminId: admin.id, email: email },
+        { adminId: adminId, email: email },
         config.server.jwtSecret,
         { expiresIn: config.server.jwtExpiresIn }
       );
 
-      // สร้าง process_check พร้อม Token, Repid, role=admin
-      const processCheck = processRepo.create({
-        id: uuidv4(),
+      // สร้าง admin ใน unified users table (single row with all data)
+      const admin = processRepo.create({
+        id: adminId,
+        name,
         Email: email,
         Password: hashedPassword,
         Token: token,
-        Repid: admin.id,
         Role: 'admin',
+        department,
+        position,
         avatar_url: null
       });
-      await processRepo.save(processCheck);
+      await processRepo.save(admin);
 
       sendSuccess(res, { ...admin, token, repid: admin.id }, 'Create admin success', 201);
     } catch (err) {
@@ -348,8 +348,8 @@ module.exports = (AppDataSource) => {
   router.delete('/admins/:id', async (req, res) => {
     try {
       const { id } = req.params;
-      const adminRepo = AppDataSource.getRepository('Admin');
       const { deleteUserComprehensive } = require('../utils/userDeletionUtils');
+      const adminRepo = AppDataSource.getRepository('User'); // Admin users are stored in User table
 
       const result = await deleteUserComprehensive(AppDataSource, id, 'admin', adminRepo);
       

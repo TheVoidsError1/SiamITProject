@@ -120,10 +120,12 @@ const createValidationError = (errors) => {
 /**
  * Send validation error response
  * @param {Object} res - Express response object
- * @param {Array} errors - Validation errors array
+ * @param {string|Array} errors - Validation error message or errors array
  */
 const sendValidationError = (res, errors) => {
-  res.status(400).json(createValidationError(errors));
+  // If errors is a string, wrap it in an array
+  const errorArray = Array.isArray(errors) ? errors : [errors];
+  res.status(400).json(createValidationError(errorArray));
 };
 
 /**

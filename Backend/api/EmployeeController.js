@@ -44,19 +44,18 @@ module.exports = (AppDataSource) => {
 
   router.get('/employees', async (req, res) => {
     try {
-      const processRepo = AppDataSource.getRepository('ProcessCheck');
-      const adminRepo = AppDataSource.getRepository('Admin');
       const userRepo = AppDataSource.getRepository('User');
+      const adminRepo = AppDataSource.getRepository('User'); // Admin users are stored in User table
+      const superadminRepo = AppDataSource.getRepository('User'); // Superadmin users are also stored in User table
       // Language detection removed - frontend will handle i18n
 
-      // ดึง process_check ทั้งหมด
-      const allProcess = await processRepo.find();
-      console.log('allProcess:', allProcess); // log ข้อมูลทั้งหมด
+      // ดึงข้อมูลผู้ใช้ทั้งหมดจาก table User โดยตรง
+      const allUsers = await userRepo.find();
+      console.log('allUsers:', allUsers); // log ข้อมูลทั้งหมด
       const results = [];
 
-      for (const proc of allProcess) {
-        let profile = null;
-        let name = '';
+      for (const user of allUsers) {
+        let name = user.name || '';
         let position = '';
         let position_id = '';
         let position_name_th = '';
@@ -65,63 +64,25 @@ module.exports = (AppDataSource) => {
         let department_id = '';
         let department_name_th = '';
         let department_name_en = '';
-        let id = '';
-        let role = proc.Role;
+        let id = user.id;
+        let role = user.Role;
         
-        if (proc.Role === 'admin') {
-          profile = await adminRepo.findOneBy({ id: proc.Repid });
-          if (profile) {
-            name = profile.admin_name;
-            // ดึงชื่อ position และ department
-            const posEntity = await AppDataSource.getRepository('Position').findOne({ where: { id: profile.position } });
-            const deptEntity = await AppDataSource.getRepository('Department').findOne({ where: { id: profile.department } });
-            position_id = profile.position || '';
-            position = profile.position || ''; // เก็บ ID แทนชื่อ
-            position_name_th = posEntity ? posEntity.position_name_th : '';
-            position_name_en = posEntity ? posEntity.position_name_en : '';
-            department_id = profile.department || '';
-            department = profile.department || ''; // เก็บ ID แทนชื่อ
-            department_name_th = deptEntity ? deptEntity.department_name_th : '';
-            department_name_en = deptEntity ? deptEntity.department_name_en : '';
-            id = profile.id;
-          }
-        } else if (proc.Role === 'superadmin') {
-          const superadminRepo = AppDataSource.getRepository('SuperAdmin');
-          profile = await superadminRepo.findOneBy({ id: proc.Repid });
-          if (profile) {
-            name = profile.superadmin_name;
-            const posEntity = await AppDataSource.getRepository('Position').findOne({ where: { id: profile.position } });
-            const deptEntity = await AppDataSource.getRepository('Department').findOne({ where: { id: profile.department } });
-            position_id = profile.position || '';
-            position = profile.position || ''; // เก็บ ID แทนชื่อ
-            position_name_th = posEntity ? posEntity.position_name_th : '';
-            position_name_en = posEntity ? posEntity.position_name_en : '';
-            department_id = profile.department || '';
-            department = profile.department || ''; // เก็บ ID แทนชื่อ
-            department_name_th = deptEntity ? deptEntity.department_name_th : '';
-            department_name_en = deptEntity ? deptEntity.department_name_en : '';
-            id = profile.id;
-          }
-        } else {
-          profile = await userRepo.findOneBy({ id: proc.Repid });
-          if (profile) {
-            name = profile.User_name;
-            // ดึงชื่อ position และ department
-            const posEntity = await AppDataSource.getRepository('Position').findOne({ where: { id: profile.position } });
-            const deptEntity = await AppDataSource.getRepository('Department').findOne({ where: { id: profile.department } });
-            position_id = profile.position || '';
-            position = profile.position || ''; // เก็บ ID แทนชื่อ
-            position_name_th = posEntity ? posEntity.position_name_th : '';
-            position_name_en = posEntity ? posEntity.position_name_en : '';
-            department_id = profile.department || '';
-            department = profile.department || ''; // เก็บ ID แทนชื่อ
-            department_name_th = deptEntity ? deptEntity.department_name_th : '';
-            department_name_en = deptEntity ? deptEntity.department_name_en : '';
-            id = profile.id;
-          }
+        // ดึงชื่อ position และ department
+        if (user.position) {
+          const posEntity = await AppDataSource.getRepository('Position').findOne({ where: { id: user.position } });
+          position_id = user.position || '';
+          position = user.position || ''; // เก็บ ID แทนชื่อ
+          position_name_th = posEntity ? posEntity.position_name_th : '';
+          position_name_en = posEntity ? posEntity.position_name_en : '';
         }
-        // ถ้าไม่มี profile ให้ข้าม
-        if (!profile) continue;
+        
+        if (user.department) {
+          const deptEntity = await AppDataSource.getRepository('Department').findOne({ where: { id: user.department } });
+          department_id = user.department || '';
+          department = user.department || ''; // เก็บ ID แทนชื่อ
+          department_name_th = deptEntity ? deptEntity.department_name_th : '';
+          department_name_en = deptEntity ? deptEntity.department_name_en : '';
+        }
 
         // --- เพิ่มส่วนนี้ ---
         // 1. ดึง leave quota ตาม position (แบบใหม่)
@@ -130,7 +91,7 @@ module.exports = (AppDataSource) => {
           const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
           const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
           // ดึง leaveQuota ทั้งหมดของตำแหน่งนี้
-          const quotas = await leaveQuotaRepo.find({ where: { positionId: profile.position } });
+          const quotas = await leaveQuotaRepo.find({ where: { positionId: user.position } });
           // รวม quota ทุกประเภท (หรือเลือกเฉพาะประเภทที่ต้องการ)
           totalLeaveDays = quotas.reduce((sum, q) => sum + (q.quota || 0), 0);
         } catch (e) { totalLeaveDays = 0; }
@@ -157,18 +118,18 @@ module.exports = (AppDataSource) => {
         results.push({
           id,
           name,
-          email: proc.Email,
+          email: user.Email,
           position: position_id, // ส่ง ID สำหรับ filtering
           position_name_th,
           position_name_en,
           department: department_id, // ส่ง ID สำหรับ filtering
           department_name_th,
           department_name_en,
-          status: proc.Role,
+          status: user.Role,
           role,
           usedLeaveDays,
           totalLeaveDays,
-          avatar: proc.avatar_url || null
+          avatar: user.avatar_url || null
         });
       }
       sendSuccess(res, results, 'Fetch all users success');
@@ -181,9 +142,9 @@ module.exports = (AppDataSource) => {
   router.get('/employee/:id', async (req, res) => {
     try {
       const { id } = req.params;
-      const processRepo = AppDataSource.getRepository('ProcessCheck');
-      const adminRepo = AppDataSource.getRepository('Admin');
       const userRepo = AppDataSource.getRepository('User');
+      const adminRepo = AppDataSource.getRepository('User'); // Admin users are stored in User table
+      const superadminRepo = AppDataSource.getRepository('User'); // Superadmin users are also stored in User table
       const departmentRepo = AppDataSource.getRepository('Department');
       const positionRepo = AppDataSource.getRepository('Position');
       const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
@@ -191,26 +152,14 @@ module.exports = (AppDataSource) => {
       const leaveRequestRepo = AppDataSource.getRepository('LeaveRequest');
       // Language detection removed - frontend will handle i18n
 
-      // Try to find in admin first
-      let profile = await adminRepo.findOne({ where: { id } });
-      let role = 'admin';
+      // Find user in unified User table
+      const profile = await userRepo.findOne({ where: { id } });
       if (!profile) {
-        profile = await userRepo.findOne({ where: { id } });
-        role = 'employee';
-      }
-      if (!profile) {
-        // Try superadmin
-        const superadminRepo = AppDataSource.getRepository('SuperAdmin');
-        profile = await superadminRepo.findOne({ where: { id } });
-        role = 'superadmin';
-      }
-      if (!profile) {
-        return sendNotFound(res, 'User/Admin/SuperAdmin not found');
+        return sendNotFound(res, 'User not found');
       }
 
-      // Find processCheck for email (if exists)
-      const processCheck = await processRepo.findOne({ where: { Repid: id } });
-      const email = processCheck ? processCheck.Email : (profile.email || '');
+      const role = profile.Role;
+      const email = profile.Email || '';
 
       // Get department and position names (i18n key or readable)
       let department = '';
@@ -238,7 +187,7 @@ module.exports = (AppDataSource) => {
       }
 
       // Password field (for future editing)
-      const password = processCheck ? processCheck.Password : '';
+      const password = profile.Password || '';
 
       // --- เพิ่มส่วนนี้: คำนวณ usedLeaveDays/totalLeaveDays ---
       let totalLeaveDays = 0;
@@ -275,7 +224,7 @@ module.exports = (AppDataSource) => {
         success: true,
         data: {
           id,
-          name: profile.admin_name || profile.User_name || profile.superadmin_name || '',
+          name: profile.name || '',
           email,
           password,
           position: position,
@@ -297,7 +246,7 @@ module.exports = (AppDataSource) => {
           internEndDate: profile.end_work || profile.internEndDate || null,
           usedLeaveDays,
           totalLeaveDays,
-          avatar: processCheck ? processCheck.avatar_url || null : null
+          avatar: profile.avatar_url || null
         }
       });
     } catch (err) {
@@ -321,77 +270,40 @@ module.exports = (AppDataSource) => {
       const department = req.body.department_id !== undefined ? 
         (req.body.department_id && req.body.department_id.trim() !== '' ? req.body.department_id : null) : 
         (req.body.department && req.body.department.trim() !== '' ? req.body.department : null);
-      const processRepo = AppDataSource.getRepository('ProcessCheck');
-      const adminRepo = AppDataSource.getRepository('Admin');
       const userRepo = AppDataSource.getRepository('User');
-      const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+      const adminRepo = AppDataSource.getRepository('User'); // Admin users are stored in User table
+      const superadminRepo = AppDataSource.getRepository('User'); // Superadmin users are also stored in User table
       const departmentRepo = AppDataSource.getRepository('Department');
       const positionRepo = AppDataSource.getRepository('Position');
 
-      // Try to find in admin first
-      let profile = await adminRepo.findOne({ where: { id } });
-      let role = 'admin';
+      // Find user in unified User table
+      const profile = await userRepo.findOne({ where: { id } });
       if (!profile) {
-        profile = await userRepo.findOne({ where: { id } });
-        role = 'employee';
+        return sendNotFound(res, 'User not found');
       }
-      if (!profile) {
-        profile = await superadminRepo.findOne({ where: { id } });
-        role = 'superadmin';
-      }
-      if (!profile) {
-        return sendNotFound(res, 'User/Admin/SuperAdmin not found');
-      }
+
+      const role = profile.Role;
 
       // Update fields
-      if (role === 'admin') {
-        if (name !== undefined) profile.admin_name = name;
-        if (position !== undefined) profile.position = position;
-        if (department !== undefined) profile.department = department;
-        if (req.body.gender !== undefined) profile.gender = req.body.gender;
-        if (req.body.birthdate !== undefined) profile.dob = req.body.birthdate;
-        if (req.body.phone !== undefined) profile.phone_number = req.body.phone;
-        if (req.body.startWorkDate !== undefined) profile.start_work = req.body.startWorkDate;
-        if (req.body.endWorkDate !== undefined) profile.end_work = req.body.endWorkDate;
-        if (req.body.internStartDate !== undefined) profile.start_work = req.body.internStartDate;
-        if (req.body.internEndDate !== undefined) profile.end_work = req.body.internEndDate;
-        await adminRepo.save(profile);
-      } else if (role === 'superadmin') {
-        if (name !== undefined) profile.superadmin_name = name;
-        if (position !== undefined) profile.position = position;
-        if (department !== undefined) profile.department = department;
-        if (req.body.gender !== undefined) profile.gender = req.body.gender;
-        if (req.body.birthdate !== undefined) profile.dob = req.body.birthdate;
-        if (req.body.phone !== undefined) profile.phone_number = req.body.phone;
-        if (req.body.startWorkDate !== undefined) profile.start_work = req.body.startWorkDate;
-        if (req.body.endWorkDate !== undefined) profile.end_work = req.body.endWorkDate;
-        if (req.body.internStartDate !== undefined) profile.start_work = req.body.internStartDate;
-        if (req.body.internEndDate !== undefined) profile.end_work = req.body.internEndDate;
-        await superadminRepo.save(profile);
-      } else {
-        if (name !== undefined) profile.User_name = name;
-        if (position !== undefined) profile.position = position;
-        if (department !== undefined) profile.department = department;
-        if (req.body.gender !== undefined) profile.gender = req.body.gender;
-        if (req.body.birthdate !== undefined) profile.dob = req.body.birthdate;
-        if (req.body.phone !== undefined) profile.phone_number = req.body.phone;
-        if (req.body.startWorkDate !== undefined) profile.start_work = req.body.startWorkDate;
-        if (req.body.endWorkDate !== undefined) profile.end_work = req.body.endWorkDate;
-        if (req.body.internStartDate !== undefined) profile.start_work = req.body.internStartDate;
-        if (req.body.internEndDate !== undefined) profile.end_work = req.body.internEndDate;
-        await userRepo.save(profile);
+      if (name !== undefined) profile.name = name;
+      if (position !== undefined) profile.position = position;
+      if (department !== undefined) profile.department = department;
+      if (req.body.gender !== undefined) profile.gender = req.body.gender;
+      if (req.body.birthdate !== undefined) profile.dob = req.body.birthdate;
+      if (req.body.phone !== undefined) profile.phone_number = req.body.phone;
+      if (req.body.startWorkDate !== undefined) profile.start_work = req.body.startWorkDate;
+      if (req.body.endWorkDate !== undefined) profile.end_work = req.body.endWorkDate;
+      if (req.body.internStartDate !== undefined) profile.start_work = req.body.internStartDate;
+      if (req.body.internEndDate !== undefined) profile.end_work = req.body.internEndDate;
+      
+      // Update email and password in the same record
+      if (email !== undefined) profile.Email = email;
+      if (password !== undefined) {
+        const saltRounds = 10;
+        profile.Password = await bcrypt.hash(password, saltRounds);
       }
-
-      // Update processCheck for email and password
-      const processCheck = await processRepo.findOne({ where: { Repid: id } });
-      if (processCheck) {
-        if (email !== undefined) processCheck.Email = email;
-        if (password !== undefined) {
-          const saltRounds = 10;
-          processCheck.Password = await bcrypt.hash(password, saltRounds);
-        }
-        await processRepo.save(processCheck);
-      }
+      
+      await userRepo.save(profile);
 
       // Get department and position names
       let departmentName = '';
@@ -407,9 +319,9 @@ module.exports = (AppDataSource) => {
 
       sendSuccess(res, {
         id,
-        name: profile.admin_name || profile.User_name || profile.superadmin_name || '',
-        email: processCheck ? processCheck.Email : (profile.email || ''),
-        password: processCheck ? processCheck.Password : '',
+        name: profile.name || '',
+        email: profile.Email || '',
+        password: profile.Password || '',
         position: positionName,
         department: departmentName,
         role,
@@ -425,16 +337,13 @@ module.exports = (AppDataSource) => {
   router.post('/employee/:id/avatar', async (req, res) => {
     try {
       const { id } = req.params;
-      const processRepo = AppDataSource.getRepository('ProcessCheck');
-      const adminRepo = AppDataSource.getRepository('Admin');
       const userRepo = AppDataSource.getRepository('User');
-      const superadminRepo = AppDataSource.getRepository('SuperAdmin');
+      const adminRepo = AppDataSource.getRepository('User'); // Admin users are stored in User table
+      const superadminRepo = AppDataSource.getRepository('User'); // Superadmin users are also stored in User table
 
       // Validate target profile exists
-      let profile = await adminRepo.findOne({ where: { id } })
-        || await userRepo.findOne({ where: { id } })
-        || await superadminRepo.findOne({ where: { id } });
-      if (!profile) return sendNotFound(res, 'User/Admin/SuperAdmin not found');
+      const profile = await userRepo.findOne({ where: { id } });
+      if (!profile) return sendNotFound(res, 'User not found');
 
       // Handle upload
       avatarUpload.single('avatar')(req, res, async function (err) {
@@ -442,12 +351,10 @@ module.exports = (AppDataSource) => {
         if (!req.file) return sendError(res, 'No file uploaded', 400);
         try {
           const avatarUrl = `/uploads/avatars/${req.file.filename}`;
-          const proc = await processRepo.findOne({ where: { Repid: id } });
-          if (!proc) return sendNotFound(res, 'ProcessCheck not found');
           // HARD DELETE old avatar file if any
-          if (proc.avatar_url) {
+          if (profile.avatar_url) {
             try {
-              const oldPath = require('path').join(config.getAvatarsUploadPath(), require('path').basename(proc.avatar_url));
+              const oldPath = require('path').join(config.getAvatarsUploadPath(), require('path').basename(profile.avatar_url));
               
               if (fs.existsSync(oldPath)) {
                 // Force delete the old avatar file (hard delete)
@@ -455,36 +362,36 @@ module.exports = (AppDataSource) => {
                 
                 // Verify file is actually deleted
                 if (!fs.existsSync(oldPath)) {
-                  console.log(`✅ HARD DELETED old avatar: ${require('path').basename(proc.avatar_url)}`);
+                  console.log(`✅ HARD DELETED old avatar: ${require('path').basename(profile.avatar_url)}`);
                 } else {
-                  console.error(`❌ FAILED to delete old avatar: ${require('path').basename(proc.avatar_url)} - file still exists`);
+                  console.error(`❌ FAILED to delete old avatar: ${require('path').basename(profile.avatar_url)} - file still exists`);
                   
                   // Try alternative deletion method
                   try {
                     fs.rmSync(oldPath, { force: true });
-                    console.log(`✅ Force deleted old avatar: ${require('path').basename(proc.avatar_url)}`);
+                    console.log(`✅ Force deleted old avatar: ${require('path').basename(profile.avatar_url)}`);
                   } catch (forceDeleteError) {
-                    console.error(`❌ Force delete also failed for old avatar: ${require('path').basename(proc.avatar_url)}:`, forceDeleteError.message);
+                    console.error(`❌ Force delete also failed for old avatar: ${require('path').basename(profile.avatar_url)}:`, forceDeleteError.message);
                   }
                 }
               } else {
-                console.log(`⚠️  Old avatar file not found (already deleted?): ${require('path').basename(proc.avatar_url)}`);
+                console.log(`⚠️  Old avatar file not found (already deleted?): ${require('path').basename(profile.avatar_url)}`);
               }
             } catch (avatarDeleteError) {
-              console.error(`❌ Error deleting old avatar file ${require('path').basename(proc.avatar_url)}:`, avatarDeleteError.message);
+              console.error(`❌ Error deleting old avatar file ${require('path').basename(profile.avatar_url)}:`, avatarDeleteError.message);
               
               // Try alternative deletion method
               try {
-                const oldPath = require('path').join(config.getAvatarsUploadPath(), require('path').basename(proc.avatar_url));
+                const oldPath = require('path').join(config.getAvatarsUploadPath(), require('path').basename(profile.avatar_url));
                 fs.rmSync(oldPath, { force: true });
-                console.log(`✅ Force deleted old avatar: ${require('path').basename(proc.avatar_url)}`);
+                console.log(`✅ Force deleted old avatar: ${require('path').basename(profile.avatar_url)}`);
               } catch (forceDeleteError) {
-                console.error(`❌ Force delete also failed for old avatar: ${require('path').basename(proc.avatar_url)}:`, forceDeleteError.message);
+                console.error(`❌ Force delete also failed for old avatar: ${require('path').basename(profile.avatar_url)}:`, forceDeleteError.message);
               }
             }
           }
-          proc.avatar_url = avatarUrl;
-          await processRepo.save(proc);
+          profile.avatar_url = avatarUrl;
+          await userRepo.save(profile);
           return sendSuccess(res, { avatar_url: avatarUrl }, 'Avatar uploaded successfully');
         } catch (updateErr) {
           if (req.file?.path && fs.existsSync(req.file.path)) fs.unlinkSync(req.file.path);
@@ -504,7 +411,6 @@ module.exports = (AppDataSource) => {
       const leaveRepo = AppDataSource.getRepository('LeaveRequest');
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
       const userRepo = AppDataSource.getRepository('User');
-      const adminRepo = AppDataSource.getRepository('Admin');
 
       // ดึง leave ทั้งหมดของ user/admin
       let leaves = await leaveRepo.find({ where: { Repid: id }, order: { createdAt: 'DESC' } });

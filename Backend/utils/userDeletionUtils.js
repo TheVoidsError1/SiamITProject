@@ -16,7 +16,7 @@ const { parseAttachments } = require('./leaveUtils');
  * @returns {Promise<Object>} Deletion summary
  */
 async function deleteUserData(AppDataSource, userId, userRole) {
-  const processRepo = AppDataSource.getRepository('ProcessCheck');
+  const processRepo = AppDataSource.getRepository('User');
   const leaveRequestRepo = AppDataSource.getRepository('LeaveRequest');
   const leaveUsedRepo = AppDataSource.getRepository('LeaveUsed');
   
@@ -29,13 +29,13 @@ async function deleteUserData(AppDataSource, userId, userRole) {
   };
 
   try {
-    // Get process check info for avatar cleanup
-    const processCheck = await processRepo.findOneBy({ Repid: userId, Role: userRole });
+    // Get user info for avatar cleanup from unified users table
+    const user = await processRepo.findOneBy({ id: userId });
 
     // HARD DELETE avatar file if exists
-    if (processCheck && processCheck.avatar_url) {
+    if (user && user.avatar_url) {
       try {
-        const avatarPath = path.join(config.getAvatarsUploadPath(), path.basename(processCheck.avatar_url));
+        const avatarPath = path.join(config.getAvatarsUploadPath(), path.basename(user.avatar_url));
         
         if (fs.existsSync(avatarPath)) {
           // Force delete the avatar file (hard delete)
@@ -44,22 +44,22 @@ async function deleteUserData(AppDataSource, userId, userRole) {
           // Verify file is actually deleted
           if (!fs.existsSync(avatarPath)) {
             deletionSummary.avatarDeleted = true;
-            console.log(`✅ HARD DELETED avatar: ${path.basename(processCheck.avatar_url)}`);
+            console.log(`✅ HARD DELETED avatar: ${path.basename(user.avatar_url)}`);
           } else {
-            console.error(`❌ FAILED to delete avatar: ${path.basename(processCheck.avatar_url)} - file still exists`);
+            console.error(`❌ FAILED to delete avatar: ${path.basename(user.avatar_url)} - file still exists`);
             
             // Try alternative deletion method
             try {
               fs.rmSync(avatarPath, { force: true });
               deletionSummary.avatarDeleted = true;
-              console.log(`✅ Force deleted avatar: ${path.basename(processCheck.avatar_url)}`);
+              console.log(`✅ Force deleted avatar: ${path.basename(user.avatar_url)}`);
             } catch (forceDeleteError) {
-              console.error(`❌ Force delete also failed for avatar: ${path.basename(processCheck.avatar_url)}:`, forceDeleteError.message);
+              console.error(`❌ Force delete also failed for avatar: ${path.basename(user.avatar_url)}:`, forceDeleteError.message);
               deletionSummary.errors.push(`Avatar force delete error: ${forceDeleteError.message}`);
             }
           }
         } else {
-          console.log(`⚠️  Avatar file not found (already deleted?): ${path.basename(processCheck.avatar_url)}`);
+          console.log(`⚠️  Avatar file not found (already deleted?): ${path.basename(user.avatar_url)}`);
         }
       } catch (avatarError) {
         console.error('❌ Error deleting avatar file:', avatarError);
@@ -67,46 +67,21 @@ async function deleteUserData(AppDataSource, userId, userRole) {
         
         // Try alternative deletion method
         try {
-          const avatarPath = path.join(config.getAvatarsUploadPath(), path.basename(processCheck.avatar_url));
+          const avatarPath = path.join(config.getAvatarsUploadPath(), path.basename(user.avatar_url));
           fs.rmSync(avatarPath, { force: true });
           deletionSummary.avatarDeleted = true;
-          console.log(`✅ Force deleted avatar: ${path.basename(processCheck.avatar_url)}`);
+          console.log(`✅ Force deleted avatar: ${path.basename(user.avatar_url)}`);
         } catch (forceDeleteError) {
-          console.error(`❌ Force delete also failed for avatar: ${path.basename(processCheck.avatar_url)}:`, forceDeleteError.message);
+          console.error(`❌ Force delete also failed for avatar: ${path.basename(user.avatar_url)}:`, forceDeleteError.message);
           deletionSummary.errors.push(`Avatar force delete error: ${forceDeleteError.message}`);
         }
       }
     }
 
-    // Delete all leave requests by this user
+    // Skip deleting leave requests - keep them in the system
     const leaveRequests = await leaveRequestRepo.findBy({ Repid: userId });
-    for (const leave of leaveRequests) {
-      // Delete attachment files for each leave request (using same logic as LeaveRequestController)
-      if (leave.attachments) {
-        try {
-          const attachments = parseAttachments(leave.attachments);
-          const leaveUploadsPath = config.getLeaveUploadsPath();
-          
-          for (const attachment of attachments) {
-            const filePath = path.join(leaveUploadsPath, attachment);
-            if (fs.existsSync(filePath)) {
-              fs.unlinkSync(filePath);
-              deletionSummary.leaveAttachmentsDeleted++;
-              console.log(`Deleted leave attachment: ${filePath}`);
-            } else {
-              console.log(`Leave attachment file not found: ${filePath}`);
-            }
-          }
-        } catch (fileError) {
-          console.error('Error deleting leave attachments:', fileError);
-          deletionSummary.errors.push(`Leave attachment deletion error: ${fileError.message}`);
-        }
-      }
-    }
-    
-    await leaveRequestRepo.delete({ Repid: userId });
-    deletionSummary.leaveRequestsDeleted = leaveRequests.length;
-    console.log(`Deleted ${leaveRequests.length} leave requests for ${userRole} ${userId}`);
+    deletionSummary.leaveRequestsDeleted = 0; // No leave requests deleted
+    console.log(`Preserved ${leaveRequests.length} leave requests for ${userRole} ${userId} - not deleting them`);
 
     // Delete leave usage records
     const leaveUsedRecords = await leaveUsedRepo.findBy({ user_id: userId });
@@ -114,8 +89,8 @@ async function deleteUserData(AppDataSource, userId, userRole) {
     deletionSummary.leaveUsageRecordsDeleted = leaveUsedRecords.length;
     console.log(`Deleted ${leaveUsedRecords.length} leave usage records for ${userRole} ${userId}`);
 
-    // Delete from process_check
-    await processRepo.delete({ Repid: userId, Role: userRole });
+    // Delete from unified users table
+    await processRepo.delete({ id: userId });
 
   } catch (error) {
     console.error(`Error in deleteUserData for ${userRole} ${userId}:`, error);
@@ -141,18 +116,12 @@ async function deleteUserComprehensive(AppDataSource, userId, userRole, userRepo
       throw new Error(`${userRole} not found`);
     }
 
-    // Delete all related data and files
+    // Delete all related data and files (including user record)
     const deletionSummary = await deleteUserData(AppDataSource, userId, userRole);
-
-    // Delete from user table
-    const result = await userRepo.delete({ id: userId });
-    if (result.affected === 0) {
-      throw new Error(`${userRole} not found`);
-    }
 
     return {
       success: true,
-      message: `${userRole} and all related data deleted successfully`,
+      message: `${userRole} deleted successfully (leave requests preserved)`,
       deletionSummary
     };
 

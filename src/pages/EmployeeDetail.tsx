@@ -1,32 +1,25 @@
 import AvatarCropDialog from '@/components/dialogs/AvatarCropDialog';
 import { LeaveDetailDialog } from "@/components/dialogs/LeaveDetailDialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import PaginationBar from "@/components/PaginationBar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { DatePicker } from '@/components/ui/date-picker';
 import { Label } from "@/components/ui/label";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { apiEndpoints } from '@/constants/api';
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { withCacheBust } from '@/lib/url';
+import { LeaveRequest } from '@/types';
 import { format } from 'date-fns';
 import { th } from 'date-fns/locale';
-import { Calendar, Camera, ChevronLeft, Edit, Eye, Mail, Trash2, User } from "lucide-react";
+import { Calendar, Camera, ChevronLeft, Edit, Eye, Mail, User } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { API_BASE_URL, apiService } from '../lib/api';
-import { apiEndpoints } from '@/constants/api';
-import { LeaveRequest } from '@/types';
 
 const EmployeeDetail = () => {
   const { id } = useParams();
@@ -96,7 +89,6 @@ const EmployeeDetail = () => {
   const [avatarLocalGif, setAvatarLocalGif] = useState<File | null>(null);
   const [avatarKey, setAvatarKey] = useState(0); // Add key to force re-render
   const [avatarTimestamp, setAvatarTimestamp] = useState(Date.now()); // Add timestamp for cache busting
-  const withCacheBust = (url: string) => `${url}${url.includes('?') ? '&' : '?'}v=${avatarTimestamp}&k=${avatarKey}&t=${Date.now()}`;
 
   // เพิ่ม state สำหรับ force render เมื่อเปลี่ยนภาษา
   const [langVersion, setLangVersion] = useState(0);
@@ -219,11 +211,11 @@ const EmployeeDetail = () => {
           setLeaveTypes(data.data);
         } else {
           setLeaveTypes([]);
-          setLeaveTypesError(data.message || 'Failed to fetch leave types');
+          setLeaveTypesError(data.message || t('common.error'));
         }
       } catch (err: any) {
         setLeaveTypes([]);
-        setLeaveTypesError(err.message || 'Failed to fetch leave types');
+        setLeaveTypesError(err.message || t('common.error'));
       } finally {
         setLeaveTypesLoading(false);
       }
@@ -470,8 +462,7 @@ const EmployeeDetail = () => {
     const combined = namesToCheck.join(' ');
     return (
       combined.includes('intern') ||
-      combined.includes('ฝึกงาน') ||
-      combined.includes('นักศึกษาฝึกงาน')
+      combined.includes(t('employeeTypes.intern').toLowerCase())
     );
   };
 
@@ -571,7 +562,6 @@ const EmployeeDetail = () => {
                     form.append('avatar', file);
                     const res = await apiService.post(apiEndpoints.employees.avatar(String(id)), form);
                     if (res?.success) {
-                      console.log('Avatar upload successful:', res.avatar_url);
                       
                       // Update employee data with new avatar URL immediately
                       setEmployee((prev: any) => {
@@ -675,13 +665,13 @@ const EmployeeDetail = () => {
                           value={editData.gender}
                           onChange={e => setEditData({ ...editData, gender: e.target.value })}
                         >
-                          <option value="">{t('employee.selectGender')}</option>
                           <option value="male">{t('employee.male')}</option>
                           <option value="female">{t('employee.female')}</option>
+                          <option value="other">{t('employee.other')}</option>
                         </select>
                       ) : (
                         <p className="text-lg text-blue-700">
-                          {employee.gender === 'male' ? t('employee.male') : employee.gender === 'female' ? t('employee.female') : '-'}
+                          {employee.gender === 'male' ? t('employee.male') : employee.gender === 'female' ? t('employee.female') : employee.gender === 'other' ? t('employee.other') : '-'}
                         </p>
                       )}
                     </div>
@@ -689,11 +679,11 @@ const EmployeeDetail = () => {
                     <div>
                       <Label className="text-sm font-semibold text-blue-700 mb-2 block">{t('employee.birthdate')}</Label>
                       {isEditing ? (
-                        <input
-                          type="date"
-                          className="w-full px-4 py-3 border-2 border-blue-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-white"
-                          value={editData.birthdate}
-                          onChange={e => setEditData({ ...editData, birthdate: e.target.value })}
+                        <DatePicker
+                          date={editData.birthdate}
+                          onDateChange={(date) => setEditData({ ...editData, birthdate: date })}
+                          placeholder={t('admin.enterBirthdate')}
+                          className="w-full py-3 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 border-blue-200 border-2 bg-white/80 backdrop-blur-sm"
                         />
                       ) : (
                         <p className="text-lg text-blue-700">{employee.dob ? format(new Date(employee.dob), 'dd/MM/yyyy') : '-'}</p>
@@ -776,11 +766,11 @@ const EmployeeDetail = () => {
                         <div>
                           <Label className="text-sm font-semibold text-indigo-700 mb-2 block">{t('employee.internStartDate')}</Label>
                           {isEditing ? (
-                            <input
-                              type="date"
-                              className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-white"
-                              value={editData.internStartDate}
-                              onChange={e => setEditData({ ...editData, internStartDate: e.target.value })}
+                            <DatePicker
+                              date={editData.internStartDate}
+                              onDateChange={(date) => setEditData({ ...editData, internStartDate: date })}
+                              placeholder={t('admin.enterInternStartDate')}
+                              className="w-full py-3 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 border-indigo-200 border-2 bg-white/80 backdrop-blur-sm"
                             />
                           ) : (
                             <p className="text-lg text-indigo-700">{employee.internStartDate ? format(new Date(employee.internStartDate), 'dd/MM/yyyy') : '-'}</p>
@@ -789,11 +779,11 @@ const EmployeeDetail = () => {
                         <div>
                           <Label className="text-sm font-semibold text-indigo-700 mb-2 block">{t('employee.internEndDate')}</Label>
                           {isEditing ? (
-                            <input
-                              type="date"
-                              className="w-full px-4 py-3 border-2 border-indigo-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-200 bg-white"
-                              value={editData.internEndDate}
-                              onChange={e => setEditData({ ...editData, internEndDate: e.target.value })}
+                            <DatePicker
+                              date={editData.internEndDate}
+                              onDateChange={(date) => setEditData({ ...editData, internEndDate: date })}
+                              placeholder={t('admin.enterInternEndDate')}
+                              className="w-full py-3 text-lg rounded-xl transition-all duration-300 hover:shadow-lg focus:ring-2 focus:ring-opacity-50 border-indigo-200 border-2 bg-white/80 backdrop-blur-sm"
                             />
                           ) : (
                             <p className="text-lg text-indigo-700">{employee.internEndDate ? format(new Date(employee.internEndDate), 'dd/MM/yyyy') : '-'}</p>
@@ -840,7 +830,7 @@ const EmployeeDetail = () => {
                 <div className="flex justify-end items-center gap-3">
                   <Calendar className="w-6 h-6 text-gray-600" />
                   <span className="text-base font-semibold text-gray-800">
-                    {t('leave.usedLeaveDays')}: {leaveSummary.days || 0} {t('leave.days', 'วัน')} {leaveSummary.hours > 0 ? `${leaveSummary.hours} ${t('leave.hours', 'ชั่วโมง')}` : ''}
+                    {t('leave.usedLeaveDays')}: {leaveSummary.days || 0} {t('leave.days')} {leaveSummary.hours > 0 ? `${leaveSummary.hours} ${t('leave.hours')}` : ''}
                   </span>
                 </div>
               </div>
@@ -1005,11 +995,11 @@ const EmployeeDetail = () => {
                     <TableRow className="border-b border-gray-200">
                       <TableHead className="w-[15%] font-semibold text-gray-700 whitespace-nowrap px-4">{t('leave.type')}</TableHead>
                       <TableHead className="w-[18%] font-semibold text-gray-700 whitespace-nowrap px-4">{t('leave.date')}</TableHead>
-                      <TableHead className="w-[12%] font-semibold text-gray-700 whitespace-nowrap px-4">{t('leave.duration') || 'จำนวนวัน'}</TableHead>
+                      <TableHead className="w-[12%] font-semibold text-gray-700 whitespace-nowrap px-4">{t('leave.duration')}</TableHead>
                       <TableHead className="w-[22%] font-semibold text-gray-700 whitespace-nowrap px-4">{t('leave.reason')}</TableHead>
                       <TableHead className="w-[12%] font-semibold text-gray-700 whitespace-nowrap px-4">{t('leave.status')}</TableHead>
                       <TableHead className="w-[12%] font-semibold text-gray-700 whitespace-nowrap px-4">{t('leave.submittedDate')}</TableHead>
-                      <TableHead className="w-[9%] text-center font-semibold text-gray-700 whitespace-nowrap px-4">{t('common.actions') || 'การจัดการ'}</TableHead>
+                      <TableHead className="w-[9%] text-center font-semibold text-gray-700 whitespace-nowrap px-4">{t('common.actions')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1153,28 +1143,14 @@ const EmployeeDetail = () => {
                 </Table>
               </div>
             </CardContent>
-            {leaveTotalPages > 1 && leaveHistory.length > 0 && (
-                <div className="flex justify-center items-center mt-4 gap-2 p-3 bg-gray-50 rounded-lg">
-                  <span className="text-sm text-gray-600 mr-2">
-                    {t('common.page')} {leavePage} {t('common.of')} {leaveTotalPages}
-                  </span>
-                  <div className="flex gap-1">
-                {Array.from({ length: leaveTotalPages }, (_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setLeavePage(i + 1)}
-                        className={`px-2.5 py-1 rounded-md border text-sm font-medium transition-all duration-200 ${
-                          leavePage === i + 1 
-                            ? 'bg-blue-600 text-white border-blue-600 shadow-md' 
-                            : 'bg-white text-blue-600 border-blue-300 hover:bg-blue-50 hover:border-blue-400'
-                        }`}
-                    disabled={leavePage === i + 1}
-                  >
-                    {i + 1}
-                  </button>
-                ))}
-                  </div>
-              </div>
+            {(leaveTotalPages >= 1 || leaveHistory.length > 0) && (
+              <PaginationBar
+                page={leavePage}
+                totalPages={leaveTotalPages}
+                totalResults={leaveHistory.length}
+                pageSize={6}
+                onPageChange={setLeavePage}
+              />
             )}
           </Card>
         </div>

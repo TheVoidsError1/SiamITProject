@@ -14,14 +14,14 @@ import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 import LeaveRequest from "./pages/LeaveRequest";
 import LeaveHistory from "./pages/LeaveHistory";
-import AdminDashboard from "./pages/AdminDashboard";
+import ApproveLeave from "./pages/ApproveLeave";
 import EmployeeManagement from "./pages/EmployeeManagement";
 import EmployeeDetail from "./pages/EmployeeDetail";
 import NotFound from "./pages/NotFound";
 import '@/i18n';
 import { PushNotificationProvider } from "@/contexts/PushNotificationContext";
 import { SocketProvider } from "@/contexts/SocketContext";
-import ManageAll from './pages/SuperAdmin/ManageAll';
+import LeaveSystemSettings from './pages/SuperAdmin/LeaveSystemSettings';
 import SuperAdminList from './pages/SuperAdmin/SuperAdminList';
 import ManagePost from './pages/ManagePost';
 import CalendarPage from './pages/CalendarPage';
@@ -31,6 +31,7 @@ import AdminLeaveRequest from './pages/AdminLeaveRequest';
 
 import LanguageSwitcher from "@/components/LanguageSwitcher";
 import ErrorBoundary from "@/components/ErrorBoundary";
+import { SidebarTrigger } from "@/components/ui/sidebar";
 
 const queryClient = new QueryClient();
 
@@ -57,14 +58,17 @@ const AppContent = () => {
 
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="min-h-screen flex w-full relative bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:dark-gradient-bg transition-all duration-500">
+      <div className="min-h-screen flex w-full relative">
+        {/* Hamburger for mobile */}
+        <div className="fixed top-4 left-4 z-50 md:hidden">
+          <SidebarTrigger className="bg-white/80 rounded-full shadow p-2" />
+        </div>
         {/* Global Language Switcher */}
         <div className="fixed top-4 right-4 z-50">
           <LanguageSwitcher />
         </div>
-
         <AppSidebar />
-        <main className="flex-1 p-6">
+        <main className="flex-1 min-w-0">
           <Routes>
             <Route path="/" element={
               <ProtectedRoute>
@@ -97,7 +101,7 @@ const AppContent = () => {
 
             <Route path="/admin" element={
               <ProtectedRoute adminOnly>
-                <AdminDashboard />
+                <ApproveLeave />
               </ProtectedRoute>
             } />
             <Route path="/admin/employees" element={
@@ -117,7 +121,7 @@ const AppContent = () => {
             } />
             <Route path="/superadmin/manage-all" element={
               <ProtectedRoute superadminOnly>
-                <ManageAll />
+                <LeaveSystemSettings />
               </ProtectedRoute>
             } />
             <Route path="/superadmin/superadmins" element={

@@ -9,6 +9,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../lib/api';
+import { getDaysInMonth } from '@/lib/dateUtils';
 import { apiEndpoints } from '@/constants/api';
 
 const CalendarPage = () => {
@@ -74,9 +75,7 @@ const CalendarPage = () => {
     // The monthNames and weekdayNames arrays will be recreated with new translations
   }, [i18n.language, t]);
 
-  function getDaysInMonth(year: number, month: number) {
-    return new Date(year, month + 1, 0).getDate();
-  }
+  // getDaysInMonth moved to src/lib/dateUtils
 
   interface CompanyEvent {
     id: string;

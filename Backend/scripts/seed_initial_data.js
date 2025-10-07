@@ -6,10 +6,10 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const entities = [
-  require('../EnityTable/user.js'),
-  require('../EnityTable/ProcessCheck.entity.js'),
-  require('../EnityTable/admin.js'),
-  require('../EnityTable/superadmin.js'),
+  require('../EnityTable/User.entity.js'),
+  // require('../EnityTable/ProcessCheck.entity.js'), // <--- ไม่มีไฟล์นี้ใน EnityTable
+  // require('../EnityTable/admin.js'), // <--- ไม่มีไฟล์นี้ใน EnityTable
+  // require('../EnityTable/superadmin.js'), // <--- ไม่มีไฟล์นี้ใน EnityTable
   require('../EnityTable/leaveRequest.entity.js'),
   require('../EnityTable/position.js'),
   require('../EnityTable/leaveType.js'),
@@ -73,8 +73,7 @@ async function seed() {
   const departmentRepo = AppDataSource.getRepository('Department');
   const positionRepo = AppDataSource.getRepository('Position');
   const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
-  const superadminRepo = AppDataSource.getRepository('SuperAdmin');
-  const processRepo = AppDataSource.getRepository('ProcessCheck');
+  const userRepo = AppDataSource.getRepository('User');
 
   const departments = [
     ['Finance', 'การเงิน'],
@@ -127,7 +126,7 @@ async function seed() {
 
   let createdSuperAdmin = false;
   try {
-    const existing = await processRepo.findOne({ where: { Email: defaultSuperAdmin.email } });
+    const existing = await userRepo.findOne({ where: { Email: defaultSuperAdmin.email } });
     if (!existing) {
       // Resolve department
       let department = await departmentRepo.findOne({ where: [{ department_name_en: defaultSuperAdmin.departmentEn }] });
@@ -142,29 +141,19 @@ async function seed() {
       }
 
       // Create superadmin entity
-      const sa = superadminRepo.create({
-        superadmin_name: defaultSuperAdmin.name,
+      const hashed = await bcrypt.hash(defaultSuperAdmin.password, 10);
+      const sa = userRepo.create({
+        name: defaultSuperAdmin.name,
         department: department.id,
         position: position.id,
-      });
-      const savedSa = await superadminRepo.save(sa);
-
-      // Credentials in process_check
-      const hashed = await bcrypt.hash(defaultSuperAdmin.password, 10);
-      const token = jwt.sign(
-        { userId: savedSa.id, email: defaultSuperAdmin.email },
-        config.server.jwtSecret,
-        { expiresIn: config.server.jwtExpiresIn }
-      );
-      const pc = processRepo.create({
         Email: defaultSuperAdmin.email,
         Password: hashed,
-        Token: token,
         Role: 'superadmin',
-        Repid: savedSa.id,
+        Token: null,
         avatar_url: null,
+        lineUserId: null,
       });
-      await processRepo.save(pc);
+      const savedSa = await userRepo.save(sa);
       createdSuperAdmin = true;
     }
   } catch (e) {

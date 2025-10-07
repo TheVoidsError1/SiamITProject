@@ -299,7 +299,7 @@ module.exports = (AppDataSource) => {
   router.get('/test', async (req, res) => {
     try {
       const userRepo = AppDataSource.getRepository('User');
-      const processRepo = AppDataSource.getRepository('ProcessCheck');
+      const processRepo = AppDataSource.getRepository('User');
       const positionRepo = AppDataSource.getRepository('Position');
       const leaveQuotaRepo = AppDataSource.getRepository('LeaveQuota');
       const leaveTypeRepo = AppDataSource.getRepository('LeaveType');
@@ -333,7 +333,7 @@ module.exports = (AppDataSource) => {
       const userId = req.user.userId;
       
       const userRepo = AppDataSource.getRepository('User');
-      const processRepo = AppDataSource.getRepository('ProcessCheck');
+      const processRepo = AppDataSource.getRepository('User');
       
       const user = await userRepo.findOne({ where: { id: userId } });
       const processUser = await processRepo.findOne({ where: { Repid: userId } });
