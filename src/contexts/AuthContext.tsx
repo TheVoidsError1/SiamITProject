@@ -204,9 +204,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }),
     });
     const data = await response.json();
+    
+    // Debug logging
+    console.log('Registration response status:', response.status);
+    console.log('Registration response data:', data);
 
     if (!response.ok) {
-      throw new Error(data.message || data.error || 'สมัครสมาชิกไม่สำเร็จ');
+      // Check if the error is in data.data.errors (array) or data.message
+      let errorMessage;
+      if (data.data && data.data.errors && Array.isArray(data.data.errors)) {
+        // Get the first error message from the array
+        errorMessage = data.data.errors[0];
+      } else {
+        errorMessage = data.errors || data.message || data.error || 'สมัครสมาชิกไม่สำเร็จ';
+      }
+      console.log('Extracted error message:', errorMessage);
+      throw new Error(errorMessage);
     }
     // สมัครสมาชิกสำเร็จ ไม่ต้อง login อัตโนมัติ ให้ user ไป login เอง
   };

@@ -217,21 +217,57 @@ const Register = () => {
       navigate('/login');
     } catch (error: any) {
       const errMsg = error.message || t('common.error');
-      console.log('Registration error object:', error);
-      console.log('Registration error message:', errMsg);
+      
       const newError: { email?: string; full_name?: string; general?: string } = {};
       const lowerMsg = errMsg.toLowerCase();
-      if (lowerMsg.includes('user') || lowerMsg.includes('ชื่อผู้ใช')) {
-        newError.full_name = errMsg;
-      } else if (lowerMsg.includes('email')) {
-        newError.email = errMsg;
+      
+      // Better error categorization and translation
+      let translatedMessage = errMsg;
+      
+      // Check for specific error patterns first
+      if (lowerMsg.includes('อีเมล') && lowerMsg.includes('ถูกใช้ไปแล้ว')) {
+        // Email already exists error - must contain both email and "already used"
+        translatedMessage = lang === 'th' 
+          ? 'อีเมลนี้ถูกใช้ไปแล้ว กรุณาใช้อีเมลอื่น' 
+          : 'This email is already in use. Please use a different email.';
+        newError.email = translatedMessage;
+      } else if (lowerMsg.includes('ชื่อ') && (lowerMsg.includes('ถูกใช้ไปแล้ว') || lowerMsg.includes('มีอยู่แล้ว'))) {
+        // Name already exists error
+        translatedMessage = lang === 'th' 
+          ? 'ชื่อนี้ถูกใช้ไปแล้ว กรุณาใช้ชื่ออื่น' 
+          : 'This name is already in use. Please use a different name.';
+        newError.full_name = translatedMessage;
+      } else if (lowerMsg.includes('ชื่อ') || lowerMsg.includes('name') || lowerMsg.includes('user')) {
+        // General name-related error
+        translatedMessage = lang === 'th' 
+          ? 'ข้อมูลชื่อไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง' 
+          : 'Name information is invalid. Please check again.';
+        newError.full_name = translatedMessage;
+      } else if (lowerMsg.includes('แผนก') || lowerMsg.includes('department')) {
+        translatedMessage = lang === 'th' 
+          ? 'ข้อมูลแผนกไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง' 
+          : 'Department information is invalid. Please check again.';
+        newError.general = translatedMessage;
+      } else if (lowerMsg.includes('ตำแหน่ง') || lowerMsg.includes('position')) {
+        translatedMessage = lang === 'th' 
+          ? 'ข้อมูลตำแหน่งไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง' 
+          : 'Position information is invalid. Please check again.';
+        newError.general = translatedMessage;
+      } else if (lowerMsg.includes('รหัสผ่าน') || lowerMsg.includes('password')) {
+        translatedMessage = lang === 'th' 
+          ? 'ข้อมูลรหัสผ่านไม่ถูกต้อง กรุณาตรวจสอบอีกครั้ง' 
+          : 'Password information is invalid. Please check again.';
+        newError.general = translatedMessage;
       } else {
-        newError.general = errMsg;
+        // Generic error - keep original message but translate if needed
+        translatedMessage = errMsg;
+        newError.general = translatedMessage;
       }
+      
       setError(newError);
       toast({
         title: t('auth.registerError'),
-        description: errMsg,
+        description: translatedMessage,
         variant: "destructive",
       });
     } finally {
@@ -276,7 +312,6 @@ const Register = () => {
                     required
                   />
                 </div>
-                {error.full_name && <div className="text-red-500 text-xs mt-1">{error.full_name}</div>}
               </div>
 
               {/* Gender */}
@@ -393,33 +428,11 @@ const Register = () => {
                     type="email"
                     placeholder={t('auth.email')}
                     value={formData.email}
-                    onChange={(e) => {
-                      const email = e.target.value;
-                      setFormData(prev => ({ ...prev, email }));
-                      
-                      // ตรวจสอบรูปแบบอีเมลแบบ real-time
-                      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                        setError(prev => ({ ...prev, email: t('auth.invalidEmailFormat') }));
-                      } else if (email && email.includes('@') && !email.includes('.')) {
-                        // ตรวจสอบกรณีพิเศษ เช่น @g, @gmail
-                        setError(prev => ({ ...prev, email: t('auth.invalidEmailFormat') }));
-                      } else if (email && email.includes('@') && email.includes('.')) {
-                        // ตรวจสอบว่าโดเมนต้องมีอย่างน้อย 2 ตัวอักษรหลังจุด
-                        const domainMatch = email.match(/@[^@]+\.([^.]+)$/);
-                        if (domainMatch && domainMatch[1].length < 2) {
-                          setError(prev => ({ ...prev, email: t('auth.invalidEmailFormat') }));
-                        } else {
-                          setError(prev => ({ ...prev, email: undefined }));
-                        }
-                      } else {
-                        setError(prev => ({ ...prev, email: undefined }));
-                      }
-                    }}
+                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
                     className="pl-10"
                     required
                   />
                 </div>
-                {error.email && <div className="text-red-500 text-xs mt-1">{error.email}</div>}
               </div>
               
               <div className="space-y-2 mb-4">
@@ -471,7 +484,7 @@ const Register = () => {
               <Button 
                 type="submit" 
                 className="w-full" 
-                disabled={loading || !!error.email}
+                disabled={loading}
               >
                 {loading ? (
                   <>
@@ -483,7 +496,6 @@ const Register = () => {
                 )}
               </Button>
             </form>
-            {error.general && <div className="text-red-500 text-xs mt-2 text-center">{error.general}</div>}
             <div className="mt-6 text-center">
               <p className="text-sm text-gray-600">
                 {t('auth.alreadyHaveAccount')}{' '}
