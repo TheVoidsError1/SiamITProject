@@ -180,9 +180,6 @@
   "markAllAsRead": "อ่านทั้งหมด",
   "leave": {
     "all": "ทั้งหมด",
-    "pending": "รอการอนุมัติ",
-    "rejected": "ปฏิเสธแล้ว",
-    "approved": "อนุมัติแล้ว",
     "statusAll": "ทุกสถานะ",
     "pending": "รอการอนุมัติ",
     "rejected": "ไม่อนุมัติ",
