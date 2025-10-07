@@ -57,14 +57,14 @@ const AppContent = () => {
 
   return (
     <SidebarProvider defaultOpen={true}>
-      <div className="min-h-screen flex w-full relative">
+      <div className="min-h-screen flex w-full relative bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:dark-gradient-bg transition-all duration-500">
         {/* Global Language Switcher */}
         <div className="fixed top-4 right-4 z-50">
           <LanguageSwitcher />
         </div>
 
         <AppSidebar />
-        <main className="flex-1">
+        <main className="flex-1 p-6">
           <Routes>
             <Route path="/" element={
               <ProtectedRoute>

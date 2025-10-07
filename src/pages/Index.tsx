@@ -480,7 +480,7 @@ const Index = () => {
   }, [socket, isConnected, toast, t, user?.role]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-100 to-purple-100 dark:from-gray-900 dark:via-gray-950 dark:to-indigo-900 transition-colors relative overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-100 to-purple-100 dark:dark-gradient-bg transition-all duration-500 relative overflow-x-hidden">
       {/* Parallax/Floating Background Shapes */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <div className="absolute -top-32 -left-32 w-[350px] h-[350px] rounded-full bg-gradient-to-br from-blue-200 via-indigo-100 to-purple-100 opacity-30 blur-2xl animate-float-slow" />
@@ -488,7 +488,7 @@ const Index = () => {
         <div className="absolute top-1/2 left-1/2 w-24 h-24 rounded-full bg-blue-100 opacity-10 blur-xl animate-pulse-slow" style={{transform:'translate(-50%,-50%)'}} />
       </div>
       {/* Top Bar */}
-      <div className="border-b bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm sticky top-0 z-20 shadow-sm">
+      <div className="border-b bg-white/80 dark:dark-card-gradient backdrop-blur-sm sticky top-0 z-20 shadow-sm dark:dark-glow">
         <div className="flex h-14 items-center px-3 gap-3">
           <SidebarTrigger />
           <div className="flex-1">
@@ -569,7 +569,7 @@ const Index = () => {
         {/* Dashboard Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {/* Backdated Requests Card */}
-          <Card className="group border-0 shadow-xl bg-white/60 backdrop-blur-lg rounded-xl flex flex-col items-center justify-center py-5 px-2 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 hover:bg-white/80 relative overflow-hidden animate-fade-in-up">
+          <Card className="group border-0 shadow-xl bg-white/60 dark:dark-card-gradient backdrop-blur-lg rounded-xl flex flex-col items-center justify-center py-5 px-2 transition-all duration-300 hover:shadow-2xl dark:hover:dark-glow hover:-translate-y-1 hover:bg-white/80 dark:hover:bg-purple-500/10 relative overflow-hidden animate-fade-in-up">
             <div className="flex flex-col items-center justify-center gap-2">
               <div className="w-12 h-12 bg-red-50 rounded-full flex items-center justify-center mb-1 shadow group-hover:scale-110 transition-transform duration-200 animate-pop-in">
                 <Calendar className="w-6 h-6 text-red-400" />
@@ -579,7 +579,7 @@ const Index = () => {
             </div>
           </Card>
           {/* Days Used Card */}
-          <Card className="group border-0 shadow-xl bg-white/60 backdrop-blur-lg rounded-xl flex flex-col items-center justify-center py-5 px-2 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 hover:bg-white/80 relative overflow-hidden animate-fade-in-up">
+          <Card className="group border-0 shadow-xl bg-white/60 dark:dark-card-gradient backdrop-blur-lg rounded-xl flex flex-col items-center justify-center py-5 px-2 transition-all duration-300 hover:shadow-2xl dark:hover:dark-glow hover:-translate-y-1 hover:bg-white/80 dark:hover:bg-purple-500/10 relative overflow-hidden animate-fade-in-up">
             <div className="flex flex-col items-center justify-center gap-2">
               <div className="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center mb-1 shadow group-hover:scale-110 transition-transform duration-200 animate-pop-in">
                 <Clock className="w-6 h-6 text-green-400" />
@@ -591,7 +591,7 @@ const Index = () => {
             </div>
           </Card>
           {/* Pending Requests Card */}
-          <Card className="group border-0 shadow-xl bg-white/60 backdrop-blur-lg rounded-xl flex flex-col items-center justify-center py-5 px-2 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 hover:bg-white/80 relative overflow-hidden animate-fade-in-up">
+          <Card className="group border-0 shadow-xl bg-white/60 dark:dark-card-gradient backdrop-blur-lg rounded-xl flex flex-col items-center justify-center py-5 px-2 transition-all duration-300 hover:shadow-2xl dark:hover:dark-glow hover:-translate-y-1 hover:bg-white/80 dark:hover:bg-purple-500/10 relative overflow-hidden animate-fade-in-up">
                 <div className="flex flex-col items-center justify-center gap-2">
               <div className="w-12 h-12 bg-orange-50 rounded-full flex items-center justify-center mb-1 shadow group-hover:scale-110 transition-transform duration-200 animate-pop-in">
                 <Users className="w-6 h-6 text-orange-400" />
@@ -601,7 +601,7 @@ const Index = () => {
                   </div>
           </Card>
           {/* Approval Rate Card */}
-          <Card className="group border-0 shadow-xl bg-white/60 backdrop-blur-lg rounded-xl flex flex-col items-center justify-center py-5 px-2 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 hover:bg-white/80 relative overflow-hidden animate-fade-in-up">
+          <Card className="group border-0 shadow-xl bg-white/60 dark:dark-card-gradient backdrop-blur-lg rounded-xl flex flex-col items-center justify-center py-5 px-2 transition-all duration-300 hover:shadow-2xl dark:hover:dark-glow hover:-translate-y-1 hover:bg-white/80 dark:hover:bg-purple-500/10 relative overflow-hidden animate-fade-in-up">
             <div className="flex flex-col items-center justify-center gap-2">
               <div className="w-12 h-12 bg-purple-50 rounded-full flex items-center justify-center mb-1 shadow group-hover:scale-110 transition-transform duration-200 animate-pop-in">
                 <TrendingUp className="w-6 h-6 text-purple-400" />
@@ -615,7 +615,7 @@ const Index = () => {
         {/* --- NEW: User Summary, Notifications, Holidays, Announcements --- */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
           {/* User Summary */}
-          <Card className="glass shadow-xl border-0 flex flex-col items-center justify-center p-5 animate-fade-in-up">
+          <Card className="glass dark:dark-card-gradient shadow-xl dark:dark-glow border-0 flex flex-col items-center justify-center p-5 animate-fade-in-up">
             <Avatar className="w-16 h-16 mb-2">
               {avatarUrl ? (
                 <AvatarImage
@@ -657,7 +657,7 @@ const Index = () => {
             </div>
           </Card>
           {/* Company Holidays Table (replace notifications) */}
-          <Card className="glass shadow-xl border-0 p-0 animate-fade-in-up">
+          <Card className="glass dark:dark-card-gradient shadow-xl dark:dark-glow border-0 p-0 animate-fade-in-up">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-blue-700 text-base font-bold animate-slide-in-left">
                 <Calendar className="w-5 h-5 text-blue-500" />
@@ -710,7 +710,7 @@ const Index = () => {
             </CardContent>
           </Card>
           {/* Upcoming Holidays/Events Section */}
-          <Card className="glass shadow-xl border-0 p-0 animate-fade-in-up">
+          <Card className="glass dark:dark-card-gradient shadow-xl dark:dark-glow border-0 p-0 animate-fade-in-up">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-blue-700 text-base font-bold animate-slide-in-left">
                 <Calendar className="w-5 h-5 text-blue-500" />
@@ -759,7 +759,7 @@ const Index = () => {
             </CardContent>
           </Card>
           {/* Announcements */}
-          <Card className="glass shadow-xl border-0 p-0 animate-fade-in-up">
+          <Card className="glass dark:dark-card-gradient shadow-xl dark:dark-glow border-0 p-0 animate-fade-in-up">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-blue-700 text-base font-bold animate-slide-in-left">
                 <Bell className="w-5 h-5 text-purple-500" />
@@ -794,7 +794,7 @@ const Index = () => {
         {/* Quick Actions & Chart */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* Quick Actions */}
-          <Card className="border-0 shadow-xl bg-white/60 backdrop-blur-lg rounded-xl p-0 flex flex-col justify-between min-h-[180px] animate-fade-in-up">
+          <Card className="border-0 shadow-xl bg-white/60 dark:dark-card-gradient backdrop-blur-lg rounded-xl p-0 flex flex-col justify-between min-h-[180px] animate-fade-in-up">
             <CardHeader className="pb-2 flex flex-col gap-1">
               <CardTitle className="flex items-center gap-2 text-blue-700 text-lg font-bold animate-slide-in-left">
                 <Calendar className="w-5 h-5 text-blue-500" />
@@ -833,7 +833,7 @@ const Index = () => {
           </Card>
 
           {/* Recent Leave Stats (now as a table) */}
-          <Card className="border-0 shadow-xl bg-white/60 backdrop-blur-lg rounded-xl p-0 flex flex-col min-h-[180px] animate-fade-in-up">
+          <Card className="border-0 shadow-xl bg-white/60 dark:dark-card-gradient backdrop-blur-lg rounded-xl p-0 flex flex-col min-h-[180px] animate-fade-in-up">
             <CardHeader className="pb-2 flex flex-col gap-1">
               <CardTitle className="flex items-center gap-2 text-blue-700 text-lg font-bold animate-slide-in-left">
                 <TrendingUp className="w-5 h-5 text-green-500" />

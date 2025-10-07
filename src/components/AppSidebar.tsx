@@ -1,12 +1,10 @@
-
-<<<<<<< HEAD
-import { Calendar, Home, Clock, Settings, User, LogOut, Users, Building, Newspaper, Rss, MessageSquare } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
-import { useState, useEffect } from "react";
-=======
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
->>>>>>> 0795594fdc88dd54d5eee95988ff2250c7f2ffac
+import { Calendar, Home, Clock, Settings, User, LogOut, Users, Rss } from "lucide-react";
+import { Link, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
+import NotificationBell from "./NotificationBell";
 import {
   Sidebar,
   SidebarContent,
@@ -21,67 +19,21 @@ import {
 } from "@/components/ui/sidebar";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { Calendar, Clock, Home, LogOut, Rss, Settings, User, Users } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { Link, useLocation } from "react-router-dom";
-import NotificationBell from "./NotificationBell";
+import { ThemeToggle } from "@/components/ThemeToggle";
 
 const items = [
-  {
-    title: "navigation.home",
-    url: "/",
-    icon: Home,
-  },
-  {
-    title: "navigation.announcementsFeed",
-    url: "/announcements",
-    icon: Rss,
-  },
-  {
-    title: "navigation.calendar",
-    url: "/calendar",
-    icon: Calendar,
-  },
-  {
-    title: "navigation.leaveRequest",
-    url: "/leave-request",
-    icon: Calendar,
-  },
-  {
-    title: "navigation.leaveHistory",
-    url: "/leave-history",
-    icon: Clock,
-  },
-  {
-    title: "navigation.profile",
-    url: "/profile",
-    icon: User,
-  },
+  { title: "navigation.home", url: "/", icon: Home },
+  { title: "navigation.announcementsFeed", url: "/announcements", icon: Rss },
+  { title: "navigation.calendar", url: "/calendar", icon: Calendar },
+  { title: "navigation.leaveRequest", url: "/leave-request", icon: Calendar },
+  { title: "navigation.leaveHistory", url: "/leave-history", icon: Clock },
+  { title: "navigation.profile", url: "/profile", icon: User },
 ];
 
 const adminItems = [
-  {
-    title: "navigation.adminDashboard",
-    url: "/admin",
-    icon: Settings,
-  },
-  {
-    title: "navigation.allEmployees",
-    url: "/admin/employees",
-    icon: Users,
-  },
-  {
-<<<<<<< HEAD
-    title: "navigation.lineOASettings",
-    url: "/admin/line-oa-settings",
-    icon: MessageSquare,
-=======
-    title: "navigation.adminLeaveRequest",
-    url: "/admin/leave-request",
-    icon: Calendar,
->>>>>>> 0795594fdc88dd54d5eee95988ff2250c7f2ffac
-  },
+  { title: "navigation.adminDashboard", url: "/admin", icon: Settings },
+  { title: "navigation.allEmployees", url: "/admin/employees", icon: Users },
+  { title: "navigation.adminLeaveRequest", url: "/admin/leave-request", icon: Calendar },
 ];
 
 const superadminItems = [
@@ -158,7 +110,7 @@ export function AppSidebar() {
   // Don't render if user is not loaded yet
   if (!user || loading) {
     return (
-      <div className="border-r border-border/50 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl shadow-2xl animate-slide-in-left transition-all duration-300 w-64">
+      <div className="border-r border-border/50 bg-white/60 dark:dark-sidebar-gradient backdrop-blur-xl shadow-2xl dark:dark-shadow animate-slide-in-left transition-all duration-300 w-64">
         <div className="p-6">
           <div className="animate-pulse">
             <div className="h-12 bg-gray-200 rounded mb-4"></div>
@@ -179,7 +131,7 @@ export function AppSidebar() {
       : items;
 
   return (
-    <Sidebar className="border-r border-border/50 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl shadow-2xl animate-slide-in-left transition-all duration-300">
+    <Sidebar className="border-r border-border/50 bg-white/60 dark:dark-sidebar-gradient backdrop-blur-xl shadow-2xl dark:dark-shadow animate-slide-in-left transition-all duration-300">
       <SidebarHeader className="p-6">
         <div className="flex items-center gap-3">
           <img
@@ -195,7 +147,10 @@ export function AppSidebar() {
               {t('system.onlineLeaveSystem')}
             </p>
           </div>
-          <NotificationBell />
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <NotificationBell />
+          </div>
         </div>
       </SidebarHeader>
       
@@ -240,7 +195,7 @@ export function AppSidebar() {
       <SidebarFooter className="p-6">
         <div className="space-y-4">
           <Link to="/profile" className="block">
-            <div className="flex items-center gap-3 p-4 rounded-2xl bg-white/50 dark:bg-gray-900/50 backdrop-blur-md shadow-lg hover:shadow-xl transition-all cursor-pointer border border-white/2git0 dark:border-gray-700">
+            <div className="flex items-center gap-3 p-4 rounded-2xl bg-white/50 dark:dark-card-gradient backdrop-blur-md shadow-lg dark:dark-glow hover:shadow-xl dark:hover:dark-glow transition-all cursor-pointer border border-white/20 dark:border-purple-500/30">
               <Avatar className="w-8 h-8">
                 <AvatarImage 
                   src={user?.avatar_url ? `${API_BASE_URL}${user.avatar_url}` : undefined} 
@@ -293,7 +248,7 @@ export function AppSidebar() {
             variant="ghost"
             size="sm"
             onClick={handleLogout}
-            className="w-full justify-start text-sidebar-foreground hover:bg-blue-100/40 dark:hover:bg-gray-800/40 rounded-xl"
+            className="w-full justify-start text-sidebar-foreground hover:bg-blue-100/40 dark:hover:bg-purple-500/20 rounded-xl transition-all duration-200"
           >
             <LogOut className="w-4 h-4 mr-2" />
             {t('auth.logout')}

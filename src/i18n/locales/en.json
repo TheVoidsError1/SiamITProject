@@ -30,17 +30,9 @@
     "newPassword": "New Password",
     "passwordMismatch": "Passwords do not match",
     "passwordTooShort": "Password must be at least 6 characters",
-<<<<<<< HEAD
-    "passwordStrong": "Strong password",
-    "passwordMedium": "Medium strength password",
-    "passwordWeak": "Weak password",
-    "passwordsMatch": "Passwords match",
-    "passwordsDoNotMatch": "Passwords do not match",
-=======
     "invalidEmailFormat": "Invalid email format. Please enter a complete domain like @gmail.com",
     "registerConfirmTitle": "Confirm Registration",
     "registerConfirmDesc": "Do you want to register with the information you entered?",
->>>>>>> 0795594fdc88dd54d5eee95988ff2250c7f2ffac
     "checkEmailVerification": "You can now log in with this user.",
     "sessionExpired": "Session expired, please login again",
     "pleaseLoginAgain": "Please login again",
@@ -73,19 +65,15 @@
     "companyNews": "Company News",
     "announcementsFeed": "Announcements Feed",
     "calendar": "Calendar",
-<<<<<<< HEAD
-    "lineOASettings": "Line OA Settings"
-=======
     "companyCalendar": "Company Calendar",
     "companyCalendarTitle": "Company Calendar",
     "companyCalendarDescription": "View company calendar",
     "adminLeaveRequest": "Insert Leave Request"
->>>>>>> 0795594fdc88dd54d5eee95988ff2250c7f2ffac
   },
   "common": {
     "logo": "Logo",
     "submit": "Submit",
-    "cancel": "Cancel",
+    "cancel": "Cancel",     
     "save": "Save",
     "saving": "Saving...",
     "edit": "Edit",

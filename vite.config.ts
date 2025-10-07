@@ -15,19 +15,9 @@ export default defineConfig({
     port: parseInt(process.env.VITE_DEV_SERVER_PORT || '8081'),
     host: process.env.VITE_DEV_SERVER_HOST || 'localhost',
     open: true,
-<<<<<<< HEAD
-    allowedHosts: [
-      "localhost",
-      "127.0.0.1",
-      "tasty-sites-fly.loca.lt",
-      "easy-buckets-pull.loca.lt",
-      "*.loca.lt"
-    ],
-=======
     hmr: {
       overlay: false, // Disable error overlay to prevent HMR issues
     },
->>>>>>> 0795594fdc88dd54d5eee95988ff2250c7f2ffac
     proxy: {
       "/api": {
         target: process.env.VITE_API_BASE_URL || "http://localhost:3001",

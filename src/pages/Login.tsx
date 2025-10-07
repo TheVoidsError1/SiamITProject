@@ -1,4 +1,5 @@
 import LanguageSwitcher from '@/components/LanguageSwitcher';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -54,14 +55,15 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-100 to-purple-100 flex items-center justify-center p-4 relative overflow-x-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-100 to-purple-100 dark:dark-gradient-bg flex items-center justify-center p-4 relative overflow-x-hidden transition-all duration-500">
       {/* Floating background shapes */}
       <div className="absolute inset-0 z-0 pointer-events-none">
         <div className="absolute -top-24 -left-24 w-[300px] h-[300px] rounded-full bg-gradient-to-br from-blue-200 via-indigo-100 to-purple-100 opacity-30 blur-2xl animate-float-slow" />
         <div className="absolute bottom-0 right-0 w-[200px] h-[200px] rounded-full bg-gradient-to-tr from-purple-200 via-blue-100 to-indigo-100 opacity-20 blur-xl animate-float-slow2" />
         <div className="absolute top-1/2 left-1/2 w-20 h-20 rounded-full bg-blue-100 opacity-10 blur-xl animate-pulse-slow" style={{transform:'translate(-50%,-50%)'}} />
       </div>
-      <div className="absolute top-4 right-4 z-10">
+      <div className="absolute top-4 right-4 z-10 flex items-center gap-2">
+        <ThemeToggle />
         <LanguageSwitcher />
       </div>
       <div className="w-full max-w-2xl grid grid-cols-1 gap-8 animate-fade-in z-10">
@@ -81,7 +83,7 @@ const Login = () => {
             </p>
           </div>
 
-          <Card className="shadow-2xl border-0 glass-card-login animate-fade-in-up">
+          <Card className="shadow-2xl border-0 glass dark:dark-card-gradient dark:dark-glow animate-fade-in-up">
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl text-center text-blue-800 animate-slide-in-left">{t('auth.login')}</CardTitle>
               <CardDescription className="text-center text-blue-400 animate-fade-in-up delay-100">

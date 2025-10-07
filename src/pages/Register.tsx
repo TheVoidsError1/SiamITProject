@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiService } from '@/lib/api';
 import { apiEndpoints } from '@/constants/api';
 import { showToastMessage } from '@/lib/toast';
-import { Eye, EyeOff, Mail, Lock, User, Building } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Building, AlertCircle, CheckCircle, Sparkles, ArrowRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import LanguageSwitcher from '@/components/LanguageSwitcher';
 import { RegisterConfirmDialog } from '@/components/dialogs/RegisterConfirmDialog';
@@ -37,21 +37,46 @@ const Register = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [departments, setDepartments] = useState<{ id: string; department_name_en: string; department_name_th: string }[]>([]);
-      const [positions, setPositions] = useState<{ id: string; position_name_en: string; position_name_th: string; require_enddate?: boolean }[]>([]);
+  const [positions, setPositions] = useState<{ id: string; position_name_en: string; position_name_th: string; require_enddate?: boolean }[]>([]);
   const [newDepartment, setNewDepartment] = useState('');
   const [newPosition, setNewPosition] = useState('');
   const [error, setError] = useState<{ email?: string; full_name?: string; general?: string }>({});
-<<<<<<< HEAD
-  const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong'>('weak');
-=======
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
->>>>>>> 0795594fdc88dd54d5eee95988ff2250c7f2ffac
-  
+
   const { signup } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Password strength logic
+  const [passwordStrength, setPasswordStrength] = useState<'weak' | 'medium' | 'strong'>('weak');
 
+  const getPasswordStrength = (password: string) => {
+    let strength: 'weak' | 'medium' | 'strong' = 'weak';
+    if (password.length >= 8 && /[A-Z]/.test(password) && /[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password)) {
+      strength = 'strong';
+    } else if (password.length >= 6 && /[A-Z]/.test(password) && /[0-9]/.test(password)) {
+      strength = 'medium';
+    }
+    return strength;
+  };
+
+  const getPasswordStrengthColor = () => {
+    if (passwordStrength === 'weak') return 'text-red-500';
+    if (passwordStrength === 'medium') return 'text-yellow-500';
+    return 'text-green-600';
+  };
+
+  const getPasswordStrengthText = () => {
+    if (passwordStrength === 'weak') return t('auth.passwordWeak');
+    if (passwordStrength === 'medium') return t('auth.passwordMedium');
+    return t('auth.passwordStrong');
+  };
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const password = e.target.value;
+    setFormData(prev => ({ ...prev, password }));
+    setPasswordStrength(getPasswordStrength(password));
+  };
 
   // ดึงข้อมูลจาก API
   useEffect(() => {
@@ -178,7 +203,7 @@ const Register = () => {
 
     // ตรวจว่าตำแหน่งต้องการ End Work Date หรือไม่
     const selectedPos = positions.find(p => p.id === formData.position);
-            const requiresEndWorkDate = selectedPos ? !!selectedPos.require_enddate : false;
+    const requiresEndWorkDate = selectedPos ? !!selectedPos.require_enddate : false;
 
     if (requiresEndWorkDate) {
       if (!formData.start_work || !formData.end_work) {
@@ -306,14 +331,6 @@ const Register = () => {
                 )}
               </div>
 
-<<<<<<< HEAD
-              {/* Position Field */}
-              <div className="space-y-2">
-                <Label htmlFor="position" className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <Building className="h-4 w-4" />
-                  {t('auth.position')}
-                </Label>
-=======
               {/* Gender */}
               <div className="space-y-2 mb-4">
                 <Label htmlFor="gender" className="mb-2 block">{t('employee.gender')}</Label>
@@ -341,7 +358,6 @@ const Register = () => {
 
               <div className="space-y-2 mb-4">
                 <Label htmlFor="position" className="mb-2 block">{t('auth.position')}</Label>
->>>>>>> 0795594fdc88dd54d5eee95988ff2250c7f2ffac
                 <Select onValueChange={(value) => setFormData(prev => ({ ...prev, position: value }))}>
                   <SelectTrigger className="border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 rounded-xl py-3">
                     <SelectValue placeholder={t('positions.selectPosition')} />
@@ -380,15 +396,6 @@ const Register = () => {
                 </Select>
               </div>
 
-<<<<<<< HEAD
-              {/* Email Field */}
-              <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium text-gray-700 flex items-center gap-2">
-                  <Mail className="h-4 w-4" />
-                  {t('auth.email')}
-                </Label>
-                <div className="relative group">
-=======
               {/* Phone number */}
               <div className="space-y-2 mb-4">
                 <Label htmlFor="phone" className="mb-2 block">{t('employee.phoneNumber')}</Label>
@@ -427,16 +434,11 @@ const Register = () => {
                 <Label htmlFor="email" className="mb-2 block">{t('auth.email')}</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
->>>>>>> 0795594fdc88dd54d5eee95988ff2250c7f2ffac
                   <Input
                     id="email"
                     type="email"
                     placeholder={t('auth.email')}
                     value={formData.email}
-<<<<<<< HEAD
-                    onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                    className="pl-12 pr-4 py-3 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 rounded-xl"
-=======
                     onChange={(e) => {
                       const email = e.target.value;
                       setFormData(prev => ({ ...prev, email }));
@@ -460,7 +462,6 @@ const Register = () => {
                       }
                     }}
                     className="pl-10"
->>>>>>> 0795594fdc88dd54d5eee95988ff2250c7f2ffac
                     required
                   />
                   <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
@@ -522,16 +523,6 @@ const Register = () => {
                     placeholder="••••••••"
                     value={formData.confirmPassword}
                     onChange={(e) => setFormData(prev => ({ ...prev, confirmPassword: e.target.value }))}
-<<<<<<< HEAD
-                    className="pl-12 pr-12 py-3 border-2 border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-200 rounded-xl"
-                    required
-                  />
-                  <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors" />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 hover:text-gray-600 transition-colors"
-=======
                     className="pl-10 pr-10"
                     required
                   />
@@ -539,7 +530,6 @@ const Register = () => {
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
->>>>>>> 0795594fdc88dd54d5eee95988ff2250c7f2ffac
                   >
                     {showConfirmPassword ? <EyeOff /> : <Eye />}
                   </button>
@@ -566,13 +556,8 @@ const Register = () => {
               {/* Submit Button */}
               <Button 
                 type="submit" 
-<<<<<<< HEAD
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-semibold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105 disabled:transform-none disabled:opacity-50" 
-                disabled={loading}
-=======
                 className="w-full" 
                 disabled={loading || !!error.email}
->>>>>>> 0795594fdc88dd54d5eee95988ff2250c7f2ffac
               >
                 {loading ? (
                   <div className="flex items-center justify-center">
@@ -611,35 +596,6 @@ const Register = () => {
           </CardContent>
         </Card>
       </div>
-<<<<<<< HEAD
-
-      {/* Add custom CSS for animations */}
-      <style>{`
-        @keyframes blob {
-          0% {
-            transform: translate(0px, 0px) scale(1);
-          }
-          33% {
-            transform: translate(30px, -50px) scale(1.1);
-          }
-          66% {
-            transform: translate(-20px, 20px) scale(0.9);
-          }
-          100% {
-            transform: translate(0px, 0px) scale(1);
-          }
-        }
-        .animate-blob {
-          animation: blob 7s infinite;
-        }
-        .animation-delay-2000 {
-          animation-delay: 2s;
-        }
-        .animation-delay-4000 {
-          animation-delay: 4s;
-        }
-      `}</style>
-=======
       
       {/* Dialog ยืนยันการสมัครสมาชิก */}
       <RegisterConfirmDialog
@@ -647,7 +603,6 @@ const Register = () => {
         onOpenChange={setShowConfirmDialog}
         onConfirm={handleConfirmRegistration}
       />
->>>>>>> 0795594fdc88dd54d5eee95988ff2250c7f2ffac
     </div>
   );
 };

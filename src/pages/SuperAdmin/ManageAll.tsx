@@ -734,7 +734,7 @@ const ManageAll: React.FC = () => {
           </p>
         </div>
       </div>
-      <div className="w-full max-w-6xl mx-auto px-4 mt-0 animate-fade-in flex-1">
+      <div className="w-full max-w-7xl mx-auto px-4 py-8">
         <div className="bg-white/70 backdrop-blur-md rounded-3xl shadow-2xl p-8">
           <Tabs defaultValue="positions" className="w-full">
             <TabsList className="mb-10 bg-indigo-50 rounded-2xl shadow-inner flex gap-4 justify-center py-3">
@@ -1368,7 +1368,7 @@ const ManageAll: React.FC = () => {
       </AlertDialog>
 
       {/* Footer */}
-      <footer className="w-full mt-16 py-8 bg-gradient-to-r from-blue-100 via-indigo-50 to-white text-center text-gray-400 text-base font-medium shadow-inner flex flex-col items-center gap-2">
+      <footer className="w-full mt-16 py-8 bg-white text-center text-gray-400 text-base font-medium shadow-inner flex flex-col items-center gap-2">
         <img src={config.assets.logo} alt="Logo" className="w-10 h-10 rounded-full mx-auto mb-1" />
         <div className="font-bold text-gray-600">{t('footer.systemName')}</div>
         <div className="text-sm">{t('footer.copyright')}</div>
@@ -1377,4 +1377,4 @@ const ManageAll: React.FC = () => {
   );
 };
 
-export default ManageAll; 
+export default ManageAll;
