@@ -78,35 +78,10 @@ async function deleteUserData(AppDataSource, userId, userRole) {
       }
     }
 
-    // Delete all leave requests by this user
+    // Skip deleting leave requests - keep them in the system
     const leaveRequests = await leaveRequestRepo.findBy({ Repid: userId });
-    for (const leave of leaveRequests) {
-      // Delete attachment files for each leave request (using same logic as LeaveRequestController)
-      if (leave.attachments) {
-        try {
-          const attachments = parseAttachments(leave.attachments);
-          const leaveUploadsPath = config.getLeaveUploadsPath();
-          
-          for (const attachment of attachments) {
-            const filePath = path.join(leaveUploadsPath, attachment);
-            if (fs.existsSync(filePath)) {
-              fs.unlinkSync(filePath);
-              deletionSummary.leaveAttachmentsDeleted++;
-              console.log(`Deleted leave attachment: ${filePath}`);
-            } else {
-              console.log(`Leave attachment file not found: ${filePath}`);
-            }
-          }
-        } catch (fileError) {
-          console.error('Error deleting leave attachments:', fileError);
-          deletionSummary.errors.push(`Leave attachment deletion error: ${fileError.message}`);
-        }
-      }
-    }
-    
-    await leaveRequestRepo.delete({ Repid: userId });
-    deletionSummary.leaveRequestsDeleted = leaveRequests.length;
-    console.log(`Deleted ${leaveRequests.length} leave requests for ${userRole} ${userId}`);
+    deletionSummary.leaveRequestsDeleted = 0; // No leave requests deleted
+    console.log(`Preserved ${leaveRequests.length} leave requests for ${userRole} ${userId} - not deleting them`);
 
     // Delete leave usage records
     const leaveUsedRecords = await leaveUsedRepo.findBy({ user_id: userId });
@@ -146,7 +121,7 @@ async function deleteUserComprehensive(AppDataSource, userId, userRole, userRepo
 
     return {
       success: true,
-      message: `${userRole} and all related data deleted successfully`,
+      message: `${userRole} deleted successfully (leave requests preserved)`,
       deletionSummary
     };
 
