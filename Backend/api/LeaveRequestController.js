@@ -955,6 +955,9 @@
             user = await userRepo.findOneBy({ id: leave.Repid });
             if (user) {
               user = { name: user.name, department: user.department, position: user.position };
+            } else {
+              // User not found (deleted), return deleted user info
+              user = { name: 'deleted_user', department: null, position: null };
             }
           }
                      // join leaveType จาก database
@@ -1257,6 +1260,9 @@
              const userData = await userRepo.findOneBy({ id: leave.Repid });
              if (userData) {
                user = { name: userData.name, department: userData.department, position: userData.position };
+             } else {
+               // User not found (deleted), return deleted user info
+               user = { name: 'deleted_user', department: null, position: null };
              }
            }
            if (leave.leaveType) {

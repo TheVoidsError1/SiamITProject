@@ -647,6 +647,7 @@
     "rejectReasonTitle": "Please specify the reason for rejection",
     "rejectReasonPlaceholder": "Enter reason...",
     "allStatuses": "All statuses",
+    "deletedUser": "Deleted User",
     "noDataForSelectedMonthYear": "No data for the selected month/year",
     "approveConfirmTitle": "Confirm Approval",
     "rejectConfirmTitle": "Confirm Rejection",

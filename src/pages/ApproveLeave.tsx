@@ -1115,7 +1115,12 @@ const ApproveLeave = () => {
                           style={{ animationDelay: `${0.1 + idx * 0.07}s` }}
                         >
                           <div className="flex-1 min-w-0">
-                            <div className="font-bold text-lg text-blue-900 mb-1 truncate animate-slide-in-left">{typeof request.user === "string" ? JSON.parse(request.user).name : request.user?.name || "-"}</div>
+                            <div className="font-bold text-lg text-blue-900 mb-1 truncate animate-slide-in-left">
+                              {(() => {
+                                const userName = typeof request.user === "string" ? JSON.parse(request.user).name : request.user?.name;
+                                return userName === 'deleted_user' ? t('admin.deletedUser') : (userName || "-");
+                              })()}
+                            </div>
                             {/* ประเภทการลา (leaveType) */}
                             <span className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold mb-1 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                               {request.leaveTypeName_th && request.leaveTypeName_en 
@@ -1411,7 +1416,9 @@ const ApproveLeave = () => {
                           >
                             {/* ย้ายสถานะมาอยู่ข้างประเภทการลา */}
                             <div className="flex-1 min-w-0">
-                              <div className="font-bold text-lg text-blue-900 mb-1 truncate animate-slide-in-left">{request.user?.name || "-"}</div>
+                              <div className="font-bold text-lg text-blue-900 mb-1 truncate animate-slide-in-left">
+                                {request.user?.name === 'deleted_user' ? t('admin.deletedUser') : (request.user?.name || "-")}
+                              </div>
                               {/* ประเภทการลา (leaveType) */}
                                                           <span className="inline-block bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-xs font-semibold mb-1 animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
                               {request.leaveTypeName_th && request.leaveTypeName_en 

@@ -654,6 +654,7 @@
     "pageInfo": "หน้า {{page}} จาก {{totalPages}} หน้า",
     "rejectReasonTitle": "กรุณาระบุเหตุผลในการไม่อนุมัติ",
     "rejectReasonPlaceholder": "กรอกเหตุผล...",
+    "deletedUser": "ผู้ใช้ที่ถูกลบ",
     "noDataForSelectedMonthYear": "ไม่พบข้อมูลในเดือน/ปีที่เลือก",
     "approveConfirmTitle": "ยืนยันการอนุมัติ",
     "rejectConfirmTitle": "ยืนยันการไม่อนุมัติ",
