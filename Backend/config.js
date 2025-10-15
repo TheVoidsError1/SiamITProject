@@ -34,6 +34,7 @@ const config = {
     origins: process.env.CORS_ORIGINS ? 
       process.env.CORS_ORIGINS.split(',') : 
       [
+        'https://leave-management.flowmisite.com',
         'http://localhost:8081',
         'http://192.168.50.64:8081',
         'http://192.168.50.125:8081',

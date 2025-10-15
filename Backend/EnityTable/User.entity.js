@@ -18,12 +18,14 @@ module.exports = new EntitySchema({
       type: 'varchar',
       unique: true,
       nullable: true,
+      length: 191
     },
     Email: {
       type: 'varchar',
       unique: true,
       nullable: true,
       default: null,
+      length: 191
     },
     Role: { 
       type: 'varchar', 
@@ -45,7 +47,8 @@ module.exports = new EntitySchema({
     lineUserId: { 
       type: 'varchar', 
       nullable: true, 
-      unique: true 
+      unique: true,
+      length: 191
     },
     
     // Profile & Media
