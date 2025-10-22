@@ -1,6 +1,6 @@
 const line = require('@line/bot-sdk');
 const axios = require('axios');
-const { Between } = require('typeorm');
+const { Between, NotNull } = require('typeorm');
 const { 
   toDayHour, 
   calculateDaysBetween, 
@@ -65,6 +65,16 @@ class LineController {
     const userId = event.source.userId;
     const replyToken = event.replyToken;
 
+    // Debug: Log the webhook data to see what we're receiving
+    console.log('=== LINE Webhook Debug ===');
+    console.log('Full event:', JSON.stringify(event, null, 2));
+    console.log('Text:', text);
+    console.log('User ID from source:', userId);
+    console.log('User ID type:', typeof userId);
+    console.log('User ID length:', userId ? userId.length : 0);
+    console.log('Source object:', event.source);
+    console.log('========================');
+
     try {
       const response = await this.processUserMessage(text, userId);
       await client.replyMessage(replyToken, response);
@@ -111,6 +121,52 @@ To link your account for full access, please visit the web application and use L
   static async processUserMessage(message, userId) {
     const command = message.toLowerCase().trim();
 
+    // Simple test command that always works - CHECK THIS FIRST
+    if (command.includes('test') || command.includes('ping') || command.includes('hello')) {
+      // Test database connection and user lookup
+      let dbStatus = 'Unknown';
+      let directLookup = 'Unknown';
+      let allUsers = 'None';
+      let tableInfo = 'Unknown';
+      
+      try {
+        if (global.AppDataSource) {
+          dbStatus = 'Connected';
+          const userRepo = global.AppDataSource.getRepository('User');
+          
+          // Method 1: Direct lookup by lineUserId (what bot uses)
+          const directUser = await userRepo.findOneBy({ lineUserId: userId });
+          directLookup = directUser ? `Found (ID: ${directUser.id}, Name: ${directUser.name})` : 'Not found';
+          
+          // Method 2: Get all users with lineUserId (like notification system does)
+          const allUsersWithLineId = await userRepo.find({ 
+            where: { lineUserId: NotNull() },
+            select: ['id', 'name', 'lineUserId']
+          });
+          allUsers = allUsersWithLineId.length > 0 ? 
+            allUsersWithLineId.map(u => `ID:${u.id} Name:${u.name} LINE:${u.lineUserId}`).join('\n') : 
+            'No users with lineUserId found';
+          
+          // Method 3: Check table structure
+          const tableQuery = `DESCRIBE users`;
+          const tableResult = await global.AppDataSource.query(tableQuery);
+          const lineUserIdColumn = tableResult.find(col => col.Field === 'lineUserId');
+          tableInfo = lineUserIdColumn ? 
+            `Column: ${lineUserIdColumn.Field}, Type: ${lineUserIdColumn.Type}, Null: ${lineUserIdColumn.Null}` : 
+            'lineUserId column not found';
+        } else {
+          dbStatus = 'Not connected';
+        }
+      } catch (error) {
+        dbStatus = `Error: ${error.message}`;
+      }
+      
+      return {
+        type: 'text',
+        text: `🤖 Bot Debug Info\n\nLINE User ID from webhook: "${userId}"\nUser ID type: ${typeof userId}\nUser ID length: ${userId ? userId.length : 0}\nDatabase: ${dbStatus}\nDirect Lookup: ${directLookup}\nTable Info: ${tableInfo}\nAll Users:\n${allUsers}`
+      };
+    }
+
     // Commands that don't need user linking
     const publicCommands = ['help', 'announcements', 'request', 'recent announcements', 'leave management web site', 'company holidays', 'annual holidays'];
     
@@ -128,43 +184,49 @@ To link your account for full access, please visit the web application and use L
       }
     }
 
-    switch (command) {
-      case 'help':
-        return this.getHelpMessage();
-
-      case 'status':
-      case 'recent leave':
-        return await this.getLeaveStatus(user);
-
-      case 'balance':
-      case 'leave entitlements':
-        return await this.getLeaveBalance(user);
-
-      case 'history':
-        return await this.getLeaveHistory(user);
-
-      case 'profile':
-        return await this.getUserProfile(user);
-
-      case 'announcements':
-      case 'recent announcements':
-        return await this.getAnnouncements();
-
-      case 'request':
-        return this.getRequestInstructions();
-
-      case 'leave management web site':
-        return this.getLeaveWebsiteMessage();
-
-      case 'company holidays':
-        return await this.getCompanyHolidays();
-
-      case 'annual holidays':
-        return await this.getAnnualHolidays();
-
-      default:
-        return this.getHelpMessage();
+    // Enhanced command matching with partial matches
+    if (command.includes('help') || command === 'help') {
+      return this.getHelpMessage();
     }
+    
+    if (command.includes('status') || command.includes('recent leave') || command.includes('leave status')) {
+      return await this.getLeaveStatus(user);
+    }
+    
+    if (command.includes('balance') || command.includes('leave entitlements') || command.includes('entitlements') || command.includes('quota')) {
+      return await this.getLeaveBalance(user);
+    }
+    
+    if (command.includes('history') || command.includes('leave history')) {
+      return await this.getLeaveHistory(user);
+    }
+    
+    if (command.includes('profile') || command.includes('my profile')) {
+      return await this.getUserProfile(user);
+    }
+    
+    if (command.includes('announcements') || command.includes('recent announcements')) {
+      return await this.getAnnouncements();
+    }
+    
+    if (command.includes('request') || command.includes('submit request')) {
+      return this.getRequestInstructions();
+    }
+    
+    if (command.includes('website') || command.includes('web site') || command.includes('leave management web site')) {
+      return this.getLeaveWebsiteMessage();
+    }
+    
+    if (command.includes('company holidays') || command.includes('company holiday')) {
+      return await this.getCompanyHolidays();
+    }
+    
+    if (command.includes('annual holidays') || command.includes('annual holiday')) {
+      return await this.getAnnualHolidays();
+    }
+
+    // Fallback to help message
+    return this.getHelpMessage();
   }
 
   // Get leave status from API and format for LINE
@@ -210,7 +272,7 @@ To link your account for full access, please visit the web application and use L
           if (lr.leaveType && lr.leaveType.length > 20) {
             // ID-based leave type - Use raw query to include soft-deleted records
             const leaveTypeQuery = `SELECT * FROM leave_type WHERE id = ?`;
-            const [leaveTypeResult] = await AppDataSource.query(leaveTypeQuery, [lr.leaveType]);
+            const [leaveTypeResult] = await global.AppDataSource.query(leaveTypeQuery, [lr.leaveType]);
             const leaveType = leaveTypeResult ? leaveTypeResult[0] : null;
             if (leaveType) {
                           if (leaveType.is_active === false) {
@@ -280,6 +342,7 @@ To link your account for full access, please visit the web application and use L
       return { type: 'text', text: message };
     } catch (error) {
       console.error('Error fetching recent leave:', error);
+      console.error('Error details:', error.message, error.stack);
       return { type: 'text', text: '❌ Error fetching recent leave.' };
     }
   }
@@ -304,14 +367,30 @@ To link your account for full access, please visit the web application and use L
         }
       }
 
+      // Helper: Convert total hours to days and remaining hours (fallback implementation)
+      function toDayHourFallback(val) {
+        const day = Math.floor(val);
+        const hour = Math.round((val - day) * 9); // Assuming 9 working hours per day
+        return { day, hour };
+      }
+
       let message = '💰 Leave Entitlements:\n\n';
       
       // Display for each leave type
       for (const leaveData of remainingLeaveData) {
         // Convert to day/hour format for display
-        const quotaObj = toDayHour(leaveData.quota_days);
-        const usedObj = toDayHour(leaveData.total_used_days);
-        const remainingObj = toDayHour(leaveData.remaining_days);
+        let quotaObj, usedObj, remainingObj;
+        
+        try {
+          quotaObj = toDayHour(leaveData.quota_days);
+          usedObj = toDayHour(leaveData.total_used_days);
+          remainingObj = toDayHour(leaveData.remaining_days);
+        } catch (utilError) {
+          console.log('Using fallback toDayHour implementation');
+          quotaObj = toDayHourFallback(leaveData.quota_days);
+          usedObj = toDayHourFallback(leaveData.total_used_days);
+          remainingObj = toDayHourFallback(leaveData.remaining_days);
+        }
 
         // Display leave type in both languages
         const leaveTypeDisplay = leaveData.leave_type_name_en && leaveData.leave_type_name_en !== leaveData.leave_type_name_th 
@@ -327,6 +406,7 @@ To link your account for full access, please visit the web application and use L
       return { type: 'text', text: message };
     } catch (error) {
       console.error('Error fetching leave entitlements:', error);
+      console.error('Error details:', error.message, error.stack);
       return { type: 'text', text: '❌ Error fetching leave entitlements.' };
     }
   }
@@ -528,6 +608,135 @@ You'll receive LINE notifications when your request is approved/rejected!`
     } catch (error) {
       console.error('Error getting user by LINE ID:', error);
       return null;
+    }
+  }
+
+  // Test method to verify LINE Bot functionality
+  static async testLineBotMethods(req, res) {
+    try {
+      const { userId } = req.body;
+      
+      if (!userId) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'User ID is required' 
+        });
+      }
+
+      // Get user from database
+      const userRepo = global.AppDataSource.getRepository('User');
+      const user = await userRepo.findOneBy({ id: userId });
+      
+      if (!user) {
+        return res.status(404).json({ 
+          success: false, 
+          error: 'User not found' 
+        });
+      }
+
+      // Test getLeaveStatus
+      const statusResult = await LineController.getLeaveStatus(user);
+      
+      // Test getLeaveBalance
+      const balanceResult = await LineController.getLeaveBalance(user);
+
+      res.json({
+        success: true,
+        results: {
+          leaveStatus: statusResult,
+          leaveBalance: balanceResult
+        }
+      });
+
+    } catch (error) {
+      console.error('Error testing LINE Bot methods:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: error.message 
+      });
+    }
+  }
+
+  // Debug method to check LINE user linking
+  static async debugLineUser(req, res) {
+    try {
+      const { lineUserId } = req.body;
+      
+      if (!lineUserId) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'LINE User ID is required' 
+        });
+      }
+
+      // Get user from database
+      const userRepo = global.AppDataSource.getRepository('User');
+      const user = await userRepo.findOneBy({ lineUserId: lineUserId });
+      
+      if (!user) {
+        return res.json({
+          success: true,
+          linked: false,
+          message: 'User not found in database with this LINE User ID',
+          lineUserId: lineUserId
+        });
+      }
+
+      res.json({
+        success: true,
+        linked: true,
+        user: {
+          id: user.id,
+          name: user.Name,
+          email: user.Email,
+          lineUserId: user.lineUserId
+        }
+      });
+
+    } catch (error) {
+      console.error('Error debugging LINE user:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: error.message 
+      });
+    }
+  }
+
+  // Test LINE Bot configuration
+  static async testBotConfig(req, res) {
+    try {
+      const config = {
+        channelAccessToken: process.env.LINE_BOT_CHANNEL_ACCESS_TOKEN ? 'Set' : 'Not set',
+        channelSecret: process.env.LINE_BOT_CHANNEL_SECRET ? 'Set' : 'Not set',
+        channelId: process.env.LINE_CHANNEL_ID ? 'Set' : 'Not set',
+        redirectUri: process.env.LINE_REDIRECT_URI || 'Not set'
+      };
+
+      // Test LINE Bot client
+      let clientTest = 'Failed';
+      try {
+        const testClient = new line.Client({
+          channelAccessToken: process.env.LINE_BOT_CHANNEL_ACCESS_TOKEN,
+          channelSecret: process.env.LINE_BOT_CHANNEL_SECRET
+        });
+        clientTest = 'Success';
+      } catch (clientError) {
+        clientTest = `Failed: ${clientError.message}`;
+      }
+
+      res.json({
+        success: true,
+        config: config,
+        clientTest: clientTest,
+        database: global.AppDataSource ? 'Connected' : 'Not connected'
+      });
+
+    } catch (error) {
+      console.error('Error testing bot config:', error);
+      res.status(500).json({ 
+        success: false, 
+        error: error.message 
+      });
     }
   }
 

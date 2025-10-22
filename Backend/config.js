@@ -26,14 +26,14 @@ const config = {
     port: process.env.PORT || 3001,
     jwtSecret: process.env.JWT_SECRET || 'your_jwt_secret_here',
     jwtExpiresIn: process.env.JWT_EXPIRES_IN || '24h',
-    apiBaseUrl: process.env.VITE_API_BASE_URL || 'http://localhost:3001',
+    apiBaseUrl: process.env.VITE_API_BASE_URL || 'https://api-leave-management.flowmisite.com',
   },
 
   // CORS Configuration
   cors: {
     origins: process.env.CORS_ORIGINS ? 
       process.env.CORS_ORIGINS.split(',') : 
-      [
+      ['https://86099db5b88b.ngrok-free.app',
         'https://leave-management.flowmisite.com',
         'http://localhost:8081',
         'http://192.168.50.64:8081',

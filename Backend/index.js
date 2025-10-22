@@ -26,7 +26,34 @@ const server = createServer(app);
 // Initialize Socket.io
 const io = new Server(server, {
   cors: {
-    origin: config.cors.origins,
+    origin: function (origin, callback) {
+      // Allow requests with no origin (like mobile apps or curl requests)
+      if (!origin) return callback(null, true);
+      
+      const allowedOrigins = [
+        ...config.cors.origins,
+        // Allow all ngrok domains
+        /^https:\/\/.*\.ngrok-free\.app$/,
+        /^https:\/\/.*\.ngrok\.io$/,
+        /^https:\/\/.*\.loca\.lt$/
+      ];
+      
+      // Check if the origin is allowed
+      const isAllowed = allowedOrigins.some(allowedOrigin => {
+        if (typeof allowedOrigin === 'string') {
+          return origin === allowedOrigin;
+        } else if (allowedOrigin instanceof RegExp) {
+          return allowedOrigin.test(origin);
+        }
+        return false;
+      });
+      
+      if (isAllowed) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: ["GET", "POST"],
     credentials: true
   }

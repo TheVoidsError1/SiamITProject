@@ -92,15 +92,15 @@ const Login = () => {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-blue-900 font-medium">{t('auth.email')}</Label>
-                  <div className="flex items-center gap-3">
-                    <Mail className="h-6 w-6 text-blue-400 animate-pop-in" />
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400 z-10" />
                     <Input
                       id="email"
                       type="email"
                       placeholder="name@company.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="input-blue-login"
+                      className="pl-10"
                       required
                     />
                   </div>
@@ -108,27 +108,35 @@ const Login = () => {
                 
                 <div className="space-y-2">
                   <Label htmlFor="password" className="text-blue-900 font-medium">{t('auth.password')}</Label>
-                  <div className="flex items-center gap-3">
-                    <Lock className="h-6 w-6 text-blue-400 animate-pop-in" />
-                    <div className="relative w-full">
-                      <Input
-                        id="password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="••••••••"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        className="input-blue-login pr-10"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-blue-300 hover:text-blue-500 transition-colors animate-pop-in"
-                        tabIndex={-1}
-                      >
-                        {showPassword ? <EyeOff /> : <Eye />}
-                      </button>
-                    </div>
+                  <div className="relative password-field-container">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400 z-10" />
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="pl-10 pr-10"
+                      autoComplete="current-password"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck="false"
+                      style={{ 
+                        WebkitTextSecurity: showPassword ? 'none' : 'disc',
+                        msTextSecurity: showPassword ? 'none' : 'disc',
+                        WebkitAppearance: 'none',
+                        MozAppearance: 'textfield'
+                      }}
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600 focus:outline-none"
+                      style={{ zIndex: 10 }}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
                   </div>
                 </div>
 
@@ -189,17 +197,22 @@ const Login = () => {
           box-shadow: 0 0 0 2px #3b82f644;
           outline: none;
         }
-        .input-blue-login::-ms-reveal {
+        .password-field-container input[type="password"]::-webkit-credentials-auto-fill-button,
+        .password-field-container input[type="password"]::-webkit-credentials-auto-fill-button:hover,
+        .password-field-container input[type="password"]::-webkit-credentials-auto-fill-button:active,
+        .password-field-container input[type="password"]::-webkit-credentials-auto-fill-button:focus {
+          display: none !important;
+          visibility: hidden !important;
+          opacity: 0 !important;
+          pointer-events: none !important;
+        }
+        .password-field-container input[type="password"]::-webkit-textfield-decoration-container,
+        .password-field-container input[type="password"]::-webkit-credentials-auto-fill-button {
           display: none !important;
         }
-        .input-blue-login::-webkit-credentials-auto-fill-button {
-          display: none !important;
-        }
-        .input-blue-login::-webkit-strong-password-auto-fill-button {
-          display: none !important;
-        }
-        .input-blue-login::-webkit-textfield-decoration-container {
-          display: none !important;
+        .password-field-container input[type="password"] {
+          -webkit-appearance: none;
+          -moz-appearance: textfield;
         }
         .btn-blue-login {
           background: linear-gradient(90deg, #3b82f6 0%, #6366f1 100%);

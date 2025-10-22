@@ -173,7 +173,8 @@
     "unlinkSuccess": "ยกเลิกการเชื่อมต่อ LINE สำเร็จ",
     "linkSuccess": "เชื่อมต่อบัญชี LINE สำเร็จ!",
     "linkSuccessDesc": "บัญชี LINE ของคุณได้ถูกเชื่อมต่อกับโปรไฟล์เรียบร้อยแล้ว",
-    "linkSuccessMessage": "เชื่อมต่อบัญชีสำเร็จ! คุณสามารถใช้ฟีเจอร์ LINE bot ได้แล้ว"
+    "linkSuccessMessage": "เชื่อมต่อบัญชีสำเร็จ! คุณสามารถใช้ฟีเจอร์ LINE bot ได้แล้ว",
+    "addFriend": "เพิ่มเพื่อน LINE"
   },
   "approved": "อนุมัติแล้ว",
   "rejected": "ปฏิเสธแล้ว",

@@ -181,3 +181,26 @@
 .drop-shadow-glow {
   filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5));
 }
+
+/* Hide browser default password visibility toggles */
+input[type="password"]::-webkit-credentials-auto-fill-button,
+input[type="password"]::-webkit-credentials-auto-fill-button:hover,
+input[type="password"]::-webkit-credentials-auto-fill-button:active,
+input[type="password"]::-webkit-credentials-auto-fill-button:focus {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Hide any browser default eye icons */
+input[type="password"]::-webkit-textfield-decoration-container,
+input[type="password"]::-webkit-credentials-auto-fill-button {
+  display: none !important;
+}
+
+/* Ensure our custom eye button is the only one visible */
+.password-field-container input[type="password"] {
+  -webkit-appearance: none;
+  -moz-appearance: textfield;
+}

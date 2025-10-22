@@ -20,12 +20,13 @@ export const SocketProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
     const newSocket = io(API_BASE_URL, {
-      transports: ['websocket'],
+      transports: ['polling'],
       autoConnect: true
     });
 
     newSocket.on('connect', () => {
       setIsConnected(true);
+      console.log('Socket connected');
       
       // Join user room if user is logged in
       if (user?.id) {

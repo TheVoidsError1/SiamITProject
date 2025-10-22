@@ -174,7 +174,8 @@
     "unlinkSuccess": "LINE account unlinked successfully",
     "linkSuccess": "LINE Account Linked Successfully!",
     "linkSuccessDesc": "Your LINE account has been successfully linked to your profile.",
-    "linkSuccessMessage": "Account linked successfully! You can now use LINE bot features."
+    "linkSuccessMessage": "Account linked successfully! You can now use LINE bot features.",
+    "addFriend": "Add LINE Friend"
   },
   "approved": "Approved",
   "rejected": "Rejected",

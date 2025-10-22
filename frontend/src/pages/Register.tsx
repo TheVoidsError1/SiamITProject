@@ -437,7 +437,7 @@ const Register = () => {
               
               <div className="space-y-2 mb-4">
                 <Label htmlFor="password" className="mb-2 block">{t('auth.password')}</Label>
-                <div className="relative">
+                <div className="relative password-field-container">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     id="password"
@@ -446,14 +446,21 @@ const Register = () => {
                     value={formData.password}
                     onChange={(e) => setFormData(prev => ({ ...prev, password: e.target.value }))}
                     className="pl-10 pr-10"
+                    style={{ 
+                      WebkitTextSecurity: showPassword ? 'none' : 'disc',
+                      msTextSecurity: showPassword ? 'none' : 'disc',
+                      WebkitAppearance: 'none',
+                      MozAppearance: 'textfield'
+                    }}
                     required
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600 focus:outline-none"
+                    style={{ zIndex: 10 }}
                   >
-                    {showPassword ? <EyeOff /> : <Eye />}
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>
@@ -474,9 +481,10 @@ const Register = () => {
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600 focus:outline-none"
+                    style={{ zIndex: 10 }}
                   >
-                    {showConfirmPassword ? <EyeOff /> : <Eye />}
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
               </div>

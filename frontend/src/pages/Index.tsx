@@ -558,6 +558,15 @@ const Index = () => {
                     : t('line.linkAccount')
                 }
               </Button>
+              
+              <Button 
+                size="default" 
+                variant="secondary"
+                onClick={() => window.open('https://lin.ee/zG8rrl6', '_blank')}
+                className="bg-green-500 text-white hover:bg-green-600 font-bold shadow-lg border-0 px-6 py-2 text-base rounded-lg animate-bounce-in"
+              >
+                {t('line.addFriend')}
+              </Button>
             </div>
           </div>
           <div className="absolute top-0 right-0 w-40 h-40 rounded-full" style={{ background: 'linear-gradient(90deg, #fffbe6 0%, #ffe082 100%)', opacity: 0.18, transform: 'translateY(-50%) translateX(50%)' }}></div>
